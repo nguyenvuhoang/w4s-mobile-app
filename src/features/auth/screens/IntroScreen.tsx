@@ -1,13 +1,37 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  FlatList,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  ViewToken,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Fonts } from '@/core/theme/theme';
+import { useAppTheme } from '@/core/theme/ThemeContext';
+import { Fonts, Tokens } from '@/core/theme/theme';
+import { hasNotch, normalize } from '@/utils/layout';
 
-const SLIDES = [
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const logoImg = require('@assets/images/emiblack.png');
+
+// Create AnimatedFlatList
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<Slide>);
+
+interface Slide {
+  id: number;
+  title: string;
+  description: string;
+  image?: any;
+}
+
+const SLIDES: Slide[] = [
   {
     id: 1,
     title: 'Ngân sách thông minh',
@@ -16,22 +40,35 @@ const SLIDES = [
   {
     id: 2,
     title: 'Tối ưu hóa tài chính của bạn',
-    description: 'Liên kết tài khoản ngân hàng, thẻ tín dụng và nhiều hơn nữa để theo dõi liền mạch. Nhận cập nhật theo thời gian thực và kiểm soát tài chính của bạn.',
+    description:
+      'Liên kết tài khoản ngân hàng, thẻ tín dụng và nhiều hơn nữa để theo dõi liền mạch. Nhận cập nhật theo thời gian thực và kiểm soát tài chính của bạn.',
   },
   {
     id: 3,
     title: 'Nắm quyền kiểm soát tài chính',
-    description: 'Chào mừng đến với Name! Người bạn đồng hành tài chính cá nhân của bạn. Kiểm soát tiền bạc của bạn một cách dễ dàng và hơn thế.',
-  }
+    description:
+      'Chào mừng đến với W4S! Người bạn đồng hành tài chính cá nhân của bạn. Kiểm soát tiền bạc của bạn một cách dễ dàng và hơn thế.',
+  },
 ];
 
 const IntroScreen = () => {
   const router = useRouter();
+  const { colors } = useAppTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const flatListRef = useRef<FlatList<Slide>>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
+
+  // Use light background and dark text
+  const backgroundColor = colors.background;
+  const textColor = colors.text;
+  const tintColor = colors.tint;
 
   const handleNext = () => {
     if (currentIndex < SLIDES.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      flatListRef.current?.scrollToIndex({
+        index: currentIndex + 1,
+        animated: true,
+      });
     } else {
       goToLogin();
     }
@@ -50,168 +87,258 @@ const IntroScreen = () => {
     router.replace('/(auth)/login');
   };
 
-  return (
-    <ThemedView style={styles.container}>
-      {/* Logo */}
-      <ThemedView style={styles.logoContainer}>
-        <ThemedView style={styles.logo}>
-          <ThemedView style={[styles.circle, styles.topLeft]} />
-          <ThemedView style={[styles.circle, styles.topRight]} />
-          <ThemedView style={[styles.circle, styles.bottomLeft]} />
-          <ThemedView style={[styles.circle, styles.bottomRight]} />
-        </ThemedView>
-      </ThemedView>
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+        setCurrentIndex(viewableItems[0].index);
+      }
+    }
+  ).current;
 
-      {/* Content */}
-      <ThemedView style={styles.contentContainer}>
-        <ThemedText type="title" style={styles.title}>
-          {SLIDES[currentIndex].title}
-        </ThemedText>
-        <ThemedText type="default" style={styles.description}>
-          {SLIDES[currentIndex].description}
-        </ThemedText>
-      </ThemedView>
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+  }).current;
 
-      {/* Bottom Section */}
-      <ThemedView style={styles.bottomSection}>
-        {/* Pagination Dots */}
-        <ThemedView style={styles.pagination}>
-          {SLIDES.map((_, index) => (
-            <ThemedView
-              key={index}
-              style={[
-                styles.dot,
-                currentIndex === index && styles.activeDot
-              ]}
-            />
-          ))}
-        </ThemedView>
+  const renderSlide = ({ item, index }: { item: Slide; index: number }) => {
+    const inputRange = [
+      (index - 1) * SCREEN_WIDTH,
+      index * SCREEN_WIDTH,
+      (index + 1) * SCREEN_WIDTH,
+    ];
 
-        {/* Buttons */}
-        <ThemedView style={styles.buttonContainer}>
-          <TouchableOpacity onPress={handleNext} style={styles.nextBtn}>
-            <ThemedText style={styles.nextText}>
-              {currentIndex === SLIDES.length - 1 ? 'Bắt đầu' : 'Tiếp tục'}
+    const opacity = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.3, 1, 0.3],
+      extrapolate: 'clamp',
+    });
+
+    const scale = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.8, 1, 0.8],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <View style={[styles.slideContainer, { width: SCREEN_WIDTH }]}>
+        <Animated.View
+          style={[
+            styles.slideContent,
+            {
+              opacity,
+              transform: [{ scale }],
+            },
+          ]}
+        >
+          {/* Logo */}
+          <View style={styles.logoWrapper}>
+            <Image source={logoImg} style={styles.logo} resizeMode="contain" />
+          </View>
+
+          {/* Content */}
+          <View style={styles.textContainer}>
+            <ThemedText style={[styles.title, { color: textColor }]}>
+              {item.title}
             </ThemedText>
-          </TouchableOpacity>
+            <ThemedText style={[styles.description, { color: textColor }]}>
+              {item.description}
+            </ThemedText>
+          </View>
+        </Animated.View>
+      </View>
+    );
+  };
 
-          <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
-            <ThemedText style={styles.skipText}>Bỏ qua</ThemedText>
-          </TouchableOpacity>
-        </ThemedView>
-      </ThemedView>
-    </ThemedView>
+  // Render pagination dots separately without animation on width
+  const renderPaginationDots = () => {
+    return SLIDES.map((_, index) => {
+      const inputRange = [
+        (index - 1) * SCREEN_WIDTH,
+        index * SCREEN_WIDTH,
+        (index + 1) * SCREEN_WIDTH,
+      ];
+
+      const opacity = scrollX.interpolate({
+        inputRange,
+        outputRange: [0.3, 1, 0.3],
+        extrapolate: 'clamp',
+      });
+
+      const scale = scrollX.interpolate({
+        inputRange,
+        outputRange: [1, 1.5, 1],
+        extrapolate: 'clamp',
+      });
+
+      return (
+        <Animated.View
+          key={index}
+          style={[
+            styles.dot,
+            {
+              opacity,
+              transform: [{ scale }],
+              backgroundColor: tintColor,
+            },
+          ]}
+        />
+      );
+    });
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor }]}>
+      <SafeAreaView style={styles.safeArea}>
+        {/* Slides */}
+        <View style={styles.slidesContainer}>
+          <AnimatedFlatList
+            ref={flatListRef}
+            data={SLIDES}
+            renderItem={renderSlide}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+              { useNativeDriver: true }
+            )}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={viewabilityConfig}
+            keyExtractor={(item) => item.id.toString()}
+            bounces={false}
+            scrollEventThrottle={16}
+          />
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footerContainer}>
+          {/* Pagination Dots */}
+          <View style={styles.pagination}>{renderPaginationDots()}</View>
+
+          {/* Buttons */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              onPress={handleNext}
+              style={[styles.nextBtn, { backgroundColor: tintColor }]}
+              activeOpacity={0.9}
+            >
+              <ThemedText style={styles.nextText}>
+                {currentIndex === SLIDES.length - 1 ? 'Bắt đầu' : 'Tiếp tục'}
+              </ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
+              <ThemedText style={[styles.skipText, { color: textColor }]}>
+                Bỏ qua
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F7',
-    paddingTop: 80,
   },
-  logoContainer: {
+  safeArea: {
+    flex: 1,
+  },
+  slidesContainer: {
+    flex: 1,
+  },
+  slideContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 100,
+  },
+  slideContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: normalize(32),
+  },
+
+  // Logo
+  logoWrapper: {
+    marginBottom: normalize(60),
   },
   logo: {
-    width: 100,
-    height: 100,
-    position: 'relative',
+    width: normalize(120),
+    height: normalize(120),
   },
-  circle: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    backgroundColor: '#0066FF',
-    position: 'absolute',
-  },
-  topLeft: {
-    top: 0,
-    left: 0,
-  },
-  topRight: {
-    top: 0,
-    right: 0,
-  },
-  bottomLeft: {
-    bottom: 0,
-    left: 0,
-  },
-  bottomRight: {
-    bottom: 0,
-    right: 0,
-  },
-  contentContainer: {
-    flex: 1,
-    paddingHorizontal: 30,
+
+  // Text
+  textContainer: {
     alignItems: 'center',
+    gap: normalize(16),
   },
   title: {
-    fontSize: 24,
+    fontSize: normalize(28),
     fontFamily: Fonts.family.bold,
-    color: '#0066FF',
     textAlign: 'center',
-    marginBottom: 20,
+    lineHeight: normalize(36),
   },
   description: {
-    fontSize: Fonts.size.base,
+    fontSize: normalize(16),
     fontFamily: Fonts.family.regular,
-    color: '#666666',
     textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: 10,
+    lineHeight: normalize(24),
+    opacity: 0.8,
+    paddingHorizontal: normalize(16),
   },
-  bottomSection: {
-    paddingHorizontal: 30,
-    paddingBottom: 50,
+
+  // Footer
+  footerContainer: {
+    paddingHorizontal: normalize(24),
+    paddingBottom: hasNotch() ? normalize(10) : normalize(30),
+    gap: normalize(24),
   },
+
+  // Pagination
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 30,
-    gap: 8,
+    alignItems: 'center',
+    gap: normalize(8),
+    height: normalize(12),
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#D1D1D6',
+    width: normalize(8),
+    height: normalize(8),
+    borderRadius: normalize(4),
   },
-  activeDot: {
-    backgroundColor: '#0066FF',
-    width: 24,
-  },
+
+  // Buttons
   buttonContainer: {
-    gap: 15,
+    gap: normalize(16),
   },
   nextBtn: {
-    backgroundColor: '#0066FF',
-    paddingVertical: 16,
-    borderRadius: 30,
+    paddingVertical: normalize(16),
+    borderRadius: normalize(100),
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    width: '100%',
+    shadowColor: Tokens.colors.main.black,
+    shadowOffset: { width: 0, height: normalize(4) },
+    shadowOpacity: 0.15,
+    shadowRadius: normalize(8),
     elevation: 4,
   },
   nextText: {
-    color: '#FFFFFF',
-    fontSize: Fonts.size.base,
-    fontFamily: Fonts.family.semiBold,
+    fontSize: normalize(18),
+    fontFamily: Fonts.family.bold,
+    lineHeight: normalize(24),
+    color: Tokens.colors.main.white,
   },
   skipBtn: {
-    paddingVertical: 16,
+    paddingVertical: normalize(12),
     alignItems: 'center',
   },
   skipText: {
-    color: '#666666',
-    fontSize: Fonts.size.base,
-    fontFamily: Fonts.family.regular,
+    fontSize: normalize(16),
+    fontFamily: Fonts.family.medium,
+    opacity: 0.7,
   },
 });
 

@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 
@@ -11,8 +10,9 @@ export default function Index() {
 
   const checkIntroStatus = async () => {
     try {
-      const value = await AsyncStorage.getItem('hasSeenIntro');
-      setHasSeenIntro(value === 'true');
+      // const value = await AsyncStorage.getItem('hasSeenIntro2');
+      // setHasSeenIntro(value === 'true');
+      setHasSeenIntro(false);
     } catch (error) {
       console.error('Error checking intro status:', error);
       setHasSeenIntro(false);

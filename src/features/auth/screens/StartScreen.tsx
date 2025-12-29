@@ -1,12 +1,20 @@
-import { useRouter } from 'expo-router';
-import { StyleSheet, TouchableOpacity } from 'react-native';
-
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Fonts } from '@/core/theme/theme';
+import { useAppTheme } from '@/core/theme/ThemeContext';
+import { Fonts, Tokens } from '@/core/theme/theme';
+import { hasNotch, hp, normalize } from '@/utils/layout';
+import { useRouter } from 'expo-router';
+import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const logoImg = require('@assets/images/emiwhite.png');
 
 const StartScreen = () => {
   const router = useRouter();
+  const { colors, isDark } = useAppTheme();
+
+  const backgroundColor = isDark ? colors.background : colors.tint;
+  const onBackgroundColor = Tokens.colors.main.white; 
+  const buttonTextColor = backgroundColor;
 
   const handleStart = () => {
     router.push('/(auth)/intro');
@@ -17,101 +25,141 @@ const StartScreen = () => {
   };
 
   return (
-    <ThemedView style={styles.container}>
-      {/* Logo */}
-      <ThemedView style={styles.logoContainer}>
-        <ThemedView style={styles.logo}>
-          <ThemedView style={[styles.circle, styles.topLeft]} />
-          <ThemedView style={[styles.circle, styles.topRight]} />
-          <ThemedView style={[styles.circle, styles.bottomLeft]} />
-          <ThemedView style={[styles.circle, styles.bottomRight]} />
-        </ThemedView>
-      </ThemedView>
+    <View style={[styles.container, { backgroundColor }]}>
+      <SafeAreaView style={styles.safeArea}>
+        
+        {/* === HEADER === */}
+        <View style={styles.headerContainer}>
+          <View style={styles.logoWrapper}>
+            <Image 
+              source={logoImg} 
+              style={styles.logo} 
+              resizeMode="contain" 
+            />
+          </View>
+          
+          <View style={styles.textContainer}>
+            <ThemedText style={[styles.appName, { color: onBackgroundColor }]}>
+              W4S Mobile
+            </ThemedText>
+            <ThemedText style={[styles.slogan, { color: onBackgroundColor }]}>
+              Đồng hành cùng tài chính của bạn
+            </ThemedText>
+          </View>
+        </View>
 
-      {/* Bottom Buttons */}
-      <ThemedView style={styles.buttonContainer}>
-        <TouchableOpacity onPress={handleStart} style={styles.startBtn}>
-          <ThemedText style={styles.startText}>Bắt đầu</ThemedText>
-        </TouchableOpacity>
+        {/* === FOOTER === */}
+        <View style={styles.footerContainer}>
+          <TouchableOpacity 
+            onPress={handleStart} 
+            style={styles.startBtn} 
+            activeOpacity={0.9}
+          >
+            <ThemedText style={[styles.startText, { color: buttonTextColor }]}>
+              Bắt đầu
+            </ThemedText>
+          </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleLogin} style={styles.loginBtn}>
-          <ThemedText style={styles.loginText}>Đăng nhập</ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
-    </ThemedView>
+          <View style={styles.loginRow}>
+            <ThemedText style={[styles.haveAccountText, { color: onBackgroundColor }]}>
+              Đã có tài khoản?
+            </ThemedText>
+            <TouchableOpacity onPress={handleLogin} style={styles.loginBtn}>
+              <ThemedText style={[styles.loginText, { color: onBackgroundColor }]}>
+                Đăng nhập
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0066FF',
   },
-  logoContainer: {
+  safeArea: {
     flex: 1,
+    justifyContent: 'space-between',
+  },
+  
+  headerContainer: {
+    height: hp(60), 
     justifyContent: 'center',
     alignItems: 'center',
   },
+  logoWrapper: {
+    marginBottom: normalize(24),
+  },
   logo: {
-    width: 100,
-    height: 100,
-    position: 'relative',
+    width: normalize(140),
+    height: normalize(140),
   },
-  circle: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    backgroundColor: '#FFFFFF',
-    position: 'absolute',
+  textContainer: {
+    alignItems: 'center',
+    gap: normalize(8),
   },
-  topLeft: {
-    top: 0,
-    left: 0,
+  appName: {
+    fontSize: normalize(32),
+    fontFamily: Fonts.family.bold,
+    letterSpacing: normalize(1),
+    lineHeight: normalize(42), 
+    paddingVertical: normalize(4),
   },
-  topRight: {
-    top: 0,
-    right: 0,
+  slogan: {
+    fontSize: normalize(16),
+    fontFamily: Fonts.family.medium,
+    opacity: 0.9,
+    lineHeight: normalize(24),
   },
-  bottomLeft: {
-    bottom: 0,
-    left: 0,
-  },
-  bottomRight: {
-    bottom: 0,
-    right: 0,
-  },
-  buttonContainer: {
-    paddingHorizontal: 30,
-    paddingBottom: 50,
-    gap: 15,
+
+  // --- Footer Styles ---
+  footerContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: normalize(24),
+    paddingBottom: hasNotch() ? normalize(10) : normalize(30),
+    gap: normalize(20),
   },
   startBtn: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 16,
-    borderRadius: 30,
+    backgroundColor: Tokens.colors.main.white,
+    paddingVertical: normalize(16),
+    borderRadius: normalize(100), 
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    width: '100%',
+    shadowColor: Tokens.colors.main.black,
+    shadowOffset: { width: 0, height: normalize(4) },
+    shadowOpacity: 0.25,
+    shadowRadius: normalize(8),
+    elevation: 6,
   },
   startText: {
-    color: '#0066FF',
-    fontSize: Fonts.size.lg,
-    fontFamily: Fonts.family.semiBold,
+    fontSize: normalize(18),
+    fontFamily: Fonts.family.bold,
+    lineHeight: normalize(24),
+  },
+  
+  loginRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: normalize(6),
+    paddingVertical: normalize(10),
+  },
+  haveAccountText: {
+    fontSize: normalize(15),
+    fontFamily: Fonts.family.regular,
+    opacity: 0.85,
   },
   loginBtn: {
-    paddingVertical: 16,
-    alignItems: 'center',
+    padding: normalize(4),
   },
   loginText: {
-    color: '#FFFFFF',
-    fontSize: Fonts.size.base,
-    fontFamily: Fonts.family.medium,
+    fontSize: normalize(16),
+    fontFamily: Fonts.family.bold,
+    lineHeight: normalize(22),
   },
 });
 

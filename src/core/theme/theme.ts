@@ -62,7 +62,7 @@ export const Tokens = {
 
 export const Colors = {
   light: {
-    text: Tokens.colors.main.textgray,
+    text: Tokens.colors.main.bg_dark,
     background: Tokens.colors.main.white,
     tint: Tokens.colors.main.primary,
 
