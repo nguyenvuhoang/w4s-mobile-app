@@ -1,0 +1,18 @@
+
+export const AppConfig = {
+  SESSION: {
+    IDLE_TIMEOUT: 3 * 60 * 1000, 
+  },
+  API: {
+    TIMEOUT: 15000,
+    RETRY_COUNT: 3,
+  },
+  UI: {
+    TOAST_DURATION: 3000,
+    DebounceTime: 500,
+  },
+  SENTRY: {
+    DSN: "https://a4224c13c9aedbf8f951b4fcca7d95e2@o4510513805393920.ingest.us.sentry.io/4510513812865024",
+    ENVIRONMENT: "DEVELOPMENT",
+  }
+};
