@@ -14,25 +14,29 @@ export class Session {
 }
 
 export interface SessionLoginResponse {
-  fo: {
-    txcode: string;
-    executeId: string;
-    input: {
-      expiretime: string;
-      token: string;
-      name: string;
-    };
-  }[];
-  error: any[];
+  code: string;
+  success: boolean;
+  message: string;
+  data: {
+    expiretime: string;
+    token: string;
+    name: string;
+  };
+  execution_id: string;
+  timestamp: string;
+  errors: any[];
+  metadata: any;
 }
 
 export interface SessionValidationResponse {
-  fo: {
-    txcode: string;
-    executeId: string;
-    input: {
-      isactive: boolean;
-    };
-  }[];
-  error: any[];
+  code: string;
+  success: boolean;
+  message: string;
+  data: {
+    isactive: boolean;
+  };
+  execution_id: string;
+  timestamp: string;
+  errors: any[];
+  metadata: any;
 }

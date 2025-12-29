@@ -10,10 +10,10 @@ export const authRepository = {
     encryptedPassword: string,
     fcmToken?: string
   ): Promise<BaseResponseModel> {
-    return await apiService.executeWorkflow(
-      WORKFLOWCODE.LOGIN, 
+    return await apiService.executeWorkflowNew(
+      WORKFLOWCODE.WF_MB_LOGIN, 
       {
-        username,
+        login_name: username,
         password: encryptedPassword,
         push_id: fcmToken || '',
       },
@@ -66,7 +66,7 @@ export const authRepository = {
     newPassword: string
   ): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_CHANGE_PASSWORD,
+      WORKFLOWCODE.WF_MB_CHANGE_PASSWORD,
       {
         usercode: userCode,
         old_password: oldPassword,

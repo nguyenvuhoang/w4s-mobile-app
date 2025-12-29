@@ -14,7 +14,21 @@ export class RequestModel {
   }
 }
 
+// Class cho request đơn giản
+export class SimpleRequestModel {
+  workflowid: string;
+  fields: any;
+
+  constructor(workflowid: string, fields: { [key: string]: any }) {
+    this.workflowid = workflowid;
+    this.fields = fields;
+  }
+}
+
+// Class cho request phức tạp (có bo, use_microservice, etc.)
 export class BaseRequestModel {
+  is_get_template: boolean = false;
+  
   bo: Array<{
     use_microservice: boolean;
     input: {
@@ -25,31 +39,25 @@ export class BaseRequestModel {
     };
   }>;
 
-  is_get_template: boolean = false;
-
   constructor(
     workflowid: string = "",
-    learn_api: string,
-    inputData: { [key: string]: string } = {},
+    learn_api: string = "cbs_workflow_execute",
+    inputData: { [key: string]: any } = {},
     is_get_template: boolean = false,
     use_microservice: boolean = true
   ) {
+    this.is_get_template = is_get_template;
+    
     this.bo = [
       {
         use_microservice: use_microservice,
         input: {
           workflowid: workflowid,
           learn_api: learn_api,
-          fields: {
-            ...inputData
-          }
-          ,
+          fields: inputData,
         },
       },
     ];
-    // }
-
-    this.is_get_template = is_get_template;
   }
 }
 
@@ -62,58 +70,76 @@ export interface ApiResponse {
 }
 
 export interface BaseResponse {
-  fo: Array<{
-    txcode: string;
+  code: string;
+  success: boolean;
+  message: string;
+  data: any;
+  execution_id: string;
+  timestamp: string;
+  errors: Array<{
+    key: string;
+    code: string;
+    type: string;
+    info: string;
+    type_error: string;
     execute_id: string;
-    input: {
-      [key: string]: any;
-    };
+    next_action: string;
   }>;
-  error: any[];
+  metadata: any;
 }
 
 export class BaseResponseModel implements BaseResponse {
-  fo: {
-    txcode: string;
+  code: string;
+  success: boolean;
+  message: string;
+  data: any;
+  execution_id: string;
+  timestamp: string;
+  errors: Array<{
+    key: string;
+    code: string;
+    type: string;
+    info: string;
+    type_error: string;
     execute_id: string;
-    input: {
-      [key: string]: any;
-    };
-  }[];
-  error: any[];
+    next_action: string;
+  }>;
+  metadata: any;
 
-  constructor(
-    fo: { txcode: string; execute_id: string; input: { [key: string]: any } }[],
-    error: any[]
-  ) {
-    this.fo = fo;
-    this.error = error;
+  constructor(responseData: BaseResponse) {
+    this.code = responseData.code;
+    this.success = responseData.success;
+    this.message = responseData.message;
+    this.data = responseData.data;
+    this.execution_id = responseData.execution_id;
+    this.timestamp = responseData.timestamp;
+    this.errors = responseData.errors || [];
+    this.metadata = responseData.metadata;
   }
 
-  getFirstFoInput(): { [key: string]: any } | undefined {
-    return this.fo.length > 0 ? this.fo[0].input : undefined;
+  getData(): any {
+    return this.data;
   }
 
   isSuccess(): boolean {
-  return Array.isArray(this.fo) && this.fo.length > 0 && !this.hasErrors();
+    return this.success === true && !this.hasErrors();
   }
 
   hasErrors(): boolean {
-    return this.error.length > 0;
+    return this.errors.length > 0;
   }
 
   toType<T>(): T | undefined {
-    return this.fo[0].input[0] as T;
+    return this.data as T;
   }
 
   getValue<T>(
     key?: string,
     type: "string" | "number" | "boolean" | "auto" = "auto"
   ): T | undefined {
-    if (this.fo.length === 0) return undefined;
+    if (!this.data) return undefined;
 
-    const rawInput = this.fo[0].input;
-    const value = key ? rawInput[key] : rawInput;
+    const value = key ? this.data[key] : this.data;
 
     if (value === null || value === undefined) return undefined;
 
@@ -136,35 +162,44 @@ export class BaseResponseModel implements BaseResponse {
     return value as T;
   }
 
-
   getError(): string {
-    const rawMessage = this.error?.[0]?.info ?? "";
-    return rawMessage.replace(/^\[(CTH|DTS|SMS|CBG)_[A-Z_]+\]\s*\[ERROR\]\s*/, "");
+    if (this.errors.length === 0) return this.message || "";
+    const rawMessage = this.errors[0]?.info ?? "";
+    return rawMessage.replace(/^\[WF_[A-Z_]+\]\s*\[ERROR\]\s*/, "");
   }
 
   getNextAction(): string {
-    return this.error[0]?.next_action || undefined;
+    return this.errors[0]?.next_action || "";
   }
 
   getErrorCode(): string {
-    return this.error[0]?.code || undefined;
+    return this.errors[0]?.code || this.code;
+  }
+
+  getExecutionId(): string {
+    return this.execution_id;
+  }
+
+  getTimestamp(): string {
+    return this.timestamp;
   }
 }
 
 export function hasError(response: BaseResponse): boolean {
-  return response.error.length > 0;
+  return response.errors.length > 0 || response.success === false;
 }
 
 export function isSuccess(response: BaseResponse): boolean {
-  return response.fo.length > 0 && !hasError(response);
+  return response.success === true && !hasError(response);
 }
 
 export function getValue<T>(
   response: BaseResponse,
-  key: string
+  key?: string
 ): T | undefined {
-  if (response.fo.length === 0) return undefined;
-  const value = response.fo[0].input[key];
+  if (!response.data) return undefined;
+  
+  const value = key ? response.data[key] : response.data;
 
   if (typeof value === "string" && (value === "true" || value === "false")) {
     return (value === "true") as unknown as T;
@@ -177,6 +212,7 @@ export function getValue<T>(
   return value as T;
 }
 
-export const getError = (response: BaseResponse) => {
-  return response.error[0].info;
+export const getError = (response: BaseResponse): string => {
+  if (response.errors.length === 0) return response.message;
+  return response.errors[0].info;
 };

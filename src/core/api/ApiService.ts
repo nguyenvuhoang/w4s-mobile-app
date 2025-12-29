@@ -1,14 +1,7 @@
 import { apiClient } from "./ApiClient";
-import { BaseRequestModel, BaseResponseModel } from "./models/ClientModel";
+import { BaseResponseModel, SimpleRequestModel } from "./models/ClientModel";
 
-/**
- * Core API Service - Không dùng React hooks
- * Pure functions để gọi API
- */
 class ApiService {
-  /**
-   * Send request to API
-   */
   async sendRequest(
     apiName: string,
     data: any,
@@ -21,19 +14,13 @@ class ApiService {
         (window as any).showLoading?.();
       }
 
-      const request = new BaseRequestModel(
-        workflowid,
-        apiName,
-        data,
-        false,
-        useMicro
-      );
-      const response = await apiClient.post1(request);
-
-      console.log("REQUEST == ", JSON.stringify(request));
+      // ✅ Luôn dùng SimpleRequestModel
+      const requestPayload = new SimpleRequestModel(workflowid || "", data);
+      
+      console.log("REQUEST == ", JSON.stringify(requestPayload));
+      const response = await apiClient.post1(requestPayload);
       console.log("RESPONSE == ", JSON.stringify(response));
 
-      // Handle invalid session will be done at repository or hook level
       return response;
     } finally {
       if (isShowLoading) {
@@ -42,14 +29,11 @@ class ApiService {
     }
   }
 
-  /**
-   * Execute workflow
-   */
   async executeWorkflow(
     workflowId: string,
     data: any,
     isShowLoading: boolean = false,
-    useMicro: boolean = true
+    useMicro: boolean = false
   ): Promise<BaseResponseModel> {
     return await this.sendRequest(
       "cbs_workflow_execute",
@@ -64,7 +48,7 @@ class ApiService {
     workflowId: string,
     data: any,
     isShowLoading?: boolean,
-    useMicro: boolean = true
+    useMicro: boolean = false
   ): Promise<BaseResponseModel> {
     return await this.sendRequest(
       "cbs_workflow_execute",
@@ -76,5 +60,4 @@ class ApiService {
   }
 }
 
-// Export singleton instance
 export const apiService = new ApiService();

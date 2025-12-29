@@ -8,7 +8,7 @@ import * as Sentry from "@sentry/react-native";
 import axios, { AxiosHeaders, AxiosInstance, AxiosRequestConfig } from "axios";
 import { t } from "i18next";
 
-const apiUrl = "/api/Webchannel/Post";
+const apiUrl = "/api/v1/gateway";
 
 class ApiClient {
   private axiosInstance: AxiosInstance;
@@ -78,7 +78,7 @@ class ApiClient {
 
       console.log(JSON.stringify(deviceInfo));
       return {
-        App: await StorageService.getAsyncItem(StorageKey.channelId),
+        App: "MB",
         Uid: token,
         My_device: JSON.stringify(deviceInfo),
         User_id: 0,
@@ -225,15 +225,21 @@ class ApiClient {
     let lastError: any = null;
 
     try {
-      const response = await this.axiosInstance.post(apiUrl, data, config);
-      if (
-        response?.data?.error?.some((e: any) =>
+      const fullUrl = `${this.axiosInstance.defaults.baseURL}${apiUrl}`;
+      console.log("############");
+      console.log("Request headers:", config?.headers);
+      const response = await this.axiosInstance.post(fullUrl, data, config);
+      const baseResponse = new BaseResponseModel(response.data);
+      if (baseResponse.hasErrors()) {
+        const errorInfo = baseResponse.errors.find((e: any) =>
           e.info?.includes("SYS_BANK_INACTIVE")
-        )
-      ) {
-        throw new Error(t("errors.SYS_BANK_INACTIVE"));
+        );
+        if (errorInfo) {
+          throw new Error(t("errors.SYS_BANK_INACTIVE"));
+        }
       }
-      return new BaseResponseModel(response.data.fo, response.data.error);
+
+      return baseResponse;
     } catch (error: any) {
       lastError = error;
 
@@ -291,8 +297,22 @@ class ApiClient {
       }
 
       const json = await fetchRes.json();
+      console.log("Fetch RESPONSE == ", JSON.stringify(json));
 
-      return new BaseResponseModel(json.fo, json.error);
+      // ✅ SỬA: Truyền toàn bộ json thay vì json.error
+      const baseResponse = new BaseResponseModel(json);
+
+      // Kiểm tra lỗi đặc biệt
+      if (baseResponse.hasErrors()) {
+        const errorInfo = baseResponse.errors.find((e: any) =>
+          e.info?.includes("SYS_BANK_INACTIVE")
+        );
+        if (errorInfo) {
+          throw new Error(t("errors.SYS_BANK_INACTIVE"));
+        }
+      }
+
+      return baseResponse;
     } catch (fetchErr: any) {
       console.log("Fetch fallback cũng fail:", fetchErr.message);
       lastError = fetchErr;
@@ -303,8 +323,9 @@ class ApiClient {
 }
 
 // ✅ Named export constants
-export const BASE_URL = "https://emicms.jits.com.vn:2611";
-// export const BASE_URL = "https://cms.emimfi.com:5000";
+// export const BASE_URL = "https://emicms.jits.com.vn:2611";
+export const BASE_URL =
+  "https://unmechanised-oliver-unmemorialized.ngrok-free.dev";
 // export const BASE_URL = "https://41d9f501b89c.ngrok-free.app";
 
 // ✅ Named export instance
