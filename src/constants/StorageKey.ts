@@ -1,4 +1,9 @@
 export default {
+  TOKEN: 'user_token',
+  USER_DATA: 'user_data',
+
+
+
   roleCommand: "rolecommand",
   password: "password",
   token: "token",

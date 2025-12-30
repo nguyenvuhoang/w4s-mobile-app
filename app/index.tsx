@@ -26,19 +26,16 @@ export default function Index() {
         StorageKey.isVerifyFirstLogin
       );
       const isLogged = isVerifyFirstLogin === 'true';
-      // const isLogged = true;
-
       console.log('isLogged:', isLogged);
 
       if (!hasSeenIntro) {
-        console.log('Navigating to: /(auth)/start');
-        router.replace('/(auth)/start');
-      } else if (!isLogged) {
-        console.log('Navigating to: /(auth)/login');
-        router.replace('/(auth)/login');
+        router.replace("/(auth)/start");
       } else {
-        console.log('Navigating to: /(auth)/quick-login');
-        router.replace('/(auth)/quick-login');
+        if (!isLogged) {
+          router.replace("/(auth)/login");
+        } else {
+          router.replace("/(auth)/quick-login");
+        }
       }
     } catch (error) {
       console.error('Error checking status:', error);

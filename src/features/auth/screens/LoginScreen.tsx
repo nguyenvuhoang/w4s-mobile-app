@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import {
-    ActivityIndicator,
-    Image,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -161,7 +161,10 @@ const LoginScreen = () => {
 
           {/* Login Button */}
           <TouchableOpacity
-            onPress={() => handleLogin(true)}
+            onPress={() => {
+              // handleLogin(true)
+              router.replace('/(protected)/(tabs)');
+            }}
             style={[
               styles.loginButton,
               { backgroundColor: colors.tint },

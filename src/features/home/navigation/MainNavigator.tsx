@@ -1,9 +1,18 @@
-// app/(protected)/(tabs)/_layout.tsx
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import React from 'react';
 import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-// Custom Tab Bar Button for center "Add" button
+// Import screens
+import AddTransactionScreen from '../screens/AddTransactionScreen';
+import BudgetScreen from '../screens/BudgetScreen';
+import HomeScreen from '../screens/HomeScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import StatisticsScreen from '../screens/StatisticsScreen';
+
+const Tab = createBottomTabNavigator();
+
+// Custom Tab Bar Button for the center "Add" button
 const CustomTabBarButton = ({ children, onPress }: any) => (
   <TouchableOpacity
     style={styles.customButton}
@@ -14,21 +23,23 @@ const CustomTabBarButton = ({ children, onPress }: any) => (
   </TouchableOpacity>
 );
 
-export default function TabsLayout() {
+const MainNavigator: React.FC = () => {
   return (
-    <Tabs
+    <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
+        tabBarShowLabel: true,
         tabBarActiveTintColor: '#007AFF',
         tabBarInactiveTintColor: '#8E8E93',
         tabBarLabelStyle: styles.tabBarLabel,
       }}
     >
-      <Tabs.Screen
-        name="index"
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
         options={{
-          title: 'Trang Chủ',
+          tabBarLabel: 'Trang Chủ',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
@@ -38,11 +49,12 @@ export default function TabsLayout() {
           ),
         }}
       />
-      
-      <Tabs.Screen
-        name="statistics"
+
+      <Tab.Screen
+        name="Statistics"
+        component={StatisticsScreen}
         options={{
-          title: 'Thống kê',
+          tabBarLabel: 'Thống kê',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'bar-chart' : 'bar-chart-outline'}
@@ -53,21 +65,27 @@ export default function TabsLayout() {
         }}
       />
 
-      <Tabs.Screen
-        name="add-transaction"
+      <Tab.Screen
+        name="AddTransaction"
+        component={AddTransactionScreen}
         options={{
-          title: '',
+          tabBarLabel: '',
           tabBarIcon: ({ focused }) => (
-            <Ionicons name="add" size={32} color="#fff" />
+            <Ionicons
+              name="add"
+              size={32}
+              color="#fff"
+            />
           ),
           tabBarButton: (props) => <CustomTabBarButton {...props} />,
         }}
       />
 
-      <Tabs.Screen
-        name="budget"
+      <Tab.Screen
+        name="Budget"
+        component={BudgetScreen}
         options={{
-          title: 'Ngân sách',
+          tabBarLabel: 'Ngân sách',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'wallet' : 'wallet-outline'}
@@ -78,10 +96,11 @@ export default function TabsLayout() {
         }}
       />
 
-      <Tabs.Screen
-        name="settings"
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
         options={{
-          title: 'Cài đặt',
+          tabBarLabel: 'Cài đặt',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'settings' : 'settings-outline'}
@@ -91,9 +110,9 @@ export default function TabsLayout() {
           ),
         }}
       />
-    </Tabs>
+    </Tab.Navigator>
   );
-}
+};
 
 const styles = StyleSheet.create({
   tabBar: {
@@ -137,3 +156,5 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 });
+
+export default MainNavigator;

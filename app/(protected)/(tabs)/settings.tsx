@@ -1,9 +1,2 @@
-import { Text, View } from 'react-native';
-
-export default function SettingsScreen() {
-  return (
-    <View>
-      <Text>Settings Tab</Text>
-    </View>
-  );
-}
+import SettingScreen from '@/features/home/screens/SettingsScreen';
+export default SettingScreen;
