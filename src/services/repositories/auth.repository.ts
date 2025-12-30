@@ -1,7 +1,7 @@
-import { COMMAND_NAME } from '@/constants/CommandName';
-import { WORKFLOWCODE } from '@/constants/WorkflowCode';
-import { apiService } from '@/core/api';
-import { BaseResponseModel } from '@/core/api/models/ClientModel';
+import { COMMAND_NAME } from "@/constants/CommandName";
+import { WORKFLOWCODE } from "@/constants/WorkflowCode";
+import { apiService } from "@/core/api";
+import { BaseResponseModel } from "@/core/api/models/ClientModel";
 
 export const authRepository = {
   // ===== Auth =====
@@ -11,11 +11,52 @@ export const authRepository = {
     fcmToken?: string
   ): Promise<BaseResponseModel> {
     return await apiService.executeWorkflowNew(
-      WORKFLOWCODE.WF_MB_LOGIN, 
+      WORKFLOWCODE.WF_MB_LOGIN,
       {
         login_name: username,
         password: encryptedPassword,
-        push_id: fcmToken || '',
+        push_id: fcmToken || "",
+      },
+      false,
+      true
+    );
+  },
+
+  async register(payload: {
+    username: string;
+    firstname?: string;
+    middlename?: string;
+    lastname: string;
+    gender: number;
+    address: string;
+    email: string;
+    phone: string;
+    status: string;
+    userlevel: string;
+    birthday: string;
+    currentstatus: string;
+    contracttype: string;
+    reason?: string;
+    usertype: string;
+  }): Promise<BaseResponseModel> {
+    return await apiService.executeWorkflow(
+      WORKFLOWCODE.WF_BO_CREATE_USER,
+      {
+        username: payload.username,
+        firstname: payload.firstname || "",
+        middlename: payload.middlename || "",
+        lastname: payload.lastname,
+        gender: payload.gender,
+        address: payload.address,
+        email: payload.email,
+        phone: payload.phone,
+        status: payload.status,
+        userlevel: payload.userlevel,
+        birthday: payload.birthday,
+        currentstatus: payload.currentstatus,
+        contracttype: payload.contracttype,
+        reason: payload.reason || "",
+        usertype: payload.usertype,
       },
       false,
       true
@@ -24,7 +65,7 @@ export const authRepository = {
 
   async logout(username: string): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.LOGOUT, 
+      WORKFLOWCODE.LOGOUT,
       { username },
       false,
       true
@@ -33,7 +74,7 @@ export const authRepository = {
 
   async loginBiometric(refreshToken: string): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_REFRESH_TOKEN, 
+      WORKFLOWCODE.MB_REFRESH_TOKEN,
       { refresh_token: refreshToken },
       false,
       true
@@ -84,8 +125,8 @@ export const authRepository = {
     withoutsession?: boolean;
   }): Promise<BaseResponseModel> {
     const workflowId = payload.withoutsession
-      ? WORKFLOWCODE.MB_GENERATEOTP_WITHOUT_LOGIN 
-      : WORKFLOWCODE.MB_GENERATEOTP; 
+      ? WORKFLOWCODE.MB_GENERATEOTP_WITHOUT_LOGIN
+      : WORKFLOWCODE.MB_GENERATEOTP;
 
     return await apiService.executeWorkflow(
       workflowId,
@@ -105,7 +146,7 @@ export const authRepository = {
     verifyotpcode: string;
   }): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_VERIFY_SMSOTP, 
+      WORKFLOWCODE.MB_VERIFY_SMSOTP,
       {
         phonenumber: payload.phonenumber,
         purpose: payload.purpose,
@@ -123,7 +164,7 @@ export const authRepository = {
     purpose: string;
   }): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_VERIFY_SMSOTP, 
+      WORKFLOWCODE.MB_VERIFY_SMSOTP,
       payload,
       false,
       true
@@ -140,7 +181,7 @@ export const authRepository = {
     push_id: string;
   }): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_CHANGE_DEVICE, 
+      WORKFLOWCODE.MB_CHANGE_DEVICE,
       payload,
       false,
       true
@@ -150,7 +191,7 @@ export const authRepository = {
   // ===== User Info & Status =====
   async getAppInfo(): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_APPINFO, 
+      WORKFLOWCODE.MB_APPINFO,
       {},
       false,
       true
@@ -175,7 +216,7 @@ export const authRepository = {
       WORKFLOWCODE.MB_EXECUTE_SQL_FROM_CTH_WITHOUT_LOGIN,
       {
         commandname: COMMAND_NAME.getPhoneByUserName,
-        searchtext: '',
+        searchtext: "",
         issearch: true,
         pagesize: 1,
         pageindex: 0,
@@ -194,7 +235,7 @@ export const authRepository = {
       WORKFLOWCODE.MB_EXECUTE_SQL_FROM_CTH_WITHOUT_LOGIN,
       {
         commandname: COMMAND_NAME.getPhoneByUserCode,
-        searchtext: '',
+        searchtext: "",
         issearch: true,
         pagesize: 1,
         pageindex: 0,
@@ -236,42 +277,41 @@ export const authRepository = {
   },
 
   async getSearchData({
-      workflowid,
-      searchtext,
-      commandname,
-      pageindex,
-      pagesize,
-      withoutsession,
-      parameters = {},
-    }: {
-      workflowid?: string;
-      searchtext: string;
-      commandname: string;
-      pageindex: number;
-      pagesize: number;
-      withoutsession?: boolean;
-      parameters?: Record<string, any>;
-    }): Promise<BaseResponseModel> {
-      const code =
-        workflowid ??
-        (withoutsession
-          ? WORKFLOWCODE.MB_EXECUTE_SQL_WITHOUT_LOGIN
-          : WORKFLOWCODE.MB_EXECUTE_SQL);
+    workflowid,
+    searchtext,
+    commandname,
+    pageindex,
+    pagesize,
+    withoutsession,
+    parameters = {},
+  }: {
+    workflowid?: string;
+    searchtext: string;
+    commandname: string;
+    pageindex: number;
+    pagesize: number;
+    withoutsession?: boolean;
+    parameters?: Record<string, any>;
+  }): Promise<BaseResponseModel> {
+    const code =
+      workflowid ??
+      (withoutsession
+        ? WORKFLOWCODE.MB_EXECUTE_SQL_WITHOUT_LOGIN
+        : WORKFLOWCODE.MB_EXECUTE_SQL);
 
-      return await apiService.executeWorkflowNew(
-        code,
-        {
-          commandname: commandname,
-          issearch: true,
-          pageindex: pageindex,
-          pagesize: pagesize,
-          parameters: {
-            searchtext: searchtext,
-            ...parameters,
-          },
+    return await apiService.executeWorkflowNew(
+      code,
+      {
+        commandname: commandname,
+        issearch: true,
+        pageindex: pageindex,
+        pagesize: pagesize,
+        parameters: {
+          searchtext: searchtext,
+          ...parameters,
         },
-        false
-      );
-    },
-
+      },
+      false
+    );
+  },
 };

@@ -9,6 +9,7 @@ import StorageKey from '@/constants/StorageKey';
 import { WORKFLOWCODE } from '@/constants/WorkflowCode';
 import { GlobalContext } from '@/contexts/GlobalContext';
 import { useNotification } from '@/contexts/NotificationContext';
+import { useOTP } from '@/contexts/OTPContext';
 import { usePushNotification } from '@/contexts/PushNotificationContext';
 import { changeLanguage as i18nChangeLanguage } from '@/core/i18n/i18n';
 import { authRepository } from '@/services/repositories/auth.repository';
@@ -29,12 +30,12 @@ export const useLoginService = () => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isFetchingAppInfo, setIsFetchingAppInfo] = useState(false);
   const [verifyOTPCode, setVerifyOTPCode] = useState<string>('');
-  const [showOtpModal, setShowOtpModal] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   // Hooks
   const { t } = useTranslation();
   const { showNotification } = useNotification();
+  const { showOTP } = useOTP();
   const router = useRouter();
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const { setAppInfo: setAppInfoGlobal, setGlobalPhone, globalPhone } = useContext(GlobalContext);
@@ -83,6 +84,351 @@ export const useLoginService = () => {
   const goToHome = () => {
     router.replace('/(protected)/(tabs)');
   };
+
+  // ✅ FIX 3: Move these functions UP before showLoginOTPModal uses them
+  const getPhoneNumberByUserName = useCallback(
+    async (userName: string): Promise<string> => {
+      try {
+        const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
+        const response = await authRepository.getPhoneByUserName(userName, channelId);
+
+        if (response.isSuccess()) {
+          const items = response.getValue('items') as Array<{ phone?: string }>;
+          if (items && items.length > 0 && items[0].phone) {
+            return items[0].phone;
+          }
+          return '';
+        }
+        return '';
+      } catch (error: any) {
+        showNotification('Phone number for this account not found', 'error', '');
+        return '';
+      }
+    },
+    [showNotification]
+  );
+
+  const getPhoneNumberByUserCode = useCallback(async (userCode: string): Promise<string> => {
+    try {
+      const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
+      const response = await authRepository.getPhoneByUserCode(userCode, channelId);
+
+      if (response.isSuccess()) {
+        const items = response.getValue('items') as Array<{ phone?: string }>;
+        if (items && items.length > 0 && items[0].phone) {
+          return items[0].phone;
+        }
+        return '';
+      }
+      return '';
+    } catch (error: any) {
+      return '';
+    }
+  }, []);
+
+  const handleGenerateLoginOTP = useCallback(
+    async (phonenumber: string): Promise<string | null> => {
+      try {
+        const response = await authRepository.generateOTP({
+          phonenumber,
+          purpose: OTPTYPE.VERIFYLOGIN,
+          withoutsession: true,
+        });
+
+        if (response.isSuccess()) {
+          const transaction_id = response.getValue('transaction_id') as string;
+          if (transaction_id) {
+            return transaction_id;
+          } else {
+            showNotification(t('otpNote.notransactionid'), 'error', '38942');
+            return null;
+          }
+        } else {
+          showNotification(
+            response.getError() ?? t('errors.login.verifyFailed'),
+            'error',
+            '38942'
+          );
+          return null;
+        }
+      } catch (error: any) {
+        showNotification(error.message || t('errors.login.verifyFailed'), 'error', '38942');
+        return null;
+      }
+    },
+    [showNotification, t]
+  );
+
+  const checkIsLogged = useCallback(async (): Promise<boolean> => {
+    const userSession = await StorageService.getUserSession();
+    return !!userSession;
+  }, []);
+
+  const handleGetAppInfo = useCallback(async (): Promise<AppInfo | null> => {
+    try {
+      const response = await authRepository.getAppInfo();
+      if (response.isSuccess()) {
+        const appInfoData = response.getValue('data') as AppInfo;
+        setAppInfo(appInfoData);
+        setAppInfoGlobal(appInfoData);
+        return appInfoData;
+      } else {
+        showNotification(response.getError(), 'error');
+        return null;
+      }
+    } catch (error: any) {
+      showNotification(error.message || t('errors.networkError'), 'error');
+      return null;
+    }
+  }, [setAppInfoGlobal, showNotification, t]);
+
+  const handleVerifyForgotPassword = useCallback(
+    async (
+      otpCode: string,
+      phoneVerifyOTP: string,
+      verifyOTPCode: string
+    ): Promise<boolean> => {
+      if (!otpCode) return false;
+
+      try {
+        const response = await authRepository.verifySMSOTP({
+          phonenumber: phoneVerifyOTP,
+          purpose: OTPTYPE.VERIFYLOGIN,
+          otpcode: otpCode,
+          verifyotpcode: verifyOTPCode,
+        });
+
+        if (response.isSuccess()) {
+          return response.getValue('data') as boolean;
+        } else {
+          showNotification(response.getError(), 'error', '38942');
+          return false;
+        }
+      } catch (error) {
+        showNotification(t('errors.networkError'), 'error');
+        return false;
+      }
+    },
+    [showNotification, t]
+  );
+
+  const handleVerifyOTPAndGetAppInfo = useCallback(
+    async (
+      otpCode: string,
+      phoneVerifyOTP: string,
+      verifyOTPCode: string
+    ): Promise<AppInfo | null> => {
+      if (!otpCode) return null;
+
+      try {
+        const response = await authRepository.verifySMSOTP({
+          phonenumber: phoneVerifyOTP,
+          purpose: OTPTYPE.VERIFYLOGIN,
+          otpcode: otpCode,
+          verifyotpcode: verifyOTPCode,
+        });
+
+        if (!response.isSuccess()) {
+          showNotification(response.getError(), 'error', '38942');
+          return null;
+        }
+
+        const isValid = response.getValue('data');
+        if (!isValid) {
+          showNotification(t('otpNote.invalidOTP'), 'error', '38942');
+          return null;
+        }
+
+        const appInfo = await handleGetAppInfo();
+        return appInfo;
+      } catch (error) {
+        showNotification(t('errors.networkError'), 'error');
+        return null;
+      }
+    },
+    [handleGetAppInfo, showNotification, t]
+  );
+
+  const handleVerifyOTPForChangeDeviceAndGetAppInfo = useCallback(
+    async (
+      otpCode: string,
+      phoneVerifyOTP: string,
+      verifyOTPCode: string,
+      userCode: string,
+      dateOfBirth: string,
+      licenseID: string,
+      licenseType: string
+    ): Promise<boolean> => {
+      if (!otpCode) return false;
+
+      try {
+        const response = await authRepository.verifySMSOTP({
+          phonenumber: phoneVerifyOTP,
+          purpose: OTPTYPE.VERIFYLOGIN,
+          otpcode: otpCode,
+          verifyotpcode: verifyOTPCode,
+        });
+
+        if (!response.isSuccess()) {
+          showNotification(response.getError(), 'error', '38942');
+          return false;
+        }
+
+        const isValid = response.getValue('data');
+        if (!isValid) {
+          showNotification(t('otpNote.notransactionid'), 'error', '38942');
+          return false;
+        }
+
+        const payload = {
+          usercode: userCode,
+          phone: phoneVerifyOTP,
+          dateofbirth: dateOfBirth,
+          licenseid: licenseID,
+          licensetype: licenseType,
+          push_id: fcmToken || '',
+        };
+
+        const res = await authRepository.verifyChangeDevice(payload);
+
+        if (res.hasErrors && res.hasErrors()) {
+          showNotification(res.getError(), 'error');
+          return false;
+        } else {
+          await StorageService.setSecureItem(StorageKey.refreshToken, res.getValue('refresh_token'));
+          await StorageService.setUserSession(res.getValue('token'));
+          await authRepository.updateData({
+            commandname: COMMAND_NAME.UpdateIsBiometricSupported,
+            parameters: { id: userCode, value: 0 },
+            workflowid: WORKFLOWCODE.MB_EXECUTE_SQL_FROM_CTH,
+          });
+          await handleGetAppInfo();
+          await StorageService.setAsyncItem(StorageKey.isVerifyFirstLogin, 'true');
+          const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
+          const isVerifyFirstLogin_channel = `${StorageKey.isVerifyFirstLogin}_${channelId}`;
+          await StorageService.setAsyncItem(isVerifyFirstLogin_channel, 'true');
+          return true;
+        }
+      } catch (error) {
+        showNotification(t('errors.networkError'), 'error');
+        return false;
+      } finally {
+        setIsFetchingAppInfo(false);
+      }
+    },
+    [fcmToken, handleGetAppInfo, showNotification, t]
+  );
+
+  const handleGetStatusLogin = useCallback(
+    async (usercode: string): Promise<boolean> => {
+      try {
+        const response = await authRepository.getStatusLogin(usercode);
+
+        if (response.isSuccess()) {
+          const islogin = response.getValue('data') as boolean;
+          return islogin;
+        } else {
+          showNotification(response.getError(), 'error', '');
+          return false;
+        }
+      } catch (error: any) {
+        showNotification(t('common.errorException'), 'error', '');
+        return false;
+      }
+    },
+    [showNotification, t]
+  );
+
+  // ✅ Now showLoginOTPModal can use the functions above
+  const showLoginOTPModal = useCallback(
+    async (phoneNumber: string, transactionId: string) => {
+      showOTP({
+        title: t('otpModal.title'),
+        description: t('otpModal.loginDescription', { phone: phoneNumber }),
+        isresend: true,
+        blockSeconds: 120,
+        showOtpCode: true,
+
+        // Verify OTP Handler
+        handleVerifyOTP: async (otpCode: string) => {
+          try {
+            const appInfo = await handleVerifyOTPAndGetAppInfo(
+              otpCode,
+              phoneNumber,
+              transactionId
+            );
+
+            if (appInfo) {
+              return { success: true };
+            }
+            return {
+              success: false,
+              error: t('errors.login.verifyFailed'),
+            };
+          } catch (error: any) {
+            return {
+              success: false,
+              error: error.message || t('errors.login.verifyFailed'),
+            };
+          }
+        },
+
+        // Resend OTP Handler
+        handleResent: async () => {
+          try {
+            const newTransactionId = await handleGenerateLoginOTP(phoneNumber);
+            if (newTransactionId) {
+              setVerifyOTPCode(newTransactionId);
+              return { success: true };
+            }
+            return {
+              success: false,
+              error: t('otpNote.resentFailed'),
+            };
+          } catch (error: any) {
+            return {
+              success: false,
+              error: error.message || t('otpNote.resentFailed'),
+            };
+          }
+        },
+
+        // ✅ FIX 1: These callbacks are now supported in OTPConfig
+        // Success Callback
+        onSuccess: () => {
+          console.log('✅ OTP Verified Successfully');
+          // Check if first login and navigate
+          if (appInfo?.is_first_login) {
+            router.replace('/(auth)/change-password' as any);
+          } else {
+            router.replace('/(protected)/(tabs)');
+          }
+        },
+
+        // ✅ FIX 2: Add explicit type for error parameter
+        // Error Callback
+        onError: (error: string) => {
+          console.error('❌ OTP Verification Error:', error);
+          showNotification(error, 'error');
+        },
+
+        // Close Callback
+        onClose: () => {
+          console.log('🔒 OTP Modal Closed');
+          setIsLoggingIn(false);
+        },
+      });
+    },
+    [
+      showOTP,
+      t,
+      router,
+      appInfo,
+      showNotification,
+      handleVerifyOTPAndGetAppInfo,
+      handleGenerateLoginOTP,
+    ]
+  );
 
   const handleBiometricLogin = async () => {
     try {
@@ -154,28 +500,31 @@ export const useLoginService = () => {
     }
   };
 
-  const proceedFirstLoginFlow = async (username?: string, phoneNumber?: string) => {
-    let finalPhoneNumber = phoneNumber;
+  const proceedFirstLoginFlow = useCallback(
+    async (username?: string, phoneNumber?: string) => {
+      let finalPhoneNumber = phoneNumber;
 
-    if (!finalPhoneNumber && username) {
-      setUsername(username);
-      finalPhoneNumber = await getPhoneNumberByUserName(username);
-    }
+      if (!finalPhoneNumber && username) {
+        setUsername(username);
+        finalPhoneNumber = await getPhoneNumberByUserName(username);
+      }
 
-    if (!finalPhoneNumber) {
-      console.warn('Cần cung cấp username hoặc phoneNumber');
-      return;
-    }
+      if (!finalPhoneNumber) {
+        console.warn('Cần cung cấp username hoặc phoneNumber');
+        return;
+      }
 
-    setPhone(finalPhoneNumber);
-    setGlobalPhone(finalPhoneNumber);
+      setPhone(finalPhoneNumber);
+      setGlobalPhone(finalPhoneNumber);
 
-    const transaction_id = await handleGenerateLoginOTP(finalPhoneNumber);
-    if (transaction_id) {
-      setVerifyOTPCode(transaction_id);
-      setShowOtpModal(true);
-    }
-  };
+      const transaction_id = await handleGenerateLoginOTP(finalPhoneNumber);
+      if (transaction_id) {
+        setVerifyOTPCode(transaction_id);
+        showLoginOTPModal(finalPhoneNumber, transaction_id);
+      }
+    },
+    [getPhoneNumberByUserName, setGlobalPhone, handleGenerateLoginOTP, showLoginOTPModal]
+  );
 
   const proceedNormalLoginFlow = async () => {
     const result = await handleGetAppInfo();
@@ -236,406 +585,28 @@ export const useLoginService = () => {
             showNotification(`${error.message || error}`, 'error', '38942');
           }
         } else {
-          setIsLoggingIn(false);
-          if (!response.getError()) {
-            showNotification(t('errors.login.loginFailed'), 'error');
-          } else {
-            if (response.getNextAction()) {
-              await StorageService.setSecureItem(StorageKey.user, username);
-              showNotification(
-                response.getError(),
-                'warning',
-                '0',
-                response.getNextAction()
-              );
-            } else {
-              showNotification(response.getError(), 'error');
-            }
-          }
+          showNotification(response.getError(), 'error', '38942');
         }
-      } catch (error) {
-        console.error('Login failed', error);
-        showNotification(t('errors.login.loginFailed'), 'error');
-        setIsLoggingIn(false);
-        setIsFetchingAppInfo(false);
+      } catch (error: any) {
+        showNotification(`${error.message || error}`, 'error', '38942');
       } finally {
         setIsLoggingIn(false);
       }
     },
-    [username, password, isBiometricSupported, handleBiometricLogin, showNotification, t]
+    [
+      username,
+      password,
+      isBiometricSupported,
+      fcmToken,
+      proceedFirstLoginFlow,
+      showNotification,
+      t,
+    ]
   );
 
-  const handleForgotPassword = () => {
-    router.push('/(auth)/forgotPassword' as any);
-  };
-
-  const handleVerifyForgotPassword = useCallback(
-    async (
-      usernameforgotpassword: string,
-      idcard: string,
-      phone: string,
-      email: string
-    ): Promise<{ success: boolean; userCode?: string }> => {
-      try {
-        console.log('==========Start Verify Forgot Password================');
-
-        if (!usernameforgotpassword || !idcard) {
-          showNotification(t('warning.login.emptyUsernamePassword'), 'warning');
-          return { success: false };
-        }
-
-        setIsLoading(true);
-        const response = await authRepository.verifyForgotPassword(
-          usernameforgotpassword,
-          idcard,
-          phone,
-          email
-        );
-
-        if (response.isSuccess()) {
-          const isvalid = response.getValue('data');
-          if (!isvalid) {
-            showNotification(t('forgotPassword1.incorrectinformation'), 'error');
-            return { success: false };
-          }
-
-          const userCode = response.getValue('user_code');
-          return {
-            success: true,
-            userCode: typeof userCode === 'string' ? userCode : undefined,
-          };
-        } else {
-          showNotification(
-            t('forgotPassword1.incorrectinformation') + ' ' + response.getError(),
-            'error'
-          );
-          console.error('handleVerifyForgotPassword failed:', response.getError());
-          return { success: false };
-        }
-      } catch (error) {
-        console.error('Verify failed', error);
-        showNotification(t('errors.login.loginFailed'), 'error');
-        return { success: false };
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [showNotification, t]
-  );
-
-  const handleGetAppInfo = useCallback(
-    async (isShowNoti: boolean = true): Promise<AppInfo | null> => {
-      try {
-        console.log('==========Call APP_INFO================');
-        const appInfoResponse = await authRepository.getAppInfo();
-
-        if (appInfoResponse.isSuccess()) {
-          const appInfoData: AppInfo = {
-            user_code: appInfoResponse.getValue('user_code') ?? '',
-            avatar: appInfoResponse.getValue('avatar') ?? '',
-            user_command: appInfoResponse.getValue('user_command') ?? [],
-            name: appInfoResponse.getValue('name') ?? '',
-            is_first_login: appInfoResponse.getValue('is_first_login') ?? false,
-            login_name: appInfoResponse.getValue('login_name', 'string') ?? '',
-            contract_number: appInfoResponse.getValue('contract_number') ?? '',
-            is_biometric_supported: appInfoResponse.getValue('is_biometric_supported') ?? false,
-            is_smart_otp_active: appInfoResponse.getValue('is_smart_otp_active') ?? false,
-            is_login: appInfoResponse.getValue('is_login') ?? false,
-            user_banner: appInfoResponse.getValue('user_banner') || 'default',
-          };
-
-          await StorageService.setAsyncItem(StorageKey.appInfo, JSON.stringify(appInfoData));
-          const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
-          if (channelId) {
-            const withChannel = (key: string) => `${key}_${channelId}`;
-            await StorageService.setAsyncItem(
-              withChannel(StorageKey.appInfo),
-              JSON.stringify(appInfoData)
-            );
-            await StorageService.setAsyncItem(
-              withChannel(StorageKey.HeaderBackground),
-              appInfoData?.user_banner ?? 'default'
-            );
-          }
-
-          setAppInfo(appInfoData);
-          setAppInfoGlobal(appInfoData);
-          console.log('APP_INFO:', JSON.stringify(appInfoData));
-          return appInfoData;
-        } else {
-          if (isShowNoti)
-            showNotification(appInfoResponse.getError() || t('common.errorException'), 'error');
-          return null;
-        }
-      } catch (error) {
-        showNotification(t('errors.networkError'), 'error');
-        return null;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [showNotification, t, setAppInfoGlobal]
-  );
-
-  const checkIsLogged = useCallback(async () => {
-    try {
-      const isVerifyFirstLogin = await StorageService.getAsyncItem(
-        StorageKey.isVerifyFirstLogin
-      );
-      console.log('checkIsLogged', isVerifyFirstLogin);
-      if (isVerifyFirstLogin) {
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error checking login status:', error);
-      return false;
-    }
-  }, []);
-
-  const handleVerifyOTPAndGetAppInfo = async (
-    otpCode: string,
-    phoneVerifyOTP: string,
-    verifyOTPCode: string
-  ): Promise<AppInfo | null> => {
-    if (!otpCode) return null;
-
-    try {
-      console.log('==========Call Verify SMS OTP================');
-      const response = await authRepository.verifySMSOTP({
-        phonenumber: phoneVerifyOTP,
-        purpose: OTPTYPE.VERIFYLOGIN,
-        otpcode: otpCode,
-        verifyotpcode: verifyOTPCode,
-      });
-
-      if (!response.isSuccess()) {
-        showNotification(
-          `${response.getError()}`,
-          'error',
-          '38942',
-          '',
-          undefined,
-          () => setShowOtpModal(true)
-        );
-        return null;
-      }
-
-      const isValid = response.getValue('data');
-      if (!isValid) {
-        showNotification(`${t('otpNote.notransactionid')}`, 'error', '38942');
-        return null;
-      }
-
-      const appInfoData = await handleGetAppInfo();
-      if (appInfoData && !appInfoData.is_first_login) {
-        await StorageService.setAsyncItem(StorageKey.isVerifyFirstLogin, 'true');
-        const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
-        const isVerifyFirstLogin_channel = `${StorageKey.isVerifyFirstLogin}_${channelId}`;
-        await StorageService.setAsyncItem(isVerifyFirstLogin_channel, 'true');
-      }
-      return appInfoData;
-    } catch (error) {
-      showNotification(t('errors.networkError'), 'error');
-      return null;
-    } finally {
-      setIsFetchingAppInfo(false);
-    }
-  };
-
-  const handleVerifyOTPForChangeDeviceAndGetAppInfo = async (
-    otpCode: string,
-    phoneVerifyOTP: string,
-    verifyOTPCode: string,
-    userCode: string,
-    dateOfBirth: string,
-    licenseID: string,
-    licenseType: string
-  ): Promise<boolean> => {
-    if (!otpCode) return false;
-
-    try {
-      const response = await authRepository.verifySMSOTP({
-        phonenumber: phoneVerifyOTP,
-        purpose: OTPTYPE.VERIFYLOGIN,
-        otpcode: otpCode,
-        verifyotpcode: verifyOTPCode,
-      });
-
-      if (!response.isSuccess()) {
-        showNotification(
-          `${response.getError()}`,
-          'error',
-          '38942',
-          '',
-          undefined,
-          () => setShowOtpModal(true)
-        );
-        return false;
-      }
-
-      const isValid = response.getValue('data');
-      if (!isValid) {
-        showNotification(
-          `${t('otpNote.notransactionid')}`,
-          'error',
-          '38942',
-          '',
-          undefined,
-          () => setShowOtpModal(true)
-        );
-        return false;
-      }
-
-      const payload = {
-        usercode: userCode,
-        phone: phoneVerifyOTP,
-        dateofbirth: dateOfBirth,
-        licenseid: licenseID,
-        licensetype: licenseType,
-        push_id: fcmToken || '',
-      };
-
-      const res = await authRepository.verifyChangeDevice(payload);
-
-      if (res.hasErrors && res.hasErrors()) {
-        showNotification(res.getError(), 'error');
-        return false;
-      } else {
-        await StorageService.setSecureItem(StorageKey.refreshToken, res.getValue('refresh_token'));
-        await StorageService.setUserSession(res.getValue('token'));
-        await authRepository.updateData({
-          commandname: COMMAND_NAME.UpdateIsBiometricSupported,
-          parameters: { id: userCode, value: 0 },
-          workflowid: WORKFLOWCODE.MB_EXECUTE_SQL_FROM_CTH,
-        });
-        await handleGetAppInfo();
-        await StorageService.setAsyncItem(StorageKey.isVerifyFirstLogin, 'true');
-        const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
-        const isVerifyFirstLogin_channel = `${StorageKey.isVerifyFirstLogin}_${channelId}`;
-        await StorageService.setAsyncItem(isVerifyFirstLogin_channel, 'true');
-        return true;
-      }
-    } catch (error) {
-      showNotification(t('errors.networkError'), 'error');
-      return false;
-    } finally {
-      setIsFetchingAppInfo(false);
-    }
-  };
-
-  const handleGenerateLoginOTP = useCallback(
-    async (phonenumber: string): Promise<string | null> => {
-      try {
-        const response = await authRepository.generateOTP({
-          phonenumber,
-          purpose: OTPTYPE.VERIFYLOGIN,
-          withoutsession: true,
-        });
-
-        if (response.isSuccess()) {
-          const transaction_id = response.getValue('transaction_id') as string;
-          if (transaction_id) {
-            return transaction_id;
-          } else {
-            showNotification(t('otpNote.notransactionid'), 'error', '38942');
-            return null;
-          }
-        } else {
-          showNotification(
-            response.getError() ?? t('errors.login.verifyFailed'),
-            'error',
-            '38942'
-          );
-          return null;
-        }
-      } catch (error: any) {
-        showNotification(error.message || t('errors.login.verifyFailed'), 'error', '38942');
-        return null;
-      }
-    },
-    [showNotification, t]
-  );
-
-  const handleResendOTP = async (): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const transaction_id = await handleGenerateLoginOTP(username);
-      if (transaction_id) {
-        setVerifyOTPCode(transaction_id);
-        return { success: true };
-      } else {
-        return { success: false, error: 'Resend OTP failed' };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error:
-          typeof error === 'object' && error !== null && 'message' in error
-            ? (error as { message?: string }).message || 'Resend OTP failed'
-            : 'Resend OTP failed',
-      };
-    }
-  };
-
-  const handleGetStatusLogin = useCallback(
-    async (usercode: string): Promise<boolean> => {
-      try {
-        const response = await authRepository.getStatusLogin(usercode);
-
-        if (response.isSuccess()) {
-          const islogin = response.getValue('data') as boolean;
-          return islogin;
-        } else {
-          showNotification(response.getError(), 'error', '');
-          return false;
-        }
-      } catch (error: any) {
-        showNotification(t('common.errorException'), 'error', '');
-        return false;
-      }
-    },
-    [showNotification, t]
-  );
-
-  const getPhoneNumberByUserName = useCallback(
-    async (userName: string): Promise<string> => {
-      try {
-        const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
-        const response = await authRepository.getPhoneByUserName(userName, channelId);
-
-        if (response.isSuccess()) {
-          const items = response.getValue('items') as Array<{ phone?: string }>;
-          if (items && items.length > 0 && items[0].phone) {
-            return items[0].phone;
-          }
-          return '';
-        }
-        return '';
-      } catch (error: any) {
-        showNotification('Phone number for this account not found', 'error', '');
-        return '';
-      }
-    },
-    [showNotification]
-  );
-
-  const getPhoneNumberByUserCode = useCallback(async (userCode: string): Promise<string> => {
-    try {
-      const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
-      const response = await authRepository.getPhoneByUserCode(userCode, channelId);
-
-      if (response.isSuccess()) {
-        const items = response.getValue('items') as Array<{ phone?: string }>;
-        if (items && items.length > 0 && items[0].phone) {
-          return items[0].phone;
-        }
-        return '';
-      }
-      return '';
-    } catch (error: any) {
-      return '';
-    }
-  }, []);
+  const handleForgotPassword = useCallback(async () => {
+    router.push('/(auth)/forgot-password' as any);
+  }, [router]);
 
   return {
     username,
@@ -646,8 +617,6 @@ export const useLoginService = () => {
     setPassword,
     showPassword,
     setShowPassword,
-    showOtpModal,
-    setShowOtpModal,
     isLoading,
     isLoggingIn,
     isFetchingAppInfo,
@@ -667,11 +636,11 @@ export const useLoginService = () => {
     handleVerifyOTPForChangeDeviceAndGetAppInfo,
     handleGenerateLoginOTP,
     handleGetStatusLogin,
-    handleResendOTP,
     proceedFirstLoginFlow,
     verifyOTPCode,
     getPhoneNumberByUserName,
     getPhoneNumberByUserCode,
     isAuthenticating,
+    showLoginOTPModal,
   };
 };

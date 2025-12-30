@@ -16,6 +16,7 @@ import { ThemeProvider } from "@/core/theme/ThemeContext";
 // Import các Wrapper logic
 // import AppUpdateWrapper from '@/components/AppUpdateWrapper';
 import AppContentWrapper from "@/components/base/AppContentWrapper";
+import { OTPProvider } from "@/contexts/OTPContext";
 
 Sentry.init({
   dsn: AppConfig.SENTRY.DSN,
@@ -30,16 +31,18 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
           <GlobalProvider>
             <SignalRProvider>
               <NotificationProvider>
-                <PushNotificationProvider>
-                  <AdvertisementProvider>
-                    <CallbackProvider>
-                      {/* --- CÁC LOGIC CHẠY NGẦM --- */}
-                      {/* <AppUpdateWrapper> */}
-                      <AppContentWrapper>{children}</AppContentWrapper>
-                      {/* </AppUpdateWrapper> */}
-                    </CallbackProvider>
-                  </AdvertisementProvider>
-                </PushNotificationProvider>
+                <OTPProvider>
+                  <PushNotificationProvider>
+                    <AdvertisementProvider>
+                      <CallbackProvider>
+                        {/* --- CÁC LOGIC CHẠY NGẦM --- */}
+                        {/* <AppUpdateWrapper> */}
+                        <AppContentWrapper>{children}</AppContentWrapper>
+                        {/* </AppUpdateWrapper> */}
+                      </CallbackProvider>
+                    </AdvertisementProvider>
+                  </PushNotificationProvider>
+                </OTPProvider>
               </NotificationProvider>
             </SignalRProvider>
           </GlobalProvider>

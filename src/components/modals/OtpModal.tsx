@@ -1,16 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    ActivityIndicator,
-    BackHandler,
-    Dimensions,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  BackHandler,
+  Dimensions,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -35,7 +35,7 @@ interface OTPModalProps {
 
 const OTP_LENGTH = 6;
 
-const OTPModal: React.FC<OTPModalProps> = ({
+const OTPModal: React.FC<OTPModalProps> = memo(({
   visible,
   onClose,
   title,
@@ -113,7 +113,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
     }
   }, []);
 
-  const handleResendOTP = async () => {
+  const handleResendOTP = useCallback(async () => {
     if (!handleResent || countdown > 0 || isLoading) return;
 
     try {
@@ -132,9 +132,9 @@ const OTPModal: React.FC<OTPModalProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [handleResent, countdown, isLoading, blockSeconds, showNotification, t]);
 
-  const handleConfirmOTP = async () => {
+  const handleConfirmOTP = useCallback(async () => {
     if (otp.length !== OTP_LENGTH) {
       showNotification(t('otpModal.enterValidOTP'), 'error');
       return;
@@ -147,11 +147,10 @@ const OTPModal: React.FC<OTPModalProps> = ({
       const result = await handleVerifyOTP(otp);
 
       if (result.success) {
-        // Success - parent will handle modal close
         setOtp('');
+        onClose();
       } else {
         setOtp('');
-        // Error already shown by service
       }
     } catch (error) {
       console.error('OTP verification error:', error);
@@ -159,7 +158,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [otp, isLoading, handleVerifyOTP, showNotification, t, onClose]);
 
   if (!visible) return null;
 
@@ -304,7 +303,9 @@ const OTPModal: React.FC<OTPModalProps> = ({
       </View>
     </Modal>
   );
-};
+});
+
+OTPModal.displayName = 'OTPModal';
 
 const styles = StyleSheet.create({
   overlay: {

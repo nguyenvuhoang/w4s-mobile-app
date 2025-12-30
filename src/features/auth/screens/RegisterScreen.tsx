@@ -1,19 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts, Tokens } from '@/core/theme/theme';
+import { useRegisterService } from '@/features/auth/hooks/useResgisterService';
 import { hasNotch, normalize } from '@/utils/layout';
 
 const logoImg = require('@assets/images/emiwhite.png');
@@ -21,15 +22,28 @@ const logoImg = require('@assets/images/emiwhite.png');
 const RegisterScreen = () => {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleRegister = () => {
-    console.log('Register:', { fullName, email, password, phone });
-  };
+  
+  const {
+    fullName,
+    setFullName,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    confirmPassword,
+    setConfirmPassword,
+    phone,
+    setPhone,
+    address,
+    setAddress,
+    showPassword,
+    setShowPassword,
+    showConfirmPassword,
+    setShowConfirmPassword,
+    isRegistering,
+    isFormValid,
+    handleRegister,
+  } = useRegisterService();
 
   const handleLogin = () => {
     router.back();
@@ -75,6 +89,31 @@ const RegisterScreen = () => {
                 value={fullName}
                 onChangeText={setFullName}
                 autoCapitalize="words"
+                editable={!isRegistering}
+              />
+            </View>
+
+            {/* Phone Input */}
+            <View style={styles.inputContainer}>
+              <ThemedText style={[styles.label, { color: colors.text }]}>
+                Số điện thoại
+              </ThemedText>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.card,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
+                ]}
+                placeholder="Số điện thoại của bạn"
+                placeholderTextColor={colors.icon}
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                autoComplete="tel"
+                editable={!isRegistering}
               />
             </View>
 
@@ -99,6 +138,30 @@ const RegisterScreen = () => {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
+                editable={!isRegistering}
+              />
+            </View>
+
+            {/* Address Input */}
+            <View style={styles.inputContainer}>
+              <ThemedText style={[styles.label, { color: colors.text }]}>
+                Địa chỉ
+              </ThemedText>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.card,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
+                ]}
+                placeholder="Địa chỉ của bạn"
+                placeholderTextColor={colors.icon}
+                value={address}
+                onChangeText={setAddress}
+                autoCapitalize="words"
+                editable={!isRegistering}
               />
             </View>
 
@@ -125,10 +188,12 @@ const RegisterScreen = () => {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoComplete="password"
+                  editable={!isRegistering}
                 />
                 <TouchableOpacity
                   style={styles.eyeIcon}
                   onPress={() => setShowPassword(!showPassword)}
+                  disabled={isRegistering}
                 >
                   <Ionicons
                     name={showPassword ? 'eye-off-outline' : 'eye-outline'}
@@ -139,36 +204,61 @@ const RegisterScreen = () => {
               </View>
             </View>
 
-            {/* Phone Input */}
+            {/* Confirm Password Input */}
             <View style={styles.inputContainer}>
               <ThemedText style={[styles.label, { color: colors.text }]}>
-                Số điện thoại
+                Xác nhận mật khẩu
               </ThemedText>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.card,
-                    color: colors.text,
-                    borderColor: colors.border,
-                  },
-                ]}
-                placeholder="Số điện thoại của bạn"
-                placeholderTextColor={colors.icon}
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-                autoComplete="tel"
-              />
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.passwordInput,
+                    {
+                      backgroundColor: colors.card,
+                      color: colors.text,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  placeholder="Nhập lại mật khẩu"
+                  placeholderTextColor={colors.icon}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                  autoComplete="password"
+                  editable={!isRegistering}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={isRegistering}
+                >
+                  <Ionicons
+                    name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={normalize(22)}
+                    color={colors.icon}
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Register Button */}
             <TouchableOpacity
               onPress={handleRegister}
-              style={[styles.registerButton, { backgroundColor: colors.tint }]}
+              style={[
+                styles.registerButton,
+                { backgroundColor: colors.tint },
+                (!isFormValid || isRegistering) && styles.registerButtonDisabled,
+              ]}
               activeOpacity={0.9}
+              disabled={!isFormValid || isRegistering}
             >
-              <ThemedText style={styles.registerButtonText}>Đăng ký</ThemedText>
+              {isRegistering ? (
+                <ActivityIndicator color={Tokens.colors.main.white} size="small" />
+              ) : (
+                <ThemedText style={styles.registerButtonText}>Đăng ký</ThemedText>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -177,7 +267,7 @@ const RegisterScreen = () => {
             <ThemedText style={[styles.footerText, { color: colors.text }]}>
               Đã có tài khoản?{' '}
             </ThemedText>
-            <TouchableOpacity onPress={handleLogin}>
+            <TouchableOpacity onPress={handleLogin} disabled={isRegistering}>
               <ThemedText style={[styles.loginLink, { color: colors.tint }]}>
                 Đăng nhập
               </ThemedText>
@@ -268,6 +358,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: normalize(8),
     elevation: 4,
+  },
+  registerButtonDisabled: {
+    opacity: 0.5,
   },
   registerButtonText: {
     fontSize: normalize(18),

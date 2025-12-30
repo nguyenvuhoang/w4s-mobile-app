@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import OTPModal from '@/components/modals/OtpModal';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts, Tokens } from '@/core/theme/theme';
@@ -34,35 +33,7 @@ const LoginScreen = () => {
     isFormValid,
     handleLogin,
     handleForgotPassword,
-    showOtpModal,
-    setShowOtpModal,
-    verifyOTPCode,
-    phone,
-    handleVerifyOTPAndGetAppInfo,
-    handleResendOTP,
   } = useLoginService();
-
-  const handleVerifyOTP = async (
-    otpCode: string
-  ): Promise<{ success: boolean; error?: string }> => {
-    try {
-      setShowOtpModal(false);
-      const appInfo = await handleVerifyOTPAndGetAppInfo(otpCode, phone, verifyOTPCode);
-
-      if (appInfo) {
-        if (appInfo.is_first_login) {
-          router.replace('/(auth)/change-password' as any);
-        } else {
-          router.replace('/(protected)/(tabs)');
-        }
-        return { success: true };
-      }
-      return { success: false, error: 'OTP verification failed' };
-    } catch (err: any) {
-      console.error('OTP verification error:', err);
-      return { success: false, error: err.message || 'Unknown error' };
-    }
-  };
 
   const handleCreateAccount = () => {
     router.push('/(auth)/register' as any);
@@ -161,10 +132,7 @@ const LoginScreen = () => {
 
           {/* Login Button */}
           <TouchableOpacity
-            onPress={() => {
-              // handleLogin(true)
-              router.replace('/(protected)/(tabs)');
-            }}
+            onPress={() => handleLogin(true)} 
             style={[
               styles.loginButton,
               { backgroundColor: colors.tint },
@@ -190,16 +158,6 @@ const LoginScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <OTPModal
-          title="Xác thực OTP"
-          description="Vui lòng nhập mã OTP"
-          visible={showOtpModal}
-          handleVerifyOTP={handleVerifyOTP}
-          handleResent={handleResendOTP}
-          onClose={() => setShowOtpModal(false)}
-          isresend={true}
-          blockSeconds={120}
-        />
       </SafeAreaView>
     </View>
   );
