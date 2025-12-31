@@ -1,18 +1,37 @@
-import { Redirect, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 
 export default function ProtectedLayout() {
-  const isAuthenticated = true; // Replace with actual token check
-
-  if (!isAuthenticated) {
-    return <Redirect href="/(auth)/login" />;
-  }
-
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen 
+        name="(tabs)" 
+        options={{
+          headerShown: false,
+        }}
+      />
+      
+      <Stack.Screen 
         name="add-transaction"
-        options={{ presentation: 'modal', headerShown: false }}
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          animationDuration: 300,
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen 
+        name="create-budget"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          animationDuration: 300,
+          headerShown: false,
+        }}
       />
     </Stack>
   );

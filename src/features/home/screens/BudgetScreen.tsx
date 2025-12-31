@@ -1,614 +1,529 @@
-import CustomButton from '@/components/base/CustomButton';
 import CustomText from '@/components/base/CustomText';
-import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/core/theme/ThemeContext';
+import { Fonts } from '@/core/theme/theme';
+import { hp, normalize, wp } from '@/utils/layout';
+import { FontAwesome6 } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Modal,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
 
 interface BudgetScreenProps {
-  navigation: any;
+  navigation?: any;
 }
 
 const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState('Tháng này');
-  const [showAddModal, setShowAddModal] = useState(false);
+  const { colors } = useAppTheme();
+  const [selectedPeriod, setSelectedPeriod] = useState('Tuần nay');
 
-  const periods = ['Tuần này', 'Tháng này', 'Năm này'];
+  const periods = ['Tuần nay', 'Tháng nay', 'Quý nay', 'Năm nay'];
 
   const budgets = [
     {
       id: '1',
-      category: 'Mua sắm',
-      icon: '🛒',
-      color: '#FF6B35',
-      spent: 1248000,
-      total: 2000000,
-      percentage: 62.4,
+      category: 'Mỹ phẩm',
+      subcategory: 'Mua sắm',
+      emoji: '💅',
+      iconColor: '#FF6B6B',
+      spent: 890000,
+      total: 1000000,
+      todayProgress: 80,
     },
     {
       id: '2',
       category: 'Thực phẩm',
-      icon: '🍴',
-      color: '#4CAF50',
-      spent: 842000,
+      subcategory: '',
+      emoji: '🍴',
+      iconColor: '#51CF66',
+      spent: 300000,
       total: 1500000,
-      percentage: 56.1,
+      todayProgress: 60,
     },
     {
       id: '3',
-      category: 'Giao thông',
-      icon: '🚗',
-      color: '#2196F3',
-      spent: 625000,
-      total: 800000,
-      percentage: 78.1,
-    },
-    {
-      id: '4',
-      category: 'Giải trí',
-      icon: '🎬',
-      color: '#9C27B0',
-      spent: 425000,
-      total: 500000,
-      percentage: 85.0,
+      category: 'Cắm trại',
+      subcategory: 'Giải trí',
+      emoji: '⛺',
+      iconColor: '#20C997',
+      spent: 2000000,
+      total: 2500000,
+      todayProgress: 75,
     },
   ];
 
-  const totalBudget = budgets.reduce((sum, b) => sum + b.total, 0);
-  const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
-  const totalPercentage = (totalSpent / totalBudget) * 100;
+  const totalBudget = 40000000;
+  const totalSpent = 15600000;
+  const remaining = 24400000;
+  const daysLeft = 3;
+
+  // Calculate semi-circle progress
+  const percentage = (totalSpent / totalBudget) * 100;
+  const radius = wp(35);
+  const strokeWidth = normalize(18);
+  const circumference = Math.PI * radius;
+  const strokeDashoffset = circumference - (circumference * percentage) / 100;
+
+  const handleCreateBudget = () => {
+    router.push('/(protected)/create-budget')
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <CustomText style={styles.headerTitle}>Ngân sách</CustomText>
-          <TouchableOpacity onPress={() => setShowAddModal(true)}>
-            <Ionicons name="add-circle" size={28} color="#007AFF" />
+          <TouchableOpacity 
+            style={[styles.createButton, { backgroundColor: colors.tint }]}
+            onPress={handleCreateBudget}
+          >
+            <CustomText style={styles.createButtonText}>Tạo ngân sách</CustomText>
           </TouchableOpacity>
+
+          <View style={[styles.headerRightWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
+            <View style={styles.cashBadge}>
+              <FontAwesome6 name="money-bill-wave" size={normalize(18)} color="#4CAF50" solid />
+              <CustomText style={styles.cashText}>Tiền mặt</CustomText>
+            </View>
+            <View style={[styles.dividerVertical, { backgroundColor: colors.border }]} />
+            <TouchableOpacity style={styles.dropdownButton}>
+              <FontAwesome6 name="chevron-down" size={normalize(14)} color={colors.tint} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Period Selector */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.periodSelector}
-          contentContainerStyle={styles.periodContent}
-        >
-          {periods.map((period) => (
-            <TouchableOpacity
-              key={period}
-              style={[
-                styles.periodButton,
-                selectedPeriod === period && styles.periodButtonActive,
-              ]}
-              onPress={() => setSelectedPeriod(period)}
-            >
-              <CustomText
+        {/* Period Selector Card */}
+        <View style={[styles.periodCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.periodContent}
+          >
+            {periods.map((period) => (
+              <TouchableOpacity
+                key={period}
                 style={[
-                  styles.periodText,
-                  selectedPeriod === period && styles.periodTextActive,
+                  styles.periodButton,
+                  { 
+                    backgroundColor: selectedPeriod === period ? colors.tint : 'transparent',
+                  },
                 ]}
+                onPress={() => setSelectedPeriod(period)}
               >
-                {period}
-              </CustomText>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Overall Budget Card */}
-        <View style={styles.overallCard}>
-          <View style={styles.overallHeader}>
-            <CustomText style={styles.overallTitle}>Tổng ngân sách</CustomText>
-            <TouchableOpacity>
-              <Ionicons name="ellipsis-horizontal" size={24} color="#000" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.overallAmount}>
-            <CustomText style={styles.spentAmount}>
-              {totalSpent.toLocaleString('vi-VN')} đ
-            </CustomText>
-            <CustomText style={styles.totalAmount}>
-              / {totalBudget.toLocaleString('vi-VN')} đ
-            </CustomText>
-          </View>
-
-          {/* Progress Bar */}
-          <View style={styles.overallProgressContainer}>
-            <View
-              style={[
-                styles.overallProgress,
-                {
-                  width: `${Math.min(totalPercentage, 100)}%`,
-                  backgroundColor: totalPercentage > 90 ? '#FF3B30' : '#007AFF',
-                },
-              ]}
-            />
-          </View>
-
-          <View style={styles.overallStats}>
-            <View style={styles.statItem}>
-              <CustomText style={styles.statLabel}>Đã chi</CustomText>
-              <CustomText style={styles.statValue}>
-                {totalPercentage.toFixed(1)}%
-              </CustomText>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <CustomText style={styles.statLabel}>Còn lại</CustomText>
-              <CustomText style={styles.statValue}>
-                {(totalBudget - totalSpent).toLocaleString('vi-VN')} đ
-              </CustomText>
-            </View>
-          </View>
-        </View>
-
-        {/* Budget List */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <CustomText style={styles.sectionTitle}>
-              Ngân sách theo danh mục
-            </CustomText>
-            <CustomText style={styles.budgetCount}>{budgets.length} danh mục</CustomText>
-          </View>
-
-          <View style={styles.budgetList}>
-            {budgets.map((budget) => (
-              <BudgetItem key={budget.id} budget={budget} />
-            ))}
-          </View>
-        </View>
-
-        {/* Tips Card */}
-        <View style={styles.tipsCard}>
-          <View style={styles.tipsHeader}>
-            <Ionicons name="bulb" size={24} color="#FF9800" />
-            <CustomText style={styles.tipsTitle}>Mẹo tiết kiệm</CustomText>
-          </View>
-          <CustomText style={styles.tipsText}>
-            Chi tiêu giải trí của bạn đã vượt 85% ngân sách. Hãy cân nhắc giảm bớt để
-            đạt mục tiêu tháng này.
-          </CustomText>
-        </View>
-      </ScrollView>
-
-      {/* Add Budget Modal */}
-      <Modal
-        visible={showAddModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowAddModal(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <CustomText style={styles.modalTitle}>Thêm ngân sách</CustomText>
-              <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                <Ionicons name="close" size={24} color="#000" />
+                <CustomText
+                  style={[
+                    styles.periodText,
+                    { 
+                      color: selectedPeriod === period ? '#fff' : colors.icon,
+                      fontFamily: selectedPeriod === period ? Fonts.family.semiBold : Fonts.family.regular,
+                    },
+                  ]}
+                >
+                  {period}
+                </CustomText>
               </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Circular Progress Card */}
+        <View style={[styles.circleCard, { backgroundColor: colors.card }]}>
+          <View style={styles.circleContainer}>
+            <Svg 
+              width={(radius + strokeWidth) * 2} 
+              height={radius + strokeWidth + normalize(20)}
+              style={{ overflow: 'visible' }}
+            >
+              {/* Background arc with rounded caps */}
+              <Circle
+                cx={radius + strokeWidth}
+                cy={radius + strokeWidth}
+                r={radius}
+                stroke="#E8EAED"
+                strokeWidth={strokeWidth}
+                fill="none"
+                strokeDasharray={`${circumference} ${circumference * 2}`}
+                strokeLinecap="round"
+                rotation="-180"
+                origin={`${radius + strokeWidth}, ${radius + strokeWidth}`}
+              />
+              {/* Progress arc with rounded caps */}
+              <Circle
+                cx={radius + strokeWidth}
+                cy={radius + strokeWidth}
+                r={radius}
+                stroke={colors.tint}
+                strokeWidth={strokeWidth}
+                fill="none"
+                strokeDasharray={`${circumference} ${circumference * 2}`}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+                rotation="-180"
+                origin={`${radius + strokeWidth}, ${radius + strokeWidth}`}
+              />
+            </Svg>
+            
+            {/* Center text */}
+            <View style={styles.circleCenter}>
+              <CustomText style={[styles.circleLabelSmall, { color: colors.icon }]}>
+                Số tiền có thể chi
+              </CustomText>
+              <CustomText style={[styles.circleAmount, { color: colors.text }]}>
+                {remaining.toLocaleString('vi-VN')} đ
+              </CustomText>
+            </View>
+          </View>
+
+          {/* Stats Row */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <CustomText style={[styles.statLabel, { color: colors.icon }]}>
+                Tổng ngân sách
+              </CustomText>
+              <CustomText style={[styles.statValue, { color: colors.text }]}>
+                {totalBudget.toLocaleString('vi-VN')} đ
+              </CustomText>
             </View>
 
-            <ScrollView style={styles.modalBody}>
-              <View style={styles.inputGroup}>
-                <CustomText style={styles.inputLabel}>Danh mục</CustomText>
-                <TouchableOpacity style={styles.inputField}>
-                  <CustomText style={styles.inputPlaceholder}>Chọn danh mục</CustomText>
-                  <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
-                </TouchableOpacity>
-              </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
 
-              <View style={styles.inputGroup}>
-                <CustomText style={styles.inputLabel}>Số tiền ngân sách</CustomText>
-                <View style={styles.amountInputContainer}>
-                  <TextInput
-                    style={styles.amountInput}
-                    placeholder="0"
-                    keyboardType="numeric"
-                    placeholderTextColor="#C7C7CC"
-                  />
-                  <CustomText style={styles.currencyText}>đ</CustomText>
-                </View>
-              </View>
+            <View style={styles.statItem}>
+              <CustomText style={[styles.statLabel, { color: colors.icon }]}>
+                Tổng đã chi
+              </CustomText>
+              <CustomText style={[styles.statValue, { color: colors.text }]}>
+                {totalSpent.toLocaleString('vi-VN')} đ
+              </CustomText>
+            </View>
 
-              <View style={styles.inputGroup}>
-                <CustomText style={styles.inputLabel}>Chu kỳ</CustomText>
-                <View style={styles.cycleOptions}>
-                  {['Tuần', 'Tháng', 'Năm'].map((cycle) => (
-                    <TouchableOpacity key={cycle} style={styles.cycleButton}>
-                      <CustomText style={styles.cycleText}>{cycle}</CustomText>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
 
-              <CustomButton
-                title="Tạo ngân sách"
-                onPress={() => setShowAddModal(false)}
-                style={styles.modalButton}
-              />
-            </ScrollView>
+            <View style={styles.statItem}>
+              <CustomText style={[styles.statLabel, { color: colors.icon }]}>
+                Đến cuối tuần
+              </CustomText>
+              <CustomText style={[styles.statValue, { color: colors.text }]}>
+                {daysLeft} Ngày
+              </CustomText>
+            </View>
           </View>
         </View>
-      </Modal>
+
+        {/* Budget List - Separated Cards */}
+        <View style={styles.budgetList}>
+          {budgets.map((budget) => (
+            <BudgetItem key={budget.id} budget={budget} colors={colors} />
+          ))}
+        </View>
+
+        {/* Bottom spacing for tab bar */}
+        <View style={{ height: hp(12) }} />
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 // Budget Item Component
-const BudgetItem = ({ budget }: any) => {
-  const isOverBudget = budget.percentage > 90;
-  const isWarning = budget.percentage > 70 && budget.percentage <= 90;
+const BudgetItem = ({ budget, colors }: any) => {
+  const percentage = (budget.spent / budget.total) * 100;
 
   return (
-    <TouchableOpacity style={styles.budgetItem}>
+    <View style={[styles.budgetItem, { backgroundColor: colors.card }]}>
       <View style={styles.budgetHeader}>
         <View style={styles.budgetLeft}>
           <View
-            style={[styles.budgetIcon, { backgroundColor: budget.color + '20' }]}
-          >
-            <CustomText style={styles.budgetEmoji}>{budget.icon}</CustomText>
-          </View>
-          <View>
-            <CustomText style={styles.budgetCategory}>{budget.category}</CustomText>
-            <CustomText style={styles.budgetAmount}>
-              {budget.spent.toLocaleString('vi-VN')} đ /{' '}
-              {budget.total.toLocaleString('vi-VN')} đ
-            </CustomText>
-          </View>
-        </View>
-        <View style={styles.budgetRight}>
-          <CustomText
             style={[
-              styles.budgetPercentage,
-              isOverBudget && styles.overBudgetText,
-              isWarning && styles.warningText,
+              styles.budgetIconContainer,
+              { backgroundColor: budget.iconColor + '15' },
             ]}
           >
-            {budget.percentage.toFixed(1)}%
-          </CustomText>
-          {isOverBudget && (
-            <Ionicons name="alert-circle" size={16} color="#FF3B30" />
+            <CustomText style={styles.budgetEmoji}>{budget.emoji}</CustomText>
+          </View>
+          
+          <View style={styles.budgetInfo}>
+            <CustomText style={[styles.budgetCategory, { color: colors.text }]}>
+              {budget.category}
+            </CustomText>
+            {budget.subcategory ? (
+              <CustomText style={[styles.budgetSubcategory, { color: colors.icon }]}>
+                {budget.subcategory}
+              </CustomText>
+            ) : null}
+          </View>
+        </View>
+        
+        <CustomText style={[styles.budgetAmount, { color: colors.text }]}>
+          {budget.spent.toLocaleString('vi-VN')} đ
+        </CustomText>
+      </View>
+
+      {/* Progress Bar Container with percentage */}
+      <View style={styles.progressWrapper}>
+        {/* Progress Bar with rounded ends */}
+        <View style={[styles.budgetProgressContainer, { backgroundColor: '#E8EAED' }]}>
+          <View
+            style={[
+              styles.budgetProgress,
+              {
+                width: `${Math.min(percentage, 100)}%`,
+                backgroundColor: budget.iconColor,
+              },
+            ]}
+          />
+          {percentage < 100 && (
+            <View
+              style={[
+                styles.budgetProgressRemaining,
+                {
+                  width: `${100 - percentage}%`,
+                  backgroundColor: '#2C3E50',
+                },
+              ]}
+            />
           )}
+        </View>
+
+        {/* "Hôm nay" marker overlapping the progress bar */}
+        <View 
+          style={[
+            styles.todayMarkerContainer,
+            { left: `${budget.todayProgress}%` }
+          ]}
+        >
+          <View style={[styles.timelineMarker, { backgroundColor: colors.text }]} />
+          <CustomText style={[styles.timelineLabel, { color: colors.text }]}>
+            Hôm nay
+          </CustomText>
         </View>
       </View>
 
-      <View style={styles.budgetProgressContainer}>
-        <View
-          style={[
-            styles.budgetProgress,
-            {
-              width: `${Math.min(budget.percentage, 100)}%`,
-              backgroundColor: isOverBudget
-                ? '#FF3B30'
-                : isWarning
-                ? '#FF9800'
-                : budget.color,
-            },
-          ]}
-        />
-      </View>
-
-      <CustomText style={styles.budgetRemaining}>
-        Còn lại: {(budget.total - budget.spent).toLocaleString('vi-VN')} đ
+      {/* Percentage display */}
+      <CustomText style={[styles.percentageText, { color: colors.icon }]}>
+        {percentage.toFixed(0)}% đã sử dụng
       </CustomText>
-    </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F7',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: wp(5),
+    paddingTop: hp(1),
+    paddingBottom: hp(2),
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
+  createButton: {
+    paddingHorizontal: normalize(20),
+    paddingVertical: normalize(10),
+    borderRadius: normalize(24),
   },
-  periodSelector: {
-    marginBottom: 20,
+  createButtonText: {
+    color: '#fff',
+    fontSize: normalize(14),
+    fontFamily: Fonts.family.semiBold,
+  },
+  headerRightWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: normalize(20),
+    paddingHorizontal: normalize(4),
+    paddingVertical: normalize(4),
+    gap: normalize(8),
+  },
+  cashBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(6),
+    borderRadius: normalize(16),
+    gap: normalize(6),
+  },
+  cashText: {
+    fontSize: normalize(12),
+    fontFamily: Fonts.family.medium,
+  },
+  dividerVertical: {
+    width: 1,
+    height: normalize(20),
+  },
+  dropdownButton: {
+    width: normalize(32),
+    height: normalize(32),
+    borderRadius: normalize(16),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  periodCard: {
+    marginHorizontal: wp(5),
+    marginBottom: hp(2),
+    borderWidth: 1,
+    borderRadius: normalize(24),
+    paddingVertical: normalize(4),
+    paddingHorizontal: normalize(4),
   },
   periodContent: {
-    paddingHorizontal: 20,
-    gap: 8,
+    gap: normalize(6),
   },
   periodButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-  },
-  periodButtonActive: {
-    backgroundColor: '#007AFF',
+    paddingHorizontal: normalize(18),
+    paddingVertical: normalize(8),
+    borderRadius: normalize(20),
   },
   periodText: {
-    fontSize: 14,
-    color: '#000',
+    fontSize: normalize(13),
   },
-  periodTextActive: {
-    color: '#fff',
-    fontWeight: '600',
+  circleCard: {
+    borderRadius: normalize(20),
+    padding: normalize(20),
+    marginHorizontal: wp(5),
+    marginBottom: hp(2),
+    alignItems: 'center',
   },
-  overallCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 24,
-    marginHorizontal: 20,
-    marginBottom: 24,
+  circleContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: hp(2.5),
   },
-  overallHeader: {
+  circleCenter: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    bottom: normalize(10),
+  },
+  circleLabelSmall: {
+    fontSize: normalize(11),
+    marginBottom: normalize(4),
+    fontFamily: Fonts.family.regular,
+  },
+  circleAmount: {
+    fontSize: normalize(22),
+    fontFamily: Fonts.family.bold,
+  },
+  statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  overallTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
-  overallAmount: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 16,
-  },
-  spentAmount: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  totalAmount: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginLeft: 4,
-  },
-  overallProgressContainer: {
-    height: 12,
-    backgroundColor: '#F5F5F7',
-    borderRadius: 6,
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  overallProgress: {
-    height: '100%',
-    borderRadius: 6,
-  },
-  overallStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    width: '100%',
+    paddingHorizontal: normalize(8),
   },
   statItem: {
     alignItems: 'center',
+    flex: 1,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginBottom: 4,
+    fontSize: normalize(11),
+    marginBottom: normalize(4),
+    fontFamily: Fonts.family.regular,
   },
   statValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: normalize(13),
+    fontFamily: Fonts.family.semiBold,
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#E5E5EA',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
-  budgetCount: {
-    fontSize: 14,
-    color: '#8E8E93',
+    height: normalize(30),
+    marginHorizontal: normalize(8),
   },
   budgetList: {
-    paddingHorizontal: 20,
-    gap: 12,
+    paddingHorizontal: wp(5),
+    gap: normalize(12),
   },
   budgetItem: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: normalize(16),
+    padding: normalize(16),
   },
   budgetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: normalize(12),
   },
   budgetLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: normalize(12),
     flex: 1,
   },
-  budgetIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+  budgetIconContainer: {
+    width: normalize(44),
+    height: normalize(44),
+    borderRadius: normalize(12),
     alignItems: 'center',
     justifyContent: 'center',
   },
   budgetEmoji: {
-    fontSize: 24,
+    fontSize: normalize(22),
+  },
+  budgetInfo: {
+    flex: 1,
   },
   budgetCategory: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: normalize(15),
+    fontFamily: Fonts.family.semiBold,
+    marginBottom: normalize(2),
+  },
+  budgetSubcategory: {
+    fontSize: normalize(12),
+    fontFamily: Fonts.family.regular,
   },
   budgetAmount: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 2,
+    fontSize: normalize(15),
+    fontFamily: Fonts.family.semiBold,
   },
-  budgetRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  budgetPercentage: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-  },
-  overBudgetText: {
-    color: '#FF3B30',
-  },
-  warningText: {
-    color: '#FF9800',
+  progressWrapper: {
+    position: 'relative',
+    marginBottom: normalize(8),
   },
   budgetProgressContainer: {
-    height: 6,
-    backgroundColor: '#F5F5F7',
-    borderRadius: 3,
-    overflow: 'hidden',
-    marginBottom: 8,
+    height: normalize(6),
+    borderRadius: normalize(3),
+    overflow: 'visible',
+    flexDirection: 'row',
   },
   budgetProgress: {
     height: '100%',
-    borderRadius: 3,
+    borderTopLeftRadius: normalize(3),
+    borderBottomLeftRadius: normalize(3),
+    borderTopRightRadius: normalize(3),
+    borderBottomRightRadius: normalize(3),
   },
-  budgetRemaining: {
-    fontSize: 12,
-    color: '#8E8E93',
+  budgetProgressRemaining: {
+    height: '100%',
+    borderTopRightRadius: normalize(3),
+    borderBottomRightRadius: normalize(3),
   },
-  tipsCard: {
-    backgroundColor: '#FFF3E0',
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 20,
-    marginBottom: 24,
-  },
-  tipsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  tipsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-  },
-  tipsText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 20,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#000',
-  },
-  modalBody: {
-    paddingHorizontal: 20,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 8,
-  },
-  inputField: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F7',
-    borderRadius: 12,
-    padding: 16,
-  },
-  inputPlaceholder: {
-    fontSize: 16,
-    color: '#C7C7CC',
-  },
-  amountInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F7',
-    borderRadius: 12,
-    padding: 16,
-  },
-  amountInput: {
-    flex: 1,
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  currencyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#8E8E93',
-    marginLeft: 8,
-  },
-  cycleOptions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  cycleButton: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: '#F5F5F7',
-    borderRadius: 12,
+  todayMarkerContainer: {
+    position: 'absolute',
+    top: normalize(-8),
+    transform: [{ translateX: normalize(-1) }],
     alignItems: 'center',
   },
-  cycleText: {
-    fontSize: 14,
-    color: '#000',
+  timelineMarker: {
+    width: normalize(2),
+    height: normalize(22),
+    marginBottom: normalize(2),
   },
-  modalButton: {
-    marginTop: 20,
-    marginBottom: 40,
+  timelineLabel: {
+    fontSize: normalize(10),
+    fontFamily: Fonts.family.regular,
+  },
+  percentageText: {
+    fontSize: normalize(11),
+    fontFamily: Fonts.family.regular,
+    marginTop: normalize(4),
   },
 });
 

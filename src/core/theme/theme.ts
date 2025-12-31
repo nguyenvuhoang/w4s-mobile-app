@@ -8,6 +8,7 @@ export const Tokens = {
       neutral: "#a2aec1",
       onprimary: "#ffffff",
       bg_dark: "#0f172a",
+      bg_light: "#EAECF1",
       textgray: "#9ca3af",
     },
     foundation: {
@@ -63,7 +64,7 @@ export const Tokens = {
 export const Colors = {
   light: {
     text: Tokens.colors.main.bg_dark,
-    background: Tokens.colors.main.white,
+    background: Tokens.colors.main.bg_light,
     tint: Tokens.colors.main.primary,
 
     // UI Elements
@@ -73,9 +74,15 @@ export const Colors = {
     onprimary: Tokens.colors.main.onprimary,
 
     // Components
-    card: Tokens.colors.foundation.neutral["neutral-1"],
+    card: Tokens.colors.main.white,
     border: Tokens.colors.foundation.neutral["neutral-8"],
     notification: Tokens.colors.main.secondary,
+
+    gradianBase: Tokens.gradients.base,
+    gradianLight: Tokens.gradients.light,
+    gradianLightest: Tokens.gradients.lightest,
+    gradianDark: Tokens.gradients.dark
+
   },
   dark: {
     text: Tokens.colors.main.white,
@@ -92,6 +99,11 @@ export const Colors = {
     card: Tokens.colors.foundation.primary["primary-10"],
     border: Tokens.colors.foundation.primary["primary-9"],
     notification: Tokens.colors.foundation.secondary["secondary-8"],
+
+    gradianBase: Tokens.gradients.base,
+    gradianLight: Tokens.gradients.light,
+    gradianLightest: Tokens.gradients.lightest,
+    gradianDark: Tokens.gradients.dark
   },
 };
 
