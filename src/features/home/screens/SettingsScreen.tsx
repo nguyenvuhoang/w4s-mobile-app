@@ -1,13 +1,15 @@
 import CustomText from '@/components/base/CustomText';
+import { useSettingService } from '@/features/settings/hooks/useSettingService';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,6 +18,8 @@ interface SettingsScreenProps {
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
+  const { handleLogout } = useSettingService();
+
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
@@ -53,7 +57,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="lock-closed-outline"
               title="Đổi mật khẩu"
-              onPress={() => {}}
+              onPress={() => {router.push('/(protected)/change-password')}}
             />
             <SettingItem
               icon="card-outline"
@@ -149,7 +153,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton} onPress={() => {handleLogout()}}>
           <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
           <CustomText style={styles.logoutText}>Đăng xuất</CustomText>
         </TouchableOpacity>

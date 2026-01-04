@@ -1,14 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
-    ActivityIndicator,
-    Image,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -28,7 +30,6 @@ const defaultAvatar = require('@assets/images/default_avatar.png');
 const QuickLoginScreen = () => {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const { t } = useTranslation();
   const { showNotification } = useNotification();
   const hasCheckedLoginStatus = useRef(false);
 
@@ -111,7 +112,7 @@ const QuickLoginScreen = () => {
 
   const handlePasswordLogin = async () => {
     if (password.trim() === '') return;
-    await handleLogin(false); // false = not first login
+    await handleLogin(false);
   };
 
   const handleBiometricPress = async () => {
@@ -120,7 +121,7 @@ const QuickLoginScreen = () => {
 
   const handleSwitchAccount = () => {
     showNotification(
-      t('notification.confirmLoginAnotherAccount'),
+      'Bạn có chắc muốn đăng nhập tài khoản khác?',
       'warning',
       undefined,
       undefined,
@@ -168,10 +169,8 @@ const QuickLoginScreen = () => {
       {isLoadingAny && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={colors.tint} />
-          <ThemedText style={[styles.loadingText, { color: colors.text }]}>
-            {isLoggingIn
-              ? t('login.loggingIn')
-              : t('login.loadingAppInfo')}
+          <ThemedText style={[styles.loadingText, { color: '#fff' }]}>
+            {isLoggingIn ? 'Đang đăng nhập...' : 'Đang tải thông tin...'}
           </ThemedText>
         </View>
       )}
@@ -181,144 +180,153 @@ const QuickLoginScreen = () => {
         <View style={styles.biometricOverlay} />
       )}
 
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <SafeAreaView style={styles.safeArea}>
-          {/* Top Half - Logo + Title */}
-          <View style={styles.topHalf}>
-            <View style={styles.logoContainer}>
-              <View style={[styles.logoWrapper, { backgroundColor: colors.tint }]}>
-                <Image source={logoImg} style={styles.logo} resizeMode="contain" />
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Top Half - Logo + Title */}
+            <View style={styles.topHalf}>
+              <View style={styles.logoContainer}>
+                <View style={[styles.logoWrapper, { backgroundColor: colors.tint }]}>
+                  <Image source={logoImg} style={styles.logo} resizeMode="contain" />
+                </View>
               </View>
-            </View>
 
-            <ThemedText style={[styles.title, { color: colors.text }]}>
-              Đăng nhập
-            </ThemedText>
-          </View>
-
-          {/* Bottom Half - Form */}
-          <View style={styles.bottomHalf}>
-            {/* User Info Row - Avatar + Name */}
-            <View style={styles.userInfoRow}>
-              <View style={styles.avatarContainer}>
-                {appInfo?.avatar ? (
-                  <Image source={{ uri: appInfo.avatar }} style={styles.avatar} />
-                ) : (
-                  <Image source={defaultAvatar} style={styles.avatar} />
-                )}
-              </View>
-              <ThemedText style={[styles.username, { color: colors.text }]}>
-                Xin chào, {appInfo?.name || appInfo?.login_name || 'User'}
+              <ThemedText style={[styles.title, { color: colors.text }]}>
+                Đăng nhập
               </ThemedText>
             </View>
 
-            {/* Password Input */}
-            <View style={styles.inputContainer}>
-              <ThemedText style={[styles.label, { color: colors.text }]}>
-                Mật khẩu
-              </ThemedText>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={[
-                    styles.input,
-                    styles.passwordInput,
-                    {
-                      backgroundColor: colors.card,
-                      color: colors.text,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                  placeholder={t('login.password')}
-                  placeholderTextColor={colors.icon}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoComplete="password"
-                  editable={!isLoadingAny}
-                  onSubmitEditing={handlePasswordLogin}
-                />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowPassword(!showPassword)}
-                  disabled={isLoadingAny}
-                >
-                  <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                    size={normalize(22)}
-                    color={colors.icon}
+            {/* Bottom Half - Form */}
+            <View style={styles.bottomHalf}>
+              {/* User Info Row */}
+              <View style={styles.userInfoRow}>
+                <View style={styles.avatarContainer}>
+                  {appInfo?.avatar ? (
+                    <Image source={{ uri: appInfo.avatar }} style={styles.avatar} />
+                  ) : (
+                    <Image source={defaultAvatar} style={styles.avatar} />
+                  )}
+                </View>
+                <ThemedText style={[styles.username, { color: colors.text }]}>
+                  Xin chào, {appInfo?.name || appInfo?.login_name || 'User'}
+                </ThemedText>
+              </View>
+
+              {/* Password Input */}
+              <View style={styles.inputContainer}>
+                <ThemedText style={[styles.label, { color: colors.text }]}>
+                  Mật khẩu
+                </ThemedText>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.passwordInput,
+                      {
+                        backgroundColor: colors.card,
+                        color: colors.text,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                    placeholder="Nhập mật khẩu"
+                    placeholderTextColor={colors.icon}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoComplete="password"
+                    editable={!isLoadingAny}
+                    onSubmitEditing={handlePasswordLogin}
                   />
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setShowPassword(!showPassword)}
+                    disabled={isLoadingAny}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={normalize(22)}
+                      color={colors.icon}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Biometric Button */}
+                  {isBiometricSupported && appInfo?.is_biometric_supported && (
+                    <TouchableOpacity
+                      style={styles.biometricIcon}
+                      onPress={handleBiometricPress}
+                      disabled={isLoadingAny || isAuthenticating}
+                    >
+                      {isAuthenticating ? (
+                        <ActivityIndicator size="small" color={colors.tint} />
+                      ) : (
+                        <View style={[styles.biometricButton, { borderColor: colors.tint }]}>
+                          <Ionicons
+                            name="finger-print-outline"
+                            size={normalize(24)}
+                            color={colors.tint}
+                          />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
+              {/* Login Button */}
+              <TouchableOpacity
+                onPress={handlePasswordLogin}
+                style={[
+                  styles.loginButton,
+                  { backgroundColor: colors.tint },
+                  (!isFormValid || isLoadingAny) && styles.loginButtonDisabled,
+                ]}
+                activeOpacity={0.9}
+                disabled={!isFormValid || isLoadingAny}
+              >
+                {isLoggingIn ? (
+                  <ActivityIndicator color={Tokens.colors.main.white} size="small" />
+                ) : (
+                  <ThemedText style={styles.loginButtonText}>
+                    Đăng nhập
+                  </ThemedText>
+                )}
+              </TouchableOpacity>
+
+              {/* Links */}
+              <View style={styles.linksContainer}>
+                <TouchableOpacity onPress={handleSwitchAccount} disabled={isLoadingAny}>
+                  <ThemedText style={[styles.linkText, { color: colors.tint }]}>
+                    Đổi tài khoản
+                  </ThemedText>
                 </TouchableOpacity>
 
-                {/* Biometric Button */}
-                {isBiometricSupported && appInfo?.is_biometric_supported && (
-                  <TouchableOpacity
-                    style={styles.biometricIcon}
-                    onPress={handleBiometricPress}
-                    disabled={isLoadingAny || isAuthenticating}
-                  >
-                    {isAuthenticating ? (
-                      <ActivityIndicator size="small" color={colors.tint} />
-                    ) : (
-                      <View style={[styles.biometricButton, { borderColor: colors.tint }]}>
-                        <Ionicons
-                          name="map"
-                          size={normalize(24)}
-                          color={colors.tint}
-                        />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity onPress={handleForgotPassword} disabled={isLoadingAny}>
+                  <ThemedText style={[styles.linkText, { color: colors.tint }]}>
+                    Quên mật khẩu?
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
+
+              {/* Create Account */}
+              <View style={styles.footer}>
+                <TouchableOpacity onPress={handleCreateAccount} disabled={isLoadingAny}>
+                  <ThemedText style={[styles.createAccountText, { color: colors.text }]}>
+                    Tạo tài khoản
+                  </ThemedText>
+                </TouchableOpacity>
               </View>
             </View>
-
-            {/* Login Button */}
-            <TouchableOpacity
-              onPress={handlePasswordLogin}
-              style={[
-                styles.loginButton,
-                { backgroundColor: colors.tint },
-                (!isFormValid || isLoadingAny) && styles.loginButtonDisabled,
-              ]}
-              activeOpacity={0.9}
-              disabled={!isFormValid || isLoadingAny}
-            >
-              {isLoggingIn ? (
-                <ActivityIndicator color={Tokens.colors.main.white} size="small" />
-              ) : (
-                <ThemedText style={styles.loginButtonText}>
-                  {t('login.login')}
-                </ThemedText>
-              )}
-            </TouchableOpacity>
-
-            {/* Links */}
-            <View style={styles.linksContainer}>
-              <TouchableOpacity onPress={handleSwitchAccount} disabled={isLoadingAny}>
-                <ThemedText style={[styles.linkText, { color: colors.tint }]}>
-                  {t('login.changeUser')}
-                </ThemedText>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={handleForgotPassword} disabled={isLoadingAny}>
-                <ThemedText style={[styles.linkText, { color: colors.tint }]}>
-                  {t('login.forgotPassword')}
-                </ThemedText>
-              </TouchableOpacity>
-            </View>
-
-            {/* Create Account */}
-            <View style={styles.footer}>
-              <TouchableOpacity onPress={handleCreateAccount} disabled={isLoadingAny}>
-                <ThemedText style={[styles.createAccountText, { color: colors.text }]}>
-                  Tạo tài khoản
-                </ThemedText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </SafeAreaView>
-      </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </>
   );
 };
@@ -327,15 +335,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  safeArea: {
+  keyboardView: {
     flex: 1,
   },
-  
-  // Top Half - Logo + Title (50%)
+  scrollContent: {
+    flexGrow: 1,
+  },
   topHalf: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    minHeight: normalize(250),
   },
   logoContainer: {
     alignItems: 'center',
@@ -358,12 +368,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: normalize(36),
   },
-
-  // Bottom Half - Form (50%)
   bottomHalf: {
     flex: 1,
     paddingHorizontal: normalize(24),
     paddingTop: normalize(20),
+    paddingBottom: normalize(20),
     justifyContent: 'flex-start',
   },
   userInfoRow: {
@@ -372,9 +381,7 @@ const styles = StyleSheet.create({
     marginBottom: normalize(20),
     gap: normalize(12),
   },
-  avatarContainer: {
-    // No extra margin needed
-  },
+  avatarContainer: {},
   avatar: {
     width: normalize(48),
     height: normalize(48),
@@ -410,7 +417,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   passwordInput: {
-    paddingRight: normalize(100), // Extra space for both icons
+    paddingRight: normalize(100),
   },
   eyeIcon: {
     position: 'absolute',
@@ -471,8 +478,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.family.medium,
     lineHeight: normalize(22),
   },
-  
-  // Loading Overlay
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -485,8 +490,6 @@ const styles = StyleSheet.create({
     fontSize: normalize(16),
     fontFamily: Fonts.family.medium,
   },
-  
-  // Biometric Overlay
   biometricOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

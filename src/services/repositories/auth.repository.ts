@@ -65,7 +65,7 @@ export const authRepository = {
 
   async logout(username: string): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.LOGOUT,
+      WORKFLOWCODE.WF_MB_LOGOUT,
       { username },
       false,
       true
@@ -101,22 +101,22 @@ export const authRepository = {
     );
   },
 
-  async changePassword(
-    userCode: string,
-    oldPassword: string,
-    newPassword: string
-  ): Promise<BaseResponseModel> {
-    return await apiService.executeWorkflow(
-      WORKFLOWCODE.WF_MB_CHANGE_PASSWORD,
-      {
-        usercode: userCode,
-        old_password: oldPassword,
-        new_password: newPassword,
-      },
-      false,
-      true
-    );
-  },
+  // async changePassword(
+  //   userCode: string,
+  //   oldPassword: string,
+  //   newPassword: string
+  // ): Promise<BaseResponseModel> {
+  //   return await apiService.executeWorkflow(
+  //     WORKFLOWCODE.WF_MB_CHANGE_PASSWORD,
+  //     {
+  //       usercode: userCode,
+  //       old_password: oldPassword,
+  //       new_password: newPassword,
+  //     },
+  //     false,
+  //     true
+  //   );
+  // },
 
   // ===== OTP =====
   async generateOTP(payload: {
