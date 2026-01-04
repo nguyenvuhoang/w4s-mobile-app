@@ -168,9 +168,10 @@ export const useLoginService = () => {
     try {
       const response = await authRepository.getAppInfo();
       if (response.isSuccess()) {
-        const appInfoData = response.getValue('data') as AppInfo;
+        const appInfoData = response.getValue() as AppInfo;
         setAppInfo(appInfoData);
         setAppInfoGlobal(appInfoData);
+        await StorageService.setAsyncItem(StorageKey.appInfo, JSON.stringify(appInfoData));
         return appInfoData;
       } else {
         showNotification(response.getError(), 'error');
@@ -304,9 +305,6 @@ export const useLoginService = () => {
           });
           await handleGetAppInfo();
           await StorageService.setAsyncItem(StorageKey.isVerifyFirstLogin, 'true');
-          const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
-          const isVerifyFirstLogin_channel = `${StorageKey.isVerifyFirstLogin}_${channelId}`;
-          await StorageService.setAsyncItem(isVerifyFirstLogin_channel, 'true');
           return true;
         }
       } catch (error) {
@@ -500,42 +498,42 @@ export const useLoginService = () => {
     }
   };
 
-  const proceedFirstLoginFlow = useCallback(
-    async (username?: string, phoneNumber?: string) => {
-      let finalPhoneNumber = phoneNumber;
+  // const proceedFirstLoginFlow = useCallback(
+  //   async (username?: string, phoneNumber?: string) => {
+  //     let finalPhoneNumber = phoneNumber;
 
-      if (!finalPhoneNumber && username) {
-        setUsername(username);
-        finalPhoneNumber = await getPhoneNumberByUserName(username);
-      }
+  //     if (!finalPhoneNumber && username) {
+  //       setUsername(username);
+  //       finalPhoneNumber = await getPhoneNumberByUserName(username);
+  //     }
 
-      if (!finalPhoneNumber) {
-        console.warn('Cần cung cấp username hoặc phoneNumber');
-        return;
-      }
+  //     if (!finalPhoneNumber) {
+  //       console.warn('Cần cung cấp username hoặc phoneNumber');
+  //       return;
+  //     }
 
-      setPhone(finalPhoneNumber);
-      setGlobalPhone(finalPhoneNumber);
+  //     setPhone(finalPhoneNumber);
+  //     setGlobalPhone(finalPhoneNumber);
 
-      const transaction_id = await handleGenerateLoginOTP(finalPhoneNumber);
-      if (transaction_id) {
-        setVerifyOTPCode(transaction_id);
-        showLoginOTPModal(finalPhoneNumber, transaction_id);
-      }
-    },
-    [getPhoneNumberByUserName, setGlobalPhone, handleGenerateLoginOTP, showLoginOTPModal]
-  );
+  //     const transaction_id = await handleGenerateLoginOTP(finalPhoneNumber);
+  //     if (transaction_id) {
+  //       setVerifyOTPCode(transaction_id);
+  //       showLoginOTPModal(finalPhoneNumber, transaction_id);
+  //     }
+  //   },
+  //   [getPhoneNumberByUserName, setGlobalPhone, handleGenerateLoginOTP, showLoginOTPModal]
+  // );
 
-  const proceedNormalLoginFlow = async () => {
-    const result = await handleGetAppInfo();
-    if (result) {
-      if (!globalPhone) {
-        const PhoneNumber = await getPhoneNumberByUserName(result.login_name);
-        setGlobalPhone(PhoneNumber);
-      }
-      goToHome();
-    }
-  };
+  // const proceedNormalLoginFlow = async () => {
+  //   const result = await handleGetAppInfo();
+  //   if (result) {
+  //     if (!globalPhone) {
+  //       const PhoneNumber = await getPhoneNumberByUserName(result.login_name);
+  //       setGlobalPhone(PhoneNumber);
+  //     }
+  //     goToHome();
+  //   }
+  // };
 
   const handleLogin = useCallback(
     async (isFirstLogin?: boolean) => {
@@ -576,11 +574,14 @@ export const useLoginService = () => {
               JSON.stringify({ token: userToken })
             );
 
-            if (isFirstLogin) {
-              await proceedFirstLoginFlow(username);
-            } else {
-              await proceedNormalLoginFlow();
-            }
+            // if (isFirstLogin) {
+            //   await proceedFirstLoginFlow(username);
+            // } else {
+            //   await proceedNormalLoginFlow();
+              await handleGetAppInfo();
+              await StorageService.setAsyncItem(StorageKey.isVerifyFirstLogin, 'true');
+              goToHome();
+            // }
           } catch (error: any) {
             showNotification(`${error.message || error}`, 'error', '38942');
           }
@@ -598,7 +599,7 @@ export const useLoginService = () => {
       password,
       isBiometricSupported,
       fcmToken,
-      proceedFirstLoginFlow,
+      // proceedFirstLoginFlow,
       showNotification,
       t,
     ]
@@ -636,7 +637,7 @@ export const useLoginService = () => {
     handleVerifyOTPForChangeDeviceAndGetAppInfo,
     handleGenerateLoginOTP,
     handleGetStatusLogin,
-    proceedFirstLoginFlow,
+    // proceedFirstLoginFlow,
     verifyOTPCode,
     getPhoneNumberByUserName,
     getPhoneNumberByUserCode,

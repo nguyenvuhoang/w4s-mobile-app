@@ -191,7 +191,7 @@ export const authRepository = {
   // ===== User Info & Status =====
   async getAppInfo(): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_APPINFO,
+      WORKFLOWCODE.WF_MB_APP_INFO,
       {},
       false,
       true
@@ -200,7 +200,7 @@ export const authRepository = {
 
   async getStatusLogin(usercode: string): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_GET_USER_STATUS_LOGIN,
+      WORKFLOWCODE.WF_MB_GET_USER_STATUS_LOGIN,
       { usercode },
       false,
       true

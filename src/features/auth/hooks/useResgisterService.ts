@@ -50,6 +50,31 @@ export const useRegisterService = () => {
     setIsFormValid(isValid);
   }, [fullName, email, password, confirmPassword, phone, address, birthday]);
 
+  const parseFullName = useCallback((fullName: string): {
+    firstname: string;
+    middlename: string;
+    lastname: string;
+  } => {
+    const nameParts = fullName.trim().split(/\s+/).filter(part => part.length > 0);
+    
+    if (nameParts.length === 0) {
+      return { firstname: '', middlename: '', lastname: '' };
+    } else if (nameParts.length === 1) {
+      // Chỉ có 1 từ -> bỏ vào lastname
+      return { firstname: '', middlename: '', lastname: nameParts[0] };
+    } else if (nameParts.length === 2) {
+      // Có 2 từ -> bỏ vào firstname và lastname
+      return { firstname: nameParts[0], middlename: '', lastname: nameParts[1] };
+    } else {
+      // Có 3 từ trở lên -> firstname, middlename (các từ ở giữa), lastname
+      const firstname = nameParts[0];
+      const lastname = nameParts[nameParts.length - 1];
+      const middlename = nameParts.slice(1, -1).join(' ');
+      
+      return { firstname, middlename, lastname };
+    }
+  }, []);
+
   // Email validation
   const isValidEmail = useCallback((email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -91,12 +116,15 @@ export const useRegisterService = () => {
         return false;
       }
 
+      // Parse fullName
+      const { firstname, middlename, lastname } = parseFullName(fullName);
+
       // Prepare payload
       const payload = {
         username: phone,
-        firstname: '',
-        middlename: '',
-        lastname: fullName,
+        firstname: firstname,
+        middlename: middlename,
+        lastname: lastname,
         gender: gender,
         address: address,
         email: email,
@@ -107,7 +135,7 @@ export const useRegisterService = () => {
         currentstatus: 'P', 
         contracttype: 'IND',
         reason: '',
-        usertype: '0203',
+        usertype: 'WL',
       };
 
       const response = await authRepository.register(payload);
@@ -146,6 +174,7 @@ export const useRegisterService = () => {
     birthday,
     isValidEmail,
     isValidPhone,
+    parseFullName,
     showNotification,
     t,
     router,
@@ -195,5 +224,6 @@ export const useRegisterService = () => {
     resetForm,
     isValidEmail,
     isValidPhone,
+    parseFullName,
   };
 };
