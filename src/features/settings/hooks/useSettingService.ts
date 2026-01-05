@@ -114,7 +114,7 @@ export const useSettingService = () => {
             await auth.updateData({
               commandname: COMMAND_NAME.UpdateIsBiometricSupported,
               parameters: { id: userCode, value: 1 },
-              workflowid: WORKFLOWCODE.MB_EXECUTE_SQL_FROM_CTH,
+              workflowid: WORKFLOWCODE.WF_MB_EXECUTE_SQL_FROM_CTH,
             });
             await handleGetAppInfo();
             setIsUsingTouchID(true);
@@ -133,7 +133,7 @@ export const useSettingService = () => {
         await auth.updateData({
           commandname: COMMAND_NAME.UpdateIsBiometricSupported,
           parameters: { id: userCode, value: 0 },
-          workflowid: WORKFLOWCODE.MB_EXECUTE_SQL_FROM_CTH,
+          workflowid: WORKFLOWCODE.WF_MB_EXECUTE_SQL_FROM_CTH,
         });
         await handleGetAppInfo();
         setIsUsingTouchID(false);
@@ -245,7 +245,7 @@ export const useSettingService = () => {
 
     try {
       const loginResponse = await auth.getSearchData({
-        workflowid: WORKFLOWCODE.MB_EXECUTE_SQL_FROM_CTH,
+        workflowid: WORKFLOWCODE.WF_MB_EXECUTE_SQL_FROM_CTH,
         commandname: COMMAND_NAME.SimpleSearchLoginDeviceInformation,
         searchtext: appInfo.user_code,
         pageindex: 1,

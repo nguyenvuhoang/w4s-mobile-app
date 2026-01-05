@@ -3,6 +3,7 @@ import StorageKey from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
 import { settingRepository } from "@/services/repositories";
 import StorageService from "@/services/StorageService";
+import { encrypt } from "@/utils/Utils";
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { useSettingService } from "./useSettingService";
@@ -59,13 +60,14 @@ export const useChangePassword = () => {
           message: "Mật khẩu không đáp ứng yêu cầu bảo mật",
         };
       }
-
+      const appInfo = await StorageService.getAsyncItem(StorageKey.appInfo);
+      const userName = JSON.parse(appInfo).login_name;
       const response = await settingRepository.changePassword(
-        params.currentPassword,
-        params.newPassword
+        encrypt(userName + "_" + params.currentPassword),
+        encrypt(userName + "_" + params.newPassword)
       );
 
-      if (response.data.success) {
+      if (response.isSuccess()) {
         await StorageService.setAsyncItem(
           StorageKey.isVerifyFirstLogin,
           "true"

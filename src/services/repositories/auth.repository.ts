@@ -74,7 +74,7 @@ export const authRepository = {
 
   async loginBiometric(refreshToken: string): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_REFRESH_TOKEN,
+      WORKFLOWCODE.WF_MB_REFRESH_TOKEN,
       { refresh_token: refreshToken },
       false,
       true
@@ -262,7 +262,7 @@ export const authRepository = {
       workflowid ??
       (withoutsession
         ? WORKFLOWCODE.MB_EXECUTE_SQL_WITHOUT_LOGIN
-        : WORKFLOWCODE.MB_EXECUTE_SQL);
+        : WORKFLOWCODE.WF_MB_EXECUTE_SQL_FROM_W4S);
 
     return await apiService.executeWorkflow(
       code,
@@ -297,7 +297,7 @@ export const authRepository = {
       workflowid ??
       (withoutsession
         ? WORKFLOWCODE.MB_EXECUTE_SQL_WITHOUT_LOGIN
-        : WORKFLOWCODE.MB_EXECUTE_SQL);
+        : WORKFLOWCODE.WF_MB_EXECUTE_SQL_FROM_W4S);
 
     return await apiService.executeWorkflowNew(
       code,
