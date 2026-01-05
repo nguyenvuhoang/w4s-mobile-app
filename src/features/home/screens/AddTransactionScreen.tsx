@@ -64,7 +64,7 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
   const categories = selectedType === 'expense' ? expenseCategories : incomeCategories;
 
   const handleSelectAccount = () => {
-    console.log('Select account');
+    router.push('/(protected)/wallet-list?mode=select')
   };
 
   const handleSelectCategory = () => {

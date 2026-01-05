@@ -33,6 +33,42 @@ export default function ProtectedLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen 
+        name="select-wallet-type"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_right',
+          animationDuration: 300,
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="create-wallet-details"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_right',
+          animationDuration: 300,
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="select-wallet-color"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          animationDuration: 300,
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="select-wallet-icon"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          animationDuration: 300,
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

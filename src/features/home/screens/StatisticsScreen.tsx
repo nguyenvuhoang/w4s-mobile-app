@@ -1,22 +1,24 @@
 import CustomText from '@/components/base/CustomText';
+import { useAppTheme } from '@/core/theme/ThemeContext';
+import { Tokens } from '@/core/theme/theme';
+import { hp, normalize, wp } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const { width } = Dimensions.get('window');
 
 interface StatisticsScreenProps {
   navigation: any;
 }
 
 const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
+  const { colors } = useAppTheme();
+
   const [selectedPeriod, setSelectedPeriod] = useState('Tháng');
   const [selectedTab, setSelectedTab] = useState('Chi tiêu');
 
@@ -24,13 +26,15 @@ const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
   const tabs = ['Chi tiêu', 'Thu nhập'];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <CustomText style={styles.headerTitle}>Thống kê</CustomText>
+          <CustomText style={[styles.headerTitle, { color: colors.text }]}>
+            Thống kê
+          </CustomText>
           <TouchableOpacity>
-            <Ionicons name="filter-outline" size={24} color="#000" />
+            <Ionicons name="filter-outline" size={normalize(24)} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -46,14 +50,15 @@ const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
               key={period}
               style={[
                 styles.periodButton,
-                selectedPeriod === period && styles.periodButtonActive,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                selectedPeriod === period && { backgroundColor: colors.tint, borderColor: colors.tint },
               ]}
               onPress={() => setSelectedPeriod(period)}
             >
               <CustomText
                 style={[
                   styles.periodText,
-                  selectedPeriod === period && styles.periodTextActive,
+                  { color: selectedPeriod === period ? Tokens.colors.main.white : colors.text },
                 ]}
               >
                 {period}
@@ -63,20 +68,20 @@ const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
         </ScrollView>
 
         {/* Tab Selector */}
-        <View style={styles.tabSelector}>
+        <View style={[styles.tabSelector, { backgroundColor: colors.card }]}>
           {tabs.map((tab) => (
             <TouchableOpacity
               key={tab}
               style={[
                 styles.tabButton,
-                selectedTab === tab && styles.tabButtonActive,
+                selectedTab === tab && { backgroundColor: colors.tint },
               ]}
               onPress={() => setSelectedTab(tab)}
             >
               <CustomText
                 style={[
                   styles.tabText,
-                  selectedTab === tab && styles.tabTextActive,
+                  { color: selectedTab === tab ? Tokens.colors.main.white : colors.icon },
                 ]}
               >
                 {tab}
@@ -86,17 +91,17 @@ const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
         </View>
 
         {/* Total Amount Card */}
-        <View style={styles.totalCard}>
-          <CustomText style={styles.totalLabel}>
+        <View style={[styles.totalCard, { backgroundColor: colors.card }]}>
+          <CustomText style={[styles.totalLabel, { color: colors.icon }]}>
             Tổng {selectedTab.toLowerCase()}
           </CustomText>
-          <CustomText style={styles.totalAmount}>
-            {selectedTab === 'Chi tiêu' ? '-' : '+'}$3,285.40
+          <CustomText style={[styles.totalAmount, { color: colors.text }]}>
+            {selectedTab === 'Chi tiêu' ? '-' : '+'}3,285,400 đ
           </CustomText>
           <View style={styles.changeContainer}>
             <Ionicons
               name={selectedTab === 'Chi tiêu' ? 'arrow-up' : 'arrow-down'}
-              size={16}
+              size={normalize(16)}
               color={selectedTab === 'Chi tiêu' ? '#FF3B30' : '#34C759'}
             />
             <CustomText
@@ -111,8 +116,10 @@ const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
         </View>
 
         {/* Chart Placeholder */}
-        <View style={styles.chartContainer}>
-          <CustomText style={styles.chartTitle}>Biểu đồ chi tiêu</CustomText>
+        <View style={[styles.chartContainer, { backgroundColor: colors.card }]}>
+          <CustomText style={[styles.chartTitle, { color: colors.text }]}>
+            Biểu đồ chi tiêu
+          </CustomText>
           <View style={styles.chartPlaceholder}>
             {/* This would be replaced with actual chart library */}
             <View style={styles.barChart}>
@@ -121,11 +128,14 @@ const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
                   <View
                     style={[
                       styles.bar,
-                      { height: `${height}%` },
-                      index === 3 && styles.barActive,
+                      { 
+                        height: `${height}%`,
+                        backgroundColor: colors.border,
+                      },
+                      index === 3 && { backgroundColor: colors.tint },
                     ]}
                   />
-                  <CustomText style={styles.barLabel}>
+                  <CustomText style={[styles.barLabel, { color: colors.icon }]}>
                     {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][index]}
                   </CustomText>
                 </View>
@@ -137,86 +147,104 @@ const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
         {/* Category Breakdown */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <CustomText style={styles.sectionTitle}>
+            <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
               Phân tích theo danh mục
             </CustomText>
             <TouchableOpacity>
-              <CustomText style={styles.seeMore}>Xem tất cả</CustomText>
+              <CustomText style={[styles.seeMore, { color: colors.tint }]}>
+                Xem tất cả
+              </CustomText>
             </TouchableOpacity>
           </View>
 
           <View style={styles.categoryList}>
             <CategoryBreakdown
-              icon="🛒"
+              icon="cart"
+              iconColor="#FF6B35"
               name="Mua sắm"
               amount="1,248,000 đ"
               percentage={38}
-              color="#FF6B35"
+              colors={colors}
             />
             <CategoryBreakdown
-              icon="🍴"
+              icon="restaurant"
+              iconColor="#4CAF50"
               name="Thực phẩm"
               amount="842,000 đ"
               percentage={26}
-              color="#4CAF50"
+              colors={colors}
             />
             <CategoryBreakdown
-              icon="🚗"
+              icon="car"
+              iconColor="#2196F3"
               name="Giao thông"
               amount="625,000 đ"
               percentage={19}
-              color="#2196F3"
+              colors={colors}
             />
             <CategoryBreakdown
-              icon="🎬"
+              icon="film"
+              iconColor="#9C27B0"
               name="Giải trí"
               amount="425,000 đ"
               percentage={13}
-              color="#9C27B0"
+              colors={colors}
             />
             <CategoryBreakdown
-              icon="💡"
+              icon="bulb"
+              iconColor="#FF9800"
               name="Hóa đơn"
               amount="145,000 đ"
               percentage={4}
-              color="#FF9800"
+              colors={colors}
             />
           </View>
         </View>
 
         {/* Monthly Comparison */}
         <View style={styles.section}>
-          <CustomText style={styles.sectionTitle}>So sánh theo tháng</CustomText>
+          <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
+            So sánh theo tháng
+          </CustomText>
           <View style={styles.comparisonContainer}>
-            <MonthComparison month="T10" amount="2,850,000 đ" />
-            <MonthComparison month="T11" amount="3,120,000 đ" />
-            <MonthComparison month="T12" amount="3,285,400 đ" isActive />
+            <MonthComparison month="T10" amount="2,850,000 đ" colors={colors} />
+            <MonthComparison month="T11" amount="3,120,000 đ" colors={colors} />
+            <MonthComparison month="T12" amount="3,285,400 đ" isActive colors={colors} />
           </View>
         </View>
+
+        {/* Bottom spacing */}
+        <View style={{ height: hp(2) }} />
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 // Category Breakdown Component
-const CategoryBreakdown = ({ icon, name, amount, percentage, color }: any) => (
-  <View style={styles.categoryItem}>
+const CategoryBreakdown = ({ icon, iconColor, name, amount, percentage, colors }: any) => (
+  <View style={[styles.categoryItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
     <View style={styles.categoryLeft}>
-      <View style={[styles.categoryIcon, { backgroundColor: color + '20' }]}>
-        <CustomText style={styles.categoryEmoji}>{icon}</CustomText>
+      <View style={[styles.categoryIcon, { backgroundColor: iconColor + '1A' }]}>
+        <Ionicons name={icon} size={normalize(24)} color={iconColor} />
       </View>
       <View style={styles.categoryInfo}>
-        <CustomText style={styles.categoryName}>{name}</CustomText>
-        <CustomText style={styles.categoryAmount}>{amount}</CustomText>
+        <CustomText style={[styles.categoryName, { color: colors.text }]}>
+          {name}
+        </CustomText>
+        <CustomText style={[styles.categoryAmount, { color: colors.icon }]}>
+          {amount}
+        </CustomText>
       </View>
     </View>
     <View style={styles.categoryRight}>
-      <CustomText style={styles.categoryPercentage}>{percentage}%</CustomText>
-      <View style={styles.percentageBarContainer}>
+      <CustomText style={[styles.categoryPercentage, { color: colors.text }]}>
+        {percentage}%
+      </CustomText>
+      <View style={[styles.percentageBarContainer, { backgroundColor: colors.background }]}>
         <View
           style={[
             styles.percentageBar,
-            { width: `${percentage}%`, backgroundColor: color },
+            { width: `${percentage}%`, backgroundColor: iconColor },
           ]}
         />
       </View>
@@ -225,12 +253,30 @@ const CategoryBreakdown = ({ icon, name, amount, percentage, color }: any) => (
 );
 
 // Month Comparison Component
-const MonthComparison = ({ month, amount, isActive }: any) => (
-  <View style={[styles.monthCard, isActive && styles.monthCardActive]}>
-    <CustomText style={[styles.monthLabel, isActive && styles.monthLabelActive]}>
+const MonthComparison = ({ month, amount, isActive, colors }: any) => (
+  <View
+    style={[
+      styles.monthCard,
+      { backgroundColor: colors.card, borderColor: colors.border },
+      isActive && { backgroundColor: colors.tint, borderColor: colors.tint },
+    ]}
+  >
+    <CustomText
+      style={[
+        styles.monthLabel,
+        { color: colors.icon },
+        isActive && { color: Tokens.colors.main.white },
+      ]}
+    >
       {month}
     </CustomText>
-    <CustomText style={[styles.monthAmount, isActive && styles.monthAmountActive]}>
+    <CustomText
+      style={[
+        styles.monthAmount,
+        { color: colors.text },
+        isActive && { color: Tokens.colors.main.white },
+      ]}
+    >
       {amount}
     </CustomText>
   </View>
@@ -239,95 +285,73 @@ const MonthComparison = ({ month, amount, isActive }: any) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F7',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: wp(5),
+    paddingVertical: normalize(16),
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: normalize(24),
     fontWeight: 'bold',
-    color: '#000',
   },
   periodSelector: {
-    marginBottom: 16,
+    marginBottom: normalize(16),
   },
   periodContent: {
-    paddingHorizontal: 20,
-    gap: 8,
+    paddingHorizontal: wp(5),
+    gap: normalize(8),
   },
   periodButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-  },
-  periodButtonActive: {
-    backgroundColor: '#007AFF',
+    paddingHorizontal: normalize(20),
+    paddingVertical: normalize(8),
+    borderRadius: normalize(20),
+    borderWidth: 1,
   },
   periodText: {
-    fontSize: 14,
-    color: '#000',
-  },
-  periodTextActive: {
-    color: '#fff',
-    fontWeight: '600',
+    fontSize: normalize(14),
   },
   tabSelector: {
     flexDirection: 'row',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 4,
+    marginHorizontal: wp(5),
+    marginBottom: hp(2.5),
+    borderRadius: normalize(12),
+    padding: normalize(4),
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: normalize(10),
     alignItems: 'center',
-    borderRadius: 8,
-  },
-  tabButtonActive: {
-    backgroundColor: '#007AFF',
+    borderRadius: normalize(8),
   },
   tabText: {
-    fontSize: 14,
-    color: '#8E8E93',
-  },
-  tabTextActive: {
-    color: '#fff',
-    fontWeight: '600',
+    fontSize: normalize(14),
   },
   totalCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 24,
-    marginHorizontal: 20,
-    marginBottom: 20,
+    borderRadius: normalize(20),
+    padding: normalize(24),
+    marginHorizontal: wp(5),
+    marginBottom: hp(2.5),
     alignItems: 'center',
   },
   totalLabel: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginBottom: 8,
+    fontSize: normalize(14),
+    marginBottom: normalize(8),
   },
   totalAmount: {
-    fontSize: 36,
+    fontSize: normalize(36),
     fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 8,
+    marginBottom: normalize(8),
   },
   changeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: normalize(4),
   },
   changeText: {
-    fontSize: 12,
+    fontSize: normalize(12),
   },
   increaseText: {
     color: '#FF3B30',
@@ -336,20 +360,18 @@ const styles = StyleSheet.create({
     color: '#34C759',
   },
   chartContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
-    marginHorizontal: 20,
-    marginBottom: 20,
+    borderRadius: normalize(20),
+    padding: normalize(20),
+    marginHorizontal: wp(5),
+    marginBottom: hp(2.5),
   },
   chartTitle: {
-    fontSize: 16,
+    fontSize: normalize(16),
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 20,
+    marginBottom: normalize(20),
   },
   chartPlaceholder: {
-    height: 200,
+    height: normalize(200),
   },
   barChart: {
     flexDirection: 'row',
@@ -361,134 +383,109 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: 8,
+    gap: normalize(8),
   },
   bar: {
     width: '70%',
-    backgroundColor: '#E5E5EA',
-    borderRadius: 4,
-  },
-  barActive: {
-    backgroundColor: '#007AFF',
+    borderRadius: normalize(4),
   },
   barLabel: {
-    fontSize: 10,
-    color: '#8E8E93',
+    fontSize: normalize(10),
   },
   section: {
-    marginBottom: 24,
+    marginBottom: hp(3),
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingHorizontal: wp(5),
+    marginBottom: normalize(16),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: normalize(18),
     fontWeight: '600',
-    color: '#000',
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingHorizontal: wp(5),
+    marginBottom: normalize(16),
   },
   seeMore: {
-    fontSize: 14,
-    color: '#007AFF',
+    fontSize: normalize(14),
   },
   categoryList: {
-    paddingHorizontal: 20,
-    gap: 12,
+    paddingHorizontal: wp(5),
+    gap: normalize(12),
   },
   categoryItem: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: normalize(16),
+    padding: normalize(16),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderWidth: 1,
   },
   categoryLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: normalize(12),
     flex: 1,
   },
   categoryIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: normalize(48),
+    height: normalize(48),
+    borderRadius: normalize(12),
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  categoryEmoji: {
-    fontSize: 24,
   },
   categoryInfo: {
     flex: 1,
   },
   categoryName: {
-    fontSize: 16,
+    fontSize: normalize(16),
     fontWeight: '600',
-    color: '#000',
   },
   categoryAmount: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginTop: 2,
+    fontSize: normalize(14),
+    marginTop: normalize(2),
   },
   categoryRight: {
     alignItems: 'flex-end',
-    minWidth: 60,
+    minWidth: normalize(60),
   },
   categoryPercentage: {
-    fontSize: 16,
+    fontSize: normalize(16),
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 4,
+    marginBottom: normalize(4),
   },
   percentageBarContainer: {
-    width: 60,
-    height: 4,
-    backgroundColor: '#F5F5F7',
-    borderRadius: 2,
+    width: normalize(60),
+    height: normalize(4),
+    borderRadius: normalize(2),
     overflow: 'hidden',
   },
   percentageBar: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: normalize(2),
   },
   comparisonContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 12,
+    paddingHorizontal: wp(5),
+    gap: normalize(12),
   },
   monthCard: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: normalize(16),
+    padding: normalize(16),
     alignItems: 'center',
-  },
-  monthCardActive: {
-    backgroundColor: '#007AFF',
+    borderWidth: 1,
   },
   monthLabel: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginBottom: 8,
-  },
-  monthLabelActive: {
-    color: '#fff',
+    fontSize: normalize(14),
+    marginBottom: normalize(8),
   },
   monthAmount: {
-    fontSize: 14,
+    fontSize: normalize(14),
     fontWeight: '600',
-    color: '#000',
     textAlign: 'center',
-  },
-  monthAmountActive: {
-    color: '#fff',
   },
 });
 

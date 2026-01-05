@@ -1,12 +1,14 @@
 import CustomText from '@/components/base/CustomText';
+import { useAppTheme } from '@/core/theme/ThemeContext';
+import { hp, normalize, wp } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,8 +17,10 @@ interface HomeScreenProps {
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+  const { colors } = useAppTheme();
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
@@ -26,17 +30,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               style={styles.avatar}
             />
             <View>
-              <CustomText style={styles.greeting}>Chào, HOANG</CustomText>
-              <CustomText style={styles.date}>T4, 14 Th12, 2025</CustomText>
+              <CustomText style={[styles.greeting, { color: colors.text }]}>
+                Chào, HOANG
+              </CustomText>
+              <CustomText style={[styles.date, { color: colors.icon }]}>
+                T4, 14 Th12, 2025
+              </CustomText>
             </View>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('Notification')}>
-            <Ionicons name="notifications-outline" size={24} color="#000" />
+            <Ionicons name="notifications-outline" size={normalize(24)} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         {/* Balance Card */}
-        <View style={styles.balanceCard}>
+        <View style={[styles.balanceCard, { backgroundColor: colors.tint }]}>
           <CustomText style={styles.balanceLabel}>Tổng Số Dư</CustomText>
           <CustomText style={styles.balanceAmount}>$24,582.50</CustomText>
           
@@ -57,67 +65,85 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <TouchableOpacity style={styles.actionButton}>
-            <View style={[styles.actionIcon, { backgroundColor: '#007AFF' }]}>
-              <Ionicons name="arrow-up" size={24} color="#fff" />
+            <View style={[styles.actionIcon, { backgroundColor: colors.tint }]}>
+              <Ionicons name="arrow-up" size={normalize(24)} color="#fff" />
             </View>
-            <CustomText style={styles.actionLabel}>Gửi</CustomText>
+            <CustomText style={[styles.actionLabel, { color: colors.text }]}>
+              Gửi
+            </CustomText>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton}>
-            <View style={[styles.actionIcon, { backgroundColor: '#F5F5F7' }]}>
-              <Ionicons name="arrow-down" size={24} color="#000" />
+            <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
+              <Ionicons name="arrow-down" size={normalize(24)} color={colors.text} />
             </View>
-            <CustomText style={styles.actionLabel}>Nhận</CustomText>
+            <CustomText style={[styles.actionLabel, { color: colors.text }]}>
+              Nhận
+            </CustomText>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton}>
-            <View style={[styles.actionIcon, { backgroundColor: '#F5F5F7' }]}>
-              <Ionicons name="card-outline" size={24} color="#000" />
+            <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
+              <Ionicons name="card-outline" size={normalize(24)} color={colors.text} />
             </View>
-            <CustomText style={styles.actionLabel}>Thẻ</CustomText>
+            <CustomText style={[styles.actionLabel, { color: colors.text }]}>
+              Thẻ
+            </CustomText>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton}>
-            <View style={[styles.actionIcon, { backgroundColor: '#F5F5F7' }]}>
-              <Ionicons name="ellipsis-horizontal" size={24} color="#000" />
+            <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
+              <Ionicons name="ellipsis-horizontal" size={normalize(24)} color={colors.text} />
             </View>
-            <CustomText style={styles.actionLabel}>Thêm</CustomText>
+            <CustomText style={[styles.actionLabel, { color: colors.text }]}>
+              Thêm
+            </CustomText>
           </TouchableOpacity>
         </View>
 
         {/* Spending Categories */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <CustomText style={styles.sectionTitle}>Chi tiêu nhiều nhất</CustomText>
+            <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
+              Chi tiêu nhiều nhất
+            </CustomText>
             <TouchableOpacity>
-              <CustomText style={styles.seeMore}>Xem Thêm</CustomText>
+              <CustomText style={[styles.seeMore, { color: colors.tint }]}>
+                Xem Thêm
+              </CustomText>
             </TouchableOpacity>
           </View>
 
           <View style={styles.categoryList}>
             <CategoryItem
-              icon="🛒"
+              icon="cart-outline"
+              iconColor="#FF6B35"
               name="Mua sắm"
               transactions="32 Giao dịch"
               amount="1,248,000 đ"
               color="#FF6B35"
               progress={0.75}
+              colors={colors}
             />
             <CategoryItem
-              icon="🍴"
+              icon="restaurant-outline"
+              iconColor="#4CAF50"
               name="Thực phẩm"
               transactions="28 Giao dịch"
               amount="842,000 đ"
               color="#4CAF50"
               progress={0.6}
+              colors={colors}
             />
             <CategoryItem
-              icon="🎬"
+              icon="film-outline"
+              iconColor="#9C27B0"
               name="Giải trí"
               transactions="15 Giao dịch"
               amount="425,000 đ"
               color="#9C27B0"
               progress={0.4}
+              colors={colors}
             />
           </View>
         </View>
@@ -125,80 +151,101 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         {/* Recent Transactions */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <CustomText style={styles.sectionTitle}>Giao dịch gần đây</CustomText>
+            <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
+              Giao dịch gần đây
+            </CustomText>
             <TouchableOpacity>
-              <CustomText style={styles.seeMore}>Xem thêm</CustomText>
+              <CustomText style={[styles.seeMore, { color: colors.tint }]}>
+                Xem thêm
+              </CustomText>
             </TouchableOpacity>
           </View>
 
           <View style={styles.transactionList}>
             <TransactionItem
-              icon="🛍️"
-              iconBg="#E3F2FD"
+              icon="bag"
+              iconColor="#2196F3"
               name="Nội Thất"
               time="Hôm nay, 2:30 PM"
               amount="-89,000 đ"
               isExpense
+              colors={colors}
             />
             <TransactionItem
-              icon="💰"
-              iconBg="#E8F5E9"
+              icon="cash"
+              iconColor="#4CAF50"
               name="Lương hàng tháng"
               time="Hôm qua, 9:00 AM"
               amount="+24,200,000 đ"
               isExpense={false}
+              colors={colors}
             />
             <TransactionItem
-              icon="🛍️"
-              iconBg="#FFF3E0"
+              icon="cart"
+              iconColor="#FF9800"
               name="Shopee"
               time="Hôm qua, 8:15 AM"
               amount="-6,000 đ"
               isExpense
+              colors={colors}
             />
             <TransactionItem
-              icon="🛍️"
-              iconBg="#E3F2FD"
+              icon="home"
+              iconColor="#2196F3"
               name="Nội Thất"
               time="Hôm qua, 2:30 PM"
               amount="-89,000 đ"
               isExpense
+              colors={colors}
             />
           </View>
         </View>
+
+        {/* Bottom spacing */}
+        <View style={{ height: hp(2) }} />
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 // Category Item Component
-const CategoryItem = ({ icon, name, transactions, amount, color, progress }: any) => (
-  <View style={styles.categoryItem}>
+const CategoryItem = ({ icon, iconColor, name, transactions, amount, color, progress, colors }: any) => (
+  <View style={[styles.categoryItem, { backgroundColor: colors.card }]}>
     <View style={styles.categoryLeft}>
-      <View style={[styles.categoryIcon, { backgroundColor: color + '20' }]}>
-        <CustomText style={styles.categoryEmoji}>{icon}</CustomText>
+      <View style={[styles.categoryIcon, { backgroundColor: iconColor }]}>
+        <Ionicons name={icon} size={normalize(24)} color="#fff" />
       </View>
       <View>
-        <CustomText style={styles.categoryName}>{name}</CustomText>
-        <CustomText style={styles.categoryTransactions}>{transactions}</CustomText>
+        <CustomText style={[styles.categoryName, { color: colors.text }]}>
+          {name}
+        </CustomText>
+        <CustomText style={[styles.categoryTransactions, { color: colors.icon }]}>
+          {transactions}
+        </CustomText>
       </View>
     </View>
-    <CustomText style={styles.categoryAmount}>{amount}</CustomText>
-    <View style={styles.progressBarContainer}>
+    <CustomText style={[styles.categoryAmount, { color: colors.text }]}>
+      {amount}
+    </CustomText>
+    <View style={[styles.progressBarContainer, { backgroundColor: colors.background }]}>
       <View style={[styles.progressBar, { width: `${progress * 100}%`, backgroundColor: color }]} />
     </View>
   </View>
 );
 
 // Transaction Item Component
-const TransactionItem = ({ icon, iconBg, name, time, amount, isExpense }: any) => (
-  <View style={styles.transactionItem}>
-    <View style={[styles.transactionIcon, { backgroundColor: iconBg }]}>
-      <CustomText style={styles.transactionEmoji}>{icon}</CustomText>
+const TransactionItem = ({ icon, iconColor, name, time, amount, isExpense, colors }: any) => (
+  <View style={[styles.transactionItem, { backgroundColor: colors.card }]}>
+    <View style={[styles.transactionIcon, { backgroundColor: iconColor + '1A' }]}>
+      <Ionicons name={icon} size={normalize(24)} color={iconColor} />
     </View>
     <View style={styles.transactionInfo}>
-      <CustomText style={styles.transactionName}>{name}</CustomText>
-      <CustomText style={styles.transactionTime}>{time}</CustomText>
+      <CustomText style={[styles.transactionName, { color: colors.text }]}>
+        {name}
+      </CustomText>
+      <CustomText style={[styles.transactionTime, { color: colors.icon }]}>
+        {time}
+      </CustomText>
     </View>
     <CustomText style={[styles.transactionAmount, isExpense ? styles.expenseText : styles.incomeText]}>
       {amount}
@@ -209,53 +256,50 @@ const TransactionItem = ({ icon, iconBg, name, time, amount, isExpense }: any) =
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F7',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: wp(5),
+    paddingVertical: normalize(16),
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: normalize(12),
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: normalize(50),
+    height: normalize(50),
+    borderRadius: normalize(25),
   },
   greeting: {
-    fontSize: 18,
+    fontSize: normalize(18),
     fontWeight: '600',
-    color: '#000',
   },
   date: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 2,
+    fontSize: normalize(12),
+    marginTop: normalize(2),
   },
   balanceCard: {
-    backgroundColor: '#007AFF',
-    borderRadius: 24,
-    padding: 24,
-    marginHorizontal: 20,
-    marginBottom: 20,
+    borderRadius: normalize(24),
+    padding: normalize(24),
+    marginHorizontal: wp(5),
+    marginBottom: hp(2.5),
+    alignItems: 'center',
   },
   balanceLabel: {
-    fontSize: 14,
+    fontSize: normalize(14),
     color: '#fff',
     opacity: 0.8,
-    marginBottom: 8,
+    marginBottom: normalize(8),
   },
   balanceAmount: {
-    fontSize: 36,
+    fontSize: normalize(36),
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 20,
+    marginBottom: normalize(20),
   },
   balanceDetails: {
     flexDirection: 'row',
@@ -267,165 +311,148 @@ const styles = StyleSheet.create({
   },
   divider: {
     width: 1,
-    height: 40,
+    height: normalize(40),
     backgroundColor: '#fff',
     opacity: 0.3,
   },
   balanceSubLabel: {
-    fontSize: 12,
+    fontSize: normalize(12),
     color: '#fff',
     opacity: 0.8,
-    marginBottom: 4,
+    marginBottom: normalize(4),
   },
   incomeAmount: {
-    fontSize: 18,
+    fontSize: normalize(18),
     fontWeight: '600',
     color: '#fff',
   },
   expenseAmount: {
-    fontSize: 18,
+    fontSize: normalize(18),
     fontWeight: '600',
     color: '#fff',
   },
   month: {
-    fontSize: 12,
+    fontSize: normalize(12),
     color: '#fff',
     opacity: 0.8,
     textAlign: 'center',
-    marginTop: 12,
+    marginTop: normalize(12),
   },
   quickActions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: wp(5),
+    marginBottom: hp(3),
   },
   actionButton: {
     alignItems: 'center',
-    gap: 8,
+    gap: normalize(8),
   },
   actionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: normalize(56),
+    height: normalize(56),
+    borderRadius: normalize(16),
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionLabel: {
-    fontSize: 12,
-    color: '#000',
+    fontSize: normalize(12),
   },
   section: {
-    marginBottom: 24,
+    marginBottom: hp(3),
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingHorizontal: wp(5),
+    marginBottom: normalize(16),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: normalize(18),
     fontWeight: '600',
-    color: '#000',
   },
   seeMore: {
-    fontSize: 14,
-    color: '#007AFF',
+    fontSize: normalize(14),
   },
   categoryList: {
-    paddingHorizontal: 20,
-    gap: 12,
+    paddingHorizontal: wp(5),
+    gap: normalize(12),
   },
   categoryItem: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: normalize(16),
+    padding: normalize(16),
     position: 'relative',
   },
   categoryLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 8,
+    gap: normalize(12),
+    marginBottom: normalize(8),
   },
   categoryIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: normalize(48),
+    height: normalize(48),
+    borderRadius: normalize(12),
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoryEmoji: {
-    fontSize: 24,
-  },
   categoryName: {
-    fontSize: 16,
+    fontSize: normalize(16),
     fontWeight: '600',
-    color: '#000',
   },
   categoryTransactions: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 2,
+    fontSize: normalize(12),
+    marginTop: normalize(2),
   },
   categoryAmount: {
     position: 'absolute',
-    right: 16,
-    top: 24,
-    fontSize: 16,
+    right: normalize(16),
+    top: normalize(24),
+    fontSize: normalize(16),
     fontWeight: '600',
-    color: '#000',
   },
   progressBarContainer: {
-    height: 6,
-    backgroundColor: '#F5F5F7',
-    borderRadius: 3,
+    height: normalize(6),
+    borderRadius: normalize(3),
     overflow: 'hidden',
-    marginTop: 8,
+    marginTop: normalize(8),
   },
   progressBar: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: normalize(3),
   },
   transactionList: {
-    paddingHorizontal: 20,
-    gap: 12,
+    paddingHorizontal: wp(5),
+    gap: normalize(12),
   },
   transactionItem: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: normalize(16),
+    padding: normalize(16),
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: normalize(12),
   },
   transactionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: normalize(48),
+    height: normalize(48),
+    borderRadius: normalize(12),
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  transactionEmoji: {
-    fontSize: 24,
   },
   transactionInfo: {
     flex: 1,
   },
   transactionName: {
-    fontSize: 16,
+    fontSize: normalize(16),
     fontWeight: '600',
-    color: '#000',
   },
   transactionTime: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 2,
+    fontSize: normalize(12),
+    marginTop: normalize(2),
   },
   transactionAmount: {
-    fontSize: 16,
+    fontSize: normalize(16),
     fontWeight: '600',
   },
   expenseText: {

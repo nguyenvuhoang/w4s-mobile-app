@@ -1,8 +1,7 @@
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts } from '@/core/theme/theme';
 import { hp, normalize, wp } from '@/utils/layout';
-import { FontAwesome6 } from '@expo/vector-icons';
+import { FontAwesome6, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -29,7 +28,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
       id: '1',
       category: 'Mỹ phẩm',
       subcategory: 'Mua sắm',
-      emoji: '💅',
+      icon: 'sparkles-outline',
       iconColor: '#FF6B6B',
       spent: 890000,
       total: 1000000,
@@ -39,7 +38,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
       id: '2',
       category: 'Thực phẩm',
       subcategory: '',
-      emoji: '🍴',
+      icon: 'restaurant-outline',
       iconColor: '#51CF66',
       spent: 300000,
       total: 1500000,
@@ -49,7 +48,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
       id: '3',
       category: 'Cắm trại',
       subcategory: 'Giải trí',
-      emoji: '⛺',
+      icon: 'bonfire-outline',
       iconColor: '#20C997',
       spent: 2000000,
       total: 2500000,
@@ -118,10 +117,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                 <CustomText
                   style={[
                     styles.periodText,
-                    { 
-                      color: selectedPeriod === period ? '#fff' : colors.icon,
-                      fontFamily: selectedPeriod === period ? Fonts.family.semiBold : Fonts.family.regular,
-                    },
+                    { color: selectedPeriod === period ? '#fff' : colors.icon },
                   ]}
                 >
                   {period}
@@ -239,10 +235,10 @@ const BudgetItem = ({ budget, colors }: any) => {
           <View
             style={[
               styles.budgetIconContainer,
-              { backgroundColor: budget.iconColor + '15' },
+              { backgroundColor: budget.iconColor },
             ]}
           >
-            <CustomText style={styles.budgetEmoji}>{budget.emoji}</CustomText>
+            <Ionicons name={budget.icon} size={normalize(24)} color="#fff" />
           </View>
           
           <View style={styles.budgetInfo}>
@@ -330,7 +326,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: '#fff',
     fontSize: normalize(14),
-    fontFamily: Fonts.family.semiBold,
+    fontWeight: '600',
   },
   headerRightWrapper: {
     flexDirection: 'row',
@@ -351,7 +347,6 @@ const styles = StyleSheet.create({
   },
   cashText: {
     fontSize: normalize(12),
-    fontFamily: Fonts.family.medium,
   },
   dividerVertical: {
     width: 1,
@@ -406,11 +401,10 @@ const styles = StyleSheet.create({
   circleLabelSmall: {
     fontSize: normalize(11),
     marginBottom: normalize(4),
-    fontFamily: Fonts.family.regular,
   },
   circleAmount: {
     fontSize: normalize(22),
-    fontFamily: Fonts.family.bold,
+    fontWeight: 'bold',
   },
   statsRow: {
     flexDirection: 'row',
@@ -426,11 +420,10 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: normalize(11),
     marginBottom: normalize(4),
-    fontFamily: Fonts.family.regular,
   },
   statValue: {
     fontSize: normalize(13),
-    fontFamily: Fonts.family.semiBold,
+    fontWeight: '600',
   },
   statDivider: {
     width: 1,
@@ -464,24 +457,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  budgetEmoji: {
-    fontSize: normalize(22),
-  },
   budgetInfo: {
     flex: 1,
   },
   budgetCategory: {
     fontSize: normalize(15),
-    fontFamily: Fonts.family.semiBold,
+    fontWeight: '600',
     marginBottom: normalize(2),
   },
   budgetSubcategory: {
     fontSize: normalize(12),
-    fontFamily: Fonts.family.regular,
   },
   budgetAmount: {
     fontSize: normalize(15),
-    fontFamily: Fonts.family.semiBold,
+    fontWeight: '600',
   },
   progressWrapper: {
     position: 'relative',
@@ -518,11 +507,9 @@ const styles = StyleSheet.create({
   },
   timelineLabel: {
     fontSize: normalize(10),
-    fontFamily: Fonts.family.regular,
   },
   percentageText: {
     fontSize: normalize(11),
-    fontFamily: Fonts.family.regular,
     marginTop: normalize(4),
   },
 });
