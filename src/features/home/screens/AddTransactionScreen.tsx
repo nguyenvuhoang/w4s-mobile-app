@@ -3,15 +3,15 @@ import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/theme';
+import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -26,14 +26,25 @@ interface AddTransactionScreenProps {
   navigation: any;
 }
 
+interface SelectedCategoryData {
+  category_id: string;
+  category_name: string;
+  category_type: 'EXPENSE' | 'INCOME' | 'LOAN';
+  icon: string;
+  color: string;
+}
+
 type TransactionType = 'income' | 'expense' | 'inout';
 type DateSelection = 'today' | 'yesterday';
 
+const STORAGE_KEY = 'temp_selected_category';
+
 const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation }) => {
   const { colors } = useAppTheme();
+  
   const [selectedType, setSelectedType] = useState<TransactionType>('expense');
   const [sourceAccount, setSourceAccount] = useState('Tiền mặt');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategoryData, setSelectedCategoryData] = useState<SelectedCategoryData | null>(null);
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [dateSelection, setDateSelection] = useState<DateSelection>('today');
@@ -41,34 +52,69 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
   const [reminder, setReminder] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [includeInReport, setIncludeInReport] = useState(true);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
-  const expenseCategories = [
-    { id: '1', name: 'Mua sắm', icon: '🛒', color: '#FF6B35' },
-    { id: '2', name: 'Thực phẩm', icon: '🍴', color: '#4CAF50' },
-    { id: '3', name: 'Giao thông', icon: '🚗', color: '#2196F3' },
-    { id: '4', name: 'Giải trí', icon: '🎬', color: '#9C27B0' },
-    { id: '5', name: 'Hóa đơn', icon: '💡', color: '#FF9800' },
-    { id: '6', name: 'Y tế', icon: '⚕️', color: '#E91E63' },
-    { id: '7', name: 'Giáo dục', icon: '📚', color: '#3F51B5' },
-    { id: '8', name: 'Khác', icon: '📌', color: '#9E9E9E' },
-  ];
+  // Load selected category from storage when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      const loadSelectedCategory = async () => {
+        try {
+          const storedCategory = await StorageService.getAsyncItem(STORAGE_KEY);
+          if (storedCategory) {
+            const categoryData: SelectedCategoryData = JSON.parse(storedCategory);
+            console.log('Loaded category from storage:', categoryData);
+            setSelectedCategoryData(categoryData);
+            
+            // Auto sync transaction type with category type
+            if (categoryData.category_type === 'INCOME') {
+              setSelectedType('income');
+            } else if (categoryData.category_type === 'EXPENSE') {
+              setSelectedType('expense');
+            } else if (categoryData.category_type === 'LOAN') {
+              setSelectedType('inout');
+            }
+            
+            // Clear storage after reading
+            await StorageService.removeAsyncItem(STORAGE_KEY);
+          }
+        } catch (error) {
+          console.error('Error loading selected category:', error);
+        }
+      };
+      
+      loadSelectedCategory();
+    }, [])
+  );
 
-  const incomeCategories = [
-    { id: '1', name: 'Lương', icon: '💰', color: '#4CAF50' },
-    { id: '2', name: 'Thưởng', icon: '🎁', color: '#FF9800' },
-    { id: '3', name: 'Đầu tư', icon: '📈', color: '#2196F3' },
-    { id: '4', name: 'Khác', icon: '💵', color: '#9E9E9E' },
-  ];
-
-  const categories = selectedType === 'expense' ? expenseCategories : incomeCategories;
+  // Clear category when transaction type changes and doesn't match
+  const handleTypeChange = (newType: TransactionType) => {
+    setSelectedType(newType);
+    
+    if (selectedCategoryData) {
+      const categoryType = selectedCategoryData.category_type;
+      const shouldClear = 
+        (newType === 'income' && categoryType !== 'INCOME') ||
+        (newType === 'expense' && categoryType !== 'EXPENSE') ||
+        (newType === 'inout' && categoryType !== 'LOAN');
+      
+      if (shouldClear) {
+        console.log('Clearing category due to type mismatch');
+        setSelectedCategoryData(null);
+      }
+    }
+  };
 
   const handleSelectAccount = () => {
     router.push('/(protected)/wallet-list?mode=select')
   };
 
   const handleSelectCategory = () => {
-    setShowCategoryModal(true);
+    // Navigate to category selection screen with current type
+    router.push({
+      pathname: '/(protected)/select-category',
+      params: {
+        selectedType: selectedType
+      }
+    });
   };
 
   const handlePreviousDate = () => {
@@ -115,7 +161,7 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
     console.log('Create transaction', {
       type: selectedType,
       sourceAccount,
-      category: selectedCategory,
+      category: selectedCategoryData,
       amount,
       note,
       dateSelection,
@@ -138,7 +184,14 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
     return `${day} ${month}, ${year}`;
   };
 
-  const selectedCategoryData = categories.find(c => c.id === selectedCategory);
+  const parseCategoryName = (nameJson: string) => {
+    try {
+      const parsed = JSON.parse(nameJson);
+      return parsed.vi || parsed.en || 'Chọn nhóm';
+    } catch {
+      return 'Chọn nhóm';
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -165,7 +218,7 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
                     borderColor: colors.border,
                   },
                 ]}
-                onPress={() => setSelectedType('income')}
+                onPress={() => handleTypeChange('income')}
               >
                 <CustomText
                   style={[
@@ -188,7 +241,7 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
                     borderColor: colors.border,
                   },
                 ]}
-                onPress={() => setSelectedType('expense')}
+                onPress={() => handleTypeChange('expense')}
               >
                 <CustomText
                   style={[
@@ -211,7 +264,7 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
                     borderColor: colors.border,
                   },
                 ]}
-                onPress={() => setSelectedType('inout')}
+                onPress={() => handleTypeChange('inout')}
               >
                 <CustomText
                   style={[
@@ -258,20 +311,20 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
               <View style={styles.selectFieldLeft}>
                 {selectedCategoryData ? (
                   <>
-                    <View style={[styles.categoryIcon, { backgroundColor: selectedCategoryData.color + '20' }]}>
-                      <CustomText style={styles.categoryEmoji}>{selectedCategoryData.icon}</CustomText>
+                    <View style={[styles.categoryIcon, { backgroundColor: selectedCategoryData.color }]}>
+                      <FontAwesome6 name={selectedCategoryData.icon as any} size={normalize(18)} color="#fff" />
                     </View>
                     <CustomText style={[styles.selectFieldText, { color: colors.text }]}>
-                      {selectedCategoryData.name}
+                      {parseCategoryName(selectedCategoryData.category_name)}
                     </CustomText>
                   </>
                 ) : (
                   <>
-                    <View style={[styles.categoryIcon, { backgroundColor: '#FF6B35' + '20' }]}>
-                      <FontAwesome6 name="shopping-bag" size={normalize(16)} color="#FF6B35" />
+                    <View style={[styles.categoryIcon, { backgroundColor: colors.border }]}>
+                      {/* Empty icon placeholder */}
                     </View>
                     <CustomText style={[styles.selectFieldText, { color: colors.icon }]}>
-                      Shoppe
+                      Chọn nhóm
                     </CustomText>
                   </>
                 )}
@@ -467,60 +520,6 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-
-      {/* Category Modal */}
-      <Modal
-        visible={showCategoryModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowCategoryModal(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <View style={styles.modalHeader}>
-              <CustomText style={[styles.modalTitle, { color: colors.text }]}>
-                Chọn danh mục
-              </CustomText>
-              <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
-                <FontAwesome6 name="xmark" size={normalize(24)} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.categoryGrid}>
-              <View style={styles.categoryRow}>
-                {categories.map((category) => (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={[
-                      styles.categoryCard,
-                      { backgroundColor: colors.background, borderColor: colors.border },
-                      selectedCategory === category.id && { borderColor: colors.tint, backgroundColor: colors.tint + '15' },
-                    ]}
-                    onPress={() => {
-                      setSelectedCategory(category.id);
-                      setShowCategoryModal(false);
-                    }}
-                  >
-                    <View
-                      style={[
-                        styles.categoryIconLarge,
-                        { backgroundColor: category.color + '20' },
-                      ]}
-                    >
-                      <CustomText style={styles.categoryEmojiLarge}>
-                        {category.icon}
-                      </CustomText>
-                    </View>
-                    <CustomText style={[styles.categoryCardName, { color: colors.text }]}>
-                      {category.name}
-                    </CustomText>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };
@@ -583,9 +582,6 @@ const styles = StyleSheet.create({
     borderRadius: normalize(10),
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  categoryEmoji: {
-    fontSize: normalize(20),
   },
   amountContainer: {
     flexDirection: 'row',
@@ -738,61 +734,6 @@ const styles = StyleSheet.create({
     fontSize: normalize(16),
     fontFamily: Fonts.family.semiBold,
     color: '#fff',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    borderTopLeftRadius: normalize(24),
-    borderTopRightRadius: normalize(24),
-    paddingTop: hp(2.5),
-    maxHeight: hp(80),
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: wp(5),
-    marginBottom: hp(2.5),
-  },
-  modalTitle: {
-    fontSize: normalize(20),
-    fontFamily: Fonts.family.semiBold,
-  },
-  categoryGrid: {
-    paddingHorizontal: wp(5),
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: normalize(12),
-    paddingBottom: hp(3),
-  },
-  categoryCard: {
-    width: '31%',
-    aspectRatio: 1,
-    borderRadius: normalize(16),
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: normalize(12),
-    borderWidth: 2,
-  },
-  categoryIconLarge: {
-    width: normalize(48),
-    height: normalize(48),
-    borderRadius: normalize(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: normalize(8),
-  },
-  categoryEmojiLarge: {
-    fontSize: normalize(24),
-  },
-  categoryCardName: {
-    fontSize: normalize(12),
-    textAlign: 'center',
   },
 });
 

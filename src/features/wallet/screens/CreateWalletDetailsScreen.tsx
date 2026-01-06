@@ -79,7 +79,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
 
   const handleSelectIcon = () => {
     router.push({
-      pathname: '/(protected)/select-wallet-icon',
+      pathname: '/(protected)/select-icon',
       params: { 
         walletType,
         color: iconColor,
@@ -89,7 +89,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
 
   const handleSelectColor = () => {
     router.push({
-      pathname: '/(protected)/select-wallet-color',
+      pathname: '/(protected)/select-color',
       params: {
         walletType,
         icon,

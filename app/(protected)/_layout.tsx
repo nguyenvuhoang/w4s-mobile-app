@@ -52,7 +52,7 @@ export default function ProtectedLayout() {
         }}
       />
       <Stack.Screen 
-        name="select-wallet-color"
+        name="select-color"
         options={{
           presentation: 'modal',
           animation: 'slide_from_bottom',
@@ -61,7 +61,16 @@ export default function ProtectedLayout() {
         }}
       />
       <Stack.Screen 
-        name="select-wallet-icon"
+        name="select-icon"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          animationDuration: 300,
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="select-category"
         options={{
           presentation: 'modal',
           animation: 'slide_from_bottom',

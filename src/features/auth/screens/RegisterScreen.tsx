@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -28,25 +31,44 @@ const RegisterScreen = () => {
     setFullName,
     email,
     setEmail,
-    password,
-    setPassword,
-    confirmPassword,
-    setConfirmPassword,
     phone,
     setPhone,
     address,
     setAddress,
-    showPassword,
-    setShowPassword,
-    showConfirmPassword,
-    setShowConfirmPassword,
+    birthday,
+    setBirthday,
     isRegistering,
     isFormValid,
     handleRegister,
   } = useRegisterService();
 
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   const handleLogin = () => {
     router.back();
+  };
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setBirthday(selectedDate.toISOString());
+    }
+  };
+
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const getDateValue = (): Date => {
+    if (birthday) {
+      return new Date(birthday);
+    }
+    return new Date();
   };
 
   return (
@@ -165,82 +187,45 @@ const RegisterScreen = () => {
               />
             </View>
 
-            {/* Password Input */}
+            {/* Birthday Input */}
             <View style={styles.inputContainer}>
               <ThemedText style={[styles.label, { color: colors.text }]}>
-                Mật khẩu
+                Ngày sinh
               </ThemedText>
-              <View style={styles.passwordContainer}>
-                <TextInput
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(true)}
+                disabled={isRegistering}
+              >
+                <View
                   style={[
                     styles.input,
-                    styles.passwordInput,
+                    styles.dateInput,
                     {
                       backgroundColor: colors.card,
-                      color: colors.text,
                       borderColor: colors.border,
                     },
                   ]}
-                  placeholder="Mật khẩu của bạn"
-                  placeholderTextColor={colors.icon}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoComplete="password"
-                  editable={!isRegistering}
-                />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowPassword(!showPassword)}
-                  disabled={isRegistering}
                 >
+                  <ThemedText style={[styles.dateText, { color: birthday ? colors.text : colors.icon }]}>
+                    {birthday ? formatDate(birthday) : 'Chọn ngày sinh'}
+                  </ThemedText>
                   <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    name="calendar-outline"
                     size={normalize(22)}
                     color={colors.icon}
                   />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Confirm Password Input */}
-            <View style={styles.inputContainer}>
-              <ThemedText style={[styles.label, { color: colors.text }]}>
-                Xác nhận mật khẩu
-              </ThemedText>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={[
-                    styles.input,
-                    styles.passwordInput,
-                    {
-                      backgroundColor: colors.card,
-                      color: colors.text,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                  placeholder="Nhập lại mật khẩu"
-                  placeholderTextColor={colors.icon}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={!showConfirmPassword}
-                  autoCapitalize="none"
-                  autoComplete="password"
-                  editable={!isRegistering}
+                </View>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={getDateValue()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                  minimumDate={new Date(1900, 0, 1)}
                 />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  disabled={isRegistering}
-                >
-                  <Ionicons
-                    name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
-                    size={normalize(22)}
-                    color={colors.icon}
-                  />
-                </TouchableOpacity>
-              </View>
+              )}
             </View>
 
             {/* Register Button */}
@@ -336,16 +321,15 @@ const styles = StyleSheet.create({
     paddingTop: normalize(15),
     paddingBottom: normalize(15),
   },
-  passwordContainer: {
-    position: 'relative',
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  passwordInput: {
-    paddingRight: normalize(50),
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: normalize(16),
-    top: normalize(15),
+  dateText: {
+    fontSize: normalize(16),
+    fontFamily: Fonts.family.regular,
+    lineHeight: normalize(22),
   },
   registerButton: {
     height: normalize(52),

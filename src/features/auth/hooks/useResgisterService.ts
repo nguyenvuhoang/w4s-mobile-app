@@ -8,7 +8,6 @@ import { authRepository } from '@/services/repositories/auth.repository';
 interface RegisterFormData {
   fullName: string;
   email: string;
-  password: string;
   phone: string;
   address: string;
   gender: number;
@@ -19,14 +18,10 @@ export const useRegisterService = () => {
   // State
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [gender, setGender] = useState<number>(1); // 1: Nam, 2: Nữ
   const [birthday, setBirthday] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
 
@@ -40,15 +35,12 @@ export const useRegisterService = () => {
     const isValid = 
       fullName.trim().length > 0 &&
       email.trim().length > 0 &&
-      password.length >= 6 &&
-      confirmPassword.length >= 6 &&
-      password === confirmPassword &&
       phone.trim().length >= 10 &&
       address.trim().length > 0 &&
       birthday.length > 0;
 
     setIsFormValid(isValid);
-  }, [fullName, email, password, confirmPassword, phone, address, birthday]);
+  }, [fullName, email, phone, address, birthday]);
 
   const parseFullName = useCallback((fullName: string): {
     firstname: string;
@@ -104,18 +96,6 @@ export const useRegisterService = () => {
         return false;
       }
 
-      // Validate password match
-      if (password !== confirmPassword) {
-        showNotification(t('validation.passwordMismatch') || 'Mật khẩu không khớp', 'warning');
-        return false;
-      }
-
-      // Validate password length
-      if (password.length < 6) {
-        showNotification(t('validation.passwordTooShort') || 'Mật khẩu phải có ít nhất 6 ký tự', 'warning');
-        return false;
-      }
-
       // Parse fullName
       const { firstname, middlename, lastname } = parseFullName(fullName);
 
@@ -166,8 +146,6 @@ export const useRegisterService = () => {
   }, [
     fullName,
     email,
-    password,
-    confirmPassword,
     phone,
     address,
     gender,
@@ -184,14 +162,10 @@ export const useRegisterService = () => {
   const resetForm = useCallback(() => {
     setFullName('');
     setEmail('');
-    setPassword('');
-    setConfirmPassword('');
     setPhone('');
     setAddress('');
     setGender(1);
     setBirthday('');
-    setShowPassword(false);
-    setShowConfirmPassword(false);
   }, []);
 
   return {
@@ -200,10 +174,6 @@ export const useRegisterService = () => {
     setFullName,
     email,
     setEmail,
-    password,
-    setPassword,
-    confirmPassword,
-    setConfirmPassword,
     phone,
     setPhone,
     address,
@@ -212,10 +182,6 @@ export const useRegisterService = () => {
     setGender,
     birthday,
     setBirthday,
-    showPassword,
-    setShowPassword,
-    showConfirmPassword,
-    setShowConfirmPassword,
     isRegistering,
     isFormValid,
     
