@@ -73,21 +73,31 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
-              icon="lock-closed-outline"
-              title="Đổi mật khẩu"
-              onPress={() => {router.push('/(protected)/change-password')}}
-              colors={colors}
-            />
-            <SettingItem
-              icon="card-outline"
-              title="Phương thức thanh toán"
-              onPress={() => {}}
-              badge="2"
-              colors={colors}
-            />
-            <SettingItem
               icon="wallet-outline"
-              title="Tài khoản liên kết"
+              title="Ví của tôi"
+              onPress={() => {router.push('/(protected)/select-wallet-type');}}
+              colors={colors}
+            />
+            <SettingItem
+              icon="cube-outline"
+              title="Nhóm"
+              onPress={() => {router.push({
+                    pathname: '/(protected)/select-category',
+                    params: {
+                       isEdit: "true"
+                    }
+                  });}}
+              colors={colors}
+            />
+            <SettingItem
+              icon="briefcase-outline"
+              title="Sự kiện"
+              onPress={() => {}}
+              colors={colors}
+            />
+            <SettingItem
+              icon="calendar-outline"
+              title="Giao dịch định kỳ"
               onPress={() => {}}
               colors={colors}
             />
@@ -105,6 +115,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               title="Thông báo"
               value={notificationsEnabled}
               onValueChange={setNotificationsEnabled}
+              colors={colors}
+            />
+            <SettingItem 
+              icon="time-outline" 
+              title="Nhắc giao dịch" 
+              value="Tắt chuông báo" 
+              onPress={() => {}} 
               colors={colors}
             />
             <SettingItemWithSwitch
@@ -146,9 +163,20 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           </CustomText>
           <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
             <SettingItem
-              icon="cloud-upload-outline"
-              title="Sao lưu dữ liệu"
-              subtitle="Lần cuối: 2 giờ trước"
+              icon="lock-closed-outline"
+              title="Đổi mật khẩu"
+              onPress={() => {router.push('/(protected)/change-password')}}
+              colors={colors}
+            />
+            <SettingItem
+              icon="document-text-outline"
+              title="Chính sách bảo mật"
+              onPress={() => {}}
+              colors={colors}
+            />
+            <SettingItem
+              icon="phone-portrait-outline"
+              title="Thông tin đăng nhập"
               onPress={() => {}}
               colors={colors}
             />
@@ -159,45 +187,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
-              icon="document-text-outline"
-              title="Chính sách bảo mật"
-              onPress={() => {}}
-              colors={colors}
-            />
-          </View>
-        </View>
-
-        {/* Support */}
-        <View style={styles.section}>
-          <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
-            Hỗ trợ
-          </CustomText>
-          <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
-            <SettingItem
-              icon="help-circle-outline"
-              title="Trung tâm trợ giúp"
-              onPress={() => {}}
-              colors={colors}
-            />
-            <SettingItem
-              icon="chatbubble-outline"
-              title="Liên hệ hỗ trợ"
-              onPress={() => {}}
-              colors={colors}
-            />
-            <SettingItem
-              icon="star-outline"
-              title="Đánh giá ứng dụng"
-              onPress={() => {}}
-              colors={colors}
-            />
-            <SettingItem
               icon="information-circle-outline"
               title="Giới thiệu"
               value="v1.0.0"
               onPress={() => {}}
               colors={colors}
             />
+            
           </View>
         </View>
 

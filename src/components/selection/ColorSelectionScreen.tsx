@@ -5,9 +5,9 @@ import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  ScrollView,
+  Dimensions,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -16,7 +16,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 import ColorPicker, { HueSlider, Panel1 } from 'reanimated-color-picker';
 
-// Preset colors
 const PRESET_COLORS = [
   '#3B82F6',
   '#06B6D4',
@@ -26,57 +25,42 @@ const PRESET_COLORS = [
   '#EC4899',
   '#8B5CF6',
   '#10B981',
-  '#F59E0B',
-  '#6366F1',
 ];
 
 const SelectWalletColorScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const params = useLocalSearchParams();
-
   const icon = params.icon as string;
 
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
 
-  // ❗ JS function – chỉ chạy trên RN thread
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+  const pickerSize = useMemo(() => {
+    return Math.min(SCREEN_WIDTH - wp(10), normalize(260));
+  }, [SCREEN_WIDTH]);
+
   const updateColor = useCallback((hex: string) => {
     setSelectedColor(hex);
   }, []);
 
   const handleContinue = async () => {
-    await StorageService.setItem('temp_wallet_color', selectedColor);
+    await StorageService.setItem('temp_selected_color', selectedColor);
     router.back();
   };
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <AppHeader title="Chọn màu" showBackButton />
 
-      <ScrollView
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.contentContainer}
-      >
+      {/* ===== MAIN CONTENT (NO SCROLL) ===== */}
+      <View style={styles.content}>
         {/* Preview */}
         <View style={styles.previewContainer}>
-          <View
-            style={[
-              styles.previewCircle,
-              { backgroundColor: selectedColor },
-            ]}
-          >
-            <FontAwesome6
-              name={icon as any}
-              size={normalize(48)}
-              color="#fff"
-            />
+          <View style={[styles.previewCircle, { backgroundColor: selectedColor }]}>
+            <FontAwesome6 name={icon as any} size={normalize(42)} color="#fff" />
           </View>
-
-          <CustomText
-            style={[styles.colorText, { color: colors.text }]}
-          >
+          <CustomText style={[styles.colorText, { color: colors.text }]}>
             {selectedColor.toUpperCase()}
           </CustomText>
         </View>
@@ -91,16 +75,24 @@ const SelectWalletColorScreen: React.FC = () => {
               scheduleOnRN(updateColor, color.hex);
             }}
           >
-            <Panel1 style={styles.panel} />
-            <HueSlider style={styles.hueSlider} />
+            <Panel1
+              style={[
+                styles.panel,
+                { width: pickerSize, height: pickerSize },
+              ]}
+            />
+            <HueSlider
+              style={[
+                styles.hueSlider,
+                { width: pickerSize, marginTop: normalize(14) },
+              ]}
+            />
           </ColorPicker>
         </View>
 
         {/* Preset colors */}
-        <View style={styles.section}>
-          <CustomText
-            style={[styles.sectionTitle, { color: colors.text }]}
-          >
+        <View style={styles.presetContainer}>
+          <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
             Màu sẵn có
           </CustomText>
 
@@ -111,131 +103,120 @@ const SelectWalletColorScreen: React.FC = () => {
                 style={[
                   styles.presetColorItem,
                   { backgroundColor: color },
-                  selectedColor.toUpperCase() ===
-                    color.toUpperCase() && [
-                    styles.presetColorSelected,
-                    { borderColor: colors.text },
-                  ],
+                  selectedColor.toUpperCase() === color.toUpperCase() && {
+                    borderColor: colors.text,
+                  },
                 ]}
                 onPress={() => setSelectedColor(color)}
               />
             ))}
           </View>
         </View>
+      </View>
 
-        <View style={{ height: hp(4) }} />
-      </ScrollView>
-
-      {/* Bottom buttons */}
+      {/* ===== BOTTOM BUTTONS ===== */}
       <View
         style={[
           styles.bottomButtons,
-          {
-            backgroundColor: colors.background,
-            borderTopColor: colors.border,
-          },
+          { backgroundColor: colors.background, borderTopColor: colors.border },
         ]}
       >
         <TouchableOpacity
           style={[styles.cancelButton, { borderColor: colors.border }]}
           onPress={() => router.back()}
         >
-          <CustomText
-            style={[styles.cancelButtonText, { color: colors.text }]}
-          >
+          <CustomText style={[styles.cancelButtonText, { color: colors.text }]}>
             Hủy bỏ
           </CustomText>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[
-            styles.confirmButton,
-            { backgroundColor: colors.tint },
-          ]}
+          style={[styles.confirmButton, { backgroundColor: colors.tint }]}
           onPress={handleContinue}
         >
-          <CustomText style={styles.confirmButtonText}>
-            Xác nhận
-          </CustomText>
+          <CustomText style={styles.confirmButtonText}>Xác nhận</CustomText>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 };
 
+// ================= STYLES =================
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { flex: 1 },
-  contentContainer: {
+
+  content: {
+    flex: 1,
     paddingHorizontal: wp(5),
+    justifyContent: 'space-between',
     paddingTop: hp(2),
-    alignItems: 'center',
+    paddingBottom: hp(2),
   },
+
   previewContainer: {
     alignItems: 'center',
-    marginBottom: hp(3),
   },
+
   previewCircle: {
-    width: normalize(100),
-    height: normalize(100),
-    borderRadius: normalize(50),
+    width: normalize(90),
+    height: normalize(90),
+    borderRadius: normalize(45),
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 8,
-    marginBottom: normalize(12),
+    marginBottom: normalize(10),
+    elevation: 6,
   },
+
   colorText: {
-    fontSize: normalize(16),
+    fontSize: normalize(15),
     fontWeight: '600',
     letterSpacing: 1,
   },
+
   pickerContainer: {
-    width: '100%',
     alignItems: 'center',
-    marginBottom: hp(3),
   },
+
   colorPicker: {
-    width: '100%',
-    gap: normalize(16),
+    alignItems: 'center',
   },
+
   panel: {
-    width: normalize(280),
-    height: normalize(280),
     borderRadius: normalize(16),
-    elevation: 4,
+    elevation: 3,
   },
+
   hueSlider: {
-    width: normalize(280),
-    height: normalize(40),
-    borderRadius: normalize(20),
+    height: normalize(36),
+    borderRadius: normalize(18),
     elevation: 2,
   },
-  section: {
-    width: '100%',
-    marginTop: hp(1),
+
+  presetContainer: {
+    alignItems: 'center',
   },
+
   sectionTitle: {
-    fontSize: normalize(16),
+    fontSize: normalize(15),
     fontWeight: '600',
     marginBottom: normalize(12),
-    textAlign: 'center',
   },
+
   presetColors: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: normalize(12),
+    gap: normalize(10),
     justifyContent: 'center',
   },
+
   presetColorItem: {
-    width: normalize(48),
-    height: normalize(48),
-    borderRadius: normalize(24),
+    width: normalize(44),
+    height: normalize(44),
+    borderRadius: normalize(22),
     borderWidth: 3,
     borderColor: 'transparent',
   },
-  presetColorSelected: {
-    borderWidth: 4,
-  },
+
   bottomButtons: {
     flexDirection: 'row',
     paddingHorizontal: wp(5),
@@ -243,6 +224,7 @@ const styles = StyleSheet.create({
     gap: normalize(12),
     borderTopWidth: 1,
   },
+
   cancelButton: {
     flex: 1,
     paddingVertical: normalize(14),
@@ -250,16 +232,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
   },
+
   cancelButtonText: {
     fontSize: normalize(16),
     fontWeight: '600',
   },
+
   confirmButton: {
     flex: 1,
     paddingVertical: normalize(14),
     borderRadius: normalize(12),
     alignItems: 'center',
   },
+
   confirmButtonText: {
     fontSize: normalize(16),
     fontWeight: '600',

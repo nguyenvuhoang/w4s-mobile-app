@@ -10,6 +10,7 @@ export const Tokens = {
       bg_dark: "#0f172a",
       bg_light: "#EAECF1",
       textgray: "#9ca3af",
+      error: "#FF6551",
     },
     foundation: {
       primary: {
@@ -67,6 +68,8 @@ export const Colors = {
     background: Tokens.colors.main.bg_light,
     tint: Tokens.colors.main.primary,
 
+    error: Tokens.colors.main.error,
+
     // UI Elements
     icon: Tokens.colors.main.textgray,
     tabIconDefault: Tokens.colors.main.textgray,
@@ -89,6 +92,7 @@ export const Colors = {
     background: Tokens.colors.main.bg_dark,
     tint: Tokens.colors.main.white,
 
+    error: Tokens.colors.main.error,
     // UI Elements
     icon: Tokens.colors.main.textgray,
     tabIconDefault: Tokens.colors.main.textgray,

@@ -1,77 +1,36 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
+import { useWalletTracker } from '@/features/wallet/hooks/useWalletTracker';
+import { Wallet } from '@/services/repositories/walletTracker.repository';
 import { hp, normalize, wp } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-interface Wallet {
-  id: string;
-  name: string;
-  balance: number;
-  icon: string;
-  iconColor: string;
-  isDefault?: boolean;
-}
-
 interface WalletListScreenProps {
-  mode?: 'select' | 'manage'; // select: chọn ví, manage: quản lý ví
+  mode?: 'select' | 'manage';
   onSelectWallet?: (wallet: Wallet) => void;
 }
 
-const WalletListScreen: React.FC<WalletListScreenProps> = ({ 
+const WalletListScreen: React.FC<WalletListScreenProps> = ({
   mode = 'select',
-  onSelectWallet 
+  onSelectWallet,
 }) => {
   const { colors } = useAppTheme();
-  
-  const [wallets, setWallets] = useState<Wallet[]>([
-    {
-      id: '1',
-      name: 'Tiền mặt',
-      balance: 2547000,
-      icon: 'cash',
-      iconColor: '#22C55E',
-      isDefault: true,
-    },
-    {
-      id: '2',
-      name: 'Ngân hàng A',
-      balance: 5892000,
-      icon: 'business',
-      iconColor: '#3B82F6',
-    },
-    {
-      id: '3',
-      name: 'Ngân hàng B',
-      balance: 8234000,
-      icon: 'business',
-      iconColor: '#EF4444',
-    },
-    {
-      id: '4',
-      name: 'Thẻ tín dụng',
-      balance: 12456000,
-      icon: 'card',
-      iconColor: '#F59E0B',
-    },
-    {
-      id: '5',
-      name: 'Tiết kiệm',
-      balance: 3685000,
-      icon: 'wallet',
-      iconColor: '#8B5CF6',
-    },
-  ]);
+
+  const { wallets, loading, error, refetch } = useWalletTracker({
+    autoFetch: true,
+  });
 
   const handleSelectWallet = (wallet: Wallet) => {
     if (mode === 'select') {
@@ -80,82 +39,115 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
     }
   };
 
-  const handleWalletOptions = (wallet: Wallet) => {
-    Alert.alert(
-      wallet.name,
-      'Chọn hành động',
-      [
-        { text: 'Chỉnh sửa', onPress: () => handleEditWallet(wallet) },
-        { text: 'Xóa', onPress: () => handleDeleteWallet(wallet), style: 'destructive' },
-        { text: 'Hủy', style: 'cancel' },
-      ]
-    );
-  };
-
-  const handleEditWallet = (wallet: Wallet) => {
-    // TODO: Navigate to edit wallet screen
-    console.log('Edit wallet:', wallet);
-  };
-
   const handleDeleteWallet = (wallet: Wallet) => {
     Alert.alert(
       'Xác nhận xóa',
-      `Bạn có chắc muốn xóa ví "${wallet.name}"?`,
+      `Bạn có chắc muốn xóa ví "${wallet.wallet_name}"?`,
       [
-        {
-          text: 'Hủy',
-          style: 'cancel',
-        },
+        { text: 'Hủy', style: 'cancel' },
         {
           text: 'Xóa',
           style: 'destructive',
-          onPress: () => {
-            setWallets(wallets.filter(w => w.id !== wallet.id));
+          onPress: async () => {
+            try {
+              // await walletRepository.deleteWallet(wallet.id);
+              refetch();
+            } catch (err) {
+              Alert.alert('Lỗi', 'Không thể xóa ví');
+            }
           },
         },
       ]
     );
   };
 
+  const handleWalletOptions = (wallet: Wallet) => {
+    Alert.alert(wallet.wallet_name, 'Chọn hành động', [
+      { text: 'Chỉnh sửa', onPress: () => {} },
+      {
+        text: 'Xóa',
+        style: 'destructive',
+        onPress: () => handleDeleteWallet(wallet),
+      },
+      { text: 'Hủy', style: 'cancel' },
+    ]);
+  };
+
   const handleCreateWallet = () => {
     router.push('/(protected)/select-wallet-type');
   };
 
+  /* -------------------- UI STATES -------------------- */
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <AppHeader title="Ví của tôi" showBackButton />
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={colors.tint} />
+          <CustomText style={{ marginTop: normalize(12) }}>Đang tải...</CustomText>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <AppHeader title="Ví của tôi" showBackButton />
+        <View style={styles.centerContainer}>
+          <CustomText style={{ textAlign: 'center', marginBottom: normalize(16) }}>
+            {error}
+          </CustomText>
+          <TouchableOpacity
+            style={[styles.retryButton, { backgroundColor: colors.tint }]}
+            onPress={refetch}
+          >
+            <CustomText style={{ color: '#fff', fontWeight: '600' }}>
+              Thử lại
+            </CustomText>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader 
+      <AppHeader
         title={mode === 'select' ? 'Chọn nguồn tiền' : 'Quản lý ví'}
         showBackButton
       />
 
-      <ScrollView 
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Section Title */}
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
           Ví của tôi
         </CustomText>
 
-        {/* Wallet List */}
-        <View style={styles.walletList}>
-          {wallets.map((wallet) => (
-            <WalletItem
-              key={wallet.id}
-              wallet={wallet}
-              colors={colors}
-              onPress={() => handleSelectWallet(wallet)}
-              onOptionsPress={() => handleWalletOptions(wallet)}
-              mode={mode}
-            />
-          ))}
-        </View>
+        {wallets.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <CustomText style={{ color: colors.icon }}>
+              Chưa có ví nào
+            </CustomText>
+          </View>
+        ) : (
+          <View style={styles.walletList}>
+            {wallets.map((wallet) => (
+              <WalletItem
+                key={wallet.wallet_id}
+                wallet={wallet}
+                colors={colors}
+                mode={mode}
+                onPress={() => handleSelectWallet(wallet)}
+                onOptionsPress={() => handleWalletOptions(wallet)}
+              />
+            ))}
+          </View>
+        )}
 
-        {/* Bottom spacing */}
         <View style={{ height: hp(10) }} />
       </ScrollView>
 
-      {/* Add Wallet Button */}
       <View style={[styles.bottomButton, { backgroundColor: colors.background }]}>
         <TouchableOpacity
           style={[styles.addButton, { backgroundColor: colors.tint }]}
@@ -169,13 +161,14 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
   );
 };
 
-// Wallet Item Component
+/* -------------------- ITEM -------------------- */
+
 interface WalletItemProps {
   wallet: Wallet;
   colors: any;
+  mode: 'select' | 'manage';
   onPress: () => void;
   onOptionsPress: () => void;
-  mode: 'select' | 'manage';
 }
 
 const WalletItem: React.FC<WalletItemProps> = ({
@@ -183,7 +176,6 @@ const WalletItem: React.FC<WalletItemProps> = ({
   colors,
   onPress,
   onOptionsPress,
-  mode,
 }) => {
   return (
     <TouchableOpacity
@@ -192,57 +184,42 @@ const WalletItem: React.FC<WalletItemProps> = ({
       activeOpacity={0.7}
     >
       <View style={styles.walletLeft}>
-        {/* Icon */}
-        <View
-          style={[
-            styles.walletIcon,
-            { backgroundColor: wallet.iconColor },
-          ]}
-        >
-          <Ionicons name={wallet.icon as any} size={normalize(24)} color="#fff" />
+        <View style={[styles.walletIcon, { backgroundColor: wallet.wallet_color }]}>
+          <Ionicons name={wallet.wallet_icon as any} size={normalize(24)} color="#fff" />
         </View>
 
-        {/* Info */}
         <View style={styles.walletInfo}>
-          <View style={styles.walletNameRow}>
-            <CustomText style={[styles.walletName, { color: colors.text }]}>
-              {wallet.name}
-            </CustomText>
-            {wallet.isDefault && (
-              <View style={styles.defaultBadge}>
-                <Ionicons name="star" size={normalize(12)} color="#3B82F6" />
-                <CustomText style={styles.defaultText}>CHÍNH</CustomText>
-              </View>
-            )}
-          </View>
+          <CustomText style={[styles.walletName, { color: colors.text }]}>
+            {wallet.wallet_name}
+          </CustomText>
           <CustomText style={[styles.walletBalance, { color: colors.icon }]}>
             {wallet.balance.toLocaleString('vi-VN')} đ
           </CustomText>
         </View>
       </View>
 
-      {/* Options Button */}
       <TouchableOpacity
         style={styles.optionsButton}
         onPress={(e) => {
           e.stopPropagation();
           onOptionsPress();
         }}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Ionicons name="ellipsis-vertical" size={normalize(20)} color={colors.icon} />
+        <Ionicons
+          name="ellipsis-vertical"
+          size={normalize(20)}
+          color={colors.icon}
+        />
       </TouchableOpacity>
     </TouchableOpacity>
   );
 };
 
+/* -------------------- STYLES -------------------- */
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  scrollView: { flex: 1 },
   sectionTitle: {
     fontSize: normalize(16),
     fontWeight: '600',
@@ -256,57 +233,28 @@ const styles = StyleSheet.create({
   },
   walletItem: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     padding: normalize(16),
     borderRadius: normalize(16),
   },
   walletLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
     gap: normalize(12),
+    flex: 1,
   },
   walletIcon: {
     width: normalize(48),
     height: normalize(48),
     borderRadius: normalize(12),
-    alignItems: 'center',
     justifyContent: 'center',
-  },
-  walletInfo: {
-    flex: 1,
-  },
-  walletNameRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: normalize(8),
-    marginBottom: normalize(4),
   },
-  walletName: {
-    fontSize: normalize(16),
-    fontWeight: '600',
-  },
-  defaultBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(4),
-    backgroundColor: '#DBEAFE',
-    paddingHorizontal: normalize(8),
-    paddingVertical: normalize(2),
-    borderRadius: normalize(12),
-  },
-  defaultText: {
-    fontSize: normalize(10),
-    fontWeight: '600',
-    color: '#3B82F6',
-  },
-  walletBalance: {
-    fontSize: normalize(14),
-  },
-  optionsButton: {
-    padding: normalize(8),
-  },
+  walletInfo: { flex: 1 },
+  walletName: { fontSize: normalize(16), fontWeight: '600' },
+  walletBalance: { fontSize: normalize(14) },
+  optionsButton: { padding: normalize(8) },
   bottomButton: {
     paddingHorizontal: wp(5),
     paddingVertical: hp(2),
@@ -315,9 +263,9 @@ const styles = StyleSheet.create({
   },
   addButton: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: normalize(8),
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingVertical: normalize(16),
     borderRadius: normalize(16),
   },
@@ -325,6 +273,21 @@ const styles = StyleSheet.create({
     fontSize: normalize(16),
     fontWeight: '600',
     color: '#fff',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: wp(10),
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: hp(6),
+  },
+  retryButton: {
+    paddingHorizontal: normalize(24),
+    paddingVertical: normalize(12),
+    borderRadius: normalize(12),
   },
 });
 

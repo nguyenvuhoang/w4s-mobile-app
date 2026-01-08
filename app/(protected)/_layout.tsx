@@ -78,6 +78,15 @@ export default function ProtectedLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen 
+        name="edit-category"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_right',
+          animationDuration: 300,
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

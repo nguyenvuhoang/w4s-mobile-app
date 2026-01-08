@@ -31,17 +31,17 @@ const CreateWalletDetailsScreen: React.FC = () => {
     useCallback(() => {
       const loadSelectedData = async () => {
         // Check for selected icon
-        const selectedIcon = await StorageService.getItem('temp_wallet_icon');
+        const selectedIcon = await StorageService.getItem('temp_selected_icon');
         if (selectedIcon) {
           setIcon(selectedIcon);
-          await StorageService.removeItem('temp_wallet_icon');
+          await StorageService.removeItem('temp_selected_icon');
         }
 
         // Check for selected color
-        const selectedColor = await StorageService.getItem('temp_wallet_color');
+        const selectedColor = await StorageService.getItem('temp_selected_color');
         if (selectedColor) {
           setIconColor(selectedColor);
-          await StorageService.removeItem('temp_wallet_color');
+          await StorageService.removeItem('temp_selected_color');
         }
       };
 
@@ -81,7 +81,6 @@ const CreateWalletDetailsScreen: React.FC = () => {
     router.push({
       pathname: '/(protected)/select-icon',
       params: { 
-        walletType,
         color: iconColor,
       }
     });
@@ -91,7 +90,6 @@ const CreateWalletDetailsScreen: React.FC = () => {
     router.push({
       pathname: '/(protected)/select-color',
       params: {
-        walletType,
         icon,
       }
     });

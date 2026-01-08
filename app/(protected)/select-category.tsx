@@ -1,2 +1,2 @@
-import CategorySelectionScreen from '@/components/selection/CategorySelectionScreen';
+import CategorySelectionScreen from '@/features/category/CategorySelectionScreen';
 export default CategorySelectionScreen;
