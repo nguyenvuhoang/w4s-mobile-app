@@ -66,7 +66,7 @@ export const authRepository = {
   async logout(username: string): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
       WORKFLOWCODE.WF_MB_LOGOUT,
-      { username },
+      { login_name: username },
       false,
       true
     );
