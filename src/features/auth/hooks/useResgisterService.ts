@@ -113,9 +113,9 @@ export const useRegisterService = () => {
         userlevel: '1',
         birthday: birthday,
         currentstatus: 'P', 
-        contracttype: 'IND',
+        contracttype: 'WAL',
         reason: '',
-        usertype: 'WL',
+        usertype: '0502',
       };
 
       const response = await authRepository.register(payload);

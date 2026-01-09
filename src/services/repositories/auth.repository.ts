@@ -40,7 +40,7 @@ export const authRepository = {
     usertype: string;
   }): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.WF_BO_CREATE_USER,
+      WORKFLOWCODE.WF_MB_CREATE_USER,
       {
         username: payload.username,
         firstname: payload.firstname || "",

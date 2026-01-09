@@ -221,7 +221,7 @@ const CategorySelectionScreen: React.FC = () => {
             style={[styles.createButton, { backgroundColor: colors.tint }]}
             onPress={() => {
               router.push({
-                pathname: "/category/create",
+                pathname: "/(protected)/category/create",
                 params: {
                   type: selectedTab,
                 },
