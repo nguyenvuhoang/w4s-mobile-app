@@ -1,5 +1,5 @@
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts } from '@/core/theme/theme';
+import { Fonts } from '@/core/theme/font';
 import { normalize, wp } from "@/utils/layout";
 import React, { useEffect, useRef } from "react";
 import {
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: normalize(5),
     fontSize: normalize(14),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
   },
 });
 

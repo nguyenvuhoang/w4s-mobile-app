@@ -4,7 +4,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 // Import các Provider
 import AppErrorBoundary from "@/components/AppErrorBoundary";
-import { AppConfig } from "@/constants/AppConfig";
+import { AppConfig } from "@/config/AppConfig";
 import { AdvertisementProvider } from "@/contexts/AdvertisementContext";
 import { CallbackProvider } from "@/contexts/CallbackRegistryContext";
 import { GlobalProvider } from "@/contexts/GlobalContext";

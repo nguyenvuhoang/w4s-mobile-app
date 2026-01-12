@@ -24,10 +24,10 @@ interface SettingsScreenProps {
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { handleLogout, touchIDClick, isUsingTouchID } = useSettingService();
   const { appInfo } = useContext(GlobalContext);
-  const { colors } = useAppTheme();
+  const { mode, setMode, colors, isDark } = useAppTheme();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  // const [darkModeEnabled, setDarkModeEnabled] = useState(false);
 
   const handleBiometricToggle = async () => {
     const userCode = appInfo?.user_code || '';
@@ -90,6 +90,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
+              icon="receipt-outline"
+              title="Sổ nợ"
+              onPress={() => {}}
+              colors={colors}
+            />
+            <SettingItem
+              icon="document-text-outline"
+              title="Hóa đơn"
+              onPress={() => {}}
+              colors={colors}
+            />
+            <SettingItem
               icon="briefcase-outline"
               title="Sự kiện"
               onPress={() => {}}
@@ -99,6 +111,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               icon="calendar-outline"
               title="Giao dịch định kỳ"
               onPress={() => {}}
+              colors={colors}
+            />
+            <SettingItem
+              icon="construct-outline"
+              title="Công cụ"
+              onPress={() => {router.push('/(protected)/tools');}}
               colors={colors}
             />
           </View>
@@ -135,8 +153,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItemWithSwitch
               icon="moon-outline"
               title="Chế độ tối"
-              value={darkModeEnabled}
-              onValueChange={setDarkModeEnabled}
+              value={isDark}
+              onValueChange={(val: boolean) => {
+                setMode(val ? 'dark' : 'light');
+              }}
               colors={colors}
             />
             <SettingItem 
@@ -181,14 +201,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
-              icon="shield-checkmark-outline"
-              title="Bảo mật"
-              onPress={() => {}}
-              colors={colors}
-            />
-            <SettingItem
               icon="information-circle-outline"
-              title="Giới thiệu"
+              title="Thông tin ứng dụng"
               value="v1.0.0"
               onPress={() => {}}
               colors={colors}

@@ -2,17 +2,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts, Tokens } from '@/core/theme/theme';
+import { Fonts } from '@/core/theme/font';
+import { Tokens } from '@/core/theme/theme';
 import { hasNotch, normalize } from '@/utils/layout';
 
 const ForgotPasswordScreen = () => {
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: normalize(18),
-    fontFamily: Fonts.family.semiBold,
+    fontFamily: Fonts.semiBold,
     lineHeight: normalize(24),
   },
   placeholder: {
@@ -262,7 +263,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: normalize(15),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     marginBottom: normalize(8),
     lineHeight: normalize(20),
   },
@@ -271,7 +272,7 @@ const styles = StyleSheet.create({
     borderRadius: normalize(12),
     paddingHorizontal: normalize(16),
     fontSize: normalize(16),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
     borderWidth: 1,
     lineHeight: normalize(22),
     paddingTop: normalize(15),
@@ -300,12 +301,12 @@ const styles = StyleSheet.create({
   },
   checkboxText: {
     fontSize: normalize(14),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
     lineHeight: normalize(20),
   },
   linkText: {
     fontSize: normalize(14),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     textDecorationLine: 'underline',
     lineHeight: normalize(20),
   },
@@ -325,7 +326,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: normalize(18),
-    fontFamily: Fonts.family.semiBold,
+    fontFamily: Fonts.semiBold,
     lineHeight: normalize(24),
   },
   confirmButton: {
@@ -342,7 +343,7 @@ const styles = StyleSheet.create({
   },
   confirmButtonText: {
     fontSize: normalize(18),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
     color: Tokens.colors.main.white,
     lineHeight: normalize(24),
   },

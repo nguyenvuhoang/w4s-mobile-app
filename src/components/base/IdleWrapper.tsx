@@ -1,4 +1,4 @@
-import { AppConfig } from '@/constants/AppConfig';
+import { AppConfig } from '@/config/AppConfig';
 import { GlobalContext } from '@/contexts/GlobalContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useSettingService } from '@/features/settings/hooks/useSettingService';

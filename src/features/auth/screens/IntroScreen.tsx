@@ -15,7 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts, Tokens } from '@/core/theme/theme';
+import { Fonts } from '@/core/theme/font';
+import { Tokens } from '@/core/theme/theme';
 import { hasNotch, normalize } from '@/utils/layout';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -276,13 +277,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: normalize(28),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
     textAlign: 'center',
     lineHeight: normalize(36),
   },
   description: {
     fontSize: normalize(16),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
     textAlign: 'center',
     lineHeight: normalize(24),
     opacity: 0.8,
@@ -327,7 +328,7 @@ const styles = StyleSheet.create({
   },
   nextText: {
     fontSize: normalize(18),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
     lineHeight: normalize(24),
     color: Tokens.colors.main.white,
   },
@@ -337,7 +338,7 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontSize: normalize(16),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     opacity: 0.7,
   },
 });

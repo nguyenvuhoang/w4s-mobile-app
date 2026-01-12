@@ -111,25 +111,25 @@ export const Colors = {
   },
 };
 
-export const Fonts = {
-  family: {
-    regular: "Quicksand-Regular",
-    medium: "Quicksand-Medium",
-    semiBold: "Quicksand-SemiBold",
-    bold: "Quicksand-Bold",
-  },
-  size: {
-    xs: 12,
-    sm: 14,
-    base: 16,
-    lg: 18,
-    xl: 20,
-    xxl: 24,
-    heading: 32,
-  },
-  weight: {
-    regular: "400",
-    medium: "500",
-    bold: "700",
-  },
-};
+// export const Fonts = {
+//   family: {
+//     regular: "Quicksand-Regular",
+//     medium: "Quicksand-Medium",
+//     semiBold: "Quicksand-SemiBold",
+//     bold: "Quicksand-Bold",
+//   },
+//   size: {
+//     xs: 12,
+//     sm: 14,
+//     base: 16,
+//     lg: 18,
+//     xl: 20,
+//     xxl: 24,
+//     heading: 32,
+//   },
+//   weight: {
+//     regular: "400",
+//     medium: "500",
+//     bold: "700",
+//   },
+// };

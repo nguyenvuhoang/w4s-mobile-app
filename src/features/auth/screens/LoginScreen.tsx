@@ -12,7 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts, Tokens } from '@/core/theme/theme';
+import { Fonts } from '@/core/theme/font';
+import { Tokens } from '@/core/theme/theme';
 import { useLoginService } from '@/features/auth/hooks/useLoginService';
 import { hasNotch, normalize } from '@/utils/layout';
 
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: normalize(28),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
     textAlign: 'center',
     marginBottom: normalize(32),
     lineHeight: normalize(36),
@@ -202,7 +203,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: normalize(15),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     marginBottom: normalize(8),
     lineHeight: normalize(20),
   },
@@ -211,7 +212,7 @@ const styles = StyleSheet.create({
     borderRadius: normalize(12),
     paddingHorizontal: normalize(16),
     fontSize: normalize(16),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
     borderWidth: 1,
     lineHeight: normalize(22),
     paddingTop: normalize(15),
@@ -234,7 +235,7 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: normalize(15),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     lineHeight: normalize(20),
   },
   loginButton: {
@@ -253,7 +254,7 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     fontSize: normalize(18),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
     color: Tokens.colors.main.white,
     lineHeight: normalize(24),
   },
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
   },
   createAccountText: {
     fontSize: normalize(16),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     lineHeight: normalize(22),
   },
 });

@@ -2,24 +2,24 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts } from '@/core/theme/theme';
+import { Fonts } from '@/core/theme/font';
 import { useChangePassword } from '@/features/settings/hooks/useChangePassword';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import {
-    Animated,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Animated,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   firstLoginNoticeText: {
     color: '#FF9900',
     fontSize: normalize(14),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     flex: 1,
   },
   noticeBox: {
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
   },
   noticeText: {
     fontSize: normalize(14),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     textDecorationLine: 'underline',
   },
   section: {
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: normalize(14),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     marginBottom: normalize(8),
   },
   inputContainer: {
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: normalize(15),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
     paddingVertical: normalize(14),
   },
   eyeButton: {
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: normalize(16),
-    fontFamily: Fonts.family.semiBold,
+    fontFamily: Fonts.semiBold,
   },
   createButton: {
     flex: 1,
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: '#fff',
     fontSize: normalize(16),
-    fontFamily: Fonts.family.semiBold,
+    fontFamily: Fonts.semiBold,
   },
   modalOverlay: {
     flex: 1,
@@ -466,14 +466,14 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: normalize(20),
-    fontFamily: Fonts.family.semiBold,
+    fontFamily: Fonts.semiBold,
   },
   modalBody: {
     paddingTop: normalize(5),
   },
   modalText: {
     fontSize: normalize(14),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     marginBottom: normalize(16),
   },
   requirementsList: {
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   },
   requirementText: {
     fontSize: normalize(14),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
   },
   exampleBox: {
     padding: normalize(16),
@@ -495,12 +495,12 @@ const styles = StyleSheet.create({
   },
   exampleLabel: {
     fontSize: normalize(12),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     marginBottom: normalize(4),
   },
   exampleText: {
     fontSize: normalize(15),
-    fontFamily: Fonts.family.semiBold,
+    fontFamily: Fonts.semiBold,
   },
 });
 

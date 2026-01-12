@@ -18,7 +18,8 @@ import { ThemedText } from '@/components/themed-text';
 import StorageKey from '@/constants/StorageKey';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts, Tokens } from '@/core/theme/theme';
+import { Fonts } from '@/core/theme/font';
+import { Tokens } from '@/core/theme/theme';
 import { useLoginService } from '@/features/auth/hooks/useLoginService';
 import StorageService from '@/services/StorageService';
 import { AppInfo } from '@/types/UserCommand';
@@ -98,10 +99,10 @@ const QuickLoginScreen = () => {
         await StorageService.setAsyncItem(StorageKey.appInfo, JSON.stringify(appInfoData));
         setAppInfo(appInfoData);
 
-        if (!islogin) {
-          await clearDataUser();
-          router.replace('/(auth)/login');
-        }
+        // if (!islogin) {
+        //   await clearDataUser();
+        //   router.replace('/(auth)/login');
+        // }
       } catch (err) {
         console.error('Error checking login status:', err);
         await clearDataUser();
@@ -364,7 +365,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: normalize(28),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
     textAlign: 'center',
     lineHeight: normalize(36),
   },
@@ -389,7 +390,7 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: normalize(16),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     lineHeight: normalize(22),
     flex: 1,
   },
@@ -398,7 +399,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: normalize(15),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     marginBottom: normalize(8),
     lineHeight: normalize(20),
   },
@@ -407,7 +408,7 @@ const styles = StyleSheet.create({
     borderRadius: normalize(12),
     paddingHorizontal: normalize(16),
     fontSize: normalize(16),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
     borderWidth: 1,
     lineHeight: normalize(22),
     paddingTop: normalize(15),
@@ -454,7 +455,7 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     fontSize: normalize(18),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
     color: Tokens.colors.main.white,
     lineHeight: normalize(24),
   },
@@ -466,7 +467,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: normalize(15),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     lineHeight: normalize(20),
   },
   footer: {
@@ -475,7 +476,7 @@ const styles = StyleSheet.create({
   },
   createAccountText: {
     fontSize: normalize(16),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     lineHeight: normalize(22),
   },
   loadingOverlay: {
@@ -488,7 +489,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: normalize(16),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
   },
   biometricOverlay: {
     ...StyleSheet.absoluteFillObject,

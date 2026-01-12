@@ -7,7 +7,6 @@ import { Platform, Share } from "react-native";
 import Toast from "react-native-toast-message";
 
 import { COMMAND_NAME } from "@/constants/CommandName";
-import StorageKey from "@/constants/StorageKey";
 import { WORKFLOWCODE } from "@/constants/WorkflowCode";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
@@ -172,22 +171,21 @@ export const useSettingService = () => {
       const logoutResponse = await auth.logout(targetUser);
 
       if (logoutResponse.isSuccess()) {
-        // Navigate về intro screen với expo-router
-        router.replace("/(auth)/intro");
-        await handleGetAppInfo();
+        router.replace("/(auth)/quick-login");
+        // await handleGetAppInfo();
 
         // Logic verify first login
-        await StorageService.setAsyncItem(
-          StorageKey.isVerifyFirstLogin,
-          "true"
-        );
-        const channelId = await StorageService.getAsyncItem(
-          StorageKey.channelId
-        );
-        if (channelId) {
-          const isVerifyFirstLogin_channel = `${StorageKey.isVerifyFirstLogin}_${channelId}`;
-          await StorageService.setAsyncItem(isVerifyFirstLogin_channel, "true");
-        }
+        // await StorageService.setAsyncItem(
+        //   StorageKey.isVerifyFirstLogin,
+        //   "true"
+        // );
+        // const channelId = await StorageService.getAsyncItem(
+        //   StorageKey.channelId
+        // );
+        // if (channelId) {
+        //   const isVerifyFirstLogin_channel = `${StorageKey.isVerifyFirstLogin}_${channelId}`;
+        //   await StorageService.setAsyncItem(isVerifyFirstLogin_channel, "true");
+        // }
       } else {
         showNotification(t("errors.logout.logoutFailed"), "error");
       }
@@ -196,14 +194,14 @@ export const useSettingService = () => {
     }
   };
 
-  //   const handleReloadCache = async () => {
-  //     const [ok, message] = await reloadCache();
-  //     if (ok) {
-  //       showNotification(t('successes.setting.reloadCacheSuccess'), 'success');
-  //     } else {
-  //       showNotification(message || t('errors.setting.reloadCacheFail'), 'error');
-  //     }
-  //   };
+    // const handleReloadCache = async () => {
+    //   const [ok, message] = await reloadCache();
+    //   if (ok) {
+    //     showNotification(t('successes.setting.reloadCacheSuccess'), 'success');
+    //   } else {
+    //     showNotification(message || t('errors.setting.reloadCacheFail'), 'error');
+    //   }
+    // };
 
   const handleShareApp = async () => {
     const iosLink = Constants.default?.expoConfig?.extra?.storeLinks?.ios || "";

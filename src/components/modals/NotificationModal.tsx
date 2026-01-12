@@ -1,7 +1,7 @@
 import CustomButton from "@/components/base/CustomButton";
 import { performNavigationByName } from "@/core/navigation/performNavigationByName";
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts } from '@/core/theme/theme';
+import { Fonts } from '@/core/theme/font';
 import { isTablet, normalize } from "@/utils/layout";
 import { FontAwesome6 } from '@expo/vector-icons';
 import Constants from "expo-constants";
@@ -226,31 +226,31 @@ const styles = StyleSheet.create({
   modalTitle: {
     textAlign: "center",
     fontSize: normalize(18),
-    fontFamily: Fonts.family.bold, // Dùng font Bold cho title
+    fontFamily: Fonts.bold, // Dùng font Bold cho title
     marginBottom: 10,
   },
   modalText: {
     textAlign: "center",
     fontSize: normalize(16),
     marginBottom: normalize(10),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
   },
   errorDetails: {
     textAlign: "center",
     fontSize: normalize(14),
     marginBottom: normalize(5),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
   },
   errorCode: {
     textAlign: "center",
     fontSize: normalize(14),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
   },
   versionText: {
     textAlign: "center",
     fontSize: normalize(12),
     marginTop: normalize(10),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
   },
   buttonContainer: {
     flexDirection: "row",

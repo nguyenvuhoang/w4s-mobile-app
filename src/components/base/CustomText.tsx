@@ -1,4 +1,4 @@
-import { Fonts } from '@/core/theme/theme';
+import { Fonts } from '@/core/theme/font';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { normalize } from '@/utils/layout';
 import React from 'react';
@@ -44,13 +44,13 @@ const styles = StyleSheet.create({
   base: {
   },
   regular: {
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
   },
   medium: {
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
   },
   bold: {
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
   },
 });
 

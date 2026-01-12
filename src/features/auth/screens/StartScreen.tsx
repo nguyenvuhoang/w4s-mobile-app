@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts, Tokens } from '@/core/theme/theme';
+import { Fonts } from '@/core/theme/font';
+import { Tokens } from '@/core/theme/theme';
 import { hasNotch, hp, normalize } from '@/utils/layout';
 import { useRouter } from 'expo-router';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -103,14 +104,14 @@ const styles = StyleSheet.create({
   },
   appName: {
     fontSize: normalize(32),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
     letterSpacing: normalize(1),
     lineHeight: normalize(42), 
     paddingVertical: normalize(4),
   },
   slogan: {
     fontSize: normalize(16),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     opacity: 0.9,
     lineHeight: normalize(24),
   },
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
   },
   startText: {
     fontSize: normalize(18),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
     lineHeight: normalize(24),
   },
   
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
   },
   haveAccountText: {
     fontSize: normalize(15),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
     opacity: 0.85,
   },
   loginBtn: {
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: normalize(16),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
     lineHeight: normalize(22),
   },
 });

@@ -16,7 +16,8 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts, Tokens } from '@/core/theme/theme';
+import { Fonts } from '@/core/theme/font';
+import { Tokens } from '@/core/theme/theme';
 import { normalize } from '@/utils/layout';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -348,14 +349,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: normalize(22),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
     marginBottom: normalize(8),
     textAlign: 'center',
     lineHeight: normalize(28),
   },
   description: {
     fontSize: normalize(15),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
     marginBottom: normalize(24),
     textAlign: 'center',
     lineHeight: normalize(22),
@@ -376,7 +377,7 @@ const styles = StyleSheet.create({
   },
   otpText: {
     fontSize: normalize(24),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
     textAlign: 'center',
   },
   cursor: {
@@ -405,13 +406,13 @@ const styles = StyleSheet.create({
   },
   resendText: {
     fontSize: normalize(14),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
     textAlign: 'center',
     opacity: 0.8,
     lineHeight: normalize(20),
   },
   resendLink: {
-    fontFamily: Fonts.family.semiBold,
+    fontFamily: Fonts.semiBold,
     textDecorationLine: 'underline',
     lineHeight: normalize(20),
   },
@@ -432,7 +433,7 @@ const styles = StyleSheet.create({
   },
   confirmButtonText: {
     fontSize: normalize(18),
-    fontFamily: Fonts.family.bold,
+    fontFamily: Fonts.bold,
     color: Tokens.colors.main.white,
     lineHeight: normalize(24),
   },

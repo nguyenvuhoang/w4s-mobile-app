@@ -1,6 +1,7 @@
 export default {
   TOKEN: 'user_token',
   USER_DATA: 'user_data',
+  userCode: "userCode",
 
 
 

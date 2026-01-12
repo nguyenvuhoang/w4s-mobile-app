@@ -172,6 +172,7 @@ export const useLoginService = () => {
         setAppInfo(appInfoData);
         setAppInfoGlobal(appInfoData);
         await StorageService.setAsyncItem(StorageKey.appInfo, JSON.stringify(appInfoData));
+        await StorageService.setAsyncItem(StorageKey.userCode, appInfoData.user_code);
         return appInfoData;
       } else {
         showNotification(response.getError(), 'error');
@@ -301,7 +302,7 @@ export const useLoginService = () => {
           await authRepository.updateData({
             commandname: COMMAND_NAME.UpdateIsBiometricSupported,
             parameters: { id: userCode, value: 0 },
-            workflowid: WORKFLOWCODE.MB_EXECUTE_SQL_FROM_CTH,
+            workflowid: WORKFLOWCODE.WF_MB_EXECUTE_SQL_FROM_CTH,
           });
           await handleGetAppInfo();
           await StorageService.setAsyncItem(StorageKey.isVerifyFirstLogin, 'true');

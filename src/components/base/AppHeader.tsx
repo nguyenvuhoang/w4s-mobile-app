@@ -1,7 +1,7 @@
 // src/components/base/AppHeader.tsx
 import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
-import { Fonts } from "@/core/theme/theme";
+import { Fonts } from "@/core/theme/font";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: normalize(18),
-    fontFamily: Fonts.family.semiBold,
+    fontFamily: Fonts.semiBold,
   },
   rightContainer: {
     width: normalize(40),

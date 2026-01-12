@@ -5,7 +5,8 @@ import { apiService } from "@/core/api";
 import { BaseResponseModel } from "@/core/api/models/ClientModel";
 
 export interface Category {
-  category_id: string;
+  id: string;
+  category_code: string;
   wallet_id: string;
   parent_category_id: string;
   category_group: 'EXPENSE' | 'INCOME' | 'LOAN';
@@ -13,20 +14,19 @@ export interface Category {
   category_name: string; // JSON string: {"vi":"...", "en":"..."}
   icon: string;
   color: string;
+  web_icon: string;
 }
 
 export const categoryRepository = {
   /**
    * Get all categories for a wallet
    */
-  async getCategories(): Promise<BaseResponseModel> {
+  async getCategories(userCode: string): Promise<BaseResponseModel> {
     try {
       return await apiService.executeWorkflow(
-        WORKFLOWCODE.WF_MB_RETRIEVE_WALLET_CATEGORY,
+        WORKFLOWCODE.WF_MB_GET_WALLET_CONTRACT_CATEGORY,
         {
-          search_text: "",
-          page_index: 0,
-          page_size: 10
+          usercode: userCode,
         },
         false,
         true

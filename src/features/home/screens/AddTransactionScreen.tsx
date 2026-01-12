@@ -2,7 +2,7 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts } from '@/core/theme/theme';
+import { Fonts } from '@/core/theme/font';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -225,7 +225,7 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
                     styles.typeButtonText,
                     {
                       color: selectedType === 'income' ? '#fff' : colors.text,
-                      fontFamily: selectedType === 'income' ? Fonts.family.semiBold : Fonts.family.regular,
+                      fontFamily: selectedType === 'income' ? Fonts.semiBold : Fonts.regular,
                     },
                   ]}
                 >
@@ -248,7 +248,7 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
                     styles.typeButtonText,
                     {
                       color: selectedType === 'expense' ? '#fff' : colors.text,
-                      fontFamily: selectedType === 'expense' ? Fonts.family.semiBold : Fonts.family.regular,
+                      fontFamily: selectedType === 'expense' ? Fonts.semiBold : Fonts.regular,
                     },
                   ]}
                 >
@@ -271,7 +271,7 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
                     styles.typeButtonText,
                     {
                       color: selectedType === 'inout' ? '#fff' : colors.text,
-                      fontFamily: selectedType === 'inout' ? Fonts.family.semiBold : Fonts.family.regular,
+                      fontFamily: selectedType === 'inout' ? Fonts.semiBold : Fonts.regular,
                     },
                   ]}
                 >
@@ -392,7 +392,7 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
                     styles.dateButtonText,
                     {
                       color: dateSelection === 'today' ? '#fff' : colors.text,
-                      fontFamily: dateSelection === 'today' ? Fonts.family.semiBold : Fonts.family.regular,
+                      fontFamily: dateSelection === 'today' ? Fonts.semiBold : Fonts.regular,
                     },
                   ]}
                 >
@@ -415,7 +415,7 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
                     styles.dateButtonText,
                     {
                       color: dateSelection === 'yesterday' ? '#fff' : colors.text,
-                      fontFamily: dateSelection === 'yesterday' ? Fonts.family.semiBold : Fonts.family.regular,
+                      fontFamily: dateSelection === 'yesterday' ? Fonts.semiBold : Fonts.regular,
                     },
                   ]}
                 >
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: normalize(14),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
     marginBottom: normalize(8),
   },
   typeSelectorContainer: {
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
   },
   selectFieldText: {
     fontSize: normalize(15),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
   },
   categoryIcon: {
     width: normalize(36),
@@ -594,12 +594,12 @@ const styles = StyleSheet.create({
   },
   currencySymbol: {
     fontSize: normalize(20),
-    fontFamily: Fonts.family.semiBold,
+    fontFamily: Fonts.semiBold,
   },
   amountInput: {
     flex: 1,
     fontSize: normalize(18),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
     padding: 0,
   },
   noteContainer: {
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
   },
   noteInput: {
     fontSize: normalize(14),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
     padding: 0,
     minHeight: hp(8),
   },
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: normalize(15),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
   },
   reminderButton: {
     flexDirection: 'row',
@@ -656,7 +656,7 @@ const styles = StyleSheet.create({
   },
   reminderText: {
     fontSize: normalize(14),
-    fontFamily: Fonts.family.medium,
+    fontFamily: Fonts.medium,
   },
   imageUploadButton: {
     alignItems: 'center',
@@ -668,7 +668,7 @@ const styles = StyleSheet.create({
   },
   imageUploadText: {
     fontSize: normalize(14),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
     marginTop: normalize(8),
   },
   imagePreviewContainer: {
@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
   },
   toggleLabel: {
     fontSize: normalize(15),
-    fontFamily: Fonts.family.regular,
+    fontFamily: Fonts.regular,
   },
   bottomButtons: {
     flexDirection: 'row',
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: normalize(16),
-    fontFamily: Fonts.family.semiBold,
+    fontFamily: Fonts.semiBold,
   },
   createButton: {
     flex: 1,
@@ -732,7 +732,7 @@ const styles = StyleSheet.create({
   },
   createButtonText: {
     fontSize: normalize(16),
-    fontFamily: Fonts.family.semiBold,
+    fontFamily: Fonts.semiBold,
     color: '#fff',
   },
 });

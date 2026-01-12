@@ -112,7 +112,7 @@ const CategorySelectionScreen: React.FC = () => {
       return filtered
         .filter((cat) => !cat.parent_category_id)
         .reduce<Record<string, Category[]>>((acc, cat) => {
-          acc[cat.category_id] = [cat];
+          acc[cat.id] = [cat];
           return acc;
         }, {});
     }
@@ -124,10 +124,10 @@ const CategorySelectionScreen: React.FC = () => {
     const parents = filtered.filter((cat) => !cat.parent_category_id);
 
     parents.forEach((parent) => {
-      groups[parent.category_id] = [
+      groups[parent.id] = [
         parent,
         ...filtered.filter(
-          (cat) => cat.parent_category_id === parent.category_id
+          (cat) => cat.parent_category_id === parent.id
         ),
       ];
     });
@@ -287,7 +287,7 @@ const CategorySelectionScreen: React.FC = () => {
 
             return (
               <View
-                key={parent.category_id}
+                key={parent.id}
                 style={[
                   styles.categoryGroup,
                   { backgroundColor: colors.card },
@@ -336,7 +336,7 @@ const CategorySelectionScreen: React.FC = () => {
 
                     return (
                       <TouchableOpacity
-                        key={child.category_id}
+                        key={child.id}
                         style={styles.childItem}
                         onPress={() => handlePressCategory(child)}
                       >
