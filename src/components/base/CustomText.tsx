@@ -5,7 +5,7 @@ import React from 'react';
 import { StyleSheet, Text, TextProps } from 'react-native';
 
 interface CustomTextProps extends TextProps {
-  type?: 'regular' | 'medium' | 'bold';
+  type?: 'light' | 'regular' | 'medium' | 'semiBold' | 'bold';
   children?: React.ReactNode;
   size?: number; 
 }
@@ -27,8 +27,10 @@ const CustomText: React.FC<CustomTextProps> = ({
             color: colors.text,
             fontSize: size ? normalize(size) : normalize(14) 
         },
+        type === 'light' && styles.light,
         type === 'regular' && styles.regular,
         type === 'medium' && styles.medium,
+        type === 'semiBold' && styles.semiBold,
         type === 'bold' && styles.bold,
         style
       ]}
@@ -43,11 +45,17 @@ const CustomText: React.FC<CustomTextProps> = ({
 const styles = StyleSheet.create({
   base: {
   },
+  light: {
+    fontFamily: Fonts.light,
+  },
   regular: {
     fontFamily: Fonts.regular,
   },
   medium: {
     fontFamily: Fonts.medium,
+  },
+  semiBold: {
+    fontFamily: Fonts.semiBold,
   },
   bold: {
     fontFamily: Fonts.bold,

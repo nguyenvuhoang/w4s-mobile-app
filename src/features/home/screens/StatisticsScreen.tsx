@@ -1,491 +1,336 @@
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Tokens } from '@/core/theme/theme';
 import { hp, normalize, wp } from '@/utils/layout';
-import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import { FontAwesome6 } from '@expo/vector-icons';
+import React, { useMemo } from 'react';
 import {
+  Dimensions,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { LineChart } from 'react-native-gifted-charts';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-interface StatisticsScreenProps {
-  navigation: any;
-}
+const { width } = Dimensions.get('window');
 
-const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
+/* ================= MOCK DATA ================= */
+
+const MOCK_WALLETS = [
+  { id: '1', name: 'Tiền mặt', icon: 'money-bill', color: '#4CAF50', balance: 2547000 },
+  { id: '2', name: 'Ngân hàng A', icon: 'building-columns', color: '#2196F3', balance: 5892000 },
+  { id: '3', name: 'Ngân hàng B', icon: 'building-columns', color: '#F44336', balance: 8234000 },
+];
+
+const MOCK_CATEGORIES = [
+  { id: '1', name: 'Mua sắm', icon: 'bag-shopping', color: '#FF6B35', amount: 1248000, percentage: 38 },
+  { id: '2', name: 'Thực phẩm', icon: 'utensils', color: '#4CAF50', amount: 842000, percentage: 26 },
+  { id: '3', name: 'Giải trí', icon: 'film', color: '#9C27B0', amount: 425000, percentage: 42 },
+  { id: '4', name: 'Di chuyển', icon: 'car', color: '#00BCD4', amount: 385000, percentage: 10 },
+  { id: '5', name: 'Tiện ích', icon: 'bolt', color: '#FF9800', amount: 356000, percentage: 13 },
+];
+
+const MOCK_MONTHLY_EXPENSES = [
+  { value: 450000, label: '1' },
+  { value: 680000, label: '5' },
+  { value: 320000, label: '10' },
+  { value: 890000, label: '15' },
+  { value: 560000, label: '20' },
+  { value: 720000, label: '25' },
+  { value: 280000, label: '31' },
+];
+
+const MOCK_MONTHLY_INCOME = [
+  { value: 50000, label: '1' },
+  { value: 120000, label: '5' },
+  { value: 8500000, label: '10' },
+  { value: 80000, label: '15' },
+  { value: 60000, label: '20' },
+  { value: 40000, label: '25' },
+  { value: 30000, label: '31' },
+];
+
+const MOCK_FREQUENT_EXPENSES = [
+  { id: '1', name: 'Shoppe', category: 'Mua sắm', icon: 'bag-shopping', color: '#EE4D2D', amount: 89000 },
+  { id: '2', name: 'Starbucks', category: 'Thực phẩm', icon: 'mug-hot', color: '#00704A', amount: 45000 },
+];
+
+/* ================= SCREEN ================= */
+
+const StatisticsScreen = () => {
   const { colors } = useAppTheme();
 
-  const [selectedPeriod, setSelectedPeriod] = useState('Tháng');
-  const [selectedTab, setSelectedTab] = useState('Chi tiêu');
+  const totalBalance = useMemo(
+    () => MOCK_WALLETS.reduce((sum, w) => sum + w.balance, 0),
+    []
+  );
 
-  const periods = ['Ngày', 'Tuần', 'Tháng', 'Năm'];
-  const tabs = ['Chi tiêu', 'Thu nhập'];
+  const formatCurrency = (v: number) =>
+    v.toLocaleString('vi-VN') + ' đ';
+
+  const formatYLabel = (value: string) => {
+    const num = Number(value);
+    if (num >= 1_000_000) return `${Math.round(num / 1_000_000)}tr`;
+    if (num >= 1_000) return `${Math.round(num / 1_000)}k`;
+    return '0';
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <CustomText style={[styles.headerTitle, { color: colors.text }]}>
-            Thống kê
-          </CustomText>
-          <TouchableOpacity>
-            <Ionicons name="filter-outline" size={normalize(24)} color={colors.text} />
-          </TouchableOpacity>
-        </View>
 
-        {/* Period Selector */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.periodSelector}
-          contentContainerStyle={styles.periodContent}
-        >
-          {periods.map((period) => (
-            <TouchableOpacity
-              key={period}
-              style={[
-                styles.periodButton,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                selectedPeriod === period && { backgroundColor: colors.tint, borderColor: colors.tint },
-              ]}
-              onPress={() => setSelectedPeriod(period)}
-            >
-              <CustomText
-                style={[
-                  styles.periodText,
-                  { color: selectedPeriod === period ? Tokens.colors.main.white : colors.text },
-                ]}
-              >
-                {period}
-              </CustomText>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Tab Selector */}
-        <View style={[styles.tabSelector, { backgroundColor: colors.card }]}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[
-                styles.tabButton,
-                selectedTab === tab && { backgroundColor: colors.tint },
-              ]}
-              onPress={() => setSelectedTab(tab)}
-            >
-              <CustomText
-                style={[
-                  styles.tabText,
-                  { color: selectedTab === tab ? Tokens.colors.main.white : colors.icon },
-                ]}
-              >
-                {tab}
-              </CustomText>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Total Amount Card */}
-        <View style={[styles.totalCard, { backgroundColor: colors.card }]}>
-          <CustomText style={[styles.totalLabel, { color: colors.icon }]}>
-            Tổng {selectedTab.toLowerCase()}
-          </CustomText>
-          <CustomText style={[styles.totalAmount, { color: colors.text }]}>
-            {selectedTab === 'Chi tiêu' ? '-' : '+'}3,285,400 đ
-          </CustomText>
-          <View style={styles.changeContainer}>
-            <Ionicons
-              name={selectedTab === 'Chi tiêu' ? 'arrow-up' : 'arrow-down'}
-              size={normalize(16)}
-              color={selectedTab === 'Chi tiêu' ? '#FF3B30' : '#34C759'}
-            />
-            <CustomText
-              style={[
-                styles.changeText,
-                selectedTab === 'Chi tiêu' ? styles.increaseText : styles.decreaseText,
-              ]}
-            >
-              +12.5% so với tháng trước
-            </CustomText>
-          </View>
-        </View>
-
-        {/* Chart Placeholder */}
-        <View style={[styles.chartContainer, { backgroundColor: colors.card }]}>
-          <CustomText style={[styles.chartTitle, { color: colors.text }]}>
-            Biểu đồ chi tiêu
-          </CustomText>
-          <View style={styles.chartPlaceholder}>
-            {/* This would be replaced with actual chart library */}
-            <View style={styles.barChart}>
-              {[40, 70, 45, 85, 60, 95, 75].map((height, index) => (
-                <View key={index} style={styles.barContainer}>
-                  <View
-                    style={[
-                      styles.bar,
-                      { 
-                        height: `${height}%`,
-                        backgroundColor: colors.border,
-                      },
-                      index === 3 && { backgroundColor: colors.tint },
-                    ]}
-                  />
-                  <CustomText style={[styles.barLabel, { color: colors.icon }]}>
-                    {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][index]}
-                  </CustomText>
-                </View>
-              ))}
+        {/* ===== TOTAL BALANCE ===== */}
+        <View style={[styles.balanceCard, { backgroundColor: colors.card }]}>
+          <View style={styles.balanceHeader}>
+            <View style={[styles.balanceIcon, { backgroundColor: colors.tint + '20' }]}>
+              <FontAwesome6 name="shield-halved" size={normalize(18)} color={colors.tint} />
             </View>
-          </View>
-        </View>
-
-        {/* Category Breakdown */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
-              Phân tích theo danh mục
+            <CustomText type="medium" size={14}>
+              Tổng số dư
             </CustomText>
-            <TouchableOpacity>
-              <CustomText style={[styles.seeMore, { color: colors.tint }]}>
-                Xem tất cả
-              </CustomText>
-            </TouchableOpacity>
           </View>
-
-          <View style={styles.categoryList}>
-            <CategoryBreakdown
-              icon="cart"
-              iconColor="#FF6B35"
-              name="Mua sắm"
-              amount="1,248,000 đ"
-              percentage={38}
-              colors={colors}
-            />
-            <CategoryBreakdown
-              icon="restaurant"
-              iconColor="#4CAF50"
-              name="Thực phẩm"
-              amount="842,000 đ"
-              percentage={26}
-              colors={colors}
-            />
-            <CategoryBreakdown
-              icon="car"
-              iconColor="#2196F3"
-              name="Giao thông"
-              amount="625,000 đ"
-              percentage={19}
-              colors={colors}
-            />
-            <CategoryBreakdown
-              icon="film"
-              iconColor="#9C27B0"
-              name="Giải trí"
-              amount="425,000 đ"
-              percentage={13}
-              colors={colors}
-            />
-            <CategoryBreakdown
-              icon="bulb"
-              iconColor="#FF9800"
-              name="Hóa đơn"
-              amount="145,000 đ"
-              percentage={4}
-              colors={colors}
-            />
-          </View>
-        </View>
-
-        {/* Monthly Comparison */}
-        <View style={styles.section}>
-          <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
-            So sánh theo tháng
+          <CustomText type="bold" size={32}>
+            {formatCurrency(totalBalance)}
           </CustomText>
-          <View style={styles.comparisonContainer}>
-            <MonthComparison month="T10" amount="2,850,000 đ" colors={colors} />
-            <MonthComparison month="T11" amount="3,120,000 đ" colors={colors} />
-            <MonthComparison month="T12" amount="3,285,400 đ" isActive colors={colors} />
-          </View>
         </View>
 
-        {/* Bottom spacing */}
-        <View style={{ height: hp(2) }} />
+        {/* ===== WALLETS ===== */}
+        <SectionHeader title="Ví của tôi" />
+
+        <View style={styles.walletList}>
+          {MOCK_WALLETS.map(w => (
+            <View key={w.id} style={[styles.walletItem, { backgroundColor: colors.card }]}>
+              <View style={[styles.walletIcon, { backgroundColor: w.color }]}>
+                <FontAwesome6 name={w.icon as any} size={normalize(16)} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <CustomText type="medium" size={15}>{w.name}</CustomText>
+                <CustomText size={13}>{formatCurrency(w.balance)}</CustomText>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* ===== CHARTS ===== */}
+        <SectionHeader title="Báo cáo tháng này" />
+
+        <ChartCard
+          label="Khoản chi"
+          color="#F44336"
+          data={MOCK_MONTHLY_EXPENSES}
+          formatYLabel={formatYLabel}
+        />
+
+        <ChartCard
+          label="Khoản thu"
+          color="#2196F3"
+          data={MOCK_MONTHLY_INCOME}
+          formatYLabel={formatYLabel}
+        />
+
+        {/* ===== CATEGORY ===== */}
+        <SectionHeader title="Phân tích danh mục" />
+
+        <View style={styles.categoryList}>
+          {MOCK_CATEGORIES.map(c => (
+            <View key={c.id} style={[styles.categoryItem, { backgroundColor: colors.card }]}>
+              <View style={styles.categoryRow}>
+                <View style={[styles.categoryIcon, { backgroundColor: c.color }]}>
+                  <FontAwesome6 name={c.icon as any} size={normalize(18)} color="#fff" />
+                </View>
+                <CustomText type="medium" size={15}>{c.name}</CustomText>
+              </View>
+
+              <View style={styles.categoryRight}>
+                <CustomText type="medium" size={13}>{c.percentage}%</CustomText>
+                <CustomText type="bold" size={15}>{formatCurrency(c.amount)}</CustomText>
+              </View>
+
+              <View style={[styles.progressBg, { backgroundColor: colors.background }]}>
+                <View style={[styles.progressFill, { width: `${c.percentage}%`, backgroundColor: c.color }]} />
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* ===== FREQUENT ===== */}
+        <SectionHeader title="Chi phí hằng ngày" />
+
+        <View style={styles.frequentList}>
+          {MOCK_FREQUENT_EXPENSES.map(i => (
+            <View key={i.id} style={[styles.frequentItem, { backgroundColor: colors.card }]}>
+              <View style={[styles.frequentIcon, { backgroundColor: i.color }]}>
+                <FontAwesome6 name={i.icon as any} size={normalize(18)} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <CustomText type="medium" size={15}>{i.name}</CustomText>
+                <CustomText size={13}>{i.category}</CustomText>
+              </View>
+              <CustomText type="bold" size={15}>
+                {formatCurrency(i.amount)}
+              </CustomText>
+            </View>
+          ))}
+        </View>
+
+        <View style={{ height: hp(8) }} />
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-// Category Breakdown Component
-const CategoryBreakdown = ({ icon, iconColor, name, amount, percentage, colors }: any) => (
-  <View style={[styles.categoryItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-    <View style={styles.categoryLeft}>
-      <View style={[styles.categoryIcon, { backgroundColor: iconColor + '1A' }]}>
-        <Ionicons name={icon} size={normalize(24)} color={iconColor} />
-      </View>
-      <View style={styles.categoryInfo}>
-        <CustomText style={[styles.categoryName, { color: colors.text }]}>
-          {name}
-        </CustomText>
-        <CustomText style={[styles.categoryAmount, { color: colors.icon }]}>
-          {amount}
-        </CustomText>
-      </View>
-    </View>
-    <View style={styles.categoryRight}>
-      <CustomText style={[styles.categoryPercentage, { color: colors.text }]}>
-        {percentage}%
-      </CustomText>
-      <View style={[styles.percentageBarContainer, { backgroundColor: colors.background }]}>
-        <View
-          style={[
-            styles.percentageBar,
-            { width: `${percentage}%`, backgroundColor: iconColor },
-          ]}
-        />
-      </View>
-    </View>
+/* ================= COMPONENTS ================= */
+
+const SectionHeader = ({ title }: { title: string }) => (
+  <View style={styles.sectionHeader}>
+    <CustomText type="medium" size={16}>{title}</CustomText>
+    <TouchableOpacity>
+      <CustomText type="medium" size={14}>Xem tất cả</CustomText>
+    </TouchableOpacity>
   </View>
 );
 
-// Month Comparison Component
-const MonthComparison = ({ month, amount, isActive, colors }: any) => (
-  <View
-    style={[
-      styles.monthCard,
-      { backgroundColor: colors.card, borderColor: colors.border },
-      isActive && { backgroundColor: colors.tint, borderColor: colors.tint },
-    ]}
-  >
-    <CustomText
-      style={[
-        styles.monthLabel,
-        { color: colors.icon },
-        isActive && { color: Tokens.colors.main.white },
-      ]}
-    >
-      {month}
-    </CustomText>
-    <CustomText
-      style={[
-        styles.monthAmount,
-        { color: colors.text },
-        isActive && { color: Tokens.colors.main.white },
-      ]}
-    >
-      {amount}
-    </CustomText>
-  </View>
-);
+const ChartCard = ({ label, color, data, formatYLabel }: any) => {
+  const { colors } = useAppTheme();
+  return (
+    <View style={[styles.chartCard, { backgroundColor: colors.card }]}>
+      <View style={styles.chartLegend}>
+        <View style={[styles.legendDot, { backgroundColor: color }]} />
+        <CustomText type="medium" size={14}>{label}</CustomText>
+      </View>
+      <LineChart
+        data={data}
+        width={width - wp(10) - 60}
+        height={normalize(180)}
+        spacing={45}
+        color={color}
+        thickness={2}
+        curved
+        areaChart
+        startOpacity={0.8}
+        endOpacity={0.1}
+        yAxisColor={colors.border}
+        xAxisColor={colors.border}
+        yAxisTextStyle={{ fontSize: normalize(10), color: colors.icon }}
+        xAxisLabelTextStyle={{ fontSize: normalize(10), color: colors.icon }}
+        formatYLabel={formatYLabel}
+      />
+    </View>
+  );
+};
+
+/* ================= STYLES ================= */
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: wp(5),
-    paddingVertical: normalize(16),
-  },
-  headerTitle: {
-    fontSize: normalize(24),
-    fontWeight: 'bold',
-  },
-  periodSelector: {
-    marginBottom: normalize(16),
-  },
-  periodContent: {
-    paddingHorizontal: wp(5),
-    gap: normalize(8),
-  },
-  periodButton: {
-    paddingHorizontal: normalize(20),
-    paddingVertical: normalize(8),
-    borderRadius: normalize(20),
-    borderWidth: 1,
-  },
-  periodText: {
-    fontSize: normalize(14),
-  },
-  tabSelector: {
-    flexDirection: 'row',
-    marginHorizontal: wp(5),
-    marginBottom: hp(2.5),
-    borderRadius: normalize(12),
-    padding: normalize(4),
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: normalize(10),
-    alignItems: 'center',
-    borderRadius: normalize(8),
-  },
-  tabText: {
-    fontSize: normalize(14),
-  },
-  totalCard: {
-    borderRadius: normalize(20),
-    padding: normalize(24),
-    marginHorizontal: wp(5),
-    marginBottom: hp(2.5),
-    alignItems: 'center',
-  },
-  totalLabel: {
-    fontSize: normalize(14),
-    marginBottom: normalize(8),
-  },
-  totalAmount: {
-    fontSize: normalize(36),
-    fontWeight: 'bold',
-    marginBottom: normalize(8),
-  },
-  changeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(4),
-  },
-  changeText: {
-    fontSize: normalize(12),
-  },
-  increaseText: {
-    color: '#FF3B30',
-  },
-  decreaseText: {
-    color: '#34C759',
-  },
-  chartContainer: {
-    borderRadius: normalize(20),
+  container: { flex: 1 },
+
+  balanceCard: {
+    margin: wp(5),
     padding: normalize(20),
-    marginHorizontal: wp(5),
-    marginBottom: hp(2.5),
-  },
-  chartTitle: {
-    fontSize: normalize(16),
-    fontWeight: '600',
-    marginBottom: normalize(20),
-  },
-  chartPlaceholder: {
-    height: normalize(200),
-  },
-  barChart: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    height: '100%',
-  },
-  barContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: normalize(8),
-  },
-  bar: {
-    width: '70%',
-    borderRadius: normalize(4),
-  },
-  barLabel: {
-    fontSize: normalize(10),
-  },
-  section: {
-    marginBottom: hp(3),
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: wp(5),
-    marginBottom: normalize(16),
-  },
-  sectionTitle: {
-    fontSize: normalize(18),
-    fontWeight: '600',
-    paddingHorizontal: wp(5),
-    marginBottom: normalize(16),
-  },
-  seeMore: {
-    fontSize: normalize(14),
-  },
-  categoryList: {
-    paddingHorizontal: wp(5),
-    gap: normalize(12),
-  },
-  categoryItem: {
     borderRadius: normalize(16),
-    padding: normalize(16),
+  },
+  balanceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: normalize(10),
+  },
+  balanceIcon: {
+    width: normalize(32),
+    height: normalize(32),
+    borderRadius: normalize(8),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: normalize(8),
+  },
+
+  sectionHeader: {
+    paddingHorizontal: wp(5),
+    marginBottom: normalize(12),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
   },
-  categoryLeft: {
+
+  walletList: { paddingHorizontal: wp(5), gap: normalize(12) },
+  walletItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: normalize(12),
-    flex: 1,
-  },
-  categoryIcon: {
-    width: normalize(48),
-    height: normalize(48),
+    padding: normalize(12),
     borderRadius: normalize(12),
+    gap: normalize(12),
+  },
+  walletIcon: {
+    width: normalize(40),
+    height: normalize(40),
+    borderRadius: normalize(10),
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoryInfo: {
-    flex: 1,
+
+  chartCard: {
+    marginHorizontal: wp(5),
+    marginBottom: hp(2),
+    padding: normalize(16),
+    borderRadius: normalize(16),
   },
-  categoryName: {
-    fontSize: normalize(16),
-    fontWeight: '600',
+  chartLegend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: normalize(12),
   },
-  categoryAmount: {
-    fontSize: normalize(14),
-    marginTop: normalize(2),
+  legendDot: {
+    width: normalize(10),
+    height: normalize(10),
+    borderRadius: 5,
+    marginRight: normalize(8),
+  },
+
+  categoryList: { paddingHorizontal: wp(5), gap: normalize(12) },
+  categoryItem: {
+    padding: normalize(16),
+    borderRadius: normalize(12),
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: normalize(10),
+  },
+  categoryIcon: {
+    width: normalize(36),
+    height: normalize(36),
+    borderRadius: normalize(10),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   categoryRight: {
+    position: 'absolute',
+    right: normalize(16),
+    top: normalize(16),
     alignItems: 'flex-end',
-    minWidth: normalize(60),
   },
-  categoryPercentage: {
-    fontSize: normalize(16),
-    fontWeight: '600',
-    marginBottom: normalize(4),
-  },
-  percentageBarContainer: {
-    width: normalize(60),
-    height: normalize(4),
-    borderRadius: normalize(2),
+  progressBg: {
+    height: normalize(6),
+    borderRadius: 3,
+    marginTop: normalize(10),
     overflow: 'hidden',
   },
-  percentageBar: {
-    height: '100%',
-    borderRadius: normalize(2),
-  },
-  comparisonContainer: {
+  progressFill: { height: '100%' },
+
+  frequentList: { paddingHorizontal: wp(5), gap: normalize(12) },
+  frequentItem: {
     flexDirection: 'row',
-    paddingHorizontal: wp(5),
+    alignItems: 'center',
+    padding: normalize(12),
+    borderRadius: normalize(12),
     gap: normalize(12),
   },
-  monthCard: {
-    flex: 1,
-    borderRadius: normalize(16),
-    padding: normalize(16),
+  frequentIcon: {
+    width: normalize(44),
+    height: normalize(44),
+    borderRadius: normalize(12),
     alignItems: 'center',
-    borderWidth: 1,
-  },
-  monthLabel: {
-    fontSize: normalize(14),
-    marginBottom: normalize(8),
-  },
-  monthAmount: {
-    fontSize: normalize(14),
-    fontWeight: '600',
-    textAlign: 'center',
+    justifyContent: 'center',
   },
 });
 
