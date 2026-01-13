@@ -1,12 +1,18 @@
 // src/features/home/screens/CreateBudgetScreen.tsx
-import AppHeader from '@/components/base/AppHeader';
-import CustomText from '@/components/base/CustomText';
-import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts } from '@/core/theme/font';
-import { hp, normalize, wp } from '@/utils/layout';
-import { FontAwesome6 } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import AppHeader from "@/components/base/AppHeader";
+import CustomText from "@/components/base/CustomText";
+import BottomDateRangeModal, {
+  DateRangeResult,
+  PeriodType,
+} from "@/components/modals/BottomDateRangeModal";
+import { useAppTheme } from "@/core/theme/ThemeContext";
+import { Fonts } from "@/core/theme/font";
+import { useWallet } from "@/features/wallet/hooks/useWallet";
+import StorageService from "@/services/StorageService";
+import { hp, normalize, wp } from "@/utils/layout";
+import { FontAwesome6 } from "@expo/vector-icons";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -16,206 +22,338 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-interface CreateBudgetScreenProps {
-  navigation?: any;
+interface SelectedCategoryData {
+  category_id: string;
+  category_name: string;
+  category_type: "EXPENSE" | "INCOME" | "LOAN";
+  icon: string;
+  color: string;
 }
 
-const CreateBudgetScreen: React.FC<CreateBudgetScreenProps> = ({ navigation }) => {
+type BudgetType = "income" | "expense" | "inout";
+
+const CATEGORY_STORAGE_KEY = "temp_selected_category";
+const WALLET_STORAGE_KEY = "temp_selected_wallet";
+
+const CreateBudgetScreen = () => {
   const { colors } = useAppTheme();
-  const [selectedType, setSelectedType] = useState<'income' | 'expense' | 'inout'>('expense');
-  const [sourceAccount, setSourceAccount] = useState('Tiền mặt');
-  const [category, setCategory] = useState('');
-  const [amount, setAmount] = useState('');
-  const [timeRange, setTimeRange] = useState('Tháng này (1/12 - 31/12)');
-  const [note, setNote] = useState('');
+  const { wallets, defaultWallet } = useWallet();
+
+  const [selectedType, setSelectedType] = useState<BudgetType>("expense");
+  const [sourceWalletId, setSourceWalletId] = useState<string | null>(null);
+  const [selectedCategoryData, setSelectedCategoryData] =
+    useState<SelectedCategoryData | null>(null);
+  const [amount, setAmount] = useState("");
+
+  // Date range states
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [periodType, setPeriodType] = useState<PeriodType>("MONTH");
+  const [dateRangeLabel, setDateRangeLabel] = useState("");
+  const [showDateModal, setShowDateModal] = useState(false);
+
+  const [note, setNote] = useState("");
   const [includeInReport, setIncludeInReport] = useState(true);
   const [autoRepeat, setAutoRepeat] = useState(true);
 
-  const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
+  const selectedWallet = useMemo(
+    () => wallets.find((w) => w.walletId === sourceWalletId),
+    [wallets, sourceWalletId]
+  );
+
+  const isValid =
+    selectedWallet && selectedCategoryData && amount.trim() !== "";
+
+  // Initialize default date range label
+  useEffect(() => {
+    if (!dateRangeLabel) {
+      const now = new Date();
+      const month = now.getMonth();
+      const year = now.getFullYear();
+      const monthStart = new Date(year, month, 1);
+      const monthEnd = new Date(year, month + 1, 0);
+
+      setStartDate(monthStart);
+      setEndDate(monthEnd);
+      setDateRangeLabel(`Tháng này (${formatDateRange(monthStart, monthEnd)})`);
+    }
+  }, []);
+
+  // Init default wallet
+  useEffect(() => {
+    if (!sourceWalletId && defaultWallet) {
+      setSourceWalletId(defaultWallet.walletId);
+    }
+  }, [defaultWallet, sourceWalletId]);
+
+  // Load selected data from storage
+  useFocusEffect(
+    useCallback(() => {
+      const loadData = async () => {
+        try {
+          // Load wallet
+          const storedWallet = await StorageService.getAsyncItem(
+            WALLET_STORAGE_KEY
+          );
+          if (storedWallet) {
+            const { walletId } = JSON.parse(storedWallet);
+            setSourceWalletId(walletId);
+            await StorageService.removeAsyncItem(WALLET_STORAGE_KEY);
+          }
+
+          // Load category
+          const storedCategory = await StorageService.getAsyncItem(
+            CATEGORY_STORAGE_KEY
+          );
+          if (storedCategory) {
+            const categoryData: SelectedCategoryData =
+              JSON.parse(storedCategory);
+            setSelectedCategoryData(categoryData);
+
+            // Auto sync budget type
+            const typeMap = {
+              INCOME: "income",
+              EXPENSE: "expense",
+              LOAN: "inout",
+            } as const;
+            setSelectedType(typeMap[categoryData.category_type]);
+
+            await StorageService.removeAsyncItem(CATEGORY_STORAGE_KEY);
+          }
+        } catch (error) {
+          console.error("[CreateBudget] Load data failed:", error);
+        }
+      };
+      loadData();
+    }, [])
+  );
+
+  const handleTypeChange = (newType: BudgetType) => {
+    setSelectedType(newType);
+
+    // Clear category if type mismatch
+    if (selectedCategoryData) {
+      const typeMap = {
+        income: "INCOME",
+        expense: "EXPENSE",
+        inout: "LOAN",
+      } as const;
+      if (selectedCategoryData.category_type !== typeMap[newType]) {
+        setSelectedCategoryData(null);
+      }
     }
   };
 
-  const handleSelectAccount = () => {
-    console.log('Select account');
+  const formatDateRange = (start: Date, end: Date) => {
+    const formatDate = (date: Date) => {
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      return `${day}/${month}`;
+    };
+    return `${formatDate(start)} - ${formatDate(end)}`;
   };
 
-  const handleSelectCategory = () => {
-    console.log('Select category');
-  };
+  const handleDateRangeSelect = (result: DateRangeResult) => {
+    setStartDate(result.startDate);
+    setEndDate(result.endDate);
+    setPeriodType(result.periodType);
 
-  const handleSelectTimeRange = () => {
-    console.log('Select time range');
+    // Format label based on period type
+    if (result.periodType === "CUSTOM") {
+      setDateRangeLabel(result.label);
+    } else {
+      setDateRangeLabel(
+        `${result.label} (${formatDateRange(result.startDate, result.endDate)})`
+      );
+    }
   };
 
   const handleCreate = () => {
-    console.log('Create budget', {
+    if (!isValid) return;
+
+    console.log("Create budget", {
       type: selectedType,
-      sourceAccount,
-      category,
+      sourceWalletId,
+      category: selectedCategoryData,
       amount,
-      timeRange,
+      startDate,
+      endDate,
+      periodType,
       note,
       includeInReport,
       autoRepeat,
     });
-    handleBack();
+    router.back();
   };
 
-  const handleCancel = () => {
-    handleBack();
+  const parseCategoryName = (nameJson: string) => {
+    try {
+      const parsed = JSON.parse(nameJson);
+      return parsed.vi || parsed.en || "Chọn nhóm";
+    } catch {
+      return "Chọn nhóm";
+    }
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.flex}
       >
-        {/* Header - Using AppHeader component */}
-        <AppHeader 
-          title="Tạo ngân sách"
-          onBack={handleBack}
-        />
+        <AppHeader title="Tạo ngân sách" />
 
-        <ScrollView 
-          style={styles.scrollView}
+        <ScrollView
+          style={styles.flex}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           {/* Type Selector */}
           <View style={styles.section}>
-            <View style={styles.typeSelectorContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.typeButton,
-                  { 
-                    backgroundColor: selectedType === 'income' ? colors.tint : colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => setSelectedType('income')}
-              >
-                <CustomText
+            <View style={styles.typeContainer}>
+              {[
+                { type: "income" as const, label: "Khoản thu" },
+                { type: "expense" as const, label: "Khoản chi" },
+                { type: "inout" as const, label: "Vay/Nợ" },
+              ].map(({ type, label }) => (
+                <TouchableOpacity
+                  key={type}
                   style={[
-                    styles.typeButtonText,
+                    styles.typeButton,
                     {
-                      color: selectedType === 'income' ? '#fff' : colors.text,
-                      fontFamily: selectedType === 'income' ? Fonts.semiBold : Fonts.regular,
+                      backgroundColor:
+                        selectedType === type ? colors.tint : colors.card,
+                      borderColor: colors.border,
                     },
                   ]}
+                  onPress={() => handleTypeChange(type)}
                 >
-                  Khoản thu
-                </CustomText>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.typeButton,
-                  { 
-                    backgroundColor: selectedType === 'expense' ? colors.tint : colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => setSelectedType('expense')}
-              >
-                <CustomText
-                  style={[
-                    styles.typeButtonText,
-                    {
-                      color: selectedType === 'expense' ? '#fff' : colors.text,
-                      fontFamily: selectedType === 'expense' ? Fonts.semiBold : Fonts.regular,
-                    },
-                  ]}
-                >
-                  Khoản chi
-                </CustomText>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.typeButton,
-                  { 
-                    backgroundColor: selectedType === 'inout' ? colors.tint : colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => setSelectedType('inout')}
-              >
-                <CustomText
-                  style={[
-                    styles.typeButtonText,
-                    {
-                      color: selectedType === 'inout' ? '#fff' : colors.text,
-                      fontFamily: selectedType === 'inout' ? Fonts.semiBold : Fonts.regular,
-                    },
-                  ]}
-                >
-                  Vay/Nợ
-                </CustomText>
-              </TouchableOpacity>
+                  <CustomText
+                    style={[
+                      styles.typeText,
+                      {
+                        color: selectedType === type ? "#fff" : colors.text,
+                        fontFamily:
+                          selectedType === type
+                            ? Fonts.semiBold
+                            : Fonts.regular,
+                      },
+                    ]}
+                  >
+                    {label}
+                  </CustomText>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
 
-          {/* Source Account */}
+          {/* Source Wallet - REQUIRED */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Nguồn tiền
+              Nguồn tiền <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
-              style={[styles.selectField, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={handleSelectAccount}
+              style={[
+                styles.field,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={() =>
+                router.push("/(protected)/wallet-list?mode=select")
+              }
             >
-              <View style={styles.selectFieldLeft}>
-                <FontAwesome6 name="money-bill-wave" size={normalize(18)} color="#4CAF50" solid />
-                <CustomText style={[styles.selectFieldText, { color: colors.text }]}>
-                  {sourceAccount}
+              <View style={styles.fieldLeft}>
+                <FontAwesome6
+                  name={(selectedWallet?.icon as any) || "wallet"}
+                  size={normalize(18)}
+                  color={selectedWallet?.color || colors.icon}
+                  solid
+                />
+                <CustomText style={[styles.fieldText, { color: colors.text }]}>
+                  {selectedWallet?.name || "Chọn ví"}
                 </CustomText>
               </View>
             </TouchableOpacity>
           </View>
 
-          {/* Category */}
+          {/* Category - REQUIRED */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Nhóm
+              Nhóm <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
-              style={[styles.selectField, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={handleSelectCategory}
+              style={[
+                styles.field,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={() =>
+                router.push({
+                  pathname: "/(protected)/select-category",
+                  params: { selectedType },
+                })
+              }
             >
-              <View style={styles.selectFieldLeft}>
-                <View style={[styles.categoryIcon, { backgroundColor: '#FF6B35' + '20' }]}>
-                  <FontAwesome6 name="shopping-bag" size={normalize(16)} color="#FF6B35" />
-                </View>
-                <CustomText 
-                  style={[
-                    styles.selectFieldText, 
-                    { color: category ? colors.text : colors.icon }
-                  ]}
-                >
-                  {category || 'Shoppe'}
-                </CustomText>
+              <View style={styles.fieldLeft}>
+                {selectedCategoryData ? (
+                  <>
+                    <View
+                      style={[
+                        styles.categoryIcon,
+                        { backgroundColor: selectedCategoryData.color },
+                      ]}
+                    >
+                      <FontAwesome6
+                        name={selectedCategoryData.icon as any}
+                        size={normalize(18)}
+                        color="#fff"
+                      />
+                    </View>
+                    <CustomText
+                      style={[styles.fieldText, { color: colors.text }]}
+                    >
+                      {parseCategoryName(selectedCategoryData.category_name)}
+                    </CustomText>
+                  </>
+                ) : (
+                  <>
+                    <View
+                      style={[
+                        styles.categoryIcon,
+                        { backgroundColor: colors.border },
+                      ]}
+                    />
+                    <CustomText
+                      style={[styles.fieldText, { color: colors.icon }]}
+                    >
+                      Chọn nhóm
+                    </CustomText>
+                  </>
+                )}
               </View>
             </TouchableOpacity>
           </View>
 
-          {/* Amount */}
+          {/* Amount - REQUIRED */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Số tiền
+              Số tiền <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
-            <View style={[styles.amountContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <CustomText style={[styles.currencySymbol, { color: colors.tint }]}>
+            <View
+              style={[
+                styles.amountContainer,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <CustomText style={[styles.currency, { color: colors.tint }]}>
                 đ
               </CustomText>
               <TextInput
                 style={[styles.amountInput, { color: colors.text }]}
-                placeholder="0.00"
+                placeholder="0"
                 placeholderTextColor={colors.icon}
                 keyboardType="numeric"
                 value={amount}
@@ -230,37 +368,51 @@ const CreateBudgetScreen: React.FC<CreateBudgetScreenProps> = ({ navigation }) =
               Khoảng thời gian
             </CustomText>
             <TouchableOpacity
-              style={[styles.selectField, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={handleSelectTimeRange}
+              style={[
+                styles.field,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={() => setShowDateModal(true)}
             >
-              <CustomText style={[styles.selectFieldText, { color: colors.text }]}>
-                {timeRange}
+              <CustomText style={[styles.fieldText, { color: colors.text }]}>
+                {dateRangeLabel || "Chọn khoảng thời gian"}
               </CustomText>
-              <FontAwesome6 name="chevron-down" size={normalize(14)} color={colors.icon} />
+              <FontAwesome6
+                name="chevron-down"
+                size={normalize(14)}
+                color={colors.icon}
+              />
             </TouchableOpacity>
           </View>
 
-          {/* Note */}
+          {/* Note - Optional */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               Ghi chú
             </CustomText>
-            <View style={[styles.noteContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <TextInput
-                style={[styles.noteInput, { color: colors.text }]}
-                placeholder="Thêm ghi chú (tùy chọn)"
-                placeholderTextColor={colors.icon}
-                multiline
-                numberOfLines={4}
-                value={note}
-                onChangeText={setNote}
-                textAlignVertical="top"
-              />
-            </View>
+            <TextInput
+              style={[
+                styles.noteInput,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              placeholder="Thêm ghi chú (tùy chọn)"
+              placeholderTextColor={colors.icon}
+              multiline
+              numberOfLines={4}
+              value={note}
+              onChangeText={setNote}
+              textAlignVertical="top"
+            />
           </View>
 
           {/* Toggle Options */}
-          <View style={[styles.toggleSection, { backgroundColor: colors.card }]}>
+          <View
+            style={[styles.toggleSection, { backgroundColor: colors.card }]}
+          >
             <View style={styles.toggleRow}>
               <CustomText style={[styles.toggleLabel, { color: colors.text }]}>
                 Tính vào báo cáo
@@ -273,7 +425,9 @@ const CreateBudgetScreen: React.FC<CreateBudgetScreenProps> = ({ navigation }) =
               />
             </View>
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View
+              style={[styles.divider, { backgroundColor: colors.border }]}
+            />
 
             <View style={styles.toggleRow}>
               <CustomText style={[styles.toggleLabel, { color: colors.text }]}>
@@ -288,43 +442,58 @@ const CreateBudgetScreen: React.FC<CreateBudgetScreenProps> = ({ navigation }) =
             </View>
           </View>
 
-          {/* Spacing for bottom buttons */}
           <View style={{ height: hp(12) }} />
         </ScrollView>
 
         {/* Bottom Buttons */}
-        <View style={[styles.bottomButtons, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
+        <View
+          style={[
+            styles.bottomBar,
+            {
+              backgroundColor: colors.background,
+              borderTopColor: colors.border,
+            },
+          ]}
+        >
           <TouchableOpacity
-            style={[styles.cancelButton, { borderColor: colors.tint }]}
-            onPress={handleCancel}
+            style={[styles.cancelBtn, { borderColor: colors.tint }]}
+            onPress={() => router.back()}
           >
-            <CustomText style={[styles.cancelButtonText, { color: colors.tint }]}>
-              Cancel
+            <CustomText style={[styles.cancelText, { color: colors.tint }]}>
+              Hủy
             </CustomText>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.createButton, { backgroundColor: colors.tint }]}
+            style={[
+              styles.createBtn,
+              { backgroundColor: isValid ? colors.tint : colors.border },
+            ]}
             onPress={handleCreate}
+            disabled={!isValid}
           >
-            <CustomText style={styles.createButtonText}>Create</CustomText>
+            <CustomText style={styles.createText}>Tạo</CustomText>
           </TouchableOpacity>
         </View>
+
+        {/* Date Range Modal */}
+        <BottomDateRangeModal
+          visible={showDateModal}
+          title="Khoảng thời gian"
+          initialStartDate={startDate}
+          initialEndDate={endDate}
+          initialPeriodType={periodType}
+          onSelect={handleDateRangeSelect}
+          onClose={() => setShowDateModal(false)}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  flex: { flex: 1 },
   section: {
     paddingHorizontal: wp(5),
     marginTop: hp(2),
@@ -334,36 +503,36 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.medium,
     marginBottom: normalize(8),
   },
-  typeSelectorContainer: {
-    flexDirection: 'row',
+  typeContainer: {
+    flexDirection: "row",
     gap: normalize(8),
   },
   typeButton: {
     flex: 1,
     paddingVertical: normalize(10),
     borderRadius: normalize(20),
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
   },
-  typeButtonText: {
+  typeText: {
     fontSize: normalize(13),
   },
-  selectField: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  field: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: normalize(16),
     paddingVertical: normalize(14),
     borderRadius: normalize(12),
     borderWidth: 1,
   },
-  selectFieldLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  fieldLeft: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: normalize(12),
     flex: 1,
   },
-  selectFieldText: {
+  fieldText: {
     fontSize: normalize(15),
     fontFamily: Fonts.regular,
   },
@@ -371,19 +540,19 @@ const styles = StyleSheet.create({
     width: normalize(36),
     height: normalize(36),
     borderRadius: normalize(10),
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   amountContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: normalize(16),
     paddingVertical: normalize(14),
     borderRadius: normalize(12),
     borderWidth: 1,
     gap: normalize(12),
   },
-  currencySymbol: {
+  currency: {
     fontSize: normalize(20),
     fontFamily: Fonts.semiBold,
   },
@@ -393,18 +562,14 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     padding: 0,
   },
-  noteContainer: {
+  noteInput: {
     paddingHorizontal: normalize(16),
     paddingVertical: normalize(12),
     borderRadius: normalize(12),
     borderWidth: 1,
-    minHeight: hp(12),
-  },
-  noteInput: {
     fontSize: normalize(14),
     fontFamily: Fonts.regular,
-    padding: 0,
-    minHeight: hp(10),
+    minHeight: hp(12),
   },
   toggleSection: {
     marginHorizontal: wp(5),
@@ -413,9 +578,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: normalize(16),
   },
   toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: normalize(16),
   },
   toggleLabel: {
@@ -425,34 +590,34 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
   },
-  bottomButtons: {
-    flexDirection: 'row',
+  bottomBar: {
+    flexDirection: "row",
     paddingHorizontal: wp(5),
     paddingVertical: hp(1),
     gap: normalize(12),
     borderTopWidth: 1,
   },
-  cancelButton: {
+  cancelBtn: {
     flex: 1,
     paddingVertical: normalize(14),
     borderRadius: normalize(12),
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 2,
   },
-  cancelButtonText: {
+  cancelText: {
     fontSize: normalize(16),
     fontFamily: Fonts.semiBold,
   },
-  createButton: {
+  createBtn: {
     flex: 1,
     paddingVertical: normalize(14),
     borderRadius: normalize(12),
-    alignItems: 'center',
+    alignItems: "center",
   },
-  createButtonText: {
+  createText: {
     fontSize: normalize(16),
     fontFamily: Fonts.semiBold,
-    color: '#fff',
+    color: "#fff",
   },
 });
 

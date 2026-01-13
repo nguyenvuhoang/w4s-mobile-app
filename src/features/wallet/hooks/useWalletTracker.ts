@@ -1,66 +1,57 @@
-import { GlobalContext } from "@/contexts/GlobalContext";
-import {
-    Wallet,
-    walletTrackerRepository,
-} from "@/services/repositories/walletTracker.repository";
-import { useContext, useEffect, useState } from "react";
-GlobalContext;
+import StorageKey from '@/constants/StorageKey';
+import { walletTrackerRepository } from '@/services/repositories/walletTracker.repository';
+import StorageService from '@/services/StorageService';
+import { useState } from 'react';
 
-interface UseWalletOptions {
-  autoFetch?: boolean;
+interface CreateWalletTrackerParams {
+  currency: string;
+  color: string;
+  icon: string;
+  isIncludeReport: boolean;
+  walletType: string;
 }
 
-export const useWalletTracker = (options: UseWalletOptions = {}) => {
-  const { appInfo } = useContext(GlobalContext);
-  const { autoFetch = true } = options;
-
-  const [wallets, setWallets] = useState<Wallet[]>([]);
+export const useWalletTracker = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchWallets = async () => {
+  const createWalletTracker = async (params: CreateWalletTrackerParams) => {
     setLoading(true);
     setError(null);
 
     try {
-      const userCode = appInfo?.user_code;
-      if (!userCode) throw "Can't get user Code form Appin";
-      const response = await walletTrackerRepository.getWalletList(userCode);
-      if (response.isSuccess() && response.data) {
-        const walletData = response.data.items || [];
-        setWallets(walletData);
-      } else {
-        throw new Error(response.message || "Failed to fetch wallets");
+      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      if (!userCode) {
+        throw new Error('Missing user code');
       }
+
+      const response = await walletTrackerRepository.createWalletTracker(
+        String(userCode),
+        params.currency,
+        params.color,
+        params.icon,
+        params.isIncludeReport,
+        params.walletType
+      );
+
+      if (!response.isSuccess()) {
+        throw new Error(response.getError() || response.message || 'Create wallet failed');
+      }
+
+      return response;
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch wallets";
-      setError(errorMessage);
-      console.error("[useWallet] Error:", err);
+      const message = err instanceof Error ? err.message : 'Create wallet failed';
+      setError(message);
+      console.error('[useWalletTracker] createWalletTracker failed', err);
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  const refetch = () => {
-    fetchWallets();
-  };
-
-  useEffect(() => {
-    if (autoFetch) {
-      fetchWallets();
-    } else {
-      console.log(
-        "[useWallet] NOT calling fetchWallets. autoFetch:",
-        autoFetch
-      );
-    }
-  }, [autoFetch]);
-
   return {
-    wallets,
     loading,
     error,
-    refetch,
+    createWalletTracker,
   };
 };

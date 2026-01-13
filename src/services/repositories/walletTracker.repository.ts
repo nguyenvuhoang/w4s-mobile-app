@@ -10,29 +10,45 @@ export interface Wallet {
   user_code: string;
   wallet_name: string;
   wallet_type: string;
-  wallet_icon: string;
-  wallet_color: string;
+  icon: string;
+  color: string;
   default_currency: string;
-  balance: number;
+  available_balance: number;
   status: string;
 }
 
 export const walletTrackerRepository = {
   /**
-   * Get all wallet tracker
+   * Create a new wallet tracker
    */
-  async getWalletList(userCode: string): Promise<BaseResponseModel> {
+  async createWalletTracker(
+    userCode: string,
+    currency: string,
+    color: string,
+    icon: string,
+    isIncludeReport: boolean,
+    walletType: string
+  ): Promise<BaseResponseModel> {
     try {
       return await apiService.executeWorkflow(
-        WORKFLOWCODE.WF_MB_GET_LIST_WALLET,
+        WORKFLOWCODE.WF_MB_ADD_ON_WALLET,
         {
-          usercode: userCode
+          usercode: userCode,
+          base_currency: currency,
+          color: color,
+          icon: icon,
+          is_include_report: isIncludeReport,
+          wallet_type: "TWDR",
+          classification: "EXPENSE"
         },
         false,
         true
       );
     } catch (error) {
-      console.error('[walletTrackerRepository] Error fetching categories:', error);
+      console.error(
+        "[walletTrackerRepository] Error creating wallet trackker:",
+        error
+      );
       throw error;
     }
   },

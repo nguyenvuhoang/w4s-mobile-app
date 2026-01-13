@@ -1,16 +1,18 @@
 import CustomText from '@/components/base/CustomText';
+import SectionHeader from '@/components/base/SectionHeader';
+import PieChartWithLabels from '@/components/chart/PieChartCard';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { PieChart } from 'react-native-gifted-charts';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
@@ -31,11 +33,11 @@ const TIME_PERIODS = [
 ];
 
 const MOCK_EXPENSE_CATEGORIES = [
-  { name: 'Thực phẩm', value: 53, color: '#7B68EE' },
-  { name: 'Di chuyển', value: 20, color: '#FF7B89' },
-  { name: 'Mua sắm', value: 17, color: '#4DD0E1' },
-  { name: 'Khác', value: 6.16, color: '#FFB74D' },
-  { name: 'Giải trí', value: 10, color: '#9C27B0' },
+  { name: 'Thực phẩm', value: 3245000, color: '#7B68EE' },
+  { name: 'Di chuyển', value: 1763000, color: '#FF7B89' },
+  { name: 'Mua sắm', value: 2672000, color: '#4DD0E1' },
+  { name: 'Khác', value: 200000, color: '#FFB74D' },
+  { name: 'Giải trí', value: 300000, color: '#9C27B0' },
 ];
 
 const MOCK_INCOME_CATEGORIES = [
@@ -69,45 +71,6 @@ const ReportScreen = () => {
   const incomeChange = 8.2;
 
   const formatCurrency = (v: number) => v.toLocaleString('vi-VN') + ' đ';
-
-  const renderPieChart = (data: any[], title: string) => {
-    const pieData = data.map(item => ({
-      value: item.value,
-      color: item.color,
-      text: `${item.value}%`,
-    }));
-
-    return (
-      <View style={[styles.chartCard, { backgroundColor: colors.card }]}>
-        <View style={styles.chartContainer}>
-          <PieChart
-            data={pieData}
-            donut
-            radius={normalize(80)}
-            innerRadius={normalize(50)}
-            centerLabelComponent={() => null}
-          />
-          <CustomText type="medium" size={14} style={styles.chartTitle}>
-            {title}
-          </CustomText>
-        </View>
-
-        <View style={styles.legendContainer}>
-          {data.map((item, index) => (
-            <View key={index} style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-              <CustomText size={13} style={{ flex: 1 }}>
-                {item.name}
-              </CustomText>
-              <CustomText type="medium" size={13}>
-                {item.value}%
-              </CustomText>
-            </View>
-          ))}
-        </View>
-      </View>
-    );
-  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -151,9 +114,7 @@ const ReportScreen = () => {
         </View>
 
         {/* ===== INCOME/EXPENSE SUMMARY ===== */}
-        <CustomText type="medium" size={16} style={styles.sectionTitle}>
-          Thu nhập rồng
-        </CustomText>
+        <SectionHeader title="Thu nhập ròng" />
 
         <View style={styles.summaryRow}>
           {/* Total Expense */}
@@ -231,20 +192,21 @@ const ReportScreen = () => {
           ))}
         </View>
 
-        {/* ===== CHARTS SECTION ===== */}
-        <View style={styles.chartHeader}>
-          <CustomText type="medium" size={16}>
-            Báo cáo theo nhóm
-          </CustomText>
-          <TouchableOpacity>
-            <CustomText type="medium" size={14} style={{ color: colors.tint }}>
-              Xem chi tiết
-            </CustomText>
-          </TouchableOpacity>
-        </View>
+        <SectionHeader title="Báo cáo theo nhóm" showAction={true} actionText='Xem chi tiết' onPressAction={() => router.push('/(protected)/category-report-detail')} />
 
-        {renderPieChart(MOCK_EXPENSE_CATEGORIES, 'Khoản chi')}
-        {renderPieChart(MOCK_INCOME_CATEGORIES, 'Khoản chi')}
+        {/* ===== PIE CHARTS ===== */}
+        <View style={{ marginHorizontal: wp(5) }}>
+          <PieChartWithLabels
+            data={MOCK_EXPENSE_CATEGORIES}
+            title="Khoản chi"
+            backgroundColor={colors.card}
+          />
+          <PieChartWithLabels
+            data={MOCK_INCOME_CATEGORIES}
+            title="Khoản thu"
+            backgroundColor={colors.card}
+          />
+        </View>
 
         <View style={{ height: hp(8) }} />
       </ScrollView>
@@ -363,41 +325,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-
-  chartHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: wp(5),
-    marginBottom: normalize(12),
-  },
-
-  chartCard: {
-    marginHorizontal: wp(5),
-    marginBottom: hp(2),
-    padding: normalize(16),
-    borderRadius: normalize(12),
-  },
-  chartContainer: {
-    alignItems: 'center',
-    marginBottom: normalize(16),
-  },
-  chartTitle: {
-    marginTop: normalize(12),
-  },
-  legendContainer: {
-    gap: normalize(10),
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(8),
-  },
-  legendDot: {
-    width: normalize(10),
-    height: normalize(10),
-    borderRadius: 5,
   },
 });
 

@@ -1,16 +1,17 @@
 import CustomText from '@/components/base/CustomText';
+import SectionHeader from '@/components/base/SectionHeader';
+import LineChartCard from '@/components/chart/LineChartCard';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useMemo } from 'react';
 import {
   Dimensions,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
-  View,
+  View
 } from 'react-native';
-import { LineChart } from 'react-native-gifted-charts';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
@@ -31,25 +32,27 @@ const MOCK_CATEGORIES = [
   { id: '5', name: 'Tiện ích', icon: 'bolt', color: '#FF9800', amount: 356000, percentage: 13 },
 ];
 
-const MOCK_MONTHLY_EXPENSES = [
-  { value: 450000, label: '1' },
-  { value: 680000, label: '5' },
-  { value: 320000, label: '10' },
-  { value: 890000, label: '15' },
-  { value: 560000, label: '20' },
-  { value: 720000, label: '25' },
-  { value: 280000, label: '31' },
-];
+// const MOCK_MONTHLY_EXPENSES = [
+//   { value: 450000, label: '1' },
+//   { value: 380000, label: '2' },
+//   { value: 520000, label: '3' },
+// ];
 
-const MOCK_MONTHLY_INCOME = [
-  { value: 50000, label: '1' },
-  { value: 120000, label: '5' },
-  { value: 8500000, label: '10' },
-  { value: 80000, label: '15' },
-  { value: 60000, label: '20' },
-  { value: 40000, label: '25' },
-  { value: 30000, label: '31' },
-];
+const MOCK_MONTHLY_EXPENSES = Array.from({ length: 31 }, (_, i) => ({
+  value: Math.floor(Math.random() * 100000000) + 200000,
+  label: `${i + 1}`,
+}));
+
+
+// const MOCK_MONTHLY_INCOME = [
+//   { value: 50000, label: '1' },
+//   { value: 120000, label: '5' },
+// ];
+
+const MOCK_MONTHLY_INCOME = Array.from({ length: 31 }, (_, i) => ({
+  value: Math.floor(Math.random() * 50000) + 50000,
+  label: `${i + 1}`,
+}));
 
 const MOCK_FREQUENT_EXPENSES = [
   { id: '1', name: 'Shoppe', category: 'Mua sắm', icon: 'bag-shopping', color: '#EE4D2D', amount: 89000 },
@@ -96,7 +99,7 @@ const StatisticsScreen = () => {
         </View>
 
         {/* ===== WALLETS ===== */}
-        <SectionHeader title="Ví của tôi" />
+        <SectionHeader title="Ví của tôi" showAction={true} onPressAction={() => router.push('/(protected)/wallet-list')} />
 
         <View style={styles.walletList}>
           {MOCK_WALLETS.map(w => (
@@ -113,16 +116,16 @@ const StatisticsScreen = () => {
         </View>
 
         {/* ===== CHARTS ===== */}
-        <SectionHeader title="Báo cáo tháng này" />
+        <SectionHeader title="Báo cáo tháng này" showAction={true} actionText='Xem báo cáo' onPressAction={() => router.push('../report')} />
 
-        <ChartCard
+        <LineChartCard
           label="Khoản chi"
           color="#F44336"
           data={MOCK_MONTHLY_EXPENSES}
           formatYLabel={formatYLabel}
         />
 
-        <ChartCard
+        <LineChartCard
           label="Khoản thu"
           color="#2196F3"
           data={MOCK_MONTHLY_INCOME}
@@ -177,46 +180,6 @@ const StatisticsScreen = () => {
         <View style={{ height: hp(8) }} />
       </ScrollView>
     </SafeAreaView>
-  );
-};
-
-/* ================= COMPONENTS ================= */
-
-const SectionHeader = ({ title }: { title: string }) => (
-  <View style={styles.sectionHeader}>
-    <CustomText type="medium" size={16}>{title}</CustomText>
-    <TouchableOpacity>
-      <CustomText type="medium" size={14}>Xem tất cả</CustomText>
-    </TouchableOpacity>
-  </View>
-);
-
-const ChartCard = ({ label, color, data, formatYLabel }: any) => {
-  const { colors } = useAppTheme();
-  return (
-    <View style={[styles.chartCard, { backgroundColor: colors.card }]}>
-      <View style={styles.chartLegend}>
-        <View style={[styles.legendDot, { backgroundColor: color }]} />
-        <CustomText type="medium" size={14}>{label}</CustomText>
-      </View>
-      <LineChart
-        data={data}
-        width={width - wp(10) - 60}
-        height={normalize(180)}
-        spacing={45}
-        color={color}
-        thickness={2}
-        curved
-        areaChart
-        startOpacity={0.8}
-        endOpacity={0.1}
-        yAxisColor={colors.border}
-        xAxisColor={colors.border}
-        yAxisTextStyle={{ fontSize: normalize(10), color: colors.icon }}
-        xAxisLabelTextStyle={{ fontSize: normalize(10), color: colors.icon }}
-        formatYLabel={formatYLabel}
-      />
-    </View>
   );
 };
 

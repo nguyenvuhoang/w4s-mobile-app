@@ -1,12 +1,12 @@
-import CustomText from '@/components/base/CustomText';
-import { GlobalContext } from '@/contexts/GlobalContext';
-import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Tokens } from '@/core/theme/theme';
-import { useSettingService } from '@/features/settings/hooks/useSettingService';
-import { normalize } from '@/utils/layout';
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useContext, useState } from 'react';
+import CustomText from "@/components/base/CustomText";
+import { GlobalContext } from "@/contexts/GlobalContext";
+import { useAppTheme } from "@/core/theme/ThemeContext";
+import { Tokens } from "@/core/theme/theme";
+import { useSettingService } from "@/features/settings/hooks/useSettingService";
+import { normalize } from "@/utils/layout";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React, { useContext, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -14,8 +14,8 @@ import {
   Switch,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface SettingsScreenProps {
   navigation: any;
@@ -30,14 +30,16 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   // const [darkModeEnabled, setDarkModeEnabled] = useState(false);
 
   const handleBiometricToggle = async () => {
-    const userCode = appInfo?.user_code || '';
+    const userCode = appInfo?.user_code || "";
     if (userCode) {
       await touchIDClick(userCode);
     }
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
@@ -49,7 +51,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         {/* Profile Section */}
         <View style={[styles.profileSection, { backgroundColor: colors.card }]}>
           <Image
-            source={{ uri: 'https://media.istockphoto.com/id/814423752/photo/eye-of-model-with-colorful-art-make-up-close-up.jpg?s=612x612&w=0&k=20&c=l15OdMWjgCKycMMShP8UK94ELVlEGvt7GmB_esHWPYE=' }}
+            source={{
+              uri: "https://media.istockphoto.com/id/814423752/photo/eye-of-model-with-colorful-art-make-up-close-up.jpg?s=612x612&w=0&k=20&c=l15OdMWjgCKycMMShP8UK94ELVlEGvt7GmB_esHWPYE=",
+            }}
             style={styles.profileImage}
           />
           <CustomText style={[styles.profileName, { color: colors.text }]}>
@@ -75,18 +79,25 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="wallet-outline"
               title="Ví của tôi"
-              onPress={() => {router.push('/(protected)/select-wallet-type');}}
+              onPress={() => {
+                router.push({
+                  pathname: "/(protected)/wallet-list",
+                  params: { mode: "manage" },
+                });
+              }}
               colors={colors}
             />
             <SettingItem
               icon="cube-outline"
               title="Nhóm"
-              onPress={() => {router.push({
-                    pathname: '/(protected)/select-category',
-                    params: {
-                       isEdit: "true"
-                    }
-                  });}}
+              onPress={() => {
+                router.push({
+                  pathname: "/(protected)/select-category",
+                  params: {
+                    isEdit: "true",
+                  },
+                });
+              }}
               colors={colors}
             />
             <SettingItem
@@ -116,7 +127,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="construct-outline"
               title="Công cụ"
-              onPress={() => {router.push('/(protected)/tools');}}
+              onPress={() => {
+                router.push("/(protected)/tools");
+              }}
               colors={colors}
             />
           </View>
@@ -135,11 +148,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               onValueChange={setNotificationsEnabled}
               colors={colors}
             />
-            <SettingItem 
-              icon="time-outline" 
-              title="Nhắc giao dịch" 
-              value="Tắt chuông báo" 
-              onPress={() => {}} 
+            <SettingItem
+              icon="time-outline"
+              title="Nhắc giao dịch"
+              value="Tắt chuông báo"
+              onPress={() => {}}
               colors={colors}
             />
             <SettingItemWithSwitch
@@ -155,22 +168,22 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               title="Chế độ tối"
               value={isDark}
               onValueChange={(val: boolean) => {
-                setMode(val ? 'dark' : 'light');
+                setMode(val ? "dark" : "light");
               }}
               colors={colors}
             />
-            <SettingItem 
-              icon="language-outline" 
-              title="Ngôn ngữ" 
-              value="Tiếng Việt" 
-              onPress={() => {}} 
+            <SettingItem
+              icon="language-outline"
+              title="Ngôn ngữ"
+              value="Tiếng Việt"
+              onPress={() => {}}
               colors={colors}
             />
-            <SettingItem 
-              icon="cash-outline" 
-              title="Tiền tệ" 
-              value="VND (đ)" 
-              onPress={() => {}} 
+            <SettingItem
+              icon="cash-outline"
+              title="Tiền tệ"
+              value="VND (đ)"
+              onPress={() => {}}
               colors={colors}
             />
           </View>
@@ -185,7 +198,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="lock-closed-outline"
               title="Đổi mật khẩu"
-              onPress={() => {router.push('/(protected)/change-password')}}
+              onPress={() => {
+                router.push("/(protected)/change-password");
+              }}
               colors={colors}
             />
             <SettingItem
@@ -207,19 +222,22 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               onPress={() => {}}
               colors={colors}
             />
-            
           </View>
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity 
-          style={[styles.logoutButton, { backgroundColor: colors.card }]} 
-          onPress={() => {handleLogout()}}
+        <TouchableOpacity
+          style={[styles.logoutButton, { backgroundColor: colors.card }]}
+          onPress={() => {
+            handleLogout();
+          }}
         >
-          <Ionicons name="log-out-outline" size={normalize(20)} color="#FF3B30" />
-          <CustomText style={styles.logoutText}>
-            Đăng xuất
-          </CustomText>
+          <Ionicons
+            name="log-out-outline"
+            size={normalize(20)}
+            color="#FF3B30"
+          />
+          <CustomText style={styles.logoutText}>Đăng xuất</CustomText>
         </TouchableOpacity>
 
         <View style={styles.footer}>
@@ -233,13 +251,26 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
 };
 
 // Setting Item Component
-const SettingItem = ({ icon, title, subtitle, value, badge, onPress, colors }: any) => (
-  <TouchableOpacity 
-    style={[styles.settingItem, { borderBottomColor: colors.border }]} 
+const SettingItem = ({
+  icon,
+  title,
+  subtitle,
+  value,
+  badge,
+  onPress,
+  colors,
+}: any) => (
+  <TouchableOpacity
+    style={[styles.settingItem, { borderBottomColor: colors.border }]}
     onPress={onPress}
   >
     <View style={styles.settingLeft}>
-      <View style={[styles.settingIconContainer, { backgroundColor: Tokens.colors.foundation.primary["primary-1"] }]}>
+      <View
+        style={[
+          styles.settingIconContainer,
+          { backgroundColor: Tokens.colors.foundation.primary["primary-1"] },
+        ]}
+      >
         <Ionicons name={icon} size={normalize(22)} color={colors.tint} />
       </View>
       <View style={styles.settingInfo}>
@@ -255,8 +286,10 @@ const SettingItem = ({ icon, title, subtitle, value, badge, onPress, colors }: a
     </View>
     <View style={styles.settingRight}>
       {badge && (
-        <View style={[styles.badge, { backgroundColor: '#FF3B30' }]}>
-          <CustomText style={[styles.badgeText, { color: Tokens.colors.main.white }]}>
+        <View style={[styles.badge, { backgroundColor: "#FF3B30" }]}>
+          <CustomText
+            style={[styles.badgeText, { color: Tokens.colors.main.white }]}
+          >
             {badge}
           </CustomText>
         </View>
@@ -266,7 +299,11 @@ const SettingItem = ({ icon, title, subtitle, value, badge, onPress, colors }: a
           {value}
         </CustomText>
       )}
-      <Ionicons name="chevron-forward" size={normalize(20)} color={colors.border} />
+      <Ionicons
+        name="chevron-forward"
+        size={normalize(20)}
+        color={colors.border}
+      />
     </View>
   </TouchableOpacity>
 );
@@ -282,7 +319,12 @@ const SettingItemWithSwitch = ({
 }: any) => (
   <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
     <View style={styles.settingLeft}>
-      <View style={[styles.settingIconContainer, { backgroundColor: Tokens.colors.foundation.primary["primary-1"] }]}>
+      <View
+        style={[
+          styles.settingIconContainer,
+          { backgroundColor: Tokens.colors.foundation.primary["primary-1"] },
+        ]}
+      >
         <Ionicons name={icon} size={normalize(22)} color={colors.tint} />
       </View>
       <View style={styles.settingInfo}>
@@ -316,14 +358,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: normalize(24),
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   profileSection: {
     borderRadius: normalize(20),
     padding: normalize(24),
     marginHorizontal: normalize(20),
     marginBottom: normalize(24),
-    alignItems: 'center',
+    alignItems: "center",
   },
   profileImage: {
     width: normalize(80),
@@ -333,7 +375,7 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: normalize(20),
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: normalize(4),
   },
   profileEmail: {
@@ -347,32 +389,32 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     fontSize: normalize(14),
-    fontWeight: '600',
+    fontWeight: "600",
   },
   section: {
     marginBottom: normalize(24),
   },
   sectionTitle: {
     fontSize: normalize(16),
-    fontWeight: '600',
+    fontWeight: "600",
     paddingHorizontal: normalize(20),
     marginBottom: normalize(12),
   },
   settingsList: {
     borderRadius: normalize(16),
     marginHorizontal: normalize(20),
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: normalize(16),
     borderBottomWidth: 1,
   },
   settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
     gap: normalize(12),
   },
@@ -380,8 +422,8 @@ const styles = StyleSheet.create({
     width: normalize(40),
     height: normalize(40),
     borderRadius: normalize(10),
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   settingInfo: {
     flex: 1,
@@ -394,8 +436,8 @@ const styles = StyleSheet.create({
     marginTop: normalize(2),
   },
   settingRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: normalize(8),
   },
   settingValue: {
@@ -405,18 +447,18 @@ const styles = StyleSheet.create({
     borderRadius: normalize(10),
     minWidth: normalize(20),
     height: normalize(20),
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: normalize(6),
   },
   badgeText: {
     fontSize: normalize(12),
-    fontWeight: '600',
+    fontWeight: "600",
   },
   logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: normalize(8),
     borderRadius: normalize(16),
     padding: normalize(16),
@@ -425,17 +467,17 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: normalize(16),
-    fontWeight: '600',
-    color: '#FF3B30',
+    fontWeight: "600",
+    color: "#FF3B30",
   },
   footer: {
     paddingHorizontal: normalize(20),
     paddingBottom: normalize(24),
-    alignItems: 'center',
+    alignItems: "center",
   },
   footerText: {
     fontSize: normalize(12),
-    marginBottom: normalize(70)
+    marginBottom: normalize(70),
   },
 });
 

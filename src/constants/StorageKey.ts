@@ -2,7 +2,7 @@ export default {
   TOKEN: 'user_token',
   USER_DATA: 'user_data',
   userCode: "userCode",
-
+  defaultWalletId: "defaultWalletId",
 
 
   roleCommand: "rolecommand",

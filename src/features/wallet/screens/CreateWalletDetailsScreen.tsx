@@ -1,6 +1,8 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
+import { useWallet } from '@/features/wallet/hooks/useWallet';
+import { useWalletTracker } from '@/features/wallet/hooks/useWalletTracker';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -22,6 +24,9 @@ const CreateWalletDetailsScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const params = useLocalSearchParams();
   const walletType = params.walletType as string;
+
+  const { refresh } = useWallet();
+  const { createWalletTracker, loading: creatingWallet } = useWalletTracker();
 
   const [icon, setIcon] = useState('wallet');
   const [iconColor, setIconColor] = useState('#3B82F6');
@@ -50,11 +55,11 @@ const CreateWalletDetailsScreen: React.FC = () => {
   );
   
   const [walletName, setWalletName] = useState('');
-  const [currency, setCurrency] = useState('Việt Nam Đồng');
+  const [currency, setCurrency] = useState('VND');
   const [initialBalance, setInitialBalance] = useState('');
   const [includeInReport, setIncludeInReport] = useState(true);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!walletName.trim()) {
       alert('Vui lòng nhập tên ví');
       return;
@@ -71,10 +76,21 @@ const CreateWalletDetailsScreen: React.FC = () => {
     };
 
     console.log('Create wallet:', newWallet);
-    
-    // TODO: Call API to create wallet
-    // After successful creation, navigate back to wallet list
-    router.push('/(protected)/wallet-list');
+
+    try {
+      await createWalletTracker({
+        currency,
+        color: iconColor,
+        icon,
+        isIncludeReport: includeInReport,
+        walletType,
+      });
+      await refresh();
+      router.replace('/(protected)/wallet-list');
+    } catch (error) {
+      console.error('[CreateWalletDetailsScreen] create wallet failed', error);
+      alert('Khong the tao vi luc nay. Vui long thu lai.');
+    }
   };
 
   const handleSelectIcon = () => {
@@ -228,8 +244,9 @@ const CreateWalletDetailsScreen: React.FC = () => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.createButton, { backgroundColor: colors.tint }]}
+            style={[styles.createButton, { backgroundColor: colors.tint, opacity: creatingWallet ? 0.6 : 1 }]}
             onPress={handleCreate}
+            disabled={creatingWallet}
           >
             <CustomText style={styles.createButtonText}>Tạo</CustomText>
           </TouchableOpacity>

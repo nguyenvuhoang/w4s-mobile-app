@@ -1,14 +1,15 @@
 // src/features/home/screens/AddTransactionScreen.tsx
-import AppHeader from '@/components/base/AppHeader';
-import CustomText from '@/components/base/CustomText';
-import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts } from '@/core/theme/font';
-import StorageService from '@/services/StorageService';
-import { hp, normalize, wp } from '@/utils/layout';
-import { FontAwesome6 } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import AppHeader from "@/components/base/AppHeader";
+import CustomText from "@/components/base/CustomText";
+import { useAppTheme } from "@/core/theme/ThemeContext";
+import { Fonts } from "@/core/theme/font";
+import { useWallet } from "@/features/wallet/hooks/useWallet";
+import StorageService from "@/services/StorageService";
+import { hp, normalize, wp } from "@/utils/layout";
+import { FontAwesome6 } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -19,127 +20,112 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-interface AddTransactionScreenProps {
-  navigation: any;
-}
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface SelectedCategoryData {
   category_id: string;
   category_name: string;
-  category_type: 'EXPENSE' | 'INCOME' | 'LOAN';
+  category_type: "EXPENSE" | "INCOME" | "LOAN";
   icon: string;
   color: string;
 }
 
-type TransactionType = 'income' | 'expense' | 'inout';
-type DateSelection = 'today' | 'yesterday';
+type TransactionType = "income" | "expense" | "inout";
 
-const STORAGE_KEY = 'temp_selected_category';
+const CATEGORY_STORAGE_KEY = "temp_selected_category";
+const WALLET_STORAGE_KEY = "temp_selected_wallet";
 
-const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation }) => {
+const AddTransactionScreen = () => {
   const { colors } = useAppTheme();
-  
-  const [selectedType, setSelectedType] = useState<TransactionType>('expense');
-  const [sourceAccount, setSourceAccount] = useState('Tiền mặt');
-  const [selectedCategoryData, setSelectedCategoryData] = useState<SelectedCategoryData | null>(null);
-  const [amount, setAmount] = useState('');
-  const [note, setNote] = useState('');
-  const [dateSelection, setDateSelection] = useState<DateSelection>('today');
+  const { wallets, defaultWallet } = useWallet();
+
+  const [selectedType, setSelectedType] = useState<TransactionType>("expense");
+  const [sourceWalletId, setSourceWalletId] = useState<string | null>(null);
+  const [selectedCategoryData, setSelectedCategoryData] =
+    useState<SelectedCategoryData | null>(null);
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [reminder, setReminder] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [includeInReport, setIncludeInReport] = useState(true);
 
-  // Load selected category from storage when screen comes into focus
+  const selectedWallet = useMemo(
+    () => wallets.find((w) => w.walletId === sourceWalletId),
+    [wallets, sourceWalletId]
+  );
+
+  const isValid =
+    selectedWallet && selectedCategoryData && amount.trim() !== "";
+
+  // Init default wallet
+  useEffect(() => {
+    if (!sourceWalletId && defaultWallet) {
+      setSourceWalletId(defaultWallet.walletId);
+    }
+  }, [defaultWallet, sourceWalletId]);
+
+  // Load selected data from storage
   useFocusEffect(
     useCallback(() => {
-      const loadSelectedCategory = async () => {
+      const loadData = async () => {
         try {
-          const storedCategory = await StorageService.getAsyncItem(STORAGE_KEY);
+          // Load wallet
+          const storedWallet = await StorageService.getAsyncItem(
+            WALLET_STORAGE_KEY
+          );
+          if (storedWallet) {
+            const { walletId } = JSON.parse(storedWallet);
+            setSourceWalletId(walletId);
+            await StorageService.removeAsyncItem(WALLET_STORAGE_KEY);
+          }
+
+          // Load category
+          const storedCategory = await StorageService.getAsyncItem(
+            CATEGORY_STORAGE_KEY
+          );
           if (storedCategory) {
-            const categoryData: SelectedCategoryData = JSON.parse(storedCategory);
-            console.log('Loaded category from storage:', categoryData);
+            const categoryData: SelectedCategoryData =
+              JSON.parse(storedCategory);
             setSelectedCategoryData(categoryData);
-            
-            // Auto sync transaction type with category type
-            if (categoryData.category_type === 'INCOME') {
-              setSelectedType('income');
-            } else if (categoryData.category_type === 'EXPENSE') {
-              setSelectedType('expense');
-            } else if (categoryData.category_type === 'LOAN') {
-              setSelectedType('inout');
-            }
-            
-            // Clear storage after reading
-            await StorageService.removeAsyncItem(STORAGE_KEY);
+
+            // Auto sync transaction type
+            const typeMap = {
+              INCOME: "income",
+              EXPENSE: "expense",
+              LOAN: "inout",
+            } as const;
+            setSelectedType(typeMap[categoryData.category_type]);
+
+            await StorageService.removeAsyncItem(CATEGORY_STORAGE_KEY);
           }
         } catch (error) {
-          console.error('Error loading selected category:', error);
+          console.error("[AddTransaction] Load data failed:", error);
         }
       };
-      
-      loadSelectedCategory();
+      loadData();
     }, [])
   );
 
-  // Clear category when transaction type changes and doesn't match
   const handleTypeChange = (newType: TransactionType) => {
     setSelectedType(newType);
-    
+
+    // Clear category if type mismatch
     if (selectedCategoryData) {
-      const categoryType = selectedCategoryData.category_type;
-      const shouldClear = 
-        (newType === 'income' && categoryType !== 'INCOME') ||
-        (newType === 'expense' && categoryType !== 'EXPENSE') ||
-        (newType === 'inout' && categoryType !== 'LOAN');
-      
-      if (shouldClear) {
-        console.log('Clearing category due to type mismatch');
+      const typeMap = {
+        income: "INCOME",
+        expense: "EXPENSE",
+        inout: "LOAN",
+      } as const;
+      if (selectedCategoryData.category_type !== typeMap[newType]) {
         setSelectedCategoryData(null);
       }
     }
   };
 
-  const handleSelectAccount = () => {
-    router.push('/(protected)/wallet-list?mode=select')
-  };
-
-  const handleSelectCategory = () => {
-    // Navigate to category selection screen with current type
-    router.push({
-      pathname: '/(protected)/select-category',
-      params: {
-        selectedType: selectedType
-      }
-    });
-  };
-
-  const handlePreviousDate = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() - 1);
-    setSelectedDate(newDate);
-  };
-
-  const handleNextDate = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() + 1);
-    setSelectedDate(newDate);
-  };
-
-  const handleSetReminder = () => {
-    console.log('Set reminder');
-  };
-
   const handlePickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (permissionResult.granted === false) {
-      alert('Cần quyền truy cập thư viện ảnh!');
-      return;
-    }
+    const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!granted) return alert("Cần quyền truy cập thư viện ảnh!");
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -148,182 +134,173 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
       quality: 0.8,
     });
 
-    if (!result.canceled && result.assets[0]) {
-      setImageUri(result.assets[0].uri);
-    }
-  };
-
-  const handleRemoveImage = () => {
-    setImageUri(null);
+    if (!result.canceled) setImageUri(result.assets[0].uri);
   };
 
   const handleCreate = () => {
-    console.log('Create transaction', {
+    if (!isValid) return;
+
+    console.log("Create transaction", {
       type: selectedType,
-      sourceAccount,
+      sourceWalletId,
       category: selectedCategoryData,
       amount,
       note,
-      dateSelection,
-      selectedDate,
-      reminder,
+      date: selectedDate,
       imageUri,
       includeInReport,
     });
     router.back();
   };
 
-  const handleCancel = () => {
-    router.back();
-  };
-
-  const formatDate = (date: Date) => {
-    const day = date.getDate();
-    const month = date.toLocaleString('vi-VN', { month: 'long' });
-    const year = date.getFullYear();
-    return `${day} ${month}, ${year}`;
-  };
-
   const parseCategoryName = (nameJson: string) => {
     try {
       const parsed = JSON.parse(nameJson);
-      return parsed.vi || parsed.en || 'Chọn nhóm';
+      return parsed.vi || parsed.en || "Chọn nhóm";
     } catch {
-      return 'Chọn nhóm';
+      return "Chọn nhóm";
     }
   };
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        {/* Header */}
-        <AppHeader title="Thêm giao dịch"/>
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString("vi-VN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
 
-        <ScrollView 
-          style={styles.scrollView}
+  return (
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.flex}
+      >
+        <AppHeader title="Thêm giao dịch" />
+
+        <ScrollView
+          style={styles.flex}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           {/* Type Selector */}
           <View style={styles.section}>
-            <View style={styles.typeSelectorContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.typeButton,
-                  { 
-                    backgroundColor: selectedType === 'income' ? colors.tint : colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => handleTypeChange('income')}
-              >
-                <CustomText
+            <View style={styles.typeContainer}>
+              {[
+                { type: "income" as const, label: "Khoản thu" },
+                { type: "expense" as const, label: "Khoản chi" },
+                { type: "inout" as const, label: "Vay/Nợ" },
+              ].map(({ type, label }) => (
+                <TouchableOpacity
+                  key={type}
                   style={[
-                    styles.typeButtonText,
+                    styles.typeButton,
                     {
-                      color: selectedType === 'income' ? '#fff' : colors.text,
-                      fontFamily: selectedType === 'income' ? Fonts.semiBold : Fonts.regular,
+                      backgroundColor:
+                        selectedType === type ? colors.tint : colors.card,
+                      borderColor: colors.border,
                     },
                   ]}
+                  onPress={() => handleTypeChange(type)}
                 >
-                  Khoản thu
-                </CustomText>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.typeButton,
-                  { 
-                    backgroundColor: selectedType === 'expense' ? colors.tint : colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => handleTypeChange('expense')}
-              >
-                <CustomText
-                  style={[
-                    styles.typeButtonText,
-                    {
-                      color: selectedType === 'expense' ? '#fff' : colors.text,
-                      fontFamily: selectedType === 'expense' ? Fonts.semiBold : Fonts.regular,
-                    },
-                  ]}
-                >
-                  Khoản chi
-                </CustomText>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.typeButton,
-                  { 
-                    backgroundColor: selectedType === 'inout' ? colors.tint : colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => handleTypeChange('inout')}
-              >
-                <CustomText
-                  style={[
-                    styles.typeButtonText,
-                    {
-                      color: selectedType === 'inout' ? '#fff' : colors.text,
-                      fontFamily: selectedType === 'inout' ? Fonts.semiBold : Fonts.regular,
-                    },
-                  ]}
-                >
-                  Vay/Nợ
-                </CustomText>
-              </TouchableOpacity>
+                  <CustomText
+                    style={[
+                      styles.typeText,
+                      {
+                        color: selectedType === type ? "#fff" : colors.text,
+                        fontFamily:
+                          selectedType === type
+                            ? Fonts.semiBold
+                            : Fonts.regular,
+                      },
+                    ]}
+                  >
+                    {label}
+                  </CustomText>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
 
-          {/* Source Account */}
+          {/* Source Wallet - REQUIRED */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Nguồn tiền
+              Nguồn tiền <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
-              style={[styles.selectField, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={handleSelectAccount}
+              style={[
+                styles.field,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={() =>
+                router.push("/(protected)/wallet-list?mode=select")
+              }
             >
-              <View style={styles.selectFieldLeft}>
-                <FontAwesome6 name="money-bill-wave" size={normalize(18)} color="#4CAF50" solid />
-                <CustomText style={[styles.selectFieldText, { color: colors.text }]}>
-                  {sourceAccount}
+              <View style={styles.fieldLeft}>
+                <FontAwesome6
+                  name={(selectedWallet?.icon as any) || "wallet"}
+                  size={normalize(18)}
+                  color={selectedWallet?.color || colors.icon}
+                  solid
+                />
+                <CustomText style={[styles.fieldText, { color: colors.text }]}>
+                  {selectedWallet?.name || "Chọn ví"}
                 </CustomText>
               </View>
             </TouchableOpacity>
           </View>
 
-          {/* Category */}
+          {/* Category - REQUIRED */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Nhóm
+              Nhóm <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
-              style={[styles.selectField, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={handleSelectCategory}
+              style={[
+                styles.field,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={() =>
+                router.push({
+                  pathname: "/(protected)/select-category",
+                  params: { selectedType },
+                })
+              }
             >
-              <View style={styles.selectFieldLeft}>
+              <View style={styles.fieldLeft}>
                 {selectedCategoryData ? (
                   <>
-                    <View style={[styles.categoryIcon, { backgroundColor: selectedCategoryData.color }]}>
-                      <FontAwesome6 name={selectedCategoryData.icon as any} size={normalize(18)} color="#fff" />
+                    <View
+                      style={[
+                        styles.categoryIcon,
+                        { backgroundColor: selectedCategoryData.color },
+                      ]}
+                    >
+                      <FontAwesome6
+                        name={selectedCategoryData.icon as any}
+                        size={normalize(18)}
+                        color="#fff"
+                      />
                     </View>
-                    <CustomText style={[styles.selectFieldText, { color: colors.text }]}>
+                    <CustomText
+                      style={[styles.fieldText, { color: colors.text }]}
+                    >
                       {parseCategoryName(selectedCategoryData.category_name)}
                     </CustomText>
                   </>
                 ) : (
                   <>
-                    <View style={[styles.categoryIcon, { backgroundColor: colors.border }]}>
-                      {/* Empty icon placeholder */}
-                    </View>
-                    <CustomText style={[styles.selectFieldText, { color: colors.icon }]}>
+                    <View
+                      style={[
+                        styles.categoryIcon,
+                        { backgroundColor: colors.border },
+                      ]}
+                    />
+                    <CustomText
+                      style={[styles.fieldText, { color: colors.icon }]}
+                    >
                       Chọn nhóm
                     </CustomText>
                   </>
@@ -332,18 +309,23 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
             </TouchableOpacity>
           </View>
 
-          {/* Amount */}
+          {/* Amount - REQUIRED */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Số tiền
+              Số tiền <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
-            <View style={[styles.amountContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <CustomText style={[styles.currencySymbol, { color: colors.tint }]}>
+            <View
+              style={[
+                styles.amountContainer,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <CustomText style={[styles.currency, { color: colors.tint }]}>
                 đ
               </CustomText>
               <TextInput
                 style={[styles.amountInput, { color: colors.text }]}
-                placeholder="0.00"
+                placeholder="0"
                 placeholderTextColor={colors.icon}
                 keyboardType="numeric"
                 value={amount}
@@ -352,132 +334,111 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
             </View>
           </View>
 
-          {/* Note */}
+          {/* Note - Optional */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               Ghi chú
             </CustomText>
-            <View style={[styles.noteContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <TextInput
-                style={[styles.noteInput, { color: colors.text }]}
-                placeholder="Thêm ghi chú (tùy chọn)"
-                placeholderTextColor={colors.icon}
-                multiline
-                numberOfLines={3}
-                value={note}
-                onChangeText={setNote}
-                textAlignVertical="top"
-              />
-            </View>
+            <TextInput
+              style={[
+                styles.noteInput,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              placeholder="Thêm ghi chú (tùy chọn)"
+              placeholderTextColor={colors.icon}
+              multiline
+              numberOfLines={3}
+              value={note}
+              onChangeText={setNote}
+              textAlignVertical="top"
+            />
           </View>
 
-          {/* Date Selection */}
+          {/* Date Picker */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               Ngày
             </CustomText>
-            <View style={styles.dateSelectionContainer}>
+            <View style={[styles.datePicker, { backgroundColor: colors.card }]}>
               <TouchableOpacity
-                style={[
-                  styles.dateButton,
-                  {
-                    backgroundColor: dateSelection === 'today' ? colors.tint : colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => setDateSelection('today')}
+                onPress={() => {
+                  const newDate = new Date(selectedDate);
+                  newDate.setDate(newDate.getDate() - 1);
+                  setSelectedDate(newDate);
+                }}
               >
-                <CustomText
-                  style={[
-                    styles.dateButtonText,
-                    {
-                      color: dateSelection === 'today' ? '#fff' : colors.text,
-                      fontFamily: dateSelection === 'today' ? Fonts.semiBold : Fonts.regular,
-                    },
-                  ]}
-                >
-                  Hôm nay
-                </CustomText>
+                <FontAwesome6
+                  name="chevron-left"
+                  size={normalize(16)}
+                  color={colors.text}
+                />
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.dateButton,
-                  {
-                    backgroundColor: dateSelection === 'yesterday' ? colors.tint : colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => setDateSelection('yesterday')}
-              >
-                <CustomText
-                  style={[
-                    styles.dateButtonText,
-                    {
-                      color: dateSelection === 'yesterday' ? '#fff' : colors.text,
-                      fontFamily: dateSelection === 'yesterday' ? Fonts.semiBold : Fonts.regular,
-                    },
-                  ]}
-                >
-                  Hôm qua
-                </CustomText>
-              </TouchableOpacity>
-            </View>
-
-            {/* Date Picker */}
-            <View style={[styles.datePickerContainer, { backgroundColor: colors.card }]}>
-              <TouchableOpacity onPress={handlePreviousDate} style={styles.dateArrow}>
-                <FontAwesome6 name="chevron-left" size={normalize(16)} color={colors.text} />
-              </TouchableOpacity>
-              
               <CustomText style={[styles.dateText, { color: colors.text }]}>
                 {formatDate(selectedDate)}
               </CustomText>
-              
-              <TouchableOpacity onPress={handleNextDate} style={styles.dateArrow}>
-                <FontAwesome6 name="chevron-right" size={normalize(16)} color={colors.text} />
+
+              <TouchableOpacity
+                onPress={() => {
+                  const newDate = new Date(selectedDate);
+                  newDate.setDate(newDate.getDate() + 1);
+                  setSelectedDate(newDate);
+                }}
+              >
+                <FontAwesome6
+                  name="chevron-right"
+                  size={normalize(16)}
+                  color={colors.text}
+                />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Reminder */}
+          {/* Image Upload - Optional */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Nhắc nhở
-            </CustomText>
-            <TouchableOpacity
-              style={[styles.reminderButton, { backgroundColor: colors.card, borderColor: colors.tint }]}
-              onPress={handleSetReminder}
-            >
-              <FontAwesome6 name="bell" size={normalize(16)} color={colors.tint} />
-              <CustomText style={[styles.reminderText, { color: colors.tint }]}>
-                {reminder || 'Đặt nhắc nhở'}
-              </CustomText>
-            </TouchableOpacity>
-          </View>
-
-          {/* Image Upload */}
-          <View style={styles.section}>
-            <CustomText style={[styles.label, { color: colors.text }]}>
-              Label
+              Hình ảnh
             </CustomText>
             {imageUri ? (
-              <View style={[styles.imagePreviewContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-                <TouchableOpacity 
-                  style={[styles.removeImageButton, { backgroundColor: colors.background }]}
-                  onPress={handleRemoveImage}
+              <View
+                style={[
+                  styles.imageContainer,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
+                <Image source={{ uri: imageUri }} style={styles.image} />
+                <TouchableOpacity
+                  style={[
+                    styles.removeBtn,
+                    { backgroundColor: colors.background },
+                  ]}
+                  onPress={() => setImageUri(null)}
                 >
-                  <FontAwesome6 name="xmark" size={normalize(12)} color={colors.text} />
+                  <FontAwesome6
+                    name="xmark"
+                    size={normalize(12)}
+                    color={colors.text}
+                  />
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity
-                style={[styles.imageUploadButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[
+                  styles.uploadBtn,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
                 onPress={handlePickImage}
               >
-                <FontAwesome6 name="image" size={normalize(32)} color={colors.icon} />
-                <CustomText style={[styles.imageUploadText, { color: colors.icon }]}>
+                <FontAwesome6
+                  name="image"
+                  size={normalize(32)}
+                  color={colors.icon}
+                />
+                <CustomText style={[styles.uploadText, { color: colors.icon }]}>
                   Tải lên
                 </CustomText>
               </TouchableOpacity>
@@ -485,7 +446,7 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
           </View>
 
           {/* Include in Report Toggle */}
-          <View style={[styles.toggleContainer, { backgroundColor: colors.card }]}>
+          <View style={[styles.toggle, { backgroundColor: colors.card }]}>
             <CustomText style={[styles.toggleLabel, { color: colors.text }]}>
               Tính vào báo cáo
             </CustomText>
@@ -497,26 +458,37 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
             />
           </View>
 
-          {/* Spacing for bottom buttons */}
           <View style={{ height: hp(12) }} />
         </ScrollView>
 
         {/* Bottom Buttons */}
-        <View style={[styles.bottomButtons, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+        <View
+          style={[
+            styles.bottomBar,
+            {
+              backgroundColor: colors.background,
+              borderTopColor: colors.border,
+            },
+          ]}
+        >
           <TouchableOpacity
-            style={[styles.cancelButton, { borderColor: colors.tint }]}
-            onPress={handleCancel}
+            style={[styles.cancelBtn, { borderColor: colors.tint }]}
+            onPress={() => router.back()}
           >
-            <CustomText style={[styles.cancelButtonText, { color: colors.tint }]}>
+            <CustomText style={[styles.cancelText, { color: colors.tint }]}>
               Hủy
             </CustomText>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.createButton, { backgroundColor: colors.tint }]}
+            style={[
+              styles.createBtn,
+              { backgroundColor: isValid ? colors.tint : colors.border },
+            ]}
             onPress={handleCreate}
+            disabled={!isValid}
           >
-            <CustomText style={styles.createButtonText}>Tạo</CustomText>
+            <CustomText style={styles.createText}>Tạo</CustomText>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -525,15 +497,8 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  flex: { flex: 1 },
   section: {
     paddingHorizontal: wp(5),
     marginTop: hp(2),
@@ -543,36 +508,35 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.medium,
     marginBottom: normalize(8),
   },
-  typeSelectorContainer: {
-    flexDirection: 'row',
+  typeContainer: {
+    flexDirection: "row",
     gap: normalize(8),
   },
   typeButton: {
     flex: 1,
     paddingVertical: normalize(10),
     borderRadius: normalize(20),
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
   },
-  typeButtonText: {
+  typeText: {
     fontSize: normalize(13),
   },
-  selectField: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  field: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: normalize(16),
     paddingVertical: normalize(14),
     borderRadius: normalize(12),
     borderWidth: 1,
   },
-  selectFieldLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  fieldLeft: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: normalize(12),
     flex: 1,
   },
-  selectFieldText: {
+  fieldText: {
     fontSize: normalize(15),
     fontFamily: Fonts.regular,
   },
@@ -580,19 +544,19 @@ const styles = StyleSheet.create({
     width: normalize(36),
     height: normalize(36),
     borderRadius: normalize(10),
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   amountContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: normalize(16),
     paddingVertical: normalize(14),
     borderRadius: normalize(12),
     borderWidth: 1,
     gap: normalize(12),
   },
-  currencySymbol: {
+  currency: {
     fontSize: normalize(20),
     fontFamily: Fonts.semiBold,
   },
@@ -602,100 +566,65 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     padding: 0,
   },
-  noteContainer: {
+  noteInput: {
     paddingHorizontal: normalize(16),
     paddingVertical: normalize(12),
     borderRadius: normalize(12),
     borderWidth: 1,
-    minHeight: hp(10),
-  },
-  noteInput: {
     fontSize: normalize(14),
     fontFamily: Fonts.regular,
-    padding: 0,
-    minHeight: hp(8),
+    minHeight: hp(10),
   },
-  dateSelectionContainer: {
-    flexDirection: 'row',
-    gap: normalize(8),
-    marginBottom: normalize(12),
-  },
-  dateButton: {
-    flex: 1,
-    paddingVertical: normalize(10),
-    borderRadius: normalize(12),
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  dateButtonText: {
-    fontSize: normalize(14),
-  },
-  datePickerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  datePicker: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: normalize(16),
     paddingVertical: normalize(12),
     borderRadius: normalize(12),
-  },
-  dateArrow: {
-    padding: normalize(8),
   },
   dateText: {
     fontSize: normalize(15),
     fontFamily: Fonts.medium,
   },
-  reminderButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: normalize(8),
-    paddingVertical: normalize(12),
-    borderRadius: normalize(12),
-    borderWidth: 1,
-  },
-  reminderText: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.medium,
-  },
-  imageUploadButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  uploadBtn: {
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: normalize(40),
     borderRadius: normalize(12),
     borderWidth: 2,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
   },
-  imageUploadText: {
+  uploadText: {
     fontSize: normalize(14),
     fontFamily: Fonts.regular,
     marginTop: normalize(8),
   },
-  imagePreviewContainer: {
+  imageContainer: {
     borderRadius: normalize(12),
     borderWidth: 1,
-    overflow: 'hidden',
-    position: 'relative',
+    overflow: "hidden",
+    position: "relative",
   },
-  imagePreview: {
-    width: '100%',
+  image: {
+    width: "100%",
     height: normalize(150),
     borderRadius: normalize(12),
   },
-  removeImageButton: {
-    position: 'absolute',
+  removeBtn: {
+    position: "absolute",
     top: normalize(8),
     right: normalize(8),
     width: normalize(28),
     height: normalize(28),
     borderRadius: normalize(14),
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
-  toggleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  toggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: wp(5),
     paddingVertical: normalize(16),
     marginHorizontal: wp(5),
@@ -706,34 +635,34 @@ const styles = StyleSheet.create({
     fontSize: normalize(15),
     fontFamily: Fonts.regular,
   },
-  bottomButtons: {
-    flexDirection: 'row',
+  bottomBar: {
+    flexDirection: "row",
     paddingHorizontal: wp(5),
     paddingVertical: hp(2),
     gap: normalize(12),
     borderTopWidth: 1,
   },
-  cancelButton: {
+  cancelBtn: {
     flex: 1,
     paddingVertical: normalize(14),
     borderRadius: normalize(12),
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 2,
   },
-  cancelButtonText: {
+  cancelText: {
     fontSize: normalize(16),
     fontFamily: Fonts.semiBold,
   },
-  createButton: {
+  createBtn: {
     flex: 1,
     paddingVertical: normalize(14),
     borderRadius: normalize(12),
-    alignItems: 'center',
+    alignItems: "center",
   },
-  createButtonText: {
+  createText: {
     fontSize: normalize(16),
     fontFamily: Fonts.semiBold,
-    color: '#fff',
+    color: "#fff",
   },
 });
 

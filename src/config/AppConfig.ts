@@ -17,6 +17,9 @@ export const AppConfig = {
   },
   CACHE:{
     CATEGORY_TIMEOUT: 30 * 60 * 1000,
+  },
+  WALLET_SUMMARY: {
+    REFRESH_INTERVAL: 30 * 60 * 1000,
   }
   
 };
