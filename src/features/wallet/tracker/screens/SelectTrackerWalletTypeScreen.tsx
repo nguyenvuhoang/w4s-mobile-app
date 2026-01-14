@@ -14,73 +14,70 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-interface WalletType {
-  id: 'tracking' | 'fiat' | 'defi';
+interface TrackerWalletType {
+  id: 'basic' | 'debt' | 'saving';
   name: string;
   icon: string;
   description: string;
   nextRoute: string;
 }
 
-const WALLET_TYPES: WalletType[] = [
+const TRACKER_WALLET_TYPES: TrackerWalletType[] = [
   {
-    id: 'tracking',
-    name: 'Ví Theo dõi',
+    id: 'basic',
+    name: 'Ví cơ bản',
     icon: 'wallet-outline',
-    description:
-      'Theo dõi tài sản, thu chi, công nợ và tiết kiệm.',
-    nextRoute: '/(protected)/wallet/tracker/select-subtype',
+    description: 'Theo dõi thu chi hằng ngày.',
+    nextRoute: '/(protected)/wallet/tracker/create-basic',
   },
   {
-    id: 'fiat',
-    name: 'Ví Fiat',
-    icon: 'cash-outline',
-    description:
-      'Ví lưu trữ tiền pháp định như VND, USD.',
-    nextRoute: '/(protected)/wallet/create-fiat-wallet',
+    id: 'debt',
+    name: 'Ví công nợ',
+    icon: 'swap-horizontal-outline',
+    description: 'Theo dõi vay – cho vay.',
+    nextRoute: '/(protected)/wallet/tracker/create-debt-wallet',
   },
   {
-    id: 'defi',
-    name: 'Ví DeFi',
-    icon: 'cube-outline',
-    description:
-      'Ví tiền điện tử phi tập trung, kiểm soát hoàn toàn tài sản crypto.',
-    nextRoute: '/(protected)/wallet/create-defi-wallet',
+    id: 'saving',
+    name: 'Ví tiết kiệm',
+    icon: 'trending-up-outline',
+    description: 'Theo dõi tiền tiết kiệm và mục tiêu.',
+    nextRoute: '/(protected)/wallet/tracker/create-saving-wallet',
   },
 ];
 
-const SelectWalletTypeScreen: React.FC = () => {
+const SelectTrackerWalletTypeScreen: React.FC = () => {
   const { colors } = useAppTheme();
-  const [selectedType, setSelectedType] =
-    useState<WalletType | null>(null);
+  const [selected, setSelected] =
+    useState<TrackerWalletType | null>(null);
 
   const handleContinue = () => {
-    if (!selectedType) return;
-    router.push(selectedType.nextRoute);
+    if (!selected) return;
+    router.push(selected.nextRoute);
   };
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <AppHeader title="Loại ví bạn muốn?" showBackButton />
+      <AppHeader title="Loại ví theo dõi" showBackButton />
 
       <ScrollView style={styles.content}>
         <View style={{ alignItems: 'center' }}>
           <CustomText style={[styles.subtitle, { color: colors.icon }]}>
-            Chọn loại ví phù hợp với nhu cầu quản lý tài chính của bạn.
+            Chọn loại ví theo dõi bạn muốn tạo.
           </CustomText>
         </View>
 
         <View style={styles.typeList}>
-          {WALLET_TYPES.map((type) => {
-            const active = selectedType?.id === type.id;
+          {TRACKER_WALLET_TYPES.map((item) => {
+            const active = selected?.id === item.id;
 
             return (
               <TouchableOpacity
-                key={type.id}
+                key={item.id}
                 activeOpacity={0.7}
-                onPress={() => setSelectedType(type)}
+                onPress={() => setSelected(item)}
                 style={[
                   styles.typeCard,
                   { backgroundColor: colors.card },
@@ -96,7 +93,7 @@ const SelectWalletTypeScreen: React.FC = () => {
                     style={styles.iconContainer}
                   >
                     <Ionicons
-                      name={type.icon as any}
+                      name={item.icon as any}
                       size={normalize(28)}
                       color="#fff"
                     />
@@ -105,7 +102,7 @@ const SelectWalletTypeScreen: React.FC = () => {
                   <CustomText
                     style={[styles.typeName, { color: colors.text }]}
                   >
-                    {type.name}
+                    {item.name}
                   </CustomText>
                 </View>
 
@@ -116,7 +113,7 @@ const SelectWalletTypeScreen: React.FC = () => {
                       { color: colors.icon },
                     ]}
                   >
-                    {type.description}
+                    {item.description}
                   </CustomText>
                 </View>
               </TouchableOpacity>
@@ -137,13 +134,13 @@ const SelectWalletTypeScreen: React.FC = () => {
         ]}
       >
         <TouchableOpacity
+          disabled={!selected}
           onPress={handleContinue}
-          disabled={!selectedType}
           style={styles.continueButton}
         >
           <LinearGradient
             colors={
-              selectedType
+              selected
                 ? colors.gradianBase
                 : [colors.border, colors.border]
             }
@@ -223,4 +220,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SelectWalletTypeScreen;
+export default SelectTrackerWalletTypeScreen;

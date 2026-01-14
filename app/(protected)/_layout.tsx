@@ -33,7 +33,33 @@ export default function ProtectedLayout() {
           headerShown: false,
         }}
       />
+
+      <Stack.Screen
+        name="change-password"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_right',
+        }}
+      />
       <Stack.Screen 
+        name="select-category"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          animationDuration: 300,
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="select-currency"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          animationDuration: 300,
+          headerShown: false,
+        }}
+      />
+      {/* <Stack.Screen 
         name="select-wallet-type"
         options={{
           presentation: 'modal',
@@ -70,15 +96,6 @@ export default function ProtectedLayout() {
         }}
       />
       <Stack.Screen 
-        name="select-category"
-        options={{
-          presentation: 'modal',
-          animation: 'slide_from_bottom',
-          animationDuration: 300,
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen 
         name="edit-category"
         options={{
           presentation: 'modal',
@@ -86,7 +103,7 @@ export default function ProtectedLayout() {
           animationDuration: 300,
           headerShown: false,
         }}
-      />
+      /> */}
     </Stack>
   );
 }

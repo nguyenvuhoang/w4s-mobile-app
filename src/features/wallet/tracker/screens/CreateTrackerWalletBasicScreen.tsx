@@ -3,11 +3,12 @@ import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { useWalletTracker } from '@/features/wallet/hooks/useWalletTracker';
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -27,37 +28,72 @@ const CreateWalletDetailsScreen: React.FC = () => {
 
   const { refresh } = useWallet();
   const { createWalletTracker, loading: creatingWallet } = useWalletTracker();
+  const { defaultCurrency, loading: loadingDefaultCurrency } = useDefaultCurrency();
 
   const [icon, setIcon] = useState('wallet');
   const [iconColor, setIconColor] = useState('#3B82F6');
+  const [walletName, setWalletName] = useState('');
+  const [currency, setCurrency] = useState('VND');
+  const [currencySymbol, setCurrencySymbol] = useState('đ');
+  const [currencyName, setCurrencyName] = useState('Vietnamese Dong');
+  const [initialBalance, setInitialBalance] = useState('');
+  const [includeInReport, setIncludeInReport] = useState(true);
 
+  // Load default currency when component mounts
+  useEffect(() => {
+    if (!loadingDefaultCurrency && defaultCurrency) {
+      console.log('[CreateWallet] Setting default currency:', defaultCurrency);
+      setCurrency(defaultCurrency.currencyId);
+      setCurrencySymbol(defaultCurrency.symbol);
+      setCurrencyName(defaultCurrency.name);
+    }
+  }, [loadingDefaultCurrency, defaultCurrency]);
 
   useFocusEffect(
     useCallback(() => {
       const loadSelectedData = async () => {
-        // Check for selected icon
-        const selectedIcon = await StorageService.getItem('temp_selected_icon');
-        if (selectedIcon) {
-          setIcon(selectedIcon);
-          await StorageService.removeItem('temp_selected_icon');
-        }
+        try {
+          // Load selected icon
+          const selectedIcon = await StorageService.getItem('temp_selected_icon');
+          if (selectedIcon) {
+            setIcon(selectedIcon);
+            await StorageService.removeItem('temp_selected_icon');
+          }
 
-        // Check for selected color
-        const selectedColor = await StorageService.getItem('temp_selected_color');
-        if (selectedColor) {
-          setIconColor(selectedColor);
-          await StorageService.removeItem('temp_selected_color');
+          // Load selected color
+          const selectedColor = await StorageService.getItem('temp_selected_color');
+          if (selectedColor) {
+            setIconColor(selectedColor);
+            await StorageService.removeItem('temp_selected_color');
+          }
+
+          // Load selected currency: Storage => String => Parse => Object
+          const selectedCurrencyStr = await StorageService.getItem('temp_selected_currency');
+          console.log('[CreateWallet] Raw currency from storage:', selectedCurrencyStr);
+          
+          if (selectedCurrencyStr) {
+            try {
+              // String => Object
+              const selectedCurrency = JSON.parse(selectedCurrencyStr);
+              console.log('[CreateWallet] Parsed currency:', selectedCurrency);
+              
+              setCurrency(selectedCurrency.currencyId || 'VND');
+              setCurrencySymbol(selectedCurrency.symbol || 'đ');
+              setCurrencyName(selectedCurrency.name || 'Vietnamese Dong');
+              
+              await StorageService.removeItem('temp_selected_currency');
+            } catch (parseError) {
+              console.error('[CreateWallet] Failed to parse currency:', parseError);
+            }
+          }
+        } catch (error) {
+          console.error('[CreateWallet] Failed to load selected data:', error);
         }
       };
 
       loadSelectedData();
     }, [])
   );
-  
-  const [walletName, setWalletName] = useState('');
-  const [currency, setCurrency] = useState('VND');
-  const [initialBalance, setInitialBalance] = useState('');
-  const [includeInReport, setIncludeInReport] = useState(true);
 
   const handleCreate = async () => {
     if (!walletName.trim()) {
@@ -75,7 +111,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
       includeInReport,
     };
 
-    console.log('Create wallet:', newWallet);
+    console.log('[CreateWallet] Creating wallet:', newWallet);
 
     try {
       await createWalletTracker({
@@ -86,10 +122,10 @@ const CreateWalletDetailsScreen: React.FC = () => {
         walletType,
       });
       await refresh();
-      router.replace('/(protected)/wallet-list');
+      router.replace('/(protected)/wallet/wallet-list');
     } catch (error) {
-      console.error('[CreateWalletDetailsScreen] create wallet failed', error);
-      alert('Khong the tao vi luc nay. Vui long thu lai.');
+      console.error('[CreateWallet] Create wallet failed:', error);
+      alert('Không thể tạo ví lúc này. Vui lòng thử lại.');
     }
   };
 
@@ -111,9 +147,48 @@ const CreateWalletDetailsScreen: React.FC = () => {
     });
   };
 
+  const handleSelectCurrency = () => {
+    router.push({
+      pathname: '/(protected)/select-currency',
+      params: {
+        selectedCurrencyId: currency,
+      }
+    });
+  };
+
+  // Format number with thousand separator
+  const formatNumber = (value: string): string => {
+    if (!value) return '';
+    const number = parseFloat(value.replace(/,/g, ''));
+    if (isNaN(number)) return '';
+    return number.toLocaleString('en-US');
+  };
+
+  // Handle balance input change
+  const handleBalanceChange = (text: string) => {
+    // Remove all non-numeric characters except decimal point
+    const cleaned = text.replace(/[^0-9.]/g, '');
+    
+    // Prevent multiple decimal points
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      return;
+    }
+    
+    setInitialBalance(cleaned);
+  };
+
+  // Get formatted balance display
+  const getBalanceDisplay = (): string => {
+    if (!initialBalance) return '';
+    const number = parseFloat(initialBalance);
+    if (isNaN(number)) return '';
+    return `${number.toLocaleString('en-US')} ${currencySymbol}`;
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader title="Tạo ví theo dõi" showBackButton />
+      <AppHeader title="Tạo ví theo dõi cơ bản" showBackButton />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -157,7 +232,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
 
           {/* Wallet Name */}
           <View style={styles.section}>
-            <CustomText style={[styles.label, { color: colors.text }]}>
+            <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
               Tên Ví
             </CustomText>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -173,51 +248,68 @@ const CreateWalletDetailsScreen: React.FC = () => {
 
           {/* Currency */}
           <View style={styles.section}>
-            <CustomText style={[styles.label, { color: colors.text }]}>
+            <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
               Đơn vị tiền tệ
             </CustomText>
             <TouchableOpacity
-              style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => {
-                // TODO: Open currency picker modal
-                console.log('Open currency picker');
-              }}
+              style={[styles.currencySelector, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={handleSelectCurrency}
             >
-              <CustomText style={[styles.inputText, { color: colors.text }]}>
-                {currency}
-              </CustomText>
-              <CustomText style={[styles.currencyCode, { color: colors.icon }]}>
-                đ
-              </CustomText>
+              <View style={styles.currencyLeft}>
+                <View style={styles.currencyIconWrapper}>
+                  <CustomText style={[styles.currencySymbolText, { color: colors.tint }]} type="bold">
+                    {currencySymbol}
+                  </CustomText>
+                </View>
+                <View style={styles.currencyInfo}>
+                  <CustomText style={[styles.currencyNameText, { color: colors.icon }]} type="regular" numberOfLines={1}>
+                    {currencyName}
+                  </CustomText>
+                  <CustomText style={[styles.currencyCode, { color: colors.text }]} type="semiBold">
+                    {currency}
+                  </CustomText>
+                </View>
+              </View>
+              <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
             </TouchableOpacity>
           </View>
 
           {/* Initial Balance */}
           <View style={styles.section}>
-            <CustomText style={[styles.label, { color: colors.text }]}>
+            <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
               Số tiền khởi tạo
             </CustomText>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput
                 style={[styles.input, { color: colors.text }]}
-                placeholder="đ"
+                placeholder={`0 ${currencySymbol}`}
                 placeholderTextColor={colors.icon}
                 value={initialBalance}
-                onChangeText={setInitialBalance}
-                keyboardType="numeric"
+                onChangeText={handleBalanceChange}
+                keyboardType="decimal-pad"
               />
-              <CustomText style={[styles.balanceDisplay, { color: colors.text }]}>
-                {initialBalance ? parseFloat(initialBalance).toFixed(2) : '0.00'}
-              </CustomText>
+              {initialBalance && !isNaN(parseFloat(initialBalance)) ? (
+                <CustomText style={[styles.balanceDisplay, { color: colors.text }]} type="semiBold">
+                  {getBalanceDisplay()}
+                </CustomText>
+              ) : null}
             </View>
+            <CustomText style={[styles.helperText, { color: colors.icon }]} type="regular">
+              Nhập số tiền ban đầu trong ví này
+            </CustomText>
           </View>
 
           {/* Include in Report Toggle */}
           <View style={styles.section}>
-            <View style={[styles.toggleCard, { backgroundColor: colors.card }]}>
-              <CustomText style={[styles.toggleLabel, { color: colors.text }]}>
-                Tính vào báo cáo
-              </CustomText>
+            <View style={[styles.toggleCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.toggleLeft}>
+                <CustomText style={[styles.toggleLabel, { color: colors.text }]} type="semiBold">
+                  Tính vào báo cáo
+                </CustomText>
+                <CustomText style={[styles.toggleDescription, { color: colors.icon }]} type="regular">
+                  Bao gồm số dư ví này trong tổng tài sản
+                </CustomText>
+              </View>
               <Switch
                 value={includeInReport}
                 onValueChange={setIncludeInReport}
@@ -237,18 +329,27 @@ const CreateWalletDetailsScreen: React.FC = () => {
           <TouchableOpacity
             style={[styles.cancelButton, { borderColor: colors.border }]}
             onPress={() => router.back()}
+            disabled={creatingWallet}
           >
-            <CustomText style={[styles.cancelButtonText, { color: colors.text }]}>
+            <CustomText style={[styles.cancelButtonText, { color: colors.text }]} type="semiBold">
               Hủy
             </CustomText>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.createButton, { backgroundColor: colors.tint, opacity: creatingWallet ? 0.6 : 1 }]}
+            style={[
+              styles.createButton, 
+              { 
+                backgroundColor: colors.tint, 
+                opacity: creatingWallet || !walletName.trim() ? 0.5 : 1 
+              }
+            ]}
             onPress={handleCreate}
-            disabled={creatingWallet}
+            disabled={creatingWallet || !walletName.trim()}
           >
-            <CustomText style={styles.createButtonText}>Tạo</CustomText>
+            <CustomText style={styles.createButtonText} type="bold">
+              {creatingWallet ? 'Đang tạo...' : 'Tạo'}
+            </CustomText>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -271,16 +372,16 @@ const styles = StyleSheet.create({
     paddingVertical: hp(3),
   },
   iconCircle: {
-    width: normalize(70),
-    height: normalize(70),
-    borderRadius: normalize(15),
+    width: normalize(80),
+    height: normalize(80),
+    borderRadius: normalize(20),
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
   },
   selectorRow: {
     flexDirection: 'row',
@@ -300,7 +401,6 @@ const styles = StyleSheet.create({
   },
   selectorLabel: {
     fontSize: normalize(15),
-    fontWeight: '500',
   },
   selectorValue: {
     flexDirection: 'row',
@@ -311,14 +411,15 @@ const styles = StyleSheet.create({
     width: normalize(24),
     height: normalize(24),
     borderRadius: normalize(12),
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   section: {
     paddingHorizontal: wp(5),
-    marginTop: hp(2),
+    marginTop: hp(2.5),
   },
   label: {
     fontSize: normalize(14),
-    fontWeight: '500',
     marginBottom: normalize(8),
   },
   inputContainer: {
@@ -333,19 +434,48 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: normalize(16),
     padding: 0,
+    fontFamily: 'Quicksand-Regular',
   },
-  inputText: {
+  helperText: {
+    fontSize: normalize(12),
+    marginTop: normalize(6),
+    marginLeft: normalize(4),
+  },
+  currencySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: normalize(5),
+    borderRadius: normalize(12),
+    borderWidth: 1,
+  },
+  currencyLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
-    fontSize: normalize(16),
+  },
+  currencyIconWrapper: {
+    width: normalize(48),
+    height: normalize(48),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: normalize(12),
+  },
+  currencySymbolText: {
+    fontSize: normalize(24),
+  },
+  currencyInfo: {
+    flex: 1,
   },
   currencyCode: {
-    fontSize: normalize(16),
-    fontWeight: '600',
-    marginLeft: normalize(8),
+    fontSize: normalize(14),
+    marginBottom: normalize(2),
+  },
+  currencyNameText: {
+    fontSize: normalize(13),
   },
   balanceDisplay: {
     fontSize: normalize(16),
-    fontWeight: '600',
     marginLeft: normalize(8),
   },
   toggleCard: {
@@ -354,10 +484,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: normalize(16),
     borderRadius: normalize(12),
+    borderWidth: 1,
+  },
+  toggleLeft: {
+    flex: 1,
+    marginRight: normalize(12),
   },
   toggleLabel: {
     fontSize: normalize(15),
-    fontWeight: '500',
+    marginBottom: normalize(4),
+  },
+  toggleDescription: {
+    fontSize: normalize(13),
   },
   bottomButtons: {
     flexDirection: 'row',
@@ -371,21 +509,24 @@ const styles = StyleSheet.create({
     paddingVertical: normalize(14),
     borderRadius: normalize(12),
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   cancelButtonText: {
     fontSize: normalize(16),
-    fontWeight: '600',
   },
   createButton: {
     flex: 1,
     paddingVertical: normalize(14),
     borderRadius: normalize(12),
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   createButtonText: {
     fontSize: normalize(16),
-    fontWeight: '600',
     color: '#fff',
   },
 });

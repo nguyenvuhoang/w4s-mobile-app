@@ -3,10 +3,12 @@ import { GlobalContext } from "@/contexts/GlobalContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Tokens } from "@/core/theme/theme";
 import { useSettingService } from "@/features/settings/hooks/useSettingService";
+import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
+import StorageService from "@/services/StorageService";
 import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import React, { useContext, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useContext, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -25,15 +27,45 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { handleLogout, touchIDClick, isUsingTouchID } = useSettingService();
   const { appInfo } = useContext(GlobalContext);
   const { mode, setMode, colors, isDark } = useAppTheme();
+  const { defaultCurrency, loading, updateDefaultCurrency, resetToDefault } = useDefaultCurrency();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  // const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadSelectedCurrency = async () => {
+        try {
+          const selectedCurrencyStr = await StorageService.getItem('temp_selected_currency');
+          
+          if (selectedCurrencyStr) {
+            const selectedCurrency = JSON.parse(selectedCurrencyStr);
+            console.log('[CurrencySettings] Updating default currency:', selectedCurrency);
+            
+            await updateDefaultCurrency(selectedCurrency);
+            await StorageService.removeItem('temp_selected_currency');
+          }
+        } catch (error) {
+          console.error('[CurrencySettings] Failed to load selected currency:', error);
+        }
+      };
+
+      loadSelectedCurrency();
+    }, [updateDefaultCurrency])
+  );
 
   const handleBiometricToggle = async () => {
     const userCode = appInfo?.user_code || "";
     if (userCode) {
       await touchIDClick(userCode);
     }
+  };
+
+  // Format currency display text
+  const getCurrencyDisplayText = () => {
+    if (loading) {
+      return "Đang tải...";
+    }
+    return `${defaultCurrency.currencyId} (${defaultCurrency.symbol})`;
   };
 
   return (
@@ -81,7 +113,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               title="Ví của tôi"
               onPress={() => {
                 router.push({
-                  pathname: "/(protected)/wallet-list",
+                  pathname: "/(protected)/wallet/wallet-list",
                   params: { mode: "manage" },
                 });
               }}
@@ -182,8 +214,15 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="cash-outline"
               title="Tiền tệ"
-              value="VND (đ)"
-              onPress={() => {}}
+              value={getCurrencyDisplayText()}
+              onPress={() => {
+                router.push({
+                  pathname: "/(protected)/select-currency",
+                  params: {
+                    selectedCurrencyId: defaultCurrency.currencyId,
+                  },
+                });
+              }}
               colors={colors}
             />
           </View>

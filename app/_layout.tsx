@@ -1,5 +1,5 @@
-import { AppProviders } from '@/core/providers/AppProviders';
-import { useAppTheme } from '@/core/theme/ThemeContext';
+import { AppProviders } from "@/core/providers/AppProviders";
+import { useAppTheme } from "@/core/theme/ThemeContext";
 import {
   Quicksand_300Light,
   Quicksand_400Regular,
@@ -7,20 +7,21 @@ import {
   Quicksand_600SemiBold,
   Quicksand_700Bold,
   useFonts,
-} from '@expo-google-fonts/quicksand';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+} from "@expo-google-fonts/quicksand";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    'Quicksand-Light': Quicksand_300Light,
-    'Quicksand-Regular': Quicksand_400Regular,
-    'Quicksand-Medium': Quicksand_500Medium,
-    'Quicksand-SemiBold': Quicksand_600SemiBold,
-    'Quicksand-Bold': Quicksand_700Bold,
+    "Quicksand-Light": Quicksand_300Light,
+    "Quicksand-Regular": Quicksand_400Regular,
+    "Quicksand-Medium": Quicksand_500Medium,
+    "Quicksand-SemiBold": Quicksand_600SemiBold,
+    "Quicksand-Bold": Quicksand_700Bold,
   });
 
   useEffect(() => {
@@ -32,9 +33,11 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <AppProviders>
-      <RootStack />
-    </AppProviders>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppProviders>
+        <RootStack />
+      </AppProviders>
+    </GestureHandlerRootView>
   );
 }
 
@@ -45,7 +48,7 @@ function RootStack() {
     <Stack
       screenOptions={{
         headerShown: false,
-        animation: 'slide_from_right',
+        animation: "slide_from_right",
         animationDuration: 300,
 
         contentStyle: {
@@ -56,7 +59,7 @@ function RootStack() {
       <Stack.Screen
         name="(auth)"
         options={{
-          animation: 'fade',
+          animation: "fade",
           animationDuration: 200,
         }}
       />
@@ -66,7 +69,7 @@ function RootStack() {
       <Stack.Screen
         name="index"
         options={{
-          animation: 'fade',
+          animation: "fade",
         }}
       />
     </Stack>

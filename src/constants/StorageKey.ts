@@ -3,6 +3,7 @@ export default {
   USER_DATA: 'user_data',
   userCode: "userCode",
   defaultWalletId: "defaultWalletId",
+  defaultCurrency: 'defaultCurrency',
 
 
   roleCommand: "rolecommand",

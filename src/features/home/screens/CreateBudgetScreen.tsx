@@ -263,7 +263,7 @@ const CreateBudgetScreen = () => {
                 { backgroundColor: colors.card, borderColor: colors.border },
               ]}
               onPress={() =>
-                router.push("/(protected)/wallet-list?mode=select")
+                router.push("/(protected)/wallet/wallet-list?mode=select")
               }
             >
               <View style={styles.fieldLeft}>

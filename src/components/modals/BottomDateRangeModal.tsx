@@ -3,26 +3,18 @@ import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
 import { normalize } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
-import React, { useEffect, useMemo, useState } from "react";
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from "@gorhom/bottom-sheet";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-    Dimensions,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import DatePicker from "react-native-date-picker";
-import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
-import Animated, {
-    Easing,
-    runOnJS,
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming,
-} from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export type PeriodType = "WEEK" | "MONTH" | "QUARTER" | "YEAR" | "CUSTOM";
 
@@ -43,12 +35,6 @@ interface BottomDateRangeModalProps {
   onClose: () => void;
 }
 
-const SCREEN_HEIGHT = Dimensions.get("window").height;
-const MAX_SHEET_HEIGHT = SCREEN_HEIGHT * 0.85; // Increase from 0.75 to 0.85
-const HEADER_HEIGHT = normalize(100);
-const OPTION_HEIGHT = normalize(56);
-const DATE_PICKER_HEIGHT = normalize(180);
-
 const BottomDateRangeModal: React.FC<BottomDateRangeModalProps> = ({
   visible,
   title,
@@ -59,6 +45,7 @@ const BottomDateRangeModal: React.FC<BottomDateRangeModalProps> = ({
   onClose,
 }) => {
   const { colors, mode } = useAppTheme();
+  const bottomSheetRef = useRef<BottomSheet>(null);
 
   // Calculate date ranges
   const getDateRanges = () => {
@@ -136,33 +123,21 @@ const BottomDateRangeModal: React.FC<BottomDateRangeModalProps> = ({
   const [customEndDate, setCustomEndDate] = useState(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+  
+  // Ref for scroll view to control scrolling
+  const scrollViewRef = useRef<any>(null);
 
-  const SHEET_HEIGHT = useMemo(() => {
-    const optionsHeight = predefinedOptions.length * OPTION_HEIGHT;
-    const customPickerHeight = showCustom ? DATE_PICKER_HEIGHT : 0;
-    const contentHeight = HEADER_HEIGHT + optionsHeight + customPickerHeight;
-    return Math.min(contentHeight, MAX_SHEET_HEIGHT);
+  // Dynamic snap points based on content
+  const snapPoints = useMemo(() => {
+    if (showCustom) {
+      return ["85%"]; // Increased from 75% to 85% to show all buttons
+    }
+    return ["50%"]; // Collapsed for just options
   }, [showCustom]);
 
-  const overlayOpacity = useSharedValue(0);
-  const translateY = useSharedValue(SHEET_HEIGHT);
-  const startY = useSharedValue(0);
-  const sheetHeight = useSharedValue(SHEET_HEIGHT);
-
-  // Animate height when showCustom changes (but don't reset state)
+  // Initialize state when modal opens
   useEffect(() => {
     if (visible) {
-      sheetHeight.value = withTiming(SHEET_HEIGHT, {
-        duration: 250,
-        easing: Easing.out(Easing.cubic),
-      });
-    }
-  }, [SHEET_HEIGHT, visible]);
-
-  // Initialize state only when modal opens/closes
-  useEffect(() => {
-    if (visible) {
-      // Initialize from props - only runs when modal first opens
       if (initialPeriodType === "CUSTOM" && initialStartDate && initialEndDate) {
         setShowCustom(true);
         setSelectedPeriodType("CUSTOM");
@@ -177,60 +152,35 @@ const BottomDateRangeModal: React.FC<BottomDateRangeModalProps> = ({
         setCustomStartDate(new Date());
         setCustomEndDate(new Date());
       }
-
-      overlayOpacity.value = withTiming(1, {
-        duration: 200,
-        easing: Easing.out(Easing.ease),
-      });
-      translateY.value = withTiming(0, {
-        duration: 250,
-        easing: Easing.out(Easing.cubic),
-      });
+      bottomSheetRef.current?.expand();
     } else {
-      overlayOpacity.value = withTiming(0, { duration: 150 });
-      translateY.value = withTiming(SHEET_HEIGHT, {
-        duration: 200,
-        easing: Easing.in(Easing.ease),
-      });
+      bottomSheetRef.current?.close();
     }
-  }, [visible]); // Only depend on visible, not SHEET_HEIGHT
+  }, [visible]);
 
-  const panGesture = Gesture.Pan()
-    .onStart(() => {
-      startY.value = translateY.value;
-    })
-    .onUpdate((event) => {
-      const newTranslateY = startY.value + event.translationY;
-      if (newTranslateY >= 0) {
-        translateY.value = newTranslateY;
-        overlayOpacity.value = Math.max(0, 1 - newTranslateY / SHEET_HEIGHT);
+  // Backdrop component
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        opacity={0.5}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
+  // Handle sheet changes
+  const handleSheetChange = useCallback(
+    (index: number) => {
+      if (index === -1) {
+        onClose();
       }
-    })
-    .onEnd((event) => {
-      if (translateY.value > SHEET_HEIGHT * 0.25 || event.velocityY > 500) {
-        translateY.value = withTiming(SHEET_HEIGHT, {
-          duration: 200,
-          easing: Easing.in(Easing.ease),
-        });
-        overlayOpacity.value = withTiming(0, { duration: 150 });
-        runOnJS(onClose)();
-      } else {
-        translateY.value = withTiming(0, {
-          duration: 250,
-          easing: Easing.out(Easing.cubic),
-        });
-        overlayOpacity.value = withTiming(1, { duration: 200 });
-      }
-    });
-
-  const overlayStyle = useAnimatedStyle(() => ({
-    opacity: overlayOpacity.value,
-  }));
-
-  const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-    height: sheetHeight.value,
-  }));
+    },
+    [onClose]
+  );
 
   const formatDate = (date: Date) => {
     const day = String(date.getDate()).padStart(2, "0");
@@ -260,11 +210,18 @@ const BottomDateRangeModal: React.FC<BottomDateRangeModalProps> = ({
 
   const handleOptionPress = (option: PredefinedOption) => {
     if (option.periodType === "CUSTOM") {
+      const wasHidden = !showCustom;
       setShowCustom(!showCustom);
       setSelectedPeriodType("CUSTOM");
+      
+      // Auto scroll to bottom after custom section opens
+      if (wasHidden) {
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 300); // Wait for snap point animation to complete
+      }
     } else {
       setSelectedPeriodType(option.periodType);
-      // startDate and endDate are guaranteed to exist for non-custom options
       if (option.startDate && option.endDate) {
         onSelect({
           startDate: option.startDate,
@@ -279,17 +236,15 @@ const BottomDateRangeModal: React.FC<BottomDateRangeModalProps> = ({
 
   const handleSaveCustom = () => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
+    today.setHours(0, 0, 0, 0);
 
-    // Validate: end date must be >= start date
     if (customEndDate < customStartDate) {
-      console.warn('End date must be after start date');
+      console.warn("End date must be after start date");
       return;
     }
 
-    // Validate: end date must not be in the past
     if (customEndDate < today) {
-      console.warn('End date cannot be in the past');
+      console.warn("End date cannot be in the past");
       return;
     }
 
@@ -306,381 +261,320 @@ const BottomDateRangeModal: React.FC<BottomDateRangeModalProps> = ({
     return selectedPeriodType === option.periodType;
   };
 
+  // Don't render when not visible
   if (!visible) return null;
 
   return (
-    <Modal transparent visible statusBarTranslucent>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <TouchableWithoutFeedback onPress={onClose}>
-          <Animated.View style={[styles.overlay, overlayStyle]} />
-        </TouchableWithoutFeedback>
+    <>
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={0}
+        snapPoints={snapPoints}
+        enablePanDownToClose
+        backdropComponent={renderBackdrop}
+        onChange={handleSheetChange}
+        backgroundStyle={{ backgroundColor: colors.card }}
+        handleIndicatorStyle={{ backgroundColor: colors.border }}
+      >
+        {/* Title */}
+        <View style={styles.header}>
+          <ThemedText style={[styles.title, { color: colors.text }]}>
+            {title}
+          </ThemedText>
+        </View>
 
-        <Animated.View
-          style={[
-            styles.sheet,
-            {
-              backgroundColor: colors.card,
-            },
-            sheetStyle,
-          ]}
+        {/* Scrollable Content */}
+        <BottomSheetScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
         >
-          <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
-            {/* Handle bar with pan gesture */}
-            <GestureDetector gesture={panGesture}>
-              <View style={styles.handleContainer}>
-                <View
-                  style={[styles.handle, { backgroundColor: colors.border }]}
-                />
-              </View>
-            </GestureDetector>
+          {predefinedOptions.map((item, index) => {
+            const selected = isSelected(item);
 
-            {/* Title - also draggable */}
-            <GestureDetector gesture={panGesture}>
-              <View>
-                <ThemedText style={[styles.title, { color: colors.text }]}>
-                  {title}
-                </ThemedText>
-              </View>
-            </GestureDetector>
-
-              <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={true}
-                bounces={true}
-              >
-                {predefinedOptions.map((item, index) => {
-                  const selected = isSelected(item);
-
-                  return (
-                    <View key={index}>
-                      <TouchableWithoutFeedback
-                        onPress={() => handleOptionPress(item)}
-                      >
+            return (
+              <View key={index}>
+                <TouchableWithoutFeedback
+                  onPress={() => handleOptionPress(item)}
+                >
+                  <View
+                    style={[
+                      styles.option,
+                      {
+                        borderBottomWidth: 0.5,
+                        borderBottomColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.radio,
+                        {
+                          borderColor: selected ? colors.tint : colors.border,
+                        },
+                      ]}
+                    >
+                      {selected && (
                         <View
                           style={[
-                            styles.option,
-                            {
-                              borderBottomWidth: 0.5,
-                              borderBottomColor: colors.border,
-                            },
+                            styles.radioDot,
+                            { backgroundColor: colors.tint },
                           ]}
-                        >
-                          <View
-                            style={[
-                              styles.radio,
-                              {
-                                borderColor: selected
-                                  ? colors.tint
-                                  : colors.border,
-                              },
-                            ]}
-                          >
-                            {selected && (
-                              <View
-                                style={[
-                                  styles.radioDot,
-                                  { backgroundColor: colors.tint },
-                                ]}
-                              />
-                            )}
-                          </View>
-
-                          <View style={styles.optionContent}>
-                            <ThemedText
-                              style={[
-                                styles.optionText,
-                                {
-                                  color: selected ? colors.tint : colors.text,
-                                },
-                              ]}
-                            >
-                              {item.label}
-                            </ThemedText>
-                            {item.periodType !== "CUSTOM" && item.startDate && item.endDate && (
-                              <ThemedText
-                                style={[
-                                  styles.dateSubtext,
-                                  { color: colors.text, opacity: 0.6 },
-                                ]}
-                              >
-                                ({formatDate(item.startDate)} - {formatDate(item.endDate)})
-                              </ThemedText>
-                            )}
-                          </View>
-                        </View>
-                      </TouchableWithoutFeedback>
-
-                      {/* Custom Date Picker Section */}
-                      {item.periodType === "CUSTOM" && showCustom && (
-                        <View
-                          style={[
-                            styles.customSection,
-                            {
-                              backgroundColor: colors.card,
-                              borderBottomWidth: 0.5,
-                              borderBottomColor: colors.border,
-                            },
-                          ]}
-                        >
-                          {/* Info text */}
-                          <ThemedText
-                            style={[
-                              styles.customInfoText,
-                              { color: colors.text, opacity: 0.7 },
-                            ]}
-                          >
-                            Chọn khoảng thời gian tùy chỉnh
-                          </ThemedText>
-
-                          {/* From Date */}
-                          <View style={styles.dateRow}>
-                            <ThemedText
-                              style={[
-                                styles.dateLabel,
-                                { color: colors.text },
-                              ]}
-                            >
-                              Từ ngày
-                            </ThemedText>
-                            <TouchableOpacity
-                              style={[
-                                styles.dateButton,
-                                {
-                                  backgroundColor: colors.card,
-                                  borderColor: colors.tint,
-                                  borderWidth: 1.5,
-                                },
-                              ]}
-                              onPress={() => setShowStartPicker(true)}
-                            >
-                              <FontAwesome6
-                                name="calendar"
-                                size={normalize(14)}
-                                color={colors.tint}
-                                style={{ marginRight: normalize(8) }}
-                              />
-                              <ThemedText
-                                style={[
-                                  styles.dateButtonText,
-                                  { color: colors.text, fontFamily: Fonts.semiBold },
-                                ]}
-                              >
-                                {formatDate(customStartDate)}
-                              </ThemedText>
-                            </TouchableOpacity>
-                          </View>
-
-                          {/* To Date */}
-                          <View style={styles.dateRow}>
-                            <ThemedText
-                              style={[
-                                styles.dateLabel,
-                                { color: colors.text },
-                              ]}
-                            >
-                              Đến ngày
-                            </ThemedText>
-                            <TouchableOpacity
-                              style={[
-                                styles.dateButton,
-                                {
-                                  backgroundColor: colors.card,
-                                  borderColor: !isDateValid() ? "#FF3B30" : colors.tint,
-                                  borderWidth: 1.5,
-                                },
-                              ]}
-                              onPress={() => setShowEndPicker(true)}
-                            >
-                              <FontAwesome6
-                                name="calendar"
-                                size={normalize(14)}
-                                color={!isDateValid() ? "#FF3B30" : colors.tint}
-                                style={{ marginRight: normalize(8) }}
-                              />
-                              <ThemedText
-                                style={[
-                                  styles.dateButtonText,
-                                  { 
-                                    color: !isDateValid() ? "#FF3B30" : colors.text,
-                                    fontFamily: Fonts.semiBold 
-                                  },
-                                ]}
-                              >
-                                {formatDate(customEndDate)}
-                              </ThemedText>
-                            </TouchableOpacity>
-                          </View>
-
-                          {/* Error message */}
-                          {getDateError() && (
-                            <View style={styles.errorContainer}>
-                              <FontAwesome6
-                                name="circle-exclamation"
-                                size={normalize(14)}
-                                color="#FF3B30"
-                                solid
-                              />
-                              <ThemedText
-                                style={[
-                                  styles.errorText,
-                                  { color: "#FF3B30" },
-                                ]}
-                              >
-                                {getDateError()}
-                              </ThemedText>
-                            </View>
-                          )}
-
-                          {/* Action Buttons */}
-                          <View style={styles.buttonRow}>
-                            <TouchableOpacity
-                              style={[
-                                styles.button,
-                                styles.cancelButton,
-                                { borderColor: colors.border },
-                              ]}
-                              onPress={() => {
-                                setShowCustom(false);
-                                setSelectedPeriodType(initialPeriodType || null);
-                              }}
-                            >
-                              <ThemedText
-                                style={[
-                                  styles.buttonText,
-                                  { color: colors.text },
-                                ]}
-                              >
-                                Hủy
-                              </ThemedText>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                              style={[
-                                styles.button,
-                                styles.saveButton,
-                                { 
-                                  backgroundColor: isDateValid() ? colors.tint : colors.border,
-                                  opacity: isDateValid() ? 1 : 0.5,
-                                },
-                              ]}
-                              onPress={handleSaveCustom}
-                              disabled={!isDateValid()}
-                            >
-                              <ThemedText
-                                style={[
-                                  styles.buttonText,
-                                  { color: "#FFFFFF" },
-                                ]}
-                              >
-                                Áp dụng
-                              </ThemedText>
-                            </TouchableOpacity>
-                          </View>
-                        </View>
+                        />
                       )}
                     </View>
-                  );
-                })}
-              </ScrollView>
-            </SafeAreaView>
-          </Animated.View>
 
-        {/* Date Pickers with theme colors */}
-        <DatePicker
-          modal
-          open={showStartPicker}
-          date={customStartDate}
-          mode="date"
-          theme={mode === "dark" ? "dark" : "light"}
-          onConfirm={(date) => {
-            setShowStartPicker(false);
-            setCustomStartDate(date);
-          }}
-          onCancel={() => setShowStartPicker(false)}
-          title="Chọn ngày bắt đầu"
-          confirmText="Xác nhận"
-          cancelText="Hủy"
-        />
+                    <View style={styles.optionContent}>
+                      <ThemedText
+                        style={[
+                          styles.optionText,
+                          {
+                            color: selected ? colors.tint : colors.text,
+                          },
+                        ]}
+                      >
+                        {item.label}
+                      </ThemedText>
+                      {item.periodType !== "CUSTOM" &&
+                        item.startDate &&
+                        item.endDate && (
+                          <ThemedText
+                            style={[
+                              styles.dateSubtext,
+                              { color: colors.text, opacity: 0.6 },
+                            ]}
+                          >
+                            ({formatDate(item.startDate)} -{" "}
+                            {formatDate(item.endDate)})
+                          </ThemedText>
+                        )}
+                    </View>
+                  </View>
+                </TouchableWithoutFeedback>
 
-        <DatePicker
-          modal
-          open={showEndPicker}
-          date={customEndDate}
-          mode="date"
-          minimumDate={new Date()} 
-          theme={mode === "dark" ? "dark" : "light"}
-          onConfirm={(date) => {
-            setShowEndPicker(false);
-            setCustomEndDate(date);
-          }}
-          onCancel={() => setShowEndPicker(false)}
-          title="Chọn ngày kết thúc"
-          confirmText="Xác nhận"
-          cancelText="Hủy"
-        />
-      </GestureHandlerRootView>
-    </Modal>
+                {/* Custom Date Picker Section */}
+                {item.periodType === "CUSTOM" && showCustom && (
+                  <View
+                    style={[
+                      styles.customSection,
+                      {
+                        backgroundColor: colors.card,
+                        borderBottomWidth: 0.5,
+                        borderBottomColor: colors.border,
+                      },
+                    ]}
+                  >
+                    {/* Info text */}
+                    <ThemedText
+                      style={[
+                        styles.customInfoText,
+                        { color: colors.text, opacity: 0.7 },
+                      ]}
+                    >
+                      Chọn khoảng thời gian tùy chỉnh
+                    </ThemedText>
+
+                    {/* From Date */}
+                    <View style={styles.dateRow}>
+                      <ThemedText
+                        style={[styles.dateLabel, { color: colors.text }]}
+                      >
+                        Từ ngày
+                      </ThemedText>
+                      <TouchableOpacity
+                        style={[
+                          styles.dateButton,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: colors.tint,
+                            borderWidth: 1.5,
+                          },
+                        ]}
+                        onPress={() => setShowStartPicker(true)}
+                      >
+                        <FontAwesome6
+                          name="calendar"
+                          size={normalize(14)}
+                          color={colors.tint}
+                          style={{ marginRight: normalize(8) }}
+                        />
+                        <ThemedText
+                          style={[
+                            styles.dateButtonText,
+                            {
+                              color: colors.text,
+                              fontFamily: Fonts.semiBold,
+                            },
+                          ]}
+                        >
+                          {formatDate(customStartDate)}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* To Date */}
+                    <View style={styles.dateRow}>
+                      <ThemedText
+                        style={[styles.dateLabel, { color: colors.text }]}
+                      >
+                        Đến ngày
+                      </ThemedText>
+                      <TouchableOpacity
+                        style={[
+                          styles.dateButton,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: !isDateValid()
+                              ? "#FF3B30"
+                              : colors.tint,
+                            borderWidth: 1.5,
+                          },
+                        ]}
+                        onPress={() => setShowEndPicker(true)}
+                      >
+                        <FontAwesome6
+                          name="calendar"
+                          size={normalize(14)}
+                          color={!isDateValid() ? "#FF3B30" : colors.tint}
+                          style={{ marginRight: normalize(8) }}
+                        />
+                        <ThemedText
+                          style={[
+                            styles.dateButtonText,
+                            {
+                              color: !isDateValid() ? "#FF3B30" : colors.text,
+                              fontFamily: Fonts.semiBold,
+                            },
+                          ]}
+                        >
+                          {formatDate(customEndDate)}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Error message */}
+                    {getDateError() && (
+                      <View style={styles.errorContainer}>
+                        <FontAwesome6
+                          name="circle-exclamation"
+                          size={normalize(14)}
+                          color="#FF3B30"
+                          solid
+                        />
+                        <ThemedText
+                          style={[styles.errorText, { color: "#FF3B30" }]}
+                        >
+                          {getDateError()}
+                        </ThemedText>
+                      </View>
+                    )}
+
+                    {/* Action Buttons */}
+                    <View style={styles.buttonRow}>
+                      <TouchableOpacity
+                        style={[
+                          styles.button,
+                          styles.cancelButton,
+                          { borderColor: colors.border },
+                        ]}
+                        onPress={() => {
+                          setShowCustom(false);
+                          setSelectedPeriodType(initialPeriodType || null);
+                          // Scroll back to top when closing custom section
+                          setTimeout(() => {
+                            scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+                          }, 300);
+                        }}
+                      >
+                        <ThemedText
+                          style={[styles.buttonText, { color: colors.text }]}
+                        >
+                          Hủy
+                        </ThemedText>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.button,
+                          styles.saveButton,
+                          {
+                            backgroundColor: isDateValid()
+                              ? colors.tint
+                              : colors.border,
+                            opacity: isDateValid() ? 1 : 0.5,
+                          },
+                        ]}
+                        onPress={handleSaveCustom}
+                        disabled={!isDateValid()}
+                      >
+                        <ThemedText
+                          style={[styles.buttonText, { color: "#FFFFFF" }]}
+                        >
+                          Áp dụng
+                        </ThemedText>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </BottomSheetScrollView>
+      </BottomSheet>
+
+      {/* Date Pickers */}
+      <DatePicker
+        modal
+        open={showStartPicker}
+        date={customStartDate}
+        mode="date"
+        theme={mode === "dark" ? "dark" : "light"}
+        onConfirm={(date) => {
+          setShowStartPicker(false);
+          setCustomStartDate(date);
+        }}
+        onCancel={() => setShowStartPicker(false)}
+        title="Chọn ngày bắt đầu"
+        confirmText="Xác nhận"
+        cancelText="Hủy"
+      />
+
+      <DatePicker
+        modal
+        open={showEndPicker}
+        date={customEndDate}
+        mode="date"
+        minimumDate={new Date()}
+        theme={mode === "dark" ? "dark" : "light"}
+        onConfirm={(date) => {
+          setShowEndPicker(false);
+          setCustomEndDate(date);
+        }}
+        onCancel={() => setShowEndPicker(false)}
+        title="Chọn ngày kết thúc"
+        confirmText="Xác nhận"
+        cancelText="Hủy"
+      />
+    </>
   );
 };
 
 export default BottomDateRangeModal;
 
 const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-
-  sheet: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopLeftRadius: normalize(20),
-    borderTopRightRadius: normalize(20),
+  header: {
     paddingHorizontal: normalize(20),
-    paddingTop: normalize(8),
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -3,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-
-  safeArea: {
-    flex: 1,
-  },
-
-  handleContainer: {
-    alignItems: "center",
-    paddingVertical: normalize(16), // Increased from 12 to 16
-    paddingHorizontal: normalize(20), // Add horizontal padding for larger touch area
-  },
-
-  handle: {
-    width: normalize(40),
-    height: normalize(4),
-    borderRadius: normalize(2),
-    opacity: 0.3,
+    paddingBottom: normalize(16),
   },
 
   title: {
     fontSize: normalize(18),
     fontFamily: Fonts.bold,
-    marginBottom: normalize(16),
-    marginTop: normalize(4),
-  },
-
-  scrollView: {
-    flex: 1,
   },
 
   scrollContent: {
-    paddingBottom: normalize(8),
+    paddingHorizontal: normalize(20),
+    paddingBottom: normalize(20),
   },
 
   option: {

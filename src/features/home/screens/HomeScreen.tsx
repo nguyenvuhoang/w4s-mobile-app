@@ -256,6 +256,7 @@ const TransactionItem = ({ icon, iconColor, name, time, amount, isExpense, color
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginBottom: normalize(50),
   },
   header: {
     flexDirection: 'row',
