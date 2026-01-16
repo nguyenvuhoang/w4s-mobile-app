@@ -3,11 +3,13 @@ import CustomText from "@/components/base/CustomText";
 import BottomActionModal, {
   ActionItem,
 } from "@/components/modals/BottomActionModal";
+import STORAGE_KEY from "@/constants/StorageKey";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
+import StorageService from "@/services/StorageService";
 import { WalletSummary } from "@/types/wallet";
 import { hp, normalize, wp } from "@/utils/layout";
-import { Ionicons } from "@expo/vector-icons";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
@@ -48,12 +50,22 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
     setDefaultWalletId,
   } = useWallet();
 
-  const handleSelectWallet = (wallet: WalletSummary) => {
+  const handleSelectWallet = async (wallet: WalletSummary) => {
     if (mode === "select") {
-      // Mode select: chọn và quay lại
-      setDefaultWalletId(wallet.walletId);
-      onSelectWallet?.(wallet);
-      router.back();
+      // Mode select: Lưu vào storage và quay lại
+      try {
+        console.log('[WalletList] Saving wallet to storage:', wallet.walletId);
+        await StorageService.setAsyncItem(
+          STORAGE_KEY.TEMP_WALLET_STORAGE,
+          JSON.stringify({ walletId: wallet.walletId })
+        );
+        console.log('[WalletList] Wallet saved successfully');
+        onSelectWallet?.(wallet);
+        router.back();
+      } catch (error) {
+        console.error('[WalletList] Failed to save wallet:', error);
+        Alert.alert('Lỗi', 'Không thể lưu ví đã chọn');
+      }
     } else {
       // Mode manage: mở modal options
       console.log("Selected wallet for management:", wallet);
@@ -304,7 +316,7 @@ const WalletItem: React.FC<WalletItemProps> = ({
     >
       <View style={styles.walletLeft}>
         <View style={[styles.walletIcon, { backgroundColor: wallet.color }]}>
-          <Ionicons
+          <FontAwesome6
             name={wallet.icon as any}
             size={normalize(24)}
             color="#fff"

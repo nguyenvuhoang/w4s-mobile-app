@@ -1,3 +1,14 @@
+import { ThemedText } from '@/components/themed-text';
+import StorageKey from '@/constants/StorageKey';
+import { useNotification } from '@/contexts/NotificationContext';
+import { useAppTheme } from '@/core/theme/ThemeContext';
+import { Fonts } from '@/core/theme/font';
+import { Tokens } from '@/core/theme/theme';
+import { useLoginService } from '@/features/auth/hooks/useLoginService';
+import StorageService from '@/services/StorageService';
+import { AppInfo } from '@/types/UserCommand';
+import { Images } from '@/utils/images';
+import { normalize } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
@@ -14,18 +25,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
-import StorageKey from '@/constants/StorageKey';
-import { useNotification } from '@/contexts/NotificationContext';
-import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts } from '@/core/theme/font';
-import { Tokens } from '@/core/theme/theme';
-import { useLoginService } from '@/features/auth/hooks/useLoginService';
-import StorageService from '@/services/StorageService';
-import { AppInfo } from '@/types/UserCommand';
-import { normalize } from '@/utils/layout';
-
-const logoImg = require('@assets/images/emiwhite.png');
+const logoImg = Images.appLogoLight;
 const defaultAvatar = require('@assets/images/default_avatar.png');
 
 const QuickLoginScreen = () => {

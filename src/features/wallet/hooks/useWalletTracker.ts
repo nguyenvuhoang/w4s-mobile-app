@@ -4,10 +4,12 @@ import StorageService from '@/services/StorageService';
 import { useState } from 'react';
 
 interface CreateWalletTrackerParams {
+  walletName: string;
   currency: string;
   color: string;
   icon: string;
   isIncludeReport: boolean;
+  amount : number;
   walletType: string;
 }
 
@@ -27,10 +29,12 @@ export const useWalletTracker = () => {
 
       const response = await walletTrackerRepository.createWalletTracker(
         String(userCode),
+        params.walletName,
         params.currency,
         params.color,
         params.icon,
         params.isIncludeReport,
+        params.amount,
         params.walletType
       );
 

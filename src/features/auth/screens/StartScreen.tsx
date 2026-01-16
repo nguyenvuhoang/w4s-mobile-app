@@ -2,12 +2,13 @@ import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
 import { Tokens } from '@/core/theme/theme';
+import { Images } from '@/utils/images';
 import { hasNotch, hp, normalize } from '@/utils/layout';
 import { useRouter } from 'expo-router';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const logoImg = require('@assets/images/emiwhite.png');
+const logoImg = Images.appLogoLight;
 
 const StartScreen = () => {
   const router = useRouter();

@@ -23,21 +23,25 @@ export const walletTrackerRepository = {
    */
   async createWalletTracker(
     userCode: string,
+    walletName: string,
     currency: string,
     color: string,
     icon: string,
     isIncludeReport: boolean,
+    amount : number,
     walletType: string
   ): Promise<BaseResponseModel> {
     try {
       return await apiService.executeWorkflow(
         WORKFLOWCODE.WF_MB_ADD_ON_WALLET,
         {
+          wallet_name: walletName,
           usercode: userCode,
           base_currency: currency,
           color: color,
           icon: icon,
           is_include_report: isIncludeReport,
+          amount: amount,
           wallet_type: "TWDR",
           classification: "EXPENSE"
         },

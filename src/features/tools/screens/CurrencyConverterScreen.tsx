@@ -3,198 +3,286 @@ import MoneyInput from "@/components/base/MoneyInput";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
+import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-interface Currency {
-  code: string;
+interface SelectedCurrency {
+  currencyId: string;
   symbol: string;
   name: string;
 }
 
-const CURRENCIES: Currency[] = [
-  { code: "VND", symbol: "đ", name: "Việt Nam Đồng" },
-  { code: "USD", symbol: "$", name: "US Dollar" },
-  { code: "EUR", symbol: "€", name: "Euro" },
-  { code: "JPY", symbol: "¥", name: "Japanese Yen" },
-  { code: "GBP", symbol: "£", name: "British Pound" },
-];
-
-// Mock exchange rates (VND as base)
-const EXCHANGE_RATES: Record<string, number> = {
-  VND: 1,
-  USD: 25317,
-  EUR: 27500,
-  JPY: 170,
-  GBP: 31800,
-};
-
 const CurrencyConverterScreen = () => {
   const { colors } = useAppTheme();
-  
-  const [fromCurrency, setFromCurrency] = useState<Currency>(CURRENCIES[0]); // VND
-  const [toCurrency, setToCurrency] = useState<Currency>(CURRENCIES[1]); // USD
-  const [fromAmount, setFromAmount] = useState<number>(1000000);
+
+  const {
+    rates,
+    loading: ratesLoading,
+    rateDate,
+    convert,
+    getRate,
+    refetch: refetchRates,
+  } = useExchangeRate();
+
+  const [fromCurrency, setFromCurrency] = useState<SelectedCurrency>({
+    currencyId: "USD",
+    symbol: "$",
+    name: "US Dollar",
+  });
+
+  const [toCurrency, setToCurrency] = useState<SelectedCurrency>({
+    currencyId: "VND",
+    symbol: "đ",
+    name: "Việt Nam Đồng",
+  });
+
+  const [fromAmount, setFromAmount] = useState<number>(100);
   const [toAmount, setToAmount] = useState<number>(0);
 
-  const handleSwapCurrencies = () => {
-    const tempCurrency = fromCurrency;
-    setFromCurrency(toCurrency);
-    setToCurrency(tempCurrency);
-    setFromAmount(toAmount);
-  };
+  const selectingTypeRef = useRef<"from" | "to" | null>(null);
 
-  const calculateConversion = (amount: number, from: string, to: string) => {
-    if (!amount || amount === 0) {
+  // =========================
+  // Load selected currency
+  // =========================
+  useFocusEffect(
+    useCallback(() => {
+      const loadSelectedCurrency = async () => {
+        try {
+          const data = await StorageService.getItem("temp_selected_currency");
+          if (!data || !selectingTypeRef.current) return;
+
+          const currency: SelectedCurrency = JSON.parse(data);
+
+          if (selectingTypeRef.current === "from") {
+            setFromCurrency(currency);
+          } else {
+            setToCurrency(currency);
+          }
+
+          await StorageService.removeItem("temp_selected_currency");
+          selectingTypeRef.current = null;
+        } catch (err) {
+          console.error("[CurrencyConverter] load currency error", err);
+          selectingTypeRef.current = null;
+        }
+      };
+
+      loadSelectedCurrency();
+    }, [])
+  );
+
+  // =========================
+  // Calculate conversion
+  // =========================
+  useEffect(() => {
+    if (rates.length === 0) return;
+    if (fromAmount < 0) return;
+
+    const result = convert(
+      fromAmount,
+      fromCurrency.currencyId,
+      toCurrency.currencyId
+    );
+
+    if (result === null) {
       setToAmount(0);
       return;
     }
 
-    // Convert to VND first, then to target currency
-    const amountInVND = amount * EXCHANGE_RATES[from];
-    const result = amountInVND / EXCHANGE_RATES[to];
-    
-    // Round based on currency
-    if (to === "VND") {
+    if (toCurrency.currencyId === "VND" || toCurrency.currencyId === "VNĐ") {
       setToAmount(Math.round(result));
     } else {
       setToAmount(Math.round(result * 100) / 100);
     }
-  };
+  }, [fromAmount, fromCurrency, toCurrency, rates]);
 
-  const handleFromAmountChange = (value: number) => {
-    setFromAmount(value);
-    calculateConversion(value, fromCurrency.code, toCurrency.code);
-  };
+  // =========================
+  // Smart exchange rate display
+  // =========================
+  const getSmartExchangeRate = () => {
+    if (!fromCurrency || !toCurrency) return "N/A";
 
-  const getExchangeRate = () => {
-    const rate = EXCHANGE_RATES[toCurrency.code] / EXCHANGE_RATES[fromCurrency.code];
-    return rate.toLocaleString("en-US", { 
+    const isFromVND =
+      fromCurrency.currencyId === "VND" ||
+      fromCurrency.currencyId === "VNĐ";
+
+    const isToVND =
+      toCurrency.currencyId === "VND" || toCurrency.currencyId === "VNĐ";
+
+    // 👉 Ưu tiên hiển thị VND ở bên phải
+    if (isToVND) {
+      const rate = convert(1, fromCurrency.currencyId, toCurrency.currencyId);
+      if (rate === null) return "N/A";
+
+      return `1 ${fromCurrency.currencyId} = ${Math.round(rate).toLocaleString(
+        "vi-VN"
+      )} ${toCurrency.currencyId}`;
+    }
+
+    // 👉 Nếu FROM là VND → đảo chiều
+    if (isFromVND) {
+      const rate = convert(1, toCurrency.currencyId, fromCurrency.currencyId);
+      if (rate === null || rate === 0) return "N/A";
+
+      return `${Math.round(rate).toLocaleString(
+        "vi-VN"
+      )} ${fromCurrency.currencyId} = 1 ${toCurrency.currencyId}`;
+    }
+
+    // 👉 Các currency khác
+    const rate = convert(1, fromCurrency.currencyId, toCurrency.currencyId);
+    if (rate === null) return "N/A";
+
+    return `1 ${fromCurrency.currencyId} = ${rate.toLocaleString("en-US", {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 4 
+      maximumFractionDigits: 4,
+    })} ${toCurrency.currencyId}`;
+  };
+
+  const formatRateDate = () => {
+    if (!rateDate) return "";
+    return new Date(rateDate).toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  useEffect(() => {
-    calculateConversion(fromAmount, fromCurrency.code, toCurrency.code);
-  }, [fromCurrency, toCurrency]);
+  if (ratesLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <AppHeader title="Quy đổi tiền tệ" showBackButton />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.tint} />
+          <ThemedText style={styles.loadingText}>Đang tải dữ liệu...</ThemedText>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <AppHeader title="Quy đổi tiền tệ" showBackButton />
 
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Subtitle */}
-        <ThemedText style={[styles.subtitle, { color: colors.text }]}>
-          Chuyển đổi tiền tệ theo tỷ giá hiện tại
-        </ThemedText>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.subtitleRow}>
+          <ThemedText style={styles.subtitle}>
+            Chuyển đổi tiền tệ theo tỷ giá hiện tại
+          </ThemedText>
+          {rateDate && (
+            <ThemedText style={styles.updateTime}>
+              Cập nhật: {formatRateDate()}
+            </ThemedText>
+          )}
+        </View>
 
         {/* Main Card */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
-          {/* From Currency */}
+          {/* FROM */}
           <View style={styles.section}>
             <View style={styles.labelRow}>
-              <ThemedText style={[styles.label, { color: colors.text }]}>
-                Từ
-              </ThemedText>
+              <ThemedText style={styles.label}>Từ</ThemedText>
               <TouchableOpacity
-                style={[styles.currencyBadge, { backgroundColor: colors.background }]}
-                activeOpacity={0.7}
+                style={styles.currencyBadge}
+                onPress={() => {
+                  selectingTypeRef.current = "from";
+                  router.push("/(protected)/select-currency");
+                }}
               >
-                <ThemedText style={[styles.currencyBadgeText, { color: colors.text }]}>
-                  {fromCurrency.code}
+                <ThemedText style={styles.currencyBadgeText}>
+                  {fromCurrency.currencyId}
                 </ThemedText>
-                <Ionicons name="chevron-down" size={normalize(16)} color={colors.icon} />
+                <Ionicons name="chevron-down" size={16} />
               </TouchableOpacity>
             </View>
 
             <MoneyInput
               value={fromAmount}
-              onChange={handleFromAmountChange}
+              onChange={setFromAmount}
               currency={fromCurrency.symbol}
-              placeholder="0"
               containerStyle={styles.largeInputContainer}
               currencyStyle={styles.largeCurrency}
               inputStyle={styles.largeInput}
             />
-
-            <ThemedText style={[styles.currencyName, { color: colors.icon }]}>
-              {fromCurrency.name}
-            </ThemedText>
+            <ThemedText style={styles.currencyName}>{fromCurrency.name}</ThemedText>
           </View>
 
-          {/* Swap Button */}
+          {/* Swap */}
           <View style={styles.swapContainer}>
             <TouchableOpacity
               style={[styles.swapButton, { backgroundColor: colors.tint }]}
-              onPress={handleSwapCurrencies}
-              activeOpacity={0.7}
+              onPress={() => {
+                setFromCurrency(toCurrency);
+                setToCurrency(fromCurrency);
+                setFromAmount(toAmount);
+              }}
             >
-              <Ionicons name="swap-vertical" size={normalize(24)} color="#fff" />
+              <Ionicons name="swap-vertical" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
 
-          {/* To Currency */}
+          {/* TO */}
           <View style={styles.section}>
             <View style={styles.labelRow}>
-              <ThemedText style={[styles.label, { color: colors.text }]}>
-                Đến
-              </ThemedText>
+              <ThemedText style={styles.label}>Đến</ThemedText>
               <TouchableOpacity
-                style={[styles.currencyBadge, { backgroundColor: colors.background }]}
-                activeOpacity={0.7}
+                style={styles.currencyBadge}
+                onPress={() => {
+                  selectingTypeRef.current = "to";
+                  router.push("/(protected)/select-currency");
+                }}
               >
-                <ThemedText style={[styles.currencyBadgeText, { color: colors.text }]}>
-                  {toCurrency.code}
+                <ThemedText style={styles.currencyBadgeText}>
+                  {toCurrency.currencyId}
                 </ThemedText>
-                <Ionicons name="chevron-down" size={normalize(16)} color={colors.icon} />
+                <Ionicons name="chevron-down" size={16} />
               </TouchableOpacity>
             </View>
 
             <MoneyInput
               value={toAmount}
               onChange={() => {}}
-              currency={toCurrency.symbol}
-              placeholder="0"
               editable={false}
-              highlightMode={true}
+              highlightMode
+              currency={toCurrency.symbol}
               containerStyle={styles.largeInputContainer}
               currencyStyle={styles.largeCurrency}
               inputStyle={styles.largeInput}
             />
-
-            <ThemedText style={[styles.currencyName, { color: colors.icon }]}>
-              {toCurrency.name}
-            </ThemedText>
+            <ThemedText style={styles.currencyName}>{toCurrency.name}</ThemedText>
           </View>
         </View>
 
-        {/* Exchange Rate Card */}
+        {/* Rate Card */}
         <View style={[styles.rateCard, { backgroundColor: colors.card }]}>
-          <View style={[styles.rateIconWrapper, { backgroundColor: colors.tint + "20" }]}>
-            <Ionicons name="analytics-outline" size={normalize(24)} color={colors.tint} />
-          </View>
-          
-          <View style={styles.rateInfo}>
-            <ThemedText style={[styles.rateLabel, { color: colors.icon }]}>
-              Tỷ giá chuyển đổi
-            </ThemedText>
-            <ThemedText style={[styles.rateValue, { color: colors.text }]}>
-              1 {fromCurrency.code} = {getExchangeRate()} {toCurrency.code}
+          <Ionicons name="analytics-outline" size={24} color={colors.tint} />
+          <View style={{ flex: 1 }}>
+            <ThemedText style={styles.rateLabel}>Tỷ giá chuyển đổi</ThemedText>
+            <ThemedText style={styles.rateValue}>
+              {getSmartExchangeRate()}
             </ThemedText>
           </View>
+          <TouchableOpacity onPress={refetchRates}>
+            <Ionicons name="refresh" size={20} color={colors.tint} />
+          </TouchableOpacity>
         </View>
 
-        <ThemedText style={[styles.disclaimer, { color: colors.icon }]}>
-          * Tỷ giá mang tính tham khảo, có thể khác so với thực tế
+        <ThemedText style={styles.disclaimer}>
+          * Tỷ giá từ Vietcombank, mang tính tham khảo
         </ThemedText>
       </ScrollView>
     </SafeAreaView>
@@ -211,12 +299,32 @@ const styles = StyleSheet.create({
     gap: normalize(16),
   },
 
+  // Loading
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: normalize(12),
+  },
+  loadingText: {
+    fontSize: normalize(14),
+    fontFamily: Fonts.regular,
+  },
+
   // Subtitle
+  subtitleRow: {
+    gap: normalize(4),
+  },
   subtitle: {
     fontSize: normalize(14),
     fontFamily: Fonts.regular,
     opacity: 0.7,
     lineHeight: normalize(20),
+  },
+  updateTime: {
+    fontSize: normalize(12),
+    fontFamily: Fonts.regular,
+    opacity: 0.6,
   },
 
   // Card
@@ -261,7 +369,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
   },
 
-  // Large Input Styles (for Currency Converter)
+  // Large Input Styles
   largeInputContainer: {
     height: normalize(60),
     backgroundColor: "transparent",
@@ -321,6 +429,9 @@ const styles = StyleSheet.create({
   rateValue: {
     fontSize: normalize(15),
     fontFamily: Fonts.bold,
+  },
+  refreshButton: {
+    padding: normalize(8),
   },
 
   // Disclaimer

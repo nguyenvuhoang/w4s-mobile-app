@@ -4,6 +4,9 @@ export default {
   userCode: "userCode",
   defaultWalletId: "defaultWalletId",
   defaultCurrency: 'defaultCurrency',
+  TEMP_WALLET_STORAGE: "temp_selected_wallet",
+  TEMP_CATEGORY_STORAGE : "temp_selected_category",
+  TEMP_CURRENCY_STORAGE : "temp_selected_currency",
 
 
   roleCommand: "rolecommand",

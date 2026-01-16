@@ -56,7 +56,7 @@ const SelectWalletTypeScreen: React.FC = () => {
 
   const handleContinue = () => {
     if (!selectedType) return;
-    router.push(selectedType.nextRoute);
+    router.replace(selectedType.nextRoute);
   };
 
   return (

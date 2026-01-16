@@ -73,7 +73,7 @@ export default () => {
       android: {
         icon: "./assets/app-icon.png",
         adaptiveIcon: {
-          foregroundImage: "./assets/app-icon-adaptive-android.png",
+          foregroundImage: "./assets/logo/app-icon-adaptive-android.png",
           backgroundColor: "#FFFFFF"
         },
         edgeToEdgeEnabled: true,
@@ -171,7 +171,7 @@ export default () => {
           {
             backgroundColor: "#38B68C",
             android: {
-              image: "./assets/emiwhite.png",
+              image: "./assets/logo/W4S_Light.png",
               imageResizeMode: "contain",
               imageWidth: 120,
             },

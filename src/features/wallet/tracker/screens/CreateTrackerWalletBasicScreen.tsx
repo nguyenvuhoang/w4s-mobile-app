@@ -115,13 +115,16 @@ const CreateWalletDetailsScreen: React.FC = () => {
 
     try {
       await createWalletTracker({
+        walletName,
         currency,
         color: iconColor,
         icon,
         isIncludeReport: includeInReport,
+        amount : parseFloat(initialBalance) || 0,
         walletType,
       });
       await refresh();
+      router.dismissAll();
       router.replace('/(protected)/wallet/wallet-list');
     } catch (error) {
       console.error('[CreateWallet] Create wallet failed:', error);
@@ -305,9 +308,6 @@ const CreateWalletDetailsScreen: React.FC = () => {
               <View style={styles.toggleLeft}>
                 <CustomText style={[styles.toggleLabel, { color: colors.text }]} type="semiBold">
                   Tính vào báo cáo
-                </CustomText>
-                <CustomText style={[styles.toggleDescription, { color: colors.icon }]} type="regular">
-                  Bao gồm số dư ví này trong tổng tài sản
                 </CustomText>
               </View>
               <Switch

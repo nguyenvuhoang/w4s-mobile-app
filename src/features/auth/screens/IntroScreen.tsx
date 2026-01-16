@@ -1,3 +1,4 @@
+import { Images } from '@/utils/images';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -20,7 +21,7 @@ import { Tokens } from '@/core/theme/theme';
 import { hasNotch, normalize } from '@/utils/layout';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const logoImg = require('@assets/images/emiblack.png');
+const logoImg = Images.appLogoDark;
 
 // Create AnimatedFlatList
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<Slide>);

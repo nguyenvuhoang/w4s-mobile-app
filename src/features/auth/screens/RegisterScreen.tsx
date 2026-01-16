@@ -1,3 +1,10 @@
+import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/core/theme/ThemeContext';
+import { Fonts } from '@/core/theme/font';
+import { Tokens } from '@/core/theme/theme';
+import { useRegisterService } from '@/features/auth/hooks/useResgisterService';
+import { Images } from '@/utils/images';
+import { hasNotch, normalize } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
@@ -14,14 +21,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
-import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts } from '@/core/theme/font';
-import { Tokens } from '@/core/theme/theme';
-import { useRegisterService } from '@/features/auth/hooks/useResgisterService';
-import { hasNotch, normalize } from '@/utils/layout';
-
-const logoImg = require('@assets/images/emiwhite.png');
+const logoImg = Images.appLogoLight;
 
 const RegisterScreen = () => {
   const router = useRouter();

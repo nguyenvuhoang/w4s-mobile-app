@@ -37,7 +37,7 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-    }, 300); // 300ms debounce
+    }, 1000); 
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
