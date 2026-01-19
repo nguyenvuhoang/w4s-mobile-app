@@ -27,7 +27,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { handleLogout, touchIDClick, isUsingTouchID } = useSettingService();
   const { appInfo } = useContext(GlobalContext);
   const { mode, setMode, colors, isDark } = useAppTheme();
-  const { defaultCurrency, loading, updateDefaultCurrency, resetToDefault } = useDefaultCurrency();
+  const { defaultCurrency, loading, updateDefaultCurrency, resetToDefault } =
+    useDefaultCurrency();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
@@ -35,17 +36,25 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     useCallback(() => {
       const loadSelectedCurrency = async () => {
         try {
-          const selectedCurrencyStr = await StorageService.getItem('temp_selected_currency');
-          
+          const selectedCurrencyStr = await StorageService.getItem(
+            "temp_selected_currency"
+          );
+
           if (selectedCurrencyStr) {
             const selectedCurrency = JSON.parse(selectedCurrencyStr);
-            console.log('[CurrencySettings] Updating default currency:', selectedCurrency);
-            
+            console.log(
+              "[CurrencySettings] Updating default currency:",
+              selectedCurrency
+            );
+
             await updateDefaultCurrency(selectedCurrency);
-            await StorageService.removeItem('temp_selected_currency');
+            await StorageService.removeItem("temp_selected_currency");
           }
         } catch (error) {
-          console.error('[CurrencySettings] Failed to load selected currency:', error);
+          console.error(
+            "[CurrencySettings] Failed to load selected currency:",
+            error
+          );
         }
       };
 
@@ -147,7 +156,14 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="briefcase-outline"
               title="Sự kiện"
-              onPress={() => {}}
+              onPress={() => {
+                router.push({
+                  pathname: "/(protected)/event/event-list",
+                  params: {
+                    mode: "manage",
+                  },
+                });
+              }}
               colors={colors}
             />
             <SettingItem

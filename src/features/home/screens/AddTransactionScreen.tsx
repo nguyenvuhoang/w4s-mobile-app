@@ -3,21 +3,27 @@ import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import { styles } from "@/features/home/styles/AddTransactionScreen.Styles";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import StorageService from "@/services/StorageService";
-import { hp, normalize, wp } from "@/utils/layout";
+import { hp, normalize } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Switch,
   TextInput,
   TouchableOpacity,
@@ -39,6 +45,20 @@ interface SelectedCurrency {
   name: string;
 }
 
+interface Participant {
+  id: string;
+  name: string;
+  phoneNumber?: string;
+  avatarColor?: string;
+}
+
+interface SelectedEvent {
+  eventId: number;
+  eventName: string;
+  icon: string;
+  color: string;
+}
+
 type TransactionType = "income" | "expense" | "inout";
 
 const AddTransactionScreen = () => {
@@ -49,6 +69,10 @@ const AddTransactionScreen = () => {
 
   const [selectedType, setSelectedType] = useState<TransactionType>("expense");
   const [sourceWalletId, setSourceWalletId] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<SelectedEvent | null>(
+    null
+  );
+  const [sourceEventId, setSourceEventId] = useState<string | null>(null);
   const [selectedCategoryData, setSelectedCategoryData] =
     useState<SelectedCategoryData | null>(null);
   const [amount, setAmount] = useState("");
@@ -56,14 +80,18 @@ const AddTransactionScreen = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [includeInReport, setIncludeInReport] = useState(true);
-  
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [location, setLocation] = useState("");
+
+  // Session ID để track transaction creation session
+  const sessionIdRef = useRef<string>(Date.now().toString());
+
   const [inputCurrency, setInputCurrency] = useState<SelectedCurrency>({
     currencyId: "VND",
     symbol: "đ",
     name: "Việt Nam Đồng",
   });
 
-  // Ref để track xem user đã manually chọn currency chưa
   const hasManuallySelectedCurrencyRef = useRef(false);
 
   const selectedWallet = useMemo(
@@ -79,9 +107,11 @@ const AddTransactionScreen = () => {
         name: "Việt Nam Đồng",
       };
     }
-    
-    const currency = currencies.find((c) => c.currency_id === selectedWallet.currency);
-    
+
+    const currency = currencies.find(
+      (c) => c.currency_id === selectedWallet.currency
+    );
+
     if (currency) {
       return {
         currencyId: currency.currency_id,
@@ -90,7 +120,6 @@ const AddTransactionScreen = () => {
       };
     }
 
-    // Fallback nếu không tìm thấy
     return {
       currencyId: selectedWallet.currency || "VND",
       symbol: selectedWallet.currency === "USD" ? "$" : "đ",
@@ -98,30 +127,39 @@ const AddTransactionScreen = () => {
     };
   }, [selectedWallet, currencies, parseCurrencyName]);
 
-  // Kiểm tra có chần chuyển đổi tiền tệ không
   const needsConversion = useMemo(
     () => inputCurrency.currencyId !== walletCurrency.currencyId,
     [inputCurrency.currencyId, walletCurrency.currencyId]
   );
 
-  // tính rate để hiển thị
   const exchangeRate = useMemo(() => {
     if (!needsConversion) return null;
-    
-    const rate = convert(1, inputCurrency.currencyId, walletCurrency.currencyId);
+
+    const rate = convert(
+      1,
+      inputCurrency.currencyId,
+      walletCurrency.currencyId
+    );
     if (rate === null) return null;
 
-    if (walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ") {
+    if (
+      walletCurrency.currencyId === "VND" ||
+      walletCurrency.currencyId === "VNĐ"
+    ) {
       return Math.round(rate);
     } else {
       return Math.round(rate * 10000) / 10000;
     }
-  }, [needsConversion, inputCurrency.currencyId, walletCurrency.currencyId, convert]);
+  }, [
+    needsConversion,
+    inputCurrency.currencyId,
+    walletCurrency.currencyId,
+    convert,
+  ]);
 
-  // tính số tiền đã chuyển đổi
   const convertedAmount = useMemo(() => {
     if (!needsConversion || !amount || amount === "0") return null;
-    
+
     const numAmount = parseFloat(amount.replace(/,/g, ""));
     if (isNaN(numAmount)) return null;
 
@@ -133,17 +171,25 @@ const AddTransactionScreen = () => {
 
     if (result === null) return null;
 
-    if (walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ") {
+    if (
+      walletCurrency.currencyId === "VND" ||
+      walletCurrency.currencyId === "VNĐ"
+    ) {
       return Math.round(result);
     } else {
       return Math.round(result * 100) / 100;
     }
-  }, [amount, needsConversion, inputCurrency.currencyId, walletCurrency.currencyId, convert]);
+  }, [
+    amount,
+    needsConversion,
+    inputCurrency.currencyId,
+    walletCurrency.currencyId,
+    convert,
+  ]);
 
   const isValid =
     selectedWallet && selectedCategoryData && amount.trim() !== "";
 
-  // Init default wallet
   useEffect(() => {
     if (!sourceWalletId && defaultWallet) {
       setSourceWalletId(defaultWallet.walletId);
@@ -152,13 +198,8 @@ const AddTransactionScreen = () => {
 
   useEffect(() => {
     if (selectedWallet && currencies.length > 0) {
-      console.log('[AddTransaction] Wallet changed:', selectedWallet.walletId, 'Currency:', walletCurrency.currencyId);
-      // Nếu user chưa manually chọn currency -> tự động sync với wallet
       if (!hasManuallySelectedCurrencyRef.current) {
-        console.log('[AddTransaction] Auto-updating input currency to:', walletCurrency);
         setInputCurrency(walletCurrency);
-      } else {
-        console.log('[AddTransaction] User has manually selected currency, skip auto-update');
       }
     }
   }, [selectedWallet?.walletId, walletCurrency.currencyId, currencies.length]);
@@ -166,36 +207,27 @@ const AddTransactionScreen = () => {
   useFocusEffect(
     useCallback(() => {
       const loadData = async () => {
-        console.log('[AddTransaction] useFocusEffect - Loading data...');
-        
         try {
-          // Load wallet
           const storedWallet = await StorageService.getAsyncItem(
             STORAGE_KEY.TEMP_WALLET_STORAGE
           );
           if (storedWallet) {
-            console.log('[AddTransaction] Found stored wallet:', storedWallet);
             const { walletId } = JSON.parse(storedWallet);
             setSourceWalletId(walletId);
-            // Reset flag khi chọn wallet mới
             hasManuallySelectedCurrencyRef.current = false;
-            console.log('[AddTransaction] Reset manual currency flag');
-            await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_WALLET_STORAGE);
-          } else {
-            console.log('[AddTransaction] No stored wallet found');
+            await StorageService.removeAsyncItem(
+              STORAGE_KEY.TEMP_WALLET_STORAGE
+            );
           }
 
-          // Load category
           const storedCategory = await StorageService.getAsyncItem(
             STORAGE_KEY.TEMP_CATEGORY_STORAGE
           );
           if (storedCategory) {
-            console.log('[AddTransaction] Found stored category:', storedCategory);
             const categoryData: SelectedCategoryData =
               JSON.parse(storedCategory);
             setSelectedCategoryData(categoryData);
 
-            // Auto sync transaction type
             const typeMap = {
               INCOME: "income",
               EXPENSE: "expense",
@@ -203,34 +235,80 @@ const AddTransactionScreen = () => {
             } as const;
             setSelectedType(typeMap[categoryData.category_type]);
 
-            await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
-          } else {
-            console.log('[AddTransaction] No stored category found');
+            await StorageService.removeAsyncItem(
+              STORAGE_KEY.TEMP_CATEGORY_STORAGE
+            );
           }
-          const storedCurrency = await StorageService.getItem(STORAGE_KEY.TEMP_CURRENCY_STORAGE);
+
+          const storedCurrency = await StorageService.getItem(
+            STORAGE_KEY.TEMP_CURRENCY_STORAGE
+          );
           if (storedCurrency) {
-            console.log('[AddTransaction] Found stored currency:', storedCurrency);
             const currency: SelectedCurrency = JSON.parse(storedCurrency);
             setInputCurrency(currency);
-            // User đã manually chọn currency
             hasManuallySelectedCurrencyRef.current = true;
-            console.log('[AddTransaction] Set manual currency flag');
             await StorageService.removeItem(STORAGE_KEY.TEMP_CURRENCY_STORAGE);
-          } else {
-            console.log('[AddTransaction] No stored currency found');
+          }
+
+          // Load participants với session ID
+          const storedParticipants = await StorageService.getAsyncItem(
+            STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE
+          );
+          if (storedParticipants) {
+            const data = JSON.parse(storedParticipants);
+            // Chỉ load nếu cùng session
+            if (data.sessionId === sessionIdRef.current) {
+              setParticipants(data.participants);
+            } else {
+              await StorageService.removeAsyncItem(
+                STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE
+              );
+            }
+          }
+
+          // Load location với session ID
+          const storedLocation = await StorageService.getAsyncItem(
+            STORAGE_KEY.TEMP_LOCATION_STORAGE
+          );
+          if (storedLocation) {
+            const data = JSON.parse(storedLocation);
+            // Chỉ load nếu cùng session
+            if (data.sessionId === sessionIdRef.current) {
+              setLocation(
+                data.locationData.address || data.locationData.name || ""
+              );
+            } else {
+              await StorageService.removeAsyncItem(
+                STORAGE_KEY.TEMP_LOCATION_STORAGE
+              );
+            }
+          }
+
+          const storedEvent = await StorageService.getAsyncItem(
+            STORAGE_KEY.TEMP_EVENT_STORAGE
+          );
+
+          if (storedEvent) {
+            const eventData: SelectedEvent = JSON.parse(storedEvent);
+
+            setSelectedEvent(eventData);
+            setSourceEventId(eventData.eventId.toString());
+
+            await StorageService.removeAsyncItem(
+              STORAGE_KEY.TEMP_EVENT_STORAGE
+            );
           }
         } catch (error) {
           console.error("[AddTransaction] Load data failed:", error);
         }
       };
       loadData();
-    }, []) // ✅ Dependencies array rỗng vẫn OK vì useFocusEffect tự chạy mỗi khi focus
+    }, [])
   );
 
   const handleTypeChange = (newType: TransactionType) => {
     setSelectedType(newType);
 
-    // Clear category if type mismatch
     if (selectedCategoryData) {
       const typeMap = {
         income: "INCOME",
@@ -260,23 +338,47 @@ const AddTransactionScreen = () => {
   const handleCreate = () => {
     if (!isValid) return;
 
-    // Tính số tiền cuối cùng theo đơn vị tiền tệ của ví
-    const finalAmount = needsConversion ? convertedAmount : parseFloat(amount.replace(/,/g, ""));
+    const finalAmount = needsConversion
+      ? convertedAmount
+      : parseFloat(amount.replace(/,/g, ""));
 
     console.log("Create transaction", {
       type: selectedType,
       sourceWalletId,
       category: selectedCategoryData,
-      amount: finalAmount, // Số tiền theo đơn vị ví
-      originalAmount: parseFloat(amount.replace(/,/g, "")), // Số tiền người dùng nhập
+      amount: finalAmount,
+      originalAmount: parseFloat(amount.replace(/,/g, "")),
       inputCurrency: inputCurrency.currencyId,
       walletCurrency: walletCurrency.currencyId,
+      eventId: sourceEventId,
       note,
       date: selectedDate,
       imageUri,
       includeInReport,
+      participants,
+      location,
     });
+
+    // Xóa temp data sau khi tạo thành công
+    clearTempData();
     router.back();
+  };
+
+  const handleCancel = () => {
+    // Xóa temp data khi user hủy
+    clearTempData();
+    router.back();
+  };
+
+  const clearTempData = async () => {
+    try {
+      await Promise.all([
+        StorageService.removeAsyncItem(STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE),
+        StorageService.removeAsyncItem(STORAGE_KEY.TEMP_LOCATION_STORAGE),
+      ]);
+    } catch (error) {
+      console.error("[AddTransaction] Failed to clear temp data:", error);
+    }
   };
 
   const parseCategoryNameJSON = (nameJson: string) => {
@@ -297,7 +399,10 @@ const AddTransactionScreen = () => {
   };
 
   const formatConvertedAmount = (amount: number) => {
-    if (walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ") {
+    if (
+      walletCurrency.currencyId === "VND" ||
+      walletCurrency.currencyId === "VNĐ"
+    ) {
       return Math.round(amount).toLocaleString("vi-VN");
     }
     return amount.toLocaleString("en-US", {
@@ -307,13 +412,93 @@ const AddTransactionScreen = () => {
   };
 
   const formatExchangeRate = (rate: number) => {
-    if (walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ") {
+    if (
+      walletCurrency.currencyId === "VND" ||
+      walletCurrency.currencyId === "VNĐ"
+    ) {
       return Math.round(rate).toLocaleString("vi-VN");
     }
     return rate.toLocaleString("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 4,
     });
+  };
+
+  const getInitials = (name: string) => {
+    const words = name.trim().split(" ");
+    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+  };
+
+  const getAvatarColor = (index: number) => {
+    const colors = [
+      "#FF6B6B",
+      "#4ECDC4",
+      "#45B7D1",
+      "#FFA07A",
+      "#98D8C8",
+      "#F7DC6F",
+    ];
+    return colors[index % colors.length];
+  };
+
+  const renderParticipants = () => {
+    if (participants.length === 0) {
+      return (
+        <CustomText style={[styles.placeholderText, { color: colors.icon }]}>
+          Chọn người tham gia
+        </CustomText>
+      );
+    }
+
+    const displayParticipants = participants.slice(0, 3);
+    const remainingCount = participants.length - 3;
+
+    return (
+      <View style={styles.participantsContainer}>
+        <View style={styles.participantAvatars}>
+          {displayParticipants.map((participant, index) => (
+            <View
+              key={participant.id}
+              style={[
+                styles.participantAvatar,
+                {
+                  backgroundColor:
+                    participant.avatarColor || getAvatarColor(index),
+                  borderColor: colors.card,
+                  zIndex: displayParticipants.length - index,
+                },
+              ]}
+            >
+              <CustomText style={styles.participantInitials}>
+                {getInitials(participant.name)}
+              </CustomText>
+            </View>
+          ))}
+          {remainingCount > 0 && (
+            <View
+              style={[
+                styles.participantAvatar,
+                {
+                  backgroundColor: colors.border,
+                  borderColor: colors.card,
+                  zIndex: 0,
+                },
+              ]}
+            >
+              <CustomText
+                style={[styles.participantInitials, { color: colors.text }]}
+              >
+                +{remainingCount}
+              </CustomText>
+            </View>
+          )}
+        </View>
+        <CustomText style={[styles.participantCount, { color: colors.text }]}>
+          {participants.length} người
+        </CustomText>
+      </View>
+    );
   };
 
   return (
@@ -433,7 +618,9 @@ const AddTransactionScreen = () => {
                     <CustomText
                       style={[styles.fieldText, { color: colors.text }]}
                     >
-                      {parseCategoryNameJSON(selectedCategoryData.category_name)}
+                      {parseCategoryNameJSON(
+                        selectedCategoryData.category_name
+                      )}
                     </CustomText>
                   </>
                 ) : (
@@ -486,28 +673,171 @@ const AddTransactionScreen = () => {
                 onChangeText={setAmount}
               />
             </View>
-            
+
             {/* Conversion Display */}
-            {needsConversion && convertedAmount !== null && exchangeRate !== null && (
-              <View style={styles.conversionContainer}>
-                <FontAwesome6
-                  name="arrow-right-arrow-left"
-                  size={normalize(12)}
-                  color={colors.icon}
-                />
-                <View style={styles.conversionTextContainer}>
-                  <CustomText style={[styles.conversionText, { color: colors.icon }]}>
-                    ≈ {walletCurrency.symbol} {formatConvertedAmount(convertedAmount)}
-                    <CustomText style={{ fontSize: normalize(11), opacity: 0.7 }}>
-                      {" "}({walletCurrency.currencyId})
+            {needsConversion &&
+              convertedAmount !== null &&
+              exchangeRate !== null && (
+                <View style={styles.conversionContainer}>
+                  <FontAwesome6
+                    name="arrow-right-arrow-left"
+                    size={normalize(12)}
+                    color={colors.icon}
+                  />
+                  <View style={styles.conversionTextContainer}>
+                    <CustomText
+                      style={[styles.conversionText, { color: colors.icon }]}
+                    >
+                      ≈ {walletCurrency.symbol}{" "}
+                      {formatConvertedAmount(convertedAmount)}
+                      <CustomText
+                        style={{ fontSize: normalize(11), opacity: 0.7 }}
+                      >
+                        {" "}
+                        ({walletCurrency.currencyId})
+                      </CustomText>
                     </CustomText>
-                  </CustomText>
-                  <CustomText style={[styles.exchangeRateText, { color: colors.icon }]}>
-                    1 {inputCurrency.currencyId} = {formatExchangeRate(exchangeRate)} {walletCurrency.currencyId}
-                  </CustomText>
+                    <CustomText
+                      style={[styles.exchangeRateText, { color: colors.icon }]}
+                    >
+                      1 {inputCurrency.currencyId} ={" "}
+                      {formatExchangeRate(exchangeRate)}{" "}
+                      {walletCurrency.currencyId}
+                    </CustomText>
+                  </View>
                 </View>
+              )}
+          </View>
+          {/* Event - Optional */}
+          <View style={styles.section}>
+            <CustomText style={[styles.label, { color: colors.text }]}>
+              Sự kiện
+            </CustomText>
+
+            <TouchableOpacity
+              style={[
+                styles.field,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={() =>
+                router.push({
+                  pathname: "/(protected)/event/event-list",
+                  params: { mode: "select" },
+                })
+              }
+            >
+              <View style={styles.fieldLeft}>
+                {selectedEvent ? (
+                  <>
+                    <View
+                      style={[
+                        styles.categoryIcon,
+                        { backgroundColor: selectedEvent.color },
+                      ]}
+                    >
+                      <FontAwesome6
+                        name={selectedEvent.icon as any}
+                        size={normalize(18)}
+                        color="#fff"
+                      />
+                    </View>
+                    <CustomText
+                      style={[styles.fieldText, { color: colors.text }]}
+                    >
+                      {selectedEvent.eventName}
+                    </CustomText>
+                  </>
+                ) : (
+                  <>
+                    <View
+                      style={[
+                        styles.categoryIcon,
+                        { backgroundColor: colors.border },
+                      ]}
+                    />
+                    <CustomText
+                      style={[styles.fieldText, { color: colors.icon }]}
+                    >
+                      Chọn sự kiện (tuỳ chọn)
+                    </CustomText>
+                  </>
+                )}
               </View>
-            )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Participants - Optional */}
+          <View style={styles.section}>
+            <CustomText style={[styles.label, { color: colors.text }]}>
+              Người tham gia
+            </CustomText>
+            <TouchableOpacity
+              style={[
+                styles.field,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={() =>
+                router.push({
+                  pathname: "/(protected)/select-participants",
+                  params: { sessionId: sessionIdRef.current },
+                })
+              }
+            >
+              <View style={styles.fieldLeft}>
+                <FontAwesome6
+                  name="user-group"
+                  size={normalize(18)}
+                  color={participants.length > 0 ? colors.tint : colors.icon}
+                  solid
+                />
+                {renderParticipants()}
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Location - Optional */}
+          <View style={styles.section}>
+            <CustomText style={[styles.label, { color: colors.text }]}>
+              Địa điểm
+            </CustomText>
+            <View style={styles.locationContainer}>
+              <TextInput
+                style={[
+                  styles.locationInput,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    color: colors.text,
+                  },
+                ]}
+                placeholder="Nhập địa điểm (tùy chọn)"
+                placeholderTextColor={colors.icon}
+                value={location}
+                onChangeText={setLocation}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.mapButton,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() =>
+                  router.push({
+                    pathname: "/(protected)/select-location",
+                    params: { sessionId: sessionIdRef.current },
+                  })
+                }
+              >
+                <FontAwesome6
+                  name="location-dot"
+                  size={normalize(20)}
+                  color={location ? colors.tint : colors.icon}
+                  solid
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Note - Optional */}
@@ -649,7 +979,7 @@ const AddTransactionScreen = () => {
         >
           <TouchableOpacity
             style={[styles.cancelBtn, { borderColor: colors.tint }]}
-            onPress={() => router.back()}
+            onPress={handleCancel}
           >
             <CustomText style={[styles.cancelText, { color: colors.tint }]}>
               Hủy
@@ -671,198 +1001,5 @@ const AddTransactionScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  flex: { flex: 1 },
-  section: {
-    paddingHorizontal: wp(5),
-    marginTop: hp(2),
-  },
-  label: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.medium,
-    marginBottom: normalize(8),
-  },
-  typeContainer: {
-    flexDirection: "row",
-    gap: normalize(8),
-  },
-  typeButton: {
-    flex: 1,
-    paddingVertical: normalize(10),
-    borderRadius: normalize(20),
-    alignItems: "center",
-    borderWidth: 1,
-  },
-  typeText: {
-    fontSize: normalize(13),
-  },
-  field: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: normalize(16),
-    paddingVertical: normalize(14),
-    borderRadius: normalize(12),
-    borderWidth: 1,
-  },
-  fieldLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: normalize(12),
-    flex: 1,
-  },
-  fieldText: {
-    fontSize: normalize(15),
-    fontFamily: Fonts.regular,
-  },
-  categoryIcon: {
-    width: normalize(36),
-    height: normalize(36),
-    borderRadius: normalize(10),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  amountContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: normalize(16),
-    paddingVertical: normalize(14),
-    borderRadius: normalize(12),
-    borderWidth: 1,
-    gap: normalize(12),
-  },
-  currencyButton: {
-    paddingVertical: normalize(4),
-  },
-  currency: {
-    fontSize: normalize(20),
-    fontFamily: Fonts.semiBold,
-  },
-  amountInput: {
-    flex: 1,
-    fontSize: normalize(18),
-    fontFamily: Fonts.regular,
-    padding: 0,
-  },
-  conversionContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: normalize(8),
-    marginTop: normalize(8),
-    paddingHorizontal: normalize(4),
-  },
-  conversionTextContainer: {
-    flex: 1,
-    gap: normalize(2),
-  },
-  conversionText: {
-    fontSize: normalize(13),
-    fontFamily: Fonts.medium,
-  },
-  exchangeRateText: {
-    fontSize: normalize(11),
-    fontFamily: Fonts.regular,
-    opacity: 0.7,
-  },
-  noteInput: {
-    paddingHorizontal: normalize(16),
-    paddingVertical: normalize(12),
-    borderRadius: normalize(12),
-    borderWidth: 1,
-    fontSize: normalize(14),
-    fontFamily: Fonts.regular,
-    minHeight: hp(10),
-  },
-  datePicker: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: normalize(16),
-    paddingVertical: normalize(12),
-    borderRadius: normalize(12),
-  },
-  dateText: {
-    fontSize: normalize(15),
-    fontFamily: Fonts.medium,
-  },
-  uploadBtn: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: normalize(40),
-    borderRadius: normalize(12),
-    borderWidth: 2,
-    borderStyle: "dashed",
-  },
-  uploadText: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.regular,
-    marginTop: normalize(8),
-  },
-  imageContainer: {
-    borderRadius: normalize(12),
-    borderWidth: 1,
-    overflow: "hidden",
-    position: "relative",
-  },
-  image: {
-    width: "100%",
-    height: normalize(150),
-    borderRadius: normalize(12),
-  },
-  removeBtn: {
-    position: "absolute",
-    top: normalize(8),
-    right: normalize(8),
-    width: normalize(28),
-    height: normalize(28),
-    borderRadius: normalize(14),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  toggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: wp(5),
-    paddingVertical: normalize(16),
-    marginHorizontal: wp(5),
-    marginTop: hp(2),
-    borderRadius: normalize(12),
-  },
-  toggleLabel: {
-    fontSize: normalize(15),
-    fontFamily: Fonts.regular,
-  },
-  bottomBar: {
-    flexDirection: "row",
-    paddingHorizontal: wp(5),
-    paddingVertical: hp(2),
-    gap: normalize(12),
-    borderTopWidth: 1,
-  },
-  cancelBtn: {
-    flex: 1,
-    paddingVertical: normalize(14),
-    borderRadius: normalize(12),
-    alignItems: "center",
-    borderWidth: 2,
-  },
-  cancelText: {
-    fontSize: normalize(16),
-    fontFamily: Fonts.semiBold,
-  },
-  createBtn: {
-    flex: 1,
-    paddingVertical: normalize(14),
-    borderRadius: normalize(12),
-    alignItems: "center",
-  },
-  createText: {
-    fontSize: normalize(16),
-    fontFamily: Fonts.semiBold,
-    color: "#fff",
-  },
-});
 
 export default AddTransactionScreen;

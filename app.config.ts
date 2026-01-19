@@ -1,8 +1,6 @@
-
 import { versionCode, versionName } from "./app-version.json";
 
 export default () => {
-
   const buildDate = (() => {
     const now = new Date();
     const day = String(now.getDate()).padStart(2, "0");
@@ -11,14 +9,15 @@ export default () => {
     return `${day}/${month}/${year}`;
   })();
 
-   const isDevSimulator = process.env.EAS_BUILD_PROFILE === "dev-simulator";
+  const isDevSimulator = process.env.EAS_BUILD_PROFILE === "dev-simulator";
 
   return {
     expo: {
       name: "W4S Mobile",
       slug: "w4s",
       version: versionName,
-      description: "W4S Mobile is a personal finance management application that helps you track, control, and optimize your cash flow comprehensively, from fiat currency to digital assets and DeFi - all in a single platform.",
+      description:
+        "W4S Mobile is a personal finance management application that helps you track, control, and optimize your cash flow comprehensively, from fiat currency to digital assets and DeFi - all in a single platform.",
       orientation: "portrait",
       icon: "./assets/app-icon.png",
       userInterfaceStyle: "light",
@@ -33,8 +32,8 @@ export default () => {
         backgroundColor: "#0059df",
         androidStatusBar: {
           translucent: true,
-          backgroundColor: "#00000000"
-        }
+          backgroundColor: "#00000000",
+        },
       },
       ios: {
         supportsTablet: true,
@@ -50,31 +49,36 @@ export default () => {
           CFBundleVersion: `${versionCode}`,
           CFBundleKeywords: ["ngân hàng", "tài chính", "banking", "finance"],
           CFBundleCategory: "Finance",
-          NSCameraUsageDescription: "W4S Mobile  uses the camera to scan payment QR codes and to capture photos for identity verification (KYC).",
-          NSPhotoLibraryUsageDescription: "W4S Mobile  needs access to your photos when you upload profile images or documents for verification.",
-          NSLocationWhenInUseUsageDescription: "W4S Mobile  uses your location to show nearby branches/ATMs and to help protect your account from fraud.",
-           ...(isDevSimulator
+          NSCameraUsageDescription:
+            "W4S Mobile uses the camera to scan payment QR codes and to capture photos for identity verification (KYC).",
+          NSPhotoLibraryUsageDescription:
+            "W4S Mobile needs access to your photos when you upload profile images or documents for verification.",
+          NSLocationWhenInUseUsageDescription:
+            "W4S Mobile uses your location to show nearby branches/ATMs and to help protect your account from fraud.",
+          NSContactsUsageDescription:
+            "W4S Mobile needs access to your contacts to select transaction participants.",
+          ...(isDevSimulator
             ? {
                 NSAppTransportSecurity: {
-                  NSAllowsArbitraryLoads: true
-                }
+                  NSAllowsArbitraryLoads: true,
+                },
               }
-            : {})
+            : {}),
         },
         runtimeVersion: {
-          policy: "nativeVersion"
+          policy: "nativeVersion",
         },
         bundleIdentifier: "com.jits.mbanking.emi.production",
         buildNumber: versionCode.toString(),
         entitlements: {
-          "aps-environment": "development"
-        }
+          "aps-environment": "development",
+        },
       },
       android: {
         icon: "./assets/app-icon.png",
         adaptiveIcon: {
           foregroundImage: "./assets/logo/app-icon-adaptive-android.png",
-          backgroundColor: "#FFFFFF"
+          backgroundColor: "#FFFFFF",
         },
         edgeToEdgeEnabled: true,
         permissions: [
@@ -83,36 +87,38 @@ export default () => {
           "VIBRATE",
           "WAKE_LOCK",
           "POST_NOTIFICATIONS",
-          "CAMERA"
+          "CAMERA",
+          "ACCESS_COARSE_LOCATION",
+          "ACCESS_FINE_LOCATION",
+          "READ_CONTACTS",
+          "READ_MEDIA_IMAGES",
         ],
         blockedPermissions: [
           "android.permission.READ_EXTERNAL_STORAGE",
-          "android.permission.READ_MEDIA_IMAGES",
           "android.permission.READ_MEDIA_VIDEO",
-          "android.permission.READ_MEDIA_AUDIO"
+          "android.permission.READ_MEDIA_AUDIO",
         ],
         package: "com.w4s.development",
         googleServicesFile: "./config/google-services.json",
         config: {
           googleMaps: {
-            apiKey: "AIzaSyBTcOHf5TBFbPd6jqnz_bBZCG89dcwCB9U"
-          }
+            apiKey: "AIzaSyBTcOHf5TBFbPd6jqnz_bBZCG89dcwCB9U",
+          },
         },
         runtimeVersion: {
-          policy: "nativeVersion"
+          policy: "nativeVersion",
         },
         useNextNotificationsApi: true,
-        versionCode: versionCode
-
+        versionCode: versionCode,
       },
       plugins: [
         [
           "expo-notifications",
           {
-            "icon": "./assets/app-icon.png",
+            icon: "./assets/app-icon.png",
             // "sounds": ["./assets/sounds/emi.wav"],
-            "enableBackgroundRemoteNotifications": true
-          }
+            enableBackgroundRemoteNotifications: true,
+          },
         ],
         "react-native-edge-to-edge",
         "@react-native-firebase/app",
@@ -125,10 +131,10 @@ export default () => {
         [
           "@react-native-firebase/messaging",
           {
-            "ios": {
-              "useFrameworks": "static"
-            }
-          }
+            ios: {
+              useFrameworks: "static",
+            },
+          },
         ],
         [
           "expo-build-properties",
@@ -140,14 +146,14 @@ export default () => {
                 {
                   name: "GoogleDataTransport",
                   version: "~> 10.0",
-                  modular_headers: true
+                  modular_headers: true,
                 },
                 {
-                  name: "GoogleUtilities", 
+                  name: "GoogleUtilities",
                   version: "~> 8.0",
-                  modular_headers: true
-                }
-              ]
+                  modular_headers: true,
+                },
+              ],
             },
             android: {
               targetSdkVersion: 35,
@@ -163,8 +169,8 @@ export default () => {
                 "android.useAndroidX": "true",
                 "android.enableJetifier": "true",
               },
-            }
-          }
+            },
+          },
         ],
         [
           "expo-splash-screen",
@@ -180,10 +186,28 @@ export default () => {
         [
           "react-native-vision-camera",
           {
-            "cameraPermissionText": "W4S Mobile  uses the camera to scan payment QR codes and to capture photos for identity verification (KYC).",
-            "enableMicrophonePermission": false
-          }
-        ]
+            cameraPermissionText:
+              "W4S Mobile uses the camera to scan payment QR codes and to capture photos for identity verification (KYC).",
+            enableMicrophonePermission: false,
+          },
+        ],
+        [
+          "expo-location",
+          {
+            locationAlwaysAndWhenInUsePermission:
+              "W4S Mobile uses your location to select transaction locations and show nearby branches/ATMs.",
+            locationWhenInUsePermission:
+              "W4S Mobile uses your location to select transaction locations and show nearby branches/ATMs.",
+          },
+        ],
+        [
+          "expo-image-picker",
+          {
+            photosPermission:
+              "W4S Mobile needs access to your photos to attach images to transactions.",
+          },
+        ],
+        "expo-contacts",
       ],
       extra: {
         eas: {
@@ -192,11 +216,12 @@ export default () => {
         updateDate: buildDate,
         storeLinks: {
           ios: "https://apps.apple.com/us/app/emi-smart/id1673334414",
-          android: "https://play.google.com/store/apps/details?id=com.jits.mbanking.emi.production&pcampaignid=web_share",
+          android:
+            "https://play.google.com/store/apps/details?id=com.jits.mbanking.emi.production&pcampaignid=web_share",
           huawei: "https://appgallery.huawei.com/#/app/C107689543",
         },
-        hiddenLoginHeader: true
+        hiddenLoginHeader: true,
       },
-    }
+    },
   };
 };

@@ -1,0 +1,251 @@
+import { Fonts } from "@/core/theme/font";
+import { hp, normalize, wp } from "@/utils/layout";
+import { StyleSheet } from "react-native";
+
+export const styles = StyleSheet.create({
+  container: { flex: 1 },
+  flex: { flex: 1 },
+  section: {
+    paddingHorizontal: wp(5),
+    marginTop: hp(2),
+  },
+  label: {
+    fontSize: normalize(14),
+    fontFamily: Fonts.medium,
+    marginBottom: normalize(8),
+  },
+  typeContainer: {
+    flexDirection: "row",
+    gap: normalize(8),
+  },
+  typeButton: {
+    flex: 1,
+    paddingVertical: normalize(10),
+    borderRadius: normalize(20),
+    alignItems: "center",
+    borderWidth: 1,
+  },
+  typeText: {
+    fontSize: normalize(13),
+  },
+  field: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: normalize(16),
+    paddingVertical: normalize(14),
+    borderRadius: normalize(12),
+    borderWidth: 1,
+  },
+  fieldLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: normalize(12),
+    flex: 1,
+  },
+  fieldText: {
+    fontSize: normalize(15),
+    fontFamily: Fonts.regular,
+  },
+  categoryIcon: {
+    width: normalize(36),
+    height: normalize(36),
+    borderRadius: normalize(10),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  amountContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: normalize(16),
+    paddingVertical: normalize(14),
+    borderRadius: normalize(12),
+    borderWidth: 1,
+    gap: normalize(12),
+  },
+  currencyButton: {
+    paddingVertical: normalize(4),
+  },
+  currency: {
+    fontSize: normalize(20),
+    fontFamily: Fonts.semiBold,
+  },
+  amountInput: {
+    flex: 1,
+    fontSize: normalize(18),
+    fontFamily: Fonts.regular,
+    padding: 0,
+  },
+  conversionContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: normalize(8),
+    marginTop: normalize(8),
+    paddingHorizontal: normalize(4),
+  },
+  conversionTextContainer: {
+    flex: 1,
+    gap: normalize(2),
+  },
+  conversionText: {
+    fontSize: normalize(13),
+    fontFamily: Fonts.medium,
+  },
+  exchangeRateText: {
+    fontSize: normalize(11),
+    fontFamily: Fonts.regular,
+    opacity: 0.7,
+  },
+  noteInput: {
+    paddingHorizontal: normalize(16),
+    paddingVertical: normalize(12),
+    borderRadius: normalize(12),
+    borderWidth: 1,
+    fontSize: normalize(14),
+    fontFamily: Fonts.regular,
+    minHeight: hp(10),
+  },
+  datePicker: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: normalize(16),
+    paddingVertical: normalize(12),
+    borderRadius: normalize(12),
+  },
+  dateText: {
+    fontSize: normalize(15),
+    fontFamily: Fonts.medium,
+  },
+  uploadBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: normalize(40),
+    borderRadius: normalize(12),
+    borderWidth: 2,
+    borderStyle: "dashed",
+  },
+  uploadText: {
+    fontSize: normalize(14),
+    fontFamily: Fonts.regular,
+    marginTop: normalize(8),
+  },
+  imageContainer: {
+    borderRadius: normalize(12),
+    borderWidth: 1,
+    overflow: "hidden",
+    position: "relative",
+  },
+  image: {
+    width: "100%",
+    height: normalize(150),
+    borderRadius: normalize(12),
+  },
+  removeBtn: {
+    position: "absolute",
+    top: normalize(8),
+    right: normalize(8),
+    width: normalize(28),
+    height: normalize(28),
+    borderRadius: normalize(14),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: wp(5),
+    paddingVertical: normalize(16),
+    marginHorizontal: wp(5),
+    marginTop: hp(2),
+    borderRadius: normalize(12),
+  },
+  toggleLabel: {
+    fontSize: normalize(15),
+    fontFamily: Fonts.regular,
+  },
+  bottomBar: {
+    flexDirection: "row",
+    paddingHorizontal: wp(5),
+    paddingVertical: hp(2),
+    gap: normalize(12),
+    borderTopWidth: 1,
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: normalize(14),
+    borderRadius: normalize(12),
+    alignItems: "center",
+    borderWidth: 2,
+  },
+  cancelText: {
+    fontSize: normalize(16),
+    fontFamily: Fonts.semiBold,
+  },
+  createBtn: {
+    flex: 1,
+    paddingVertical: normalize(14),
+    borderRadius: normalize(12),
+    alignItems: "center",
+  },
+  createText: {
+    fontSize: normalize(16),
+    fontFamily: Fonts.semiBold,
+    color: "#fff",
+  },
+  // Participants styles
+  participantsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: normalize(8),
+  },
+  participantAvatars: {
+    flexDirection: "row",
+    marginLeft: normalize(-4),
+  },
+  participantAvatar: {
+    width: normalize(28),
+    height: normalize(28),
+    borderRadius: normalize(14),
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    marginLeft: normalize(-8),
+  },
+  participantInitials: {
+    fontSize: normalize(11),
+    fontFamily: Fonts.semiBold,
+    color: "#fff",
+  },
+  participantCount: {
+    fontSize: normalize(13),
+    fontFamily: Fonts.medium,
+  },
+  placeholderText: {
+    fontSize: normalize(15),
+    fontFamily: Fonts.regular,
+  },
+  // Location styles
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: normalize(8),
+  },
+  locationInput: {
+    flex: 1,
+    paddingHorizontal: normalize(16),
+    paddingVertical: normalize(14),
+    borderRadius: normalize(12),
+    borderWidth: 1,
+    fontSize: normalize(14),
+    fontFamily: Fonts.regular,
+  },
+  mapButton: {
+    width: normalize(48),
+    height: normalize(48),
+    borderRadius: normalize(12),
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
+});
