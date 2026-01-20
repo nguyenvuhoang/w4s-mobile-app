@@ -1,15 +1,18 @@
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
+import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
 import { styles } from "@/features/home/styles/AddTransactionScreen.Styles";
+import { useTransaction } from "@/features/transaction/hooks/useTransaction";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import StorageService from "@/services/StorageService";
 import { hp, normalize } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
 import React, {
@@ -20,6 +23,7 @@ import React, {
   useState,
 } from "react";
 import {
+  ActivityIndicator,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -32,6 +36,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface SelectedCategoryData {
+  id: number;
   category_id: string;
   category_name: string;
   category_type: "EXPENSE" | "INCOME" | "LOAN";
@@ -48,8 +53,15 @@ interface SelectedCurrency {
 interface Participant {
   id: string;
   name: string;
-  phoneNumber?: string;
+  phoneNumber?: string | null;
   avatarColor?: string;
+  // Cho data từ server
+  display_name?: string;
+  phone?: string | null;
+  avatar_url?: string;
+  counterparty_type?: number;
+  is_favorite?: boolean;
+  isFromServer?: boolean;
 }
 
 interface SelectedEvent {
@@ -66,13 +78,15 @@ const AddTransactionScreen = () => {
   const { wallets, defaultWallet } = useWallet();
   const { currencies, parseCurrencyName } = useCurrency({ autoFetch: true });
   const { convert } = useExchangeRate();
+  const { createTransaction, loading: creatingTransaction } = useTransaction();
+  const { showNotification } = useNotification();
 
   const [selectedType, setSelectedType] = useState<TransactionType>("expense");
-  const [sourceWalletId, setSourceWalletId] = useState<string | null>(null);
+  const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent | null>(
-    null
+    null,
   );
-  const [sourceEventId, setSourceEventId] = useState<string | null>(null);
+  const [sourceEventId, setSourceEventId] = useState<number | null>(null);
   const [selectedCategoryData, setSelectedCategoryData] =
     useState<SelectedCategoryData | null>(null);
   const [amount, setAmount] = useState("");
@@ -80,8 +94,17 @@ const AddTransactionScreen = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [includeInReport, setIncludeInReport] = useState(true);
+  const [borrowToPayExpense, setBorrowToPayExpense] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [location, setLocation] = useState("");
+
+  // Reminder state
+  const [reminderDate, setReminderDate] = useState<Date | null>(null);
+  const [showReminderPicker, setShowReminderPicker] = useState(false);
+  const [reminderMode, setReminderMode] = useState<"date" | "time">("date");
+
+  // Date picker state
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Session ID để track transaction creation session
   const sessionIdRef = useRef<string>(Date.now().toString());
@@ -96,7 +119,7 @@ const AddTransactionScreen = () => {
 
   const selectedWallet = useMemo(
     () => wallets.find((w) => w.walletId === sourceWalletId),
-    [wallets, sourceWalletId]
+    [wallets, sourceWalletId],
   );
 
   const walletCurrency = useMemo<SelectedCurrency>(() => {
@@ -109,7 +132,7 @@ const AddTransactionScreen = () => {
     }
 
     const currency = currencies.find(
-      (c) => c.currency_id === selectedWallet.currency
+      (c) => c.currency_id === selectedWallet.currency,
     );
 
     if (currency) {
@@ -129,7 +152,7 @@ const AddTransactionScreen = () => {
 
   const needsConversion = useMemo(
     () => inputCurrency.currencyId !== walletCurrency.currencyId,
-    [inputCurrency.currencyId, walletCurrency.currencyId]
+    [inputCurrency.currencyId, walletCurrency.currencyId],
   );
 
   const exchangeRate = useMemo(() => {
@@ -138,7 +161,7 @@ const AddTransactionScreen = () => {
     const rate = convert(
       1,
       inputCurrency.currencyId,
-      walletCurrency.currencyId
+      walletCurrency.currencyId,
     );
     if (rate === null) return null;
 
@@ -166,7 +189,7 @@ const AddTransactionScreen = () => {
     const result = convert(
       numAmount,
       inputCurrency.currencyId,
-      walletCurrency.currencyId
+      walletCurrency.currencyId,
     );
 
     if (result === null) return null;
@@ -209,19 +232,19 @@ const AddTransactionScreen = () => {
       const loadData = async () => {
         try {
           const storedWallet = await StorageService.getAsyncItem(
-            STORAGE_KEY.TEMP_WALLET_STORAGE
+            STORAGE_KEY.TEMP_WALLET_STORAGE,
           );
           if (storedWallet) {
             const { walletId } = JSON.parse(storedWallet);
             setSourceWalletId(walletId);
             hasManuallySelectedCurrencyRef.current = false;
             await StorageService.removeAsyncItem(
-              STORAGE_KEY.TEMP_WALLET_STORAGE
+              STORAGE_KEY.TEMP_WALLET_STORAGE,
             );
           }
 
           const storedCategory = await StorageService.getAsyncItem(
-            STORAGE_KEY.TEMP_CATEGORY_STORAGE
+            STORAGE_KEY.TEMP_CATEGORY_STORAGE,
           );
           if (storedCategory) {
             const categoryData: SelectedCategoryData =
@@ -236,12 +259,12 @@ const AddTransactionScreen = () => {
             setSelectedType(typeMap[categoryData.category_type]);
 
             await StorageService.removeAsyncItem(
-              STORAGE_KEY.TEMP_CATEGORY_STORAGE
+              STORAGE_KEY.TEMP_CATEGORY_STORAGE,
             );
           }
 
           const storedCurrency = await StorageService.getItem(
-            STORAGE_KEY.TEMP_CURRENCY_STORAGE
+            STORAGE_KEY.TEMP_CURRENCY_STORAGE,
           );
           if (storedCurrency) {
             const currency: SelectedCurrency = JSON.parse(storedCurrency);
@@ -252,50 +275,46 @@ const AddTransactionScreen = () => {
 
           // Load participants với session ID
           const storedParticipants = await StorageService.getAsyncItem(
-            STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE
+            STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE,
           );
           if (storedParticipants) {
             const data = JSON.parse(storedParticipants);
-            // Chỉ load nếu cùng session
             if (data.sessionId === sessionIdRef.current) {
               setParticipants(data.participants);
             } else {
               await StorageService.removeAsyncItem(
-                STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE
+                STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE,
               );
             }
           }
 
           // Load location với session ID
           const storedLocation = await StorageService.getAsyncItem(
-            STORAGE_KEY.TEMP_LOCATION_STORAGE
+            STORAGE_KEY.TEMP_LOCATION_STORAGE,
           );
           if (storedLocation) {
             const data = JSON.parse(storedLocation);
-            // Chỉ load nếu cùng session
             if (data.sessionId === sessionIdRef.current) {
               setLocation(
-                data.locationData.address || data.locationData.name || ""
+                data.locationData.address || data.locationData.name || "",
               );
             } else {
               await StorageService.removeAsyncItem(
-                STORAGE_KEY.TEMP_LOCATION_STORAGE
+                STORAGE_KEY.TEMP_LOCATION_STORAGE,
               );
             }
           }
 
           const storedEvent = await StorageService.getAsyncItem(
-            STORAGE_KEY.TEMP_EVENT_STORAGE
+            STORAGE_KEY.TEMP_EVENT_STORAGE,
           );
 
           if (storedEvent) {
             const eventData: SelectedEvent = JSON.parse(storedEvent);
-
             setSelectedEvent(eventData);
-            setSourceEventId(eventData.eventId.toString());
-
+            setSourceEventId(eventData.eventId);
             await StorageService.removeAsyncItem(
-              STORAGE_KEY.TEMP_EVENT_STORAGE
+              STORAGE_KEY.TEMP_EVENT_STORAGE,
             );
           }
         } catch (error) {
@@ -303,7 +322,7 @@ const AddTransactionScreen = () => {
         }
       };
       loadData();
-    }, [])
+    }, []),
   );
 
   const handleTypeChange = (newType: TransactionType) => {
@@ -335,37 +354,128 @@ const AddTransactionScreen = () => {
     if (!result.canceled) setImageUri(result.assets[0].uri);
   };
 
-  const handleCreate = () => {
+  // Handle date picker change
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setSelectedDate(selectedDate);
+    }
+  };
+
+  // Handle reminder picker change
+  const onReminderChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      setShowReminderPicker(false);
+      if (selectedDate && reminderMode === "date") {
+        // Sau khi chọn ngày, chuyển sang chọn giờ
+        setReminderDate(selectedDate);
+        setReminderMode("time");
+        setTimeout(() => setShowReminderPicker(true), 100);
+      } else if (selectedDate && reminderMode === "time") {
+        // Đã chọn xong cả ngày và giờ
+        const finalDate = reminderDate || new Date();
+        finalDate.setHours(selectedDate.getHours());
+        finalDate.setMinutes(selectedDate.getMinutes());
+        setReminderDate(finalDate);
+        setReminderMode("date");
+      }
+    } else {
+      // iOS - chọn cả ngày và giờ cùng lúc
+      if (selectedDate) {
+        setReminderDate(selectedDate);
+      }
+    }
+  };
+
+  const openReminderPicker = () => {
+    setReminderMode("date");
+    setShowReminderPicker(true);
+  };
+
+  const clearReminder = () => {
+    setReminderDate(null);
+    setShowReminderPicker(false);
+    setReminderMode("date");
+  };
+
+  const handleCreate = async () => {
     if (!isValid) return;
 
-    const finalAmount = needsConversion
-      ? convertedAmount
-      : parseFloat(amount.replace(/,/g, ""));
+    try {
+      const finalAmount = needsConversion
+        ? convertedAmount
+        : parseFloat(amount.replace(/,/g, ""));
 
-    console.log("Create transaction", {
-      type: selectedType,
-      sourceWalletId,
-      category: selectedCategoryData,
-      amount: finalAmount,
-      originalAmount: parseFloat(amount.replace(/,/g, "")),
-      inputCurrency: inputCurrency.currencyId,
-      walletCurrency: walletCurrency.currencyId,
-      eventId: sourceEventId,
-      note,
-      date: selectedDate,
-      imageUri,
-      includeInReport,
-      participants,
-      location,
-    });
+      // Chuẩn bị data participants
+      const participantsData = participants.map((p) => {
+        const baseData = {
+          display_name: p.name,
+          phone: p.phoneNumber || "",
+          avatar_url: "",
+          counterparty_type: 1,
+          is_favorite: false,
+        };
 
-    // Xóa temp data sau khi tạo thành công
-    clearTempData();
-    router.back();
+        if (p.isFromServer && p.id) {
+          return {
+            id: parseInt(p.id),
+            ...baseData,
+          };
+        }
+
+        return baseData;
+      });
+
+      console.log("[AddTransaction] Creating transaction with data:", {
+        type: selectedType,
+        walletId: sourceWalletId,
+        amount: finalAmount,
+        currency: walletCurrency.currencyId,
+        categoryId: selectedCategoryData?.id || 0,
+        eventId: sourceEventId,
+        description: note,
+        location: location,
+        recordedAt: selectedDate,
+        reminderAt: reminderDate,
+        isCalculateReport: includeInReport,
+        images: imageUri ? [imageUri] : [],
+        participants: participantsData,
+        is_loan_for_fund: borrowToPayExpense,
+      });
+
+      // Gọi API tạo transaction
+      await createTransaction({
+        walletId: sourceWalletId ?? 0,
+        type: selectedType,
+        amount: finalAmount || 0,
+        currency: walletCurrency.currencyId,
+        categoryId: selectedCategoryData?.id || 0,
+        eventId: sourceEventId,
+        description: note,
+        location: location,
+        recordedAt: selectedDate,
+        reminderAt: reminderDate,
+        isCalculateReport: includeInReport,
+        images: imageUri ? [imageUri] : [],
+        participants: participantsData,
+        isLoanForFund: borrowToPayExpense,
+      });
+
+      console.log("[AddTransaction] Transaction created successfully!");
+
+      await clearTempData();
+      router.back();
+    } catch (error) {
+      showNotification(
+        error instanceof Error ? error.message : "Không thể tạo giao dịch!",
+        "error",
+      );
+    }
   };
 
   const handleCancel = () => {
-    // Xóa temp data khi user hủy
     clearTempData();
     router.back();
   };
@@ -392,9 +502,19 @@ const AddTransactionScreen = () => {
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("vi-VN", {
-      day: "numeric",
-      month: "long",
+      day: "2-digit",
+      month: "2-digit",
       year: "numeric",
+    });
+  };
+
+  const formatDateTime = (date: Date) => {
+    return date.toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -619,7 +739,7 @@ const AddTransactionScreen = () => {
                       style={[styles.fieldText, { color: colors.text }]}
                     >
                       {parseCategoryNameJSON(
-                        selectedCategoryData.category_name
+                        selectedCategoryData.category_name,
                       )}
                     </CustomText>
                   </>
@@ -708,6 +828,7 @@ const AddTransactionScreen = () => {
                 </View>
               )}
           </View>
+
           {/* Event - Optional */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
@@ -864,44 +985,72 @@ const AddTransactionScreen = () => {
             />
           </View>
 
-          {/* Date Picker */}
+          {/* Date Picker - WITH PICKER */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               Ngày
             </CustomText>
-            <View style={[styles.datePicker, { backgroundColor: colors.card }]}>
-              <TouchableOpacity
-                onPress={() => {
-                  const newDate = new Date(selectedDate);
-                  newDate.setDate(newDate.getDate() - 1);
-                  setSelectedDate(newDate);
-                }}
-              >
+            <TouchableOpacity
+              style={[
+                styles.field,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <View style={styles.fieldLeft}>
                 <FontAwesome6
-                  name="chevron-left"
-                  size={normalize(16)}
-                  color={colors.text}
+                  name="calendar-days"
+                  size={normalize(18)}
+                  color={colors.tint}
+                  solid
                 />
-              </TouchableOpacity>
+                <CustomText style={[styles.fieldText, { color: colors.text }]}>
+                  {formatDate(selectedDate)}
+                </CustomText>
+              </View>
+            </TouchableOpacity>
+          </View>
 
-              <CustomText style={[styles.dateText, { color: colors.text }]}>
-                {formatDate(selectedDate)}
-              </CustomText>
-
-              <TouchableOpacity
-                onPress={() => {
-                  const newDate = new Date(selectedDate);
-                  newDate.setDate(newDate.getDate() + 1);
-                  setSelectedDate(newDate);
-                }}
-              >
+          {/* Reminder - NEW FIELD */}
+          <View style={styles.section}>
+            <CustomText style={[styles.label, { color: colors.text }]}>
+              Nhắc nhở
+            </CustomText>
+            <TouchableOpacity
+              style={[
+                styles.field,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={openReminderPicker}
+            >
+              <View style={styles.fieldLeft}>
                 <FontAwesome6
-                  name="chevron-right"
-                  size={normalize(16)}
-                  color={colors.text}
+                  name="bell"
+                  size={normalize(18)}
+                  color={reminderDate ? colors.tint : colors.icon}
+                  solid
                 />
-              </TouchableOpacity>
-            </View>
+                <CustomText
+                  style={[
+                    styles.fieldText,
+                    { color: reminderDate ? colors.text : colors.icon },
+                  ]}
+                >
+                  {reminderDate
+                    ? formatDateTime(reminderDate)
+                    : "Đặt nhắc nhở (tùy chọn)"}
+                </CustomText>
+              </View>
+              {reminderDate && (
+                <TouchableOpacity onPress={clearReminder}>
+                  <FontAwesome6
+                    name="xmark"
+                    size={normalize(16)}
+                    color={colors.icon}
+                  />
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
           </View>
 
           {/* Image Upload - Optional */}
@@ -954,6 +1103,19 @@ const AddTransactionScreen = () => {
           {/* Include in Report Toggle */}
           <View style={[styles.toggle, { backgroundColor: colors.card }]}>
             <CustomText style={[styles.toggleLabel, { color: colors.text }]}>
+              Đi vay để trả khoản này
+            </CustomText>
+            <Switch
+              value={borrowToPayExpense}
+              onValueChange={setBorrowToPayExpense}
+              trackColor={{ false: colors.border, true: colors.tint }}
+              thumbColor="#fff"
+            />
+          </View>
+
+          {/* Include in Report Toggle */}
+          <View style={[styles.toggle, { backgroundColor: colors.card }]}>
+            <CustomText style={[styles.toggleLabel, { color: colors.text }]}>
               Tính vào báo cáo
             </CustomText>
             <Switch
@@ -966,6 +1128,56 @@ const AddTransactionScreen = () => {
 
           <View style={{ height: hp(12) }} />
         </ScrollView>
+
+        {/* Date Picker Modal */}
+        {showDatePicker && (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={onDateChange}
+            maximumDate={new Date(2100, 11, 31)}
+            minimumDate={new Date(2000, 0, 1)}
+          />
+        )}
+
+        {/* Reminder Picker Modal */}
+        {showReminderPicker && (
+          <DateTimePicker
+            value={reminderDate || new Date()}
+            mode={Platform.OS === "ios" ? "datetime" : reminderMode}
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={onReminderChange}
+            minimumDate={new Date()}
+          />
+        )}
+
+        {/* iOS Picker Done Button */}
+        {Platform.OS === "ios" && (showDatePicker || showReminderPicker) && (
+          <View
+            style={[
+              styles.pickerToolbar,
+              {
+                backgroundColor: colors.card,
+                borderTopColor: colors.border,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                setShowDatePicker(false);
+                setShowReminderPicker(false);
+              }}
+              style={styles.pickerButton}
+            >
+              <CustomText
+                style={[styles.pickerButtonText, { color: colors.tint }]}
+              >
+                Xong
+              </CustomText>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Bottom Buttons */}
         <View
@@ -980,6 +1192,7 @@ const AddTransactionScreen = () => {
           <TouchableOpacity
             style={[styles.cancelBtn, { borderColor: colors.tint }]}
             onPress={handleCancel}
+            disabled={creatingTransaction}
           >
             <CustomText style={[styles.cancelText, { color: colors.tint }]}>
               Hủy
@@ -989,12 +1202,19 @@ const AddTransactionScreen = () => {
           <TouchableOpacity
             style={[
               styles.createBtn,
-              { backgroundColor: isValid ? colors.tint : colors.border },
+              {
+                backgroundColor:
+                  isValid && !creatingTransaction ? colors.tint : colors.border,
+              },
             ]}
             onPress={handleCreate}
-            disabled={!isValid}
+            disabled={!isValid || creatingTransaction}
           >
-            <CustomText style={styles.createText}>Tạo</CustomText>
+            {creatingTransaction ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <CustomText style={styles.createText}>Tạo</CustomText>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

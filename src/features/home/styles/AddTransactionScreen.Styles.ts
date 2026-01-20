@@ -248,4 +248,20 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
   },
+  pickerToolbar: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    paddingHorizontal: wp(5),
+    paddingVertical: hp(1.5),
+    borderTopWidth: 1,
+  },
+  pickerButton: {
+    paddingVertical: normalize(8),
+    paddingHorizontal: normalize(16),
+  },
+  pickerButtonText: {
+    fontSize: normalize(16),
+    fontFamily: Fonts.semiBold,
+  },
 });

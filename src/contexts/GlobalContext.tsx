@@ -50,7 +50,7 @@ interface GlobalContextType {
 
   globalLoading: LoadingConfig;
   showGlobalLoading: (
-    config?: Partial<Omit<LoadingConfig, "visible">>
+    config?: Partial<Omit<LoadingConfig, "visible">>,
   ) => Promise<void> | void;
   hideGlobalLoading: () => void;
   setLoadingProgress: (progress: number) => Promise<void> | void;
@@ -61,11 +61,11 @@ interface GlobalContextType {
   walletLoading: boolean;
   walletError: string | null;
   fetchWallets: (force?: boolean) => Promise<void>;
-  updateWalletBalance: (walletId: string, diff: number) => void;
+  updateWalletBalance: (walletId: number, diff: number) => void;
 
   // 🔹 ADD — Default wallet
-  defaultWalletId: string | null;
-  setDefaultWalletId: (walletId: string | null) => void;
+  defaultWalletId: number | null;
+  setDefaultWalletId: (walletId: number | null) => void;
   defaultWallet?: WalletSummary;
 }
 
@@ -147,7 +147,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
   const [walletError, setWalletError] = useState<string | null>(null);
 
   // 🔹 ADD — Default wallet state
-  const [defaultWalletId, setDefaultWalletId] = useState<string | null>(null);
+  const [defaultWalletId, setDefaultWalletId] = useState<number | null>(null);
 
   const isWalletExpired = () => {
     if (!walletsUpdatedAt) return true;
@@ -174,7 +174,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (err) {
       console.error("[GlobalContext][Wallet] fetch error", err);
       setWalletError(
-        err instanceof Error ? err.message : "Fetch wallet failed"
+        err instanceof Error ? err.message : "Fetch wallet failed",
       );
     } finally {
       setWalletLoading(false);
@@ -182,11 +182,13 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // 🔹 ADD — Optimistic update
-  const updateWalletBalance = (walletId: string, diff: number) => {
+  const updateWalletBalance = (walletId: string | number, diff: number) => {
     setWallets((prev) =>
       prev.map((w) =>
-        w.walletId === walletId ? { ...w, balance: w.balance + diff } : w
-      )
+        w.walletId === Number(walletId)
+          ? { ...w, balance: w.balance + diff }
+          : w,
+      ),
     );
   };
 
@@ -201,10 +203,10 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
     const loadDefaultWallet = async () => {
       try {
         const stored = await StorageService.getAsyncItem(
-          StorageKey.defaultWalletId
+          StorageKey.defaultWalletId,
         );
         if (stored) {
-          setDefaultWalletId(stored);
+          setDefaultWalletId(Number(stored));
         }
       } catch (err) {
         console.error("[GlobalContext] load default wallet failed", err);
@@ -218,7 +220,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!defaultWalletId) return;
     StorageService.setAsyncItem(
       StorageKey.defaultWalletId,
-      String(defaultWalletId)
+      String(defaultWalletId),
     );
   }, [defaultWalletId]);
 
@@ -246,7 +248,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
         return new Promise<void>((resolve) => setTimeout(resolve, 800));
       }
     },
-    []
+    [],
   );
 
   const hideGlobalLoading = useCallback(() => {
@@ -261,7 +263,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const setLoadingProgress = useCallback((progress: number) => {
     setGlobalLoading((prev) =>
-      prev.visible ? { ...prev, progress, mode: "progress" } : prev
+      prev.visible ? { ...prev, progress, mode: "progress" } : prev,
     );
 
     if (progress === 100) {
@@ -283,7 +285,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
     const loadAppInfo = async () => {
       try {
         const storedAppInfo = await StorageService.getAsyncItem(
-          StorageKey.appInfo
+          StorageKey.appInfo,
         );
         if (storedAppInfo) {
           const parsedAppInfo: AppInfo = JSON.parse(storedAppInfo);

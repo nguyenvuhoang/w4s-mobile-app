@@ -12,7 +12,7 @@ export default function ProtectedLayout() {
   // Check xem có cần ẩn button không
   const shouldHideButton = useMemo(() => {
     const result = hideButtonScreens.some((screen) =>
-      pathname.includes(screen)
+      pathname.includes(screen),
     );
     return result;
   }, [pathname, hideButtonScreens]);
@@ -32,7 +32,7 @@ export default function ProtectedLayout() {
         />
 
         <Stack.Screen
-          name="add-transaction"
+          name="transaction/add-transaction"
           options={{
             presentation: "modal",
             animation: "slide_from_bottom",

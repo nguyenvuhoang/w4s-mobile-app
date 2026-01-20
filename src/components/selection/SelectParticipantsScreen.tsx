@@ -24,19 +24,34 @@ interface Participant {
   name: string;
   phoneNumber?: string;
   avatarColor?: string;
+  // Cho data từ server
+  display_name?: string;
+  phone?: string;
+  avatar_url?: string;
+  counterparty_type?: number;
+  is_favorite?: boolean;
+  isFromServer?: boolean; // Flag để phân biệt nguồn data
 }
+
+type TabType = "recent" | "contacts";
 
 const SelectParticipantsScreen = () => {
   const { colors } = useAppTheme();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
 
+  const [activeTab, setActiveTab] = useState<TabType>("recent");
   const [contacts, setContacts] = useState<Participant[]>([]);
+  const [recentParticipants, setRecentParticipants] = useState<Participant[]>(
+    [],
+  );
   const [filteredContacts, setFilteredContacts] = useState<Participant[]>([]);
+  const [filteredRecents, setFilteredRecents] = useState<Participant[]>([]);
   const [selectedParticipants, setSelectedParticipants] = useState<
     Participant[]
   >([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingRecents, setLoadingRecents] = useState(true);
 
   const avatarColors = [
     "#FF6B6B",
@@ -49,26 +64,23 @@ const SelectParticipantsScreen = () => {
 
   useEffect(() => {
     loadContacts();
+    loadRecentParticipants();
     loadSavedParticipants();
   }, []);
 
   const loadSavedParticipants = async () => {
     try {
-      // Load participants đã chọn trước đó (nếu có)
       const storedParticipants = await StorageService.getAsyncItem(
-        STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE
+        STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE,
       );
       if (storedParticipants) {
         const data = JSON.parse(storedParticipants);
-        // Chỉ load nếu cùng session
         if (data.sessionId === sessionId) {
           setSelectedParticipants(data.participants);
           console.log(
             "[SelectParticipants] Loaded saved participants:",
-            data.participants.length
+            data.participants.length,
           );
-        } else {
-          console.log("[SelectParticipants] Different session, starting fresh");
         }
       }
     } catch (error) {
@@ -76,18 +88,84 @@ const SelectParticipantsScreen = () => {
     }
   };
 
+  // Load danh sách gần đây từ server
+  const loadRecentParticipants = async () => {
+    try {
+      setLoadingRecents(true);
+      // TODO: Call API để lấy danh sách gần đây
+      // const response = await ApiService.getRecentParticipants();
+
+      // Mock data tạm thời
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const mockRecentData: Participant[] = [
+        {
+          id: "1",
+          display_name: "Anh Nam",
+          phone: "0909123456",
+          avatar_url: "",
+          counterparty_type: 1,
+          is_favorite: true,
+          isFromServer: true,
+          name: "Anh Nam",
+          phoneNumber: "0909123456",
+          avatarColor: avatarColors[0],
+        },
+        {
+          id: "2",
+          display_name: "Chị Hương",
+          phone: "0912345678",
+          avatar_url: "",
+          counterparty_type: 1,
+          is_favorite: false,
+          isFromServer: true,
+          name: "Chị Hương",
+          phoneNumber: "0912345678",
+          avatarColor: avatarColors[1],
+        },
+        {
+          id: "3",
+          display_name: "Anh Tuấn",
+          phone: "0987654321",
+          avatar_url: "",
+          counterparty_type: 1,
+          is_favorite: true,
+          isFromServer: true,
+          name: "Anh Tuấn",
+          phoneNumber: "0987654321",
+          avatarColor: avatarColors[2],
+        },
+      ];
+
+      setRecentParticipants(mockRecentData);
+      setFilteredRecents(mockRecentData);
+    } catch (error) {
+      console.error("Error loading recent participants:", error);
+    } finally {
+      setLoadingRecents(false);
+    }
+  };
+
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setFilteredContacts(contacts);
+      setFilteredRecents(recentParticipants);
     } else {
-      const filtered = contacts.filter(
+      const filteredC = contacts.filter(
         (contact) =>
           contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          contact.phoneNumber?.includes(searchQuery)
+          contact.phoneNumber?.includes(searchQuery),
       );
-      setFilteredContacts(filtered);
+      setFilteredContacts(filteredC);
+
+      const filteredR = recentParticipants.filter(
+        (participant) =>
+          participant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          participant.phoneNumber?.includes(searchQuery),
+      );
+      setFilteredRecents(filteredR);
     }
-  }, [searchQuery, contacts]);
+  }, [searchQuery, contacts, recentParticipants]);
 
   const loadContacts = async () => {
     try {
@@ -105,14 +183,15 @@ const SelectParticipantsScreen = () => {
 
       if (data.length > 0) {
         const formattedContacts: Participant[] = data
-          .filter((contact) => contact.name) // Chỉ lấy contact có tên
+          .filter((contact) => contact.name)
           .map((contact, index) => ({
             id: contact.id || `contact-${index}`,
             name: contact.name || "Không tên",
             phoneNumber: contact.phoneNumbers?.[0]?.number,
             avatarColor: avatarColors[index % avatarColors.length],
+            isFromServer: false,
           }))
-          .sort((a, b) => a.name.localeCompare(b.name)); // Sắp xếp theo tên
+          .sort((a, b) => a.name.localeCompare(b.name));
 
         setContacts(formattedContacts);
         setFilteredContacts(formattedContacts);
@@ -127,12 +206,12 @@ const SelectParticipantsScreen = () => {
 
   const toggleParticipant = (participant: Participant) => {
     const isSelected = selectedParticipants.some(
-      (p) => p.id === participant.id
+      (p) => p.id === participant.id,
     );
 
     if (isSelected) {
       setSelectedParticipants(
-        selectedParticipants.filter((p) => p.id !== participant.id)
+        selectedParticipants.filter((p) => p.id !== participant.id),
       );
     } else {
       setSelectedParticipants([...selectedParticipants, participant]);
@@ -141,24 +220,49 @@ const SelectParticipantsScreen = () => {
 
   const handleConfirm = async () => {
     try {
+      // Chuẩn bị data để gửi lên server
+      const dataToSend = selectedParticipants.map((participant) => {
+        if (participant.isFromServer) {
+          // Từ tab "Gần đây" - truyền ID
+          return {
+            id: participant.id,
+            display_name: participant.display_name || participant.name,
+            phone: participant.phone || participant.phoneNumber,
+            avatar_url: participant.avatar_url || "",
+            counterparty_type: participant.counterparty_type || 1,
+            is_favorite: participant.is_favorite || false,
+          };
+        } else {
+          // Từ tab "Danh bạ" - không truyền ID (server tự hiểu là data mới)
+          return {
+            display_name: participant.name,
+            phone: participant.phoneNumber || "",
+            avatar_url: "",
+            counterparty_type: 1,
+            is_favorite: false,
+          };
+        }
+      });
+
+      console.log("Data to send to server:", dataToSend);
+
+      // TODO: Gọi API để lưu
+      // await ApiService.saveParticipants(dataToSend);
+
       // Lưu vào storage với session ID
       await StorageService.setAsyncItem(
         STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE,
         JSON.stringify({
           sessionId,
           participants: selectedParticipants,
-        })
+        }),
       );
+
       router.back();
     } catch (error) {
       console.error("Error saving participants:", error);
       alert("Lỗi khi lưu người tham gia!");
     }
-  };
-
-  const handleCancel = () => {
-    // Không xóa storage khi cancel, giữ nguyên data cũ
-    router.back();
   };
 
   const getInitials = (name: string) => {
@@ -194,9 +298,19 @@ const SelectParticipantsScreen = () => {
             </CustomText>
           </View>
           <View style={styles.contactInfo}>
-            <CustomText style={[styles.contactName, { color: colors.text }]}>
-              {item.name}
-            </CustomText>
+            <View style={styles.nameRow}>
+              <CustomText style={[styles.contactName, { color: colors.text }]}>
+                {item.name}
+              </CustomText>
+              {item.is_favorite && (
+                <FontAwesome6
+                  name="star"
+                  size={normalize(12)}
+                  color="#FFD700"
+                  solid
+                />
+              )}
+            </View>
             {item.phoneNumber && (
               <CustomText style={[styles.contactPhone, { color: colors.icon }]}>
                 {item.phoneNumber}
@@ -217,7 +331,32 @@ const SelectParticipantsScreen = () => {
     );
   };
 
-  if (loading) {
+  const renderTabButton = (tab: TabType, label: string) => (
+    <TouchableOpacity
+      style={[
+        styles.tabButton,
+        activeTab === tab && [
+          styles.activeTab,
+          { borderBottomColor: colors.tint },
+        ],
+      ]}
+      onPress={() => setActiveTab(tab)}
+    >
+      <CustomText
+        style={[
+          styles.tabText,
+          {
+            color: activeTab === tab ? colors.tint : colors.icon,
+            fontFamily: activeTab === tab ? Fonts.semiBold : Fonts.regular,
+          },
+        ]}
+      >
+        {label}
+      </CustomText>
+    </TouchableOpacity>
+  );
+
+  if (loading || loadingRecents) {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
@@ -226,18 +365,27 @@ const SelectParticipantsScreen = () => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.tint} />
           <CustomText style={[styles.loadingText, { color: colors.text }]}>
-            Đang tải danh bạ...
+            Đang tải dữ liệu...
           </CustomText>
         </View>
       </SafeAreaView>
     );
   }
 
+  const currentData =
+    activeTab === "recent" ? filteredRecents : filteredContacts;
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <AppHeader title="Chọn người tham gia" />
+
+      {/* Tabs */}
+      <View style={[styles.tabContainer, { borderBottomColor: colors.border }]}>
+        {renderTabButton("recent", "Gần đây")}
+        {renderTabButton("contacts", "Danh bạ")}
+      </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -280,9 +428,9 @@ const SelectParticipantsScreen = () => {
         </View>
       )}
 
-      {/* Contacts List */}
+      {/* List */}
       <FlatList
-        data={filteredContacts}
+        data={currentData}
         keyExtractor={(item) => item.id}
         renderItem={renderContact}
         contentContainerStyle={styles.listContainer}
@@ -290,12 +438,18 @@ const SelectParticipantsScreen = () => {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <FontAwesome6
-              name="address-book"
+              name={
+                activeTab === "recent" ? "clock-rotate-left" : "address-book"
+              }
               size={normalize(48)}
               color={colors.icon}
             />
             <CustomText style={[styles.emptyText, { color: colors.icon }]}>
-              {searchQuery ? "Không tìm thấy kết quả" : "Danh bạ trống"}
+              {searchQuery
+                ? "Không tìm thấy kết quả"
+                : activeTab === "recent"
+                  ? "Chưa có người tham gia gần đây"
+                  : "Danh bạ trống"}
             </CustomText>
           </View>
         }
@@ -353,6 +507,23 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: normalize(14),
     fontFamily: Fonts.regular,
+  },
+  tabContainer: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: normalize(16),
+    alignItems: "center",
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+  },
+  tabText: {
+    fontSize: normalize(15),
   },
   searchContainer: {
     paddingHorizontal: wp(5),
@@ -416,10 +587,15 @@ const styles = StyleSheet.create({
   contactInfo: {
     flex: 1,
   },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: normalize(6),
+    marginBottom: normalize(2),
+  },
   contactName: {
     fontSize: normalize(15),
     fontFamily: Fonts.medium,
-    marginBottom: normalize(2),
   },
   contactPhone: {
     fontSize: normalize(12),

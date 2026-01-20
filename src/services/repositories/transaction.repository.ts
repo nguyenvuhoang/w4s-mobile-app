@@ -3,15 +3,16 @@ import { apiService } from "@/core/api";
 import { BaseResponseModel } from "@/core/api/models/ClientModel";
 
 export interface TransactionParticipant {
-  id: number;
-  display_name: string;
-  phone: string;
-  avatar_url?: string;
-  counterparty_type: number;
-  is_favorite: boolean;
+  id?: number;
+  DisplayName: string;
+  Phone?: string;
+  AvatarUrl?: string;
+  CounterpartyType?: number;
+  IsFavorite?: boolean;
 }
 
 export interface CreateTransactionPayload {
+  userCode: string;
   username: string;
   account_number: string;
   wallet_id: number;
@@ -20,7 +21,7 @@ export interface CreateTransactionPayload {
   fee?: number;
   currency: string;
   category_id: number;
-  event_id?: string | null;
+  event_id?: number | null;
   transaction_description?: string;
   location?: string;
   recorded_at: string;
@@ -45,6 +46,7 @@ export const transactionRepository = {
       return await apiService.executeWorkflow(
         WORKFLOWCODE.WF_MB_CREATE_WALLET_TRANSACTION,
         {
+          user_code: data.userCode,
           username: data.username,
           account_number: data.account_number,
           wallet_id: data.wallet_id,

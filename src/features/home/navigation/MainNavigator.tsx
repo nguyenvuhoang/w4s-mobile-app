@@ -1,15 +1,15 @@
-import { useAppTheme } from '@/core/theme/ThemeContext';
-import { getBottomSpace, hp, normalize } from '@/utils/layout';
-import { FontAwesome6 } from '@expo/vector-icons';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { router } from 'expo-router';
-import React from 'react';
-import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useAppTheme } from "@/core/theme/ThemeContext";
+import { getBottomSpace, hp, normalize } from "@/utils/layout";
+import { FontAwesome6 } from "@expo/vector-icons";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { router } from "expo-router";
+import React from "react";
+import { Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 
-import BudgetScreen from '../screens/BudgetScreen';
-import HomeScreen from '../screens/HomeScreen';
-import SettingsScreen from '../screens/SettingsScreen';
-import StatisticsScreen from '../screens/StatisticsScreen';
+import BudgetScreen from "../screens/BudgetScreen";
+import HomeScreen from "../screens/HomeScreen";
+import SettingsScreen from "../screens/SettingsScreen";
+import StatisticsScreen from "../screens/StatisticsScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -22,13 +22,10 @@ const CustomTabBarButton = ({ children }: any) => {
     <TouchableOpacity
       style={styles.customButton}
       activeOpacity={0.9}
-      onPress={() => router.push('/(protected)/add-transaction')}
+      onPress={() => router.push("/(protected)/transaction/add-transaction")}
     >
       <View
-        style={[
-          styles.customButtonInner,
-          { backgroundColor: colors.tint },
-        ]}
+        style={[styles.customButtonInner, { backgroundColor: colors.tint }]}
       >
         {children}
       </View>
@@ -43,15 +40,14 @@ export default function MainNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        animation: 'none',
+        animation: "none",
         tabBarStyle: [
           styles.tabBar,
           {
             backgroundColor: colors.background,
             borderTopColor: colors.border,
-            height: Platform.OS === 'ios' ? hp(11) : hp(9),
-            paddingBottom:
-              Platform.OS === 'ios' ? getBottomSpace() : hp(1.5),
+            height: Platform.OS === "ios" ? hp(11) : hp(9),
+            paddingBottom: Platform.OS === "ios" ? getBottomSpace() : hp(1.5),
           },
         ],
         tabBarActiveTintColor: colors.tint,
@@ -63,7 +59,7 @@ export default function MainNavigator() {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarLabel: 'Trang Chủ',
+          tabBarLabel: "Trang Chủ",
           tabBarIcon: ({ color, focused }) => (
             <FontAwesome6
               name="house"
@@ -79,7 +75,7 @@ export default function MainNavigator() {
         name="Statistics"
         component={StatisticsScreen}
         options={{
-          tabBarLabel: 'Thống kê',
+          tabBarLabel: "Thống kê",
           tabBarIcon: ({ color, focused }) => (
             <FontAwesome6
               name="chart-simple"
@@ -95,7 +91,7 @@ export default function MainNavigator() {
         name="AddTransactionPlaceholder"
         component={EmptyScreen}
         options={{
-          tabBarLabel: '',
+          tabBarLabel: "",
           tabBarIcon: () => (
             <View style={styles.addIconContainer}>
               <FontAwesome6
@@ -106,9 +102,7 @@ export default function MainNavigator() {
               />
             </View>
           ),
-          tabBarButton: (props) => (
-            <CustomTabBarButton {...props} />
-          ),
+          tabBarButton: (props) => <CustomTabBarButton {...props} />,
         }}
         listeners={{
           tabPress: (e) => e.preventDefault(),
@@ -119,7 +113,7 @@ export default function MainNavigator() {
         name="Budget"
         component={BudgetScreen}
         options={{
-          tabBarLabel: 'Ngân sách',
+          tabBarLabel: "Ngân sách",
           tabBarIcon: ({ color, focused }) => (
             <FontAwesome6
               name="wallet"
@@ -135,7 +129,7 @@ export default function MainNavigator() {
         name="Settings"
         component={SettingsScreen}
         options={{
-          tabBarLabel: 'Cài đặt',
+          tabBarLabel: "Cài đặt",
           tabBarIcon: ({ color, focused }) => (
             <FontAwesome6
               name="gear"
@@ -152,7 +146,7 @@ export default function MainNavigator() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
@@ -167,14 +161,14 @@ const styles = StyleSheet.create({
   },
   customButton: {
     top: normalize(-30),
-    alignItems: 'center',
+    alignItems: "center",
   },
   customButtonInner: {
     width: normalize(64),
     height: normalize(64),
     borderRadius: normalize(32),
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 8,
   },
   addIconContainer: {
