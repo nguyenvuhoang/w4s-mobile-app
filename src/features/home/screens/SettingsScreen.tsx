@@ -37,14 +37,14 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       const loadSelectedCurrency = async () => {
         try {
           const selectedCurrencyStr = await StorageService.getItem(
-            "temp_selected_currency"
+            "temp_selected_currency",
           );
 
           if (selectedCurrencyStr) {
             const selectedCurrency = JSON.parse(selectedCurrencyStr);
             console.log(
               "[CurrencySettings] Updating default currency:",
-              selectedCurrency
+              selectedCurrency,
             );
 
             await updateDefaultCurrency(selectedCurrency);
@@ -53,13 +53,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         } catch (error) {
           console.error(
             "[CurrencySettings] Failed to load selected currency:",
-            error
+            error,
           );
         }
       };
 
       loadSelectedCurrency();
-    }, [updateDefaultCurrency])
+    }, [updateDefaultCurrency]),
   );
 
   const handleBiometricToggle = async () => {
@@ -150,7 +150,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="document-text-outline"
               title="Hóa đơn"
-              onPress={() => {}}
+              onPress={() => {
+                router.push({
+                  pathname: "/(protected)/invoice/invoice-list",
+                });
+              }}
               colors={colors}
             />
             <SettingItem

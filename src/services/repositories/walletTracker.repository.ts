@@ -28,8 +28,8 @@ export const walletTrackerRepository = {
     color: string,
     icon: string,
     isIncludeReport: boolean,
-    amount : number,
-    walletType: string
+    amount: number,
+    walletType: string,
   ): Promise<BaseResponseModel> {
     try {
       return await apiService.executeWorkflow(
@@ -42,16 +42,16 @@ export const walletTrackerRepository = {
           icon: icon,
           is_include_report: isIncludeReport,
           amount: amount,
-          wallet_type: "TWDR",
-          classification: "EXPENSE"
+          wallet_type: "TWCR",
+          classification: "INCOME",
         },
         false,
-        true
+        true,
       );
     } catch (error) {
       console.error(
         "[walletTrackerRepository] Error creating wallet trackker:",
-        error
+        error,
       );
       throw error;
     }
