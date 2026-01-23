@@ -1,16 +1,20 @@
-import CustomText from '@/components/base/CustomText';
-import { useAppTheme } from '@/core/theme/ThemeContext';
-import { hp, normalize, wp } from '@/utils/layout';
-import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import CustomText from "@/components/base/CustomText";
+import { useAppTheme } from "@/core/theme/ThemeContext";
+import { useFinanceSummary } from "@/features/home/hooks/Usefinancesummary";
+import { styles } from "@/features/home/styles/HomeScreen.Style";
+import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
+import { hp, normalize } from "@/utils/layout";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useRef } from "react";
 import {
+  ActivityIndicator,
   Image,
+  RefreshControl,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface HomeScreenProps {
   navigation: any;
@@ -19,14 +23,126 @@ interface HomeScreenProps {
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { colors } = useAppTheme();
 
+  // Counter để track renders
+  const renderCountRef = useRef(0);
+  renderCountRef.current++;
+
+  console.log(`[HomeScreen] 🏠 Render #${renderCountRef.current}`);
+
+  // Fetch finance data (always in VND from server)
+  const { data, loading: dataLoading, error, refresh } = useFinanceSummary();
+
+  // Currency converter (sẽ tự động update khi useDefaultCurrency update)
+  const {
+    convertAndFormat,
+    formatPercent,
+    loading: currencyLoading,
+    isReady,
+    defaultCurrency,
+  } = useCurrencyConverter();
+
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  // LOG: Dependencies
+  console.log("[HomeScreen] Dependencies:", {
+    hasData: !!data,
+    dataLoading,
+    currencyLoading,
+    isReady,
+    defaultCurrency: defaultCurrency.currencyId,
+  });
+
+  // LOG: When defaultCurrency changes
+  useEffect(() => {
+    console.log("[HomeScreen] 🔔 defaultCurrency CHANGED:", {
+      currencyId: defaultCurrency.currencyId,
+      symbol: defaultCurrency.symbol,
+      name: defaultCurrency.name,
+    });
+  }, [defaultCurrency.currencyId]);
+
+  // LOG: When isReady changes
+  useEffect(() => {
+    console.log("[HomeScreen] 🔔 isReady CHANGED:", isReady);
+  }, [isReady]);
+
+  // LOG: When convertAndFormat reference changes
+  const convertAndFormatRef = useRef(convertAndFormat);
+  useEffect(() => {
+    if (convertAndFormatRef.current !== convertAndFormat) {
+      console.log(
+        "[HomeScreen] 🔔 convertAndFormat function CHANGED (new reference)",
+      );
+      convertAndFormatRef.current = convertAndFormat;
+    }
+  }, [convertAndFormat]);
+
+  const onRefresh = React.useCallback(async () => {
+    console.log("[HomeScreen] 🔄 Manual refresh...");
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  }, [refresh]);
+
+  // Data từ server (VND)
+  const incomeTotal = data?.income_expense_summary.income.total || 0;
+  const expenseTotal = data?.income_expense_summary.expense.total || 0;
+  const totalBalance = incomeTotal - expenseTotal;
+
+  const incomePercent = data?.income_expense_summary.income.change_percent || 0;
+  const expensePercent =
+    data?.income_expense_summary.expense.change_percent || 0;
+
+  const isLoading = dataLoading || !isReady;
+
+  console.log("[HomeScreen] State:", {
+    incomeTotal,
+    expenseTotal,
+    totalBalance,
+    isLoading,
+  });
+
+  // Format ngày
+  const getCurrentDate = () => {
+    return new Date().toLocaleDateString("vi-VN", {
+      weekday: "short",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const getCurrentMonth = () => {
+    return `Tháng ${new Date().getMonth() + 1}`;
+  };
+
+  // LOG: Render balance card
+  console.log("[HomeScreen] Rendering balance card:", {
+    isLoading,
+    hasError: !!error,
+    hasData: !!data,
+    isReady,
+  });
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.tint}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.userInfo}>
             <Image
-              source={{ uri: 'https://via.placeholder.com/50' }}
+              source={{ uri: "https://via.placeholder.com/50" }}
               style={styles.avatar}
             />
             <View>
@@ -34,37 +150,110 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 Chào, HOANG
               </CustomText>
               <CustomText style={[styles.date, { color: colors.icon }]}>
-                T4, 14 Th12, 2025
+                {getCurrentDate()}
               </CustomText>
             </View>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('Notification')}>
-            <Ionicons name="notifications-outline" size={normalize(24)} color={colors.text} />
+          <TouchableOpacity onPress={() => navigation.navigate("Notification")}>
+            <Ionicons
+              name="notifications-outline"
+              size={normalize(24)}
+              color={colors.text}
+            />
           </TouchableOpacity>
         </View>
 
         {/* Balance Card */}
-        <View style={[styles.balanceCard, { backgroundColor: colors.tint }]}>
-          <CustomText style={styles.balanceLabel}>Tổng Số Dư</CustomText>
-          <CustomText style={styles.balanceAmount}>$24,582.50</CustomText>
-          
-          <View style={styles.balanceDetails}>
-            <View style={styles.balanceItem}>
-              <CustomText style={styles.balanceSubLabel}>Thu vào</CustomText>
-              <CustomText style={styles.incomeAmount}>+$8,420.00</CustomText>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.balanceItem}>
-              <CustomText style={styles.balanceSubLabel}>Chi Ra</CustomText>
-              <CustomText style={styles.expenseAmount}>-$3,285.40</CustomText>
-            </View>
+        {isLoading && !data ? (
+          <View
+            style={[
+              styles.balanceCard,
+              {
+                backgroundColor: colors.tint,
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: 200,
+              },
+            ]}
+          >
+            <ActivityIndicator size="large" color="#fff" />
+            <CustomText
+              style={[styles.balanceSubLabel, { color: "#fff", marginTop: 8 }]}
+            >
+              Đang tải dữ liệu...
+            </CustomText>
           </View>
-          <CustomText style={styles.month}>Tháng 12</CustomText>
-        </View>
+        ) : error ? (
+          <View style={[styles.balanceCard, { backgroundColor: colors.tint }]}>
+            <CustomText style={[styles.balanceLabel, { color: "#fff" }]}>
+              Lỗi tải dữ liệu
+            </CustomText>
+            <CustomText
+              style={[styles.balanceSubLabel, { color: "#fff", marginTop: 8 }]}
+            >
+              {error}
+            </CustomText>
+            <TouchableOpacity
+              onPress={refresh}
+              style={{
+                marginTop: 16,
+                padding: 12,
+                backgroundColor: "rgba(255,255,255,0.2)",
+                borderRadius: 8,
+                alignSelf: "flex-start",
+              }}
+            >
+              <CustomText style={{ color: "#fff", fontWeight: "600" }}>
+                Thử lại
+              </CustomText>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={[styles.balanceCard, { backgroundColor: colors.tint }]}>
+            <CustomText style={styles.balanceLabel}>Tổng Số Dư</CustomText>
+            <CustomText style={styles.balanceAmount}>
+              {isReady ? convertAndFormat(totalBalance) : "..."}
+            </CustomText>
+
+            <View style={styles.balanceDetails}>
+              <View style={styles.balanceItem}>
+                <CustomText style={styles.balanceSubLabel}>Thu vào</CustomText>
+                <CustomText style={styles.incomeAmount}>
+                  {isReady ? `+${convertAndFormat(incomeTotal)}` : "..."}
+                </CustomText>
+                {incomePercent !== 0 && (
+                  <CustomText
+                    style={[styles.changePercent, { color: "#4CAF50" }]}
+                  >
+                    {formatPercent(incomePercent)}
+                  </CustomText>
+                )}
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.balanceItem}>
+                <CustomText style={styles.balanceSubLabel}>Chi Ra</CustomText>
+                <CustomText style={styles.expenseAmount}>
+                  {isReady ? `-${convertAndFormat(expenseTotal)}` : "..."}
+                </CustomText>
+                {expensePercent !== 0 && (
+                  <CustomText
+                    style={[styles.changePercent, { color: "#FF6B6B" }]}
+                  >
+                    {formatPercent(expensePercent)}
+                  </CustomText>
+                )}
+              </View>
+            </View>
+            <CustomText style={styles.month}>{getCurrentMonth()}</CustomText>
+          </View>
+        )}
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => console.log("Navigate to Send Money")}
+          >
             <View style={[styles.actionIcon, { backgroundColor: colors.tint }]}>
               <Ionicons name="arrow-up" size={normalize(24)} color="#fff" />
             </View>
@@ -73,27 +262,48 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </CustomText>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => console.log("Navigate to Receive Money")}
+          >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
-              <Ionicons name="arrow-down" size={normalize(24)} color={colors.text} />
+              <Ionicons
+                name="arrow-down"
+                size={normalize(24)}
+                color={colors.text}
+              />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
               Nhận
             </CustomText>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => console.log("Navigate to Cards")}
+          >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
-              <Ionicons name="card-outline" size={normalize(24)} color={colors.text} />
+              <Ionicons
+                name="card-outline"
+                size={normalize(24)}
+                color={colors.text}
+              />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
               Thẻ
             </CustomText>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => console.log("Show more actions")}
+          >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
-              <Ionicons name="ellipsis-horizontal" size={normalize(24)} color={colors.text} />
+              <Ionicons
+                name="ellipsis-horizontal"
+                size={normalize(24)}
+                color={colors.text}
+              />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
               Thêm
@@ -107,7 +317,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
               Chi tiêu nhiều nhất
             </CustomText>
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => console.log("Navigate to Categories")}
+            >
               <CustomText style={[styles.seeMore, { color: colors.tint }]}>
                 Xem Thêm
               </CustomText>
@@ -120,7 +332,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#FF6B35"
               name="Mua sắm"
               transactions="32 Giao dịch"
-              amount="1,248,000 đ"
+              amount={isReady ? convertAndFormat(1248000) : "..."}
               color="#FF6B35"
               progress={0.75}
               colors={colors}
@@ -130,7 +342,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#4CAF50"
               name="Thực phẩm"
               transactions="28 Giao dịch"
-              amount="842,000 đ"
+              amount={isReady ? convertAndFormat(842000) : "..."}
               color="#4CAF50"
               progress={0.6}
               colors={colors}
@@ -140,7 +352,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#9C27B0"
               name="Giải trí"
               transactions="15 Giao dịch"
-              amount="425,000 đ"
+              amount={isReady ? convertAndFormat(425000) : "..."}
               color="#9C27B0"
               progress={0.4}
               colors={colors}
@@ -154,7 +366,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
               Giao dịch gần đây
             </CustomText>
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => console.log("Navigate to Transactions")}
+            >
               <CustomText style={[styles.seeMore, { color: colors.tint }]}>
                 Xem thêm
               </CustomText>
@@ -167,7 +381,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#2196F3"
               name="Nội Thất"
               time="Hôm nay, 2:30 PM"
-              amount="-89,000 đ"
+              amount={isReady ? `-${convertAndFormat(89000)}` : "..."}
               isExpense
               colors={colors}
             />
@@ -176,7 +390,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#4CAF50"
               name="Lương hàng tháng"
               time="Hôm qua, 9:00 AM"
-              amount="+24,200,000 đ"
+              amount={isReady ? `+${convertAndFormat(24200000)}` : "..."}
               isExpense={false}
               colors={colors}
             />
@@ -185,7 +399,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#FF9800"
               name="Shopee"
               time="Hôm qua, 8:15 AM"
-              amount="-6,000 đ"
+              amount={isReady ? `-${convertAndFormat(6000)}` : "..."}
               isExpense
               colors={colors}
             />
@@ -194,14 +408,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#2196F3"
               name="Nội Thất"
               time="Hôm qua, 2:30 PM"
-              amount="-89,000 đ"
+              amount={isReady ? `-${convertAndFormat(89000)}` : "..."}
               isExpense
               colors={colors}
             />
           </View>
         </View>
 
-        {/* Bottom spacing */}
         <View style={{ height: hp(2) }} />
       </ScrollView>
     </SafeAreaView>
@@ -209,7 +422,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 };
 
 // Category Item Component
-const CategoryItem = ({ icon, iconColor, name, transactions, amount, color, progress, colors }: any) => (
+const CategoryItem = ({
+  icon,
+  iconColor,
+  name,
+  transactions,
+  amount,
+  color,
+  progress,
+  colors,
+}: any) => (
   <View style={[styles.categoryItem, { backgroundColor: colors.card }]}>
     <View style={styles.categoryLeft}>
       <View style={[styles.categoryIcon, { backgroundColor: iconColor }]}>
@@ -219,7 +441,9 @@ const CategoryItem = ({ icon, iconColor, name, transactions, amount, color, prog
         <CustomText style={[styles.categoryName, { color: colors.text }]}>
           {name}
         </CustomText>
-        <CustomText style={[styles.categoryTransactions, { color: colors.icon }]}>
+        <CustomText
+          style={[styles.categoryTransactions, { color: colors.icon }]}
+        >
           {transactions}
         </CustomText>
       </View>
@@ -227,16 +451,36 @@ const CategoryItem = ({ icon, iconColor, name, transactions, amount, color, prog
     <CustomText style={[styles.categoryAmount, { color: colors.text }]}>
       {amount}
     </CustomText>
-    <View style={[styles.progressBarContainer, { backgroundColor: colors.background }]}>
-      <View style={[styles.progressBar, { width: `${progress * 100}%`, backgroundColor: color }]} />
+    <View
+      style={[
+        styles.progressBarContainer,
+        { backgroundColor: colors.background },
+      ]}
+    >
+      <View
+        style={[
+          styles.progressBar,
+          { width: `${progress * 100}%`, backgroundColor: color },
+        ]}
+      />
     </View>
   </View>
 );
 
 // Transaction Item Component
-const TransactionItem = ({ icon, iconColor, name, time, amount, isExpense, colors }: any) => (
+const TransactionItem = ({
+  icon,
+  iconColor,
+  name,
+  time,
+  amount,
+  isExpense,
+  colors,
+}: any) => (
   <View style={[styles.transactionItem, { backgroundColor: colors.card }]}>
-    <View style={[styles.transactionIcon, { backgroundColor: iconColor + '1A' }]}>
+    <View
+      style={[styles.transactionIcon, { backgroundColor: iconColor + "1A" }]}
+    >
       <Ionicons name={icon} size={normalize(24)} color={iconColor} />
     </View>
     <View style={styles.transactionInfo}>
@@ -247,221 +491,15 @@ const TransactionItem = ({ icon, iconColor, name, time, amount, isExpense, color
         {time}
       </CustomText>
     </View>
-    <CustomText style={[styles.transactionAmount, isExpense ? styles.expenseText : styles.incomeText]}>
+    <CustomText
+      style={[
+        styles.transactionAmount,
+        isExpense ? styles.expenseText : styles.incomeText,
+      ]}
+    >
       {amount}
     </CustomText>
   </View>
 );
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    marginBottom: normalize(50),
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: wp(5),
-    paddingVertical: normalize(16),
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(12),
-  },
-  avatar: {
-    width: normalize(50),
-    height: normalize(50),
-    borderRadius: normalize(25),
-  },
-  greeting: {
-    fontSize: normalize(18),
-    fontWeight: '600',
-  },
-  date: {
-    fontSize: normalize(12),
-    marginTop: normalize(2),
-  },
-  balanceCard: {
-    borderRadius: normalize(24),
-    padding: normalize(24),
-    marginHorizontal: wp(5),
-    marginBottom: hp(2.5),
-    alignItems: 'center',
-  },
-  balanceLabel: {
-    fontSize: normalize(14),
-    color: '#fff',
-    opacity: 0.8,
-    marginBottom: normalize(8),
-  },
-  balanceAmount: {
-    fontSize: normalize(36),
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: normalize(20),
-  },
-  balanceDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  balanceItem: {
-    alignItems: 'center',
-  },
-  divider: {
-    width: 1,
-    height: normalize(40),
-    backgroundColor: '#fff',
-    opacity: 0.3,
-  },
-  balanceSubLabel: {
-    fontSize: normalize(12),
-    color: '#fff',
-    opacity: 0.8,
-    marginBottom: normalize(4),
-  },
-  incomeAmount: {
-    fontSize: normalize(18),
-    fontWeight: '600',
-    color: '#fff',
-  },
-  expenseAmount: {
-    fontSize: normalize(18),
-    fontWeight: '600',
-    color: '#fff',
-  },
-  month: {
-    fontSize: normalize(12),
-    color: '#fff',
-    opacity: 0.8,
-    textAlign: 'center',
-    marginTop: normalize(12),
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: wp(5),
-    marginBottom: hp(3),
-  },
-  actionButton: {
-    alignItems: 'center',
-    gap: normalize(8),
-  },
-  actionIcon: {
-    width: normalize(56),
-    height: normalize(56),
-    borderRadius: normalize(16),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionLabel: {
-    fontSize: normalize(12),
-  },
-  section: {
-    marginBottom: hp(3),
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: wp(5),
-    marginBottom: normalize(16),
-  },
-  sectionTitle: {
-    fontSize: normalize(18),
-    fontWeight: '600',
-  },
-  seeMore: {
-    fontSize: normalize(14),
-  },
-  categoryList: {
-    paddingHorizontal: wp(5),
-    gap: normalize(12),
-  },
-  categoryItem: {
-    borderRadius: normalize(16),
-    padding: normalize(16),
-    position: 'relative',
-  },
-  categoryLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(12),
-    marginBottom: normalize(8),
-  },
-  categoryIcon: {
-    width: normalize(48),
-    height: normalize(48),
-    borderRadius: normalize(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryName: {
-    fontSize: normalize(16),
-    fontWeight: '600',
-  },
-  categoryTransactions: {
-    fontSize: normalize(12),
-    marginTop: normalize(2),
-  },
-  categoryAmount: {
-    position: 'absolute',
-    right: normalize(16),
-    top: normalize(24),
-    fontSize: normalize(16),
-    fontWeight: '600',
-  },
-  progressBarContainer: {
-    height: normalize(6),
-    borderRadius: normalize(3),
-    overflow: 'hidden',
-    marginTop: normalize(8),
-  },
-  progressBar: {
-    height: '100%',
-    borderRadius: normalize(3),
-  },
-  transactionList: {
-    paddingHorizontal: wp(5),
-    gap: normalize(12),
-  },
-  transactionItem: {
-    borderRadius: normalize(16),
-    padding: normalize(16),
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(12),
-  },
-  transactionIcon: {
-    width: normalize(48),
-    height: normalize(48),
-    borderRadius: normalize(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  transactionInfo: {
-    flex: 1,
-  },
-  transactionName: {
-    fontSize: normalize(16),
-    fontWeight: '600',
-  },
-  transactionTime: {
-    fontSize: normalize(12),
-    marginTop: normalize(2),
-  },
-  transactionAmount: {
-    fontSize: normalize(16),
-    fontWeight: '600',
-  },
-  expenseText: {
-    color: '#FF3B30',
-  },
-  incomeText: {
-    color: '#34C759',
-  },
-});
 
 export default HomeScreen;

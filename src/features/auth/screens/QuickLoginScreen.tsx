@@ -1,17 +1,17 @@
-import { ThemedText } from '@/components/themed-text';
-import StorageKey from '@/constants/StorageKey';
-import { useNotification } from '@/contexts/NotificationContext';
-import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts } from '@/core/theme/font';
-import { Tokens } from '@/core/theme/theme';
-import { useLoginService } from '@/features/auth/hooks/useLoginService';
-import StorageService from '@/services/StorageService';
-import { AppInfo } from '@/types/UserCommand';
-import { Images } from '@/utils/images';
-import { normalize } from '@/utils/layout';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { ThemedText } from "@/components/themed-text";
+import StorageKey from "@/constants/StorageKey";
+import { useNotification } from "@/contexts/NotificationContext";
+import { useAppTheme } from "@/core/theme/ThemeContext";
+import { Fonts } from "@/core/theme/font";
+import { Tokens } from "@/core/theme/theme";
+import { useLoginService } from "@/features/auth/hooks/useLoginService";
+import StorageService from "@/services/StorageService";
+import { AppInfo } from "@/types/UserCommand";
+import { Images } from "@/utils/images";
+import { normalize } from "@/utils/layout";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -22,11 +22,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const logoImg = Images.appLogoLight;
-const defaultAvatar = require('@assets/images/default_avatar.png');
+const defaultAvatar = require("@assets/images/default_avatar.png");
 
 const QuickLoginScreen = () => {
   const router = useRouter();
@@ -34,7 +34,6 @@ const QuickLoginScreen = () => {
   const { showNotification } = useNotification();
   const hasCheckedLoginStatus = useRef(false);
 
-  // Use login service
   const {
     setUsername,
     password,
@@ -51,6 +50,7 @@ const QuickLoginScreen = () => {
     handleLogin,
     handleBiometricLogin,
     handleGetStatusLogin,
+    biometricType, // "none" | "fingerprint" | "facial"
   } = useLoginService();
 
   useEffect(() => {
@@ -61,28 +61,43 @@ const QuickLoginScreen = () => {
     checkLoginStatus();
   }, [appInfo]);
 
+  /* ========= BIOMETRIC HELPERS (KHÔNG ẢNH HƯỞNG UI) ========= */
+
+  const getBiometricIconName = () => {
+    if (biometricType === "facial") return "scan-outline";
+    return "finger-print-outline"; // fingerprint + none
+  };
+
+  const getBiometricLabel = () => {
+    if (biometricType === "facial") return "khuôn mặt";
+    return "vân tay";
+  };
+
+  /* ================= LOGIC ================= */
+
   const loadAppInfo = async () => {
     try {
-      setPassword('');
-      
+      setPassword("");
+
       if (appInfo) {
         setUsername(appInfo.login_name);
         return;
       }
 
-      const storedAppInfo = await StorageService.getAsyncItem(StorageKey.appInfo);
+      const storedAppInfo = await StorageService.getAsyncItem(
+        StorageKey.appInfo,
+      );
       if (storedAppInfo) {
         const parsedAppInfo: AppInfo = JSON.parse(storedAppInfo);
         setAppInfo(parsedAppInfo);
         setUsername(parsedAppInfo.login_name);
       } else {
         await clearDataUser();
-        router.replace('/(auth)/login');
+        router.replace("/(auth)/login");
       }
-    } catch (error) {
-      console.error('Error loading app info:', error);
+    } catch {
       await clearDataUser();
-      router.replace('/(auth)/login');
+      router.replace("/(auth)/login");
     }
   };
 
@@ -96,52 +111,61 @@ const QuickLoginScreen = () => {
           is_login: islogin,
         };
 
-        await StorageService.setAsyncItem(StorageKey.appInfo, JSON.stringify(appInfoData));
+        await StorageService.setAsyncItem(
+          StorageKey.appInfo,
+          JSON.stringify(appInfoData),
+        );
         setAppInfo(appInfoData);
-
-        // if (!islogin) {
-        //   await clearDataUser();
-        //   router.replace('/(auth)/login');
-        // }
-      } catch (err) {
-        console.error('Error checking login status:', err);
+      } catch {
         await clearDataUser();
-        router.replace('/(auth)/login');
+        router.replace("/(auth)/login");
       }
     }
   };
 
   const handlePasswordLogin = async () => {
-    if (password.trim() === '') return;
+    if (password.trim() === "") return;
     await handleLogin(false);
   };
 
   const handleBiometricPress = async () => {
+    if (!isBiometricSupported) {
+      showNotification("Thiết bị không hỗ trợ sinh trắc học", "warning");
+      return;
+    }
+
+    if (!appInfo?.is_biometric_supported) {
+      showNotification(
+        `Bạn chưa kích hoạt đăng nhập bằng ${getBiometricLabel()}`,
+        "warning",
+      );
+      return;
+    }
+
+    if (isLoadingAny || isAuthenticating) return;
+
     await handleBiometricLogin();
   };
 
   const handleSwitchAccount = () => {
     showNotification(
-      'Bạn có chắc muốn đăng nhập tài khoản khác?',
-      'warning',
+      "Bạn có chắc muốn đăng nhập tài khoản khác?",
+      "warning",
       undefined,
       undefined,
       async () => {
         await clearDataUser();
-        router.replace('/(auth)/login');
+        router.replace("/(auth)/login");
       },
-      undefined,
-      undefined,
-      () => {}
     );
   };
 
   const handleForgotPassword = () => {
-    router.push('/(auth)/forgotPassword' as any);
+    router.push("/(auth)/forgotPassword" as any);
   };
 
   const handleCreateAccount = () => {
-    router.push('/(auth)/register' as any);
+    router.push("/(auth)/register" as any);
   };
 
   const clearDataUser = async () => {
@@ -150,40 +174,31 @@ const QuickLoginScreen = () => {
     await StorageService.removeAsyncItem(StorageKey.isVerifyFirstLogin);
     await StorageService.removeAsyncItem(StorageKey.token);
     await StorageService.removeAsyncItem(StorageKey.userSession);
-
-    const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
-    if (channelId) {
-      await StorageService.removeAsyncItem(`${StorageKey.appInfo}_${channelId}`);
-      await StorageService.removeAsyncItem(`${StorageKey.user}_${channelId}`);
-      await StorageService.removeAsyncItem(`${StorageKey.isVerifyFirstLogin}_${channelId}`);
-      await StorageService.removeAsyncItem(`${StorageKey.token}_${channelId}`);
-      await StorageService.removeAsyncItem(`${StorageKey.userSession}_${channelId}`);
-    }
   };
 
-  const isFormValid = password.trim() !== '';
+  const isFormValid = password.trim() !== "";
   const isLoadingAny = isLoggingIn || isFetchingAppInfo || isLoading;
+
+  /* ================= UI ================= */
 
   return (
     <>
-      {/* Loading Overlay */}
       {isLoadingAny && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={colors.tint} />
-          <ThemedText style={[styles.loadingText, { color: '#fff' }]}>
-            {isLoggingIn ? 'Đang đăng nhập...' : 'Đang tải thông tin...'}
+          <ThemedText style={[styles.loadingText, { color: "#fff" }]}>
+            {isLoggingIn ? "Đang đăng nhập..." : "Đang tải thông tin..."}
           </ThemedText>
         </View>
       )}
 
-      {/* Biometric Authentication Overlay */}
-      {isAuthenticating && (
-        <View style={styles.biometricOverlay} />
-      )}
+      {isAuthenticating && <View style={styles.biometricOverlay} />}
 
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
         >
           <ScrollView
@@ -191,36 +206,41 @@ const QuickLoginScreen = () => {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Top Half - Logo + Title */}
+            {/* Top */}
             <View style={styles.topHalf}>
               <View style={styles.logoContainer}>
-                <View style={[styles.logoWrapper, { backgroundColor: colors.tint }]}>
-                  <Image source={logoImg} style={styles.logo} resizeMode="contain" />
+                <View
+                  style={[styles.logoWrapper, { backgroundColor: colors.tint }]}
+                >
+                  <Image
+                    source={logoImg}
+                    style={styles.logo}
+                    resizeMode="contain"
+                  />
                 </View>
               </View>
-
               <ThemedText style={[styles.title, { color: colors.text }]}>
                 Đăng nhập
               </ThemedText>
             </View>
 
-            {/* Bottom Half - Form */}
+            {/* Bottom */}
             <View style={styles.bottomHalf}>
-              {/* User Info Row */}
               <View style={styles.userInfoRow}>
                 <View style={styles.avatarContainer}>
-                  {appInfo?.avatar ? (
-                    <Image source={{ uri: appInfo.avatar }} style={styles.avatar} />
-                  ) : (
-                    <Image source={defaultAvatar} style={styles.avatar} />
-                  )}
+                  <Image
+                    source={
+                      appInfo?.avatar ? { uri: appInfo.avatar } : defaultAvatar
+                    }
+                    style={styles.avatar}
+                  />
                 </View>
                 <ThemedText style={[styles.username, { color: colors.text }]}>
-                  Xin chào, {appInfo?.name || appInfo?.login_name || 'User'}
+                  Xin chào, {appInfo?.name || appInfo?.login_name || "User"}
                 </ThemedText>
               </View>
 
-              {/* Password Input */}
+              {/* Password */}
               <View style={styles.inputContainer}>
                 <ThemedText style={[styles.label, { color: colors.text }]}>
                   Mật khẩu
@@ -241,47 +261,55 @@ const QuickLoginScreen = () => {
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoComplete="password"
                     editable={!isLoadingAny}
                     onSubmitEditing={handlePasswordLogin}
                   />
+
                   <TouchableOpacity
                     style={styles.eyeIcon}
                     onPress={() => setShowPassword(!showPassword)}
-                    disabled={isLoadingAny}
                   >
                     <Ionicons
-                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      name={showPassword ? "eye-off-outline" : "eye-outline"}
                       size={normalize(22)}
                       color={colors.icon}
                     />
                   </TouchableOpacity>
 
-                  {/* Biometric Button */}
-                  {isBiometricSupported && appInfo?.is_biometric_supported && (
-                    <TouchableOpacity
-                      style={styles.biometricIcon}
-                      onPress={handleBiometricPress}
-                      disabled={isLoadingAny || isAuthenticating}
-                    >
-                      {isAuthenticating ? (
-                        <ActivityIndicator size="small" color={colors.tint} />
-                      ) : (
-                        <View style={[styles.biometricButton, { borderColor: colors.tint }]}>
-                          <Ionicons
-                            name="finger-print-outline"
-                            size={normalize(24)}
-                            color={colors.tint}
-                          />
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  )}
+                  {/* 🔐 BIOMETRIC – LUÔN HIỂN THỊ */}
+                  <TouchableOpacity
+                    style={styles.biometricIcon}
+                    onPress={handleBiometricPress}
+                    disabled={isLoadingAny}
+                  >
+                    {isAuthenticating ? (
+                      <ActivityIndicator size="small" color={colors.tint} />
+                    ) : (
+                      <View
+                        style={[
+                          styles.biometricButton,
+                          {
+                            borderColor: colors.tint,
+                            opacity:
+                              !isBiometricSupported ||
+                              !appInfo?.is_biometric_supported
+                                ? 0.4
+                                : 1,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={getBiometricIconName()}
+                          size={normalize(24)}
+                          color={colors.tint}
+                        />
+                      </View>
+                    )}
+                  </TouchableOpacity>
                 </View>
               </View>
 
-              {/* Login Button */}
+              {/* Login */}
               <TouchableOpacity
                 onPress={handlePasswordLogin}
                 style={[
@@ -289,37 +317,29 @@ const QuickLoginScreen = () => {
                   { backgroundColor: colors.tint },
                   (!isFormValid || isLoadingAny) && styles.loginButtonDisabled,
                 ]}
-                activeOpacity={0.9}
                 disabled={!isFormValid || isLoadingAny}
               >
-                {isLoggingIn ? (
-                  <ActivityIndicator color={Tokens.colors.main.white} size="small" />
-                ) : (
-                  <ThemedText style={styles.loginButtonText}>
-                    Đăng nhập
-                  </ThemedText>
-                )}
+                <ThemedText style={styles.loginButtonText}>
+                  Đăng nhập
+                </ThemedText>
               </TouchableOpacity>
 
-              {/* Links */}
               <View style={styles.linksContainer}>
-                <TouchableOpacity onPress={handleSwitchAccount} disabled={isLoadingAny}>
-                  <ThemedText style={[styles.linkText, { color: colors.tint }]}>
+                <TouchableOpacity onPress={handleSwitchAccount}>
+                  <ThemedText style={{ color: colors.tint }}>
                     Đổi tài khoản
                   </ThemedText>
                 </TouchableOpacity>
-
-                <TouchableOpacity onPress={handleForgotPassword} disabled={isLoadingAny}>
-                  <ThemedText style={[styles.linkText, { color: colors.tint }]}>
+                <TouchableOpacity onPress={handleForgotPassword}>
+                  <ThemedText style={{ color: colors.tint }}>
                     Quên mật khẩu?
                   </ThemedText>
                 </TouchableOpacity>
               </View>
 
-              {/* Create Account */}
               <View style={styles.footer}>
-                <TouchableOpacity onPress={handleCreateAccount} disabled={isLoadingAny}>
-                  <ThemedText style={[styles.createAccountText, { color: colors.text }]}>
+                <TouchableOpacity onPress={handleCreateAccount}>
+                  <ThemedText style={{ color: colors.text }}>
                     Tạo tài khoản
                   </ThemedText>
                 </TouchableOpacity>
@@ -344,20 +364,20 @@ const styles = StyleSheet.create({
   },
   topHalf: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     minHeight: normalize(250),
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: normalize(24),
   },
   logoWrapper: {
     width: normalize(80),
     height: normalize(80),
     borderRadius: normalize(20),
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   logo: {
     width: normalize(50),
@@ -366,7 +386,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: normalize(28),
     fontFamily: Fonts.bold,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: normalize(36),
   },
   bottomHalf: {
@@ -374,11 +394,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: normalize(24),
     paddingTop: normalize(20),
     paddingBottom: normalize(20),
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   userInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: normalize(20),
     gap: normalize(12),
   },
@@ -415,18 +435,18 @@ const styles = StyleSheet.create({
     paddingBottom: normalize(15),
   },
   passwordContainer: {
-    position: 'relative',
+    position: "relative",
   },
   passwordInput: {
     paddingRight: normalize(100),
   },
   eyeIcon: {
-    position: 'absolute',
+    position: "absolute",
     right: normalize(56),
     top: normalize(15),
   },
   biometricIcon: {
-    position: 'absolute',
+    position: "absolute",
     right: normalize(16),
     top: normalize(12),
   },
@@ -435,14 +455,14 @@ const styles = StyleSheet.create({
     height: normalize(32),
     borderRadius: normalize(8),
     borderWidth: 1.5,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loginButton: {
     height: normalize(52),
     borderRadius: normalize(100),
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: normalize(16),
     shadowColor: Tokens.colors.main.black,
     shadowOffset: { width: 0, height: normalize(4) },
@@ -460,8 +480,8 @@ const styles = StyleSheet.create({
     lineHeight: normalize(24),
   },
   linksContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingHorizontal: normalize(8),
     marginBottom: normalize(16),
   },
@@ -471,7 +491,7 @@ const styles = StyleSheet.create({
     lineHeight: normalize(20),
   },
   footer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingBottom: normalize(10),
   },
   createAccountText: {
@@ -481,9 +501,9 @@ const styles = StyleSheet.create({
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 1000,
     gap: normalize(16),
   },
@@ -493,7 +513,7 @@ const styles = StyleSheet.create({
   },
   biometricOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     zIndex: 999,
   },
 });

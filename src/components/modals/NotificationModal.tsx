@@ -1,9 +1,4 @@
-import CustomButton from "@/components/base/CustomButton";
-import { performNavigationByName } from "@/core/navigation/performNavigationByName";
-import { useAppTheme } from '@/core/theme/ThemeContext';
-import { Fonts } from '@/core/theme/font';
-import { isTablet, normalize } from "@/utils/layout";
-import { FontAwesome6 } from '@expo/vector-icons';
+import { FontAwesome6 } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import * as Updates from "expo-updates";
 import { t } from "i18next";
@@ -13,13 +8,16 @@ import {
   Modal,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 
-const { width } = Dimensions.get("window");
+import { useAppTheme } from "@/core/theme/ThemeContext";
+import { Fonts } from "@/core/theme/font";
+import { isTablet, normalize } from "@/utils/layout";
 
+const { width } = Dimensions.get("window");
 const MODAL_WIDTH = isTablet ? width * 0.55 : width * 0.85;
-const MODAL_HEIGHT = 250;
 
 type NotificationModalProps = {
   visible: boolean;
@@ -48,30 +46,27 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
 }) => {
   const { colors } = useAppTheme();
 
-  const appVersion = Constants.expoConfig?.version || "?";
-  const shortUpdateId = Updates.updateId
-    ? Updates.updateId.slice(0, 8)
-    : "dev";
+  const appVersion = Constants.expoConfig?.version ?? "?";
+  const updateId = Updates.updateId ? Updates.updateId.slice(0, 8) : "dev";
 
-  const getIconName = () => {
-    switch (type) {
-      case "warning": return "circle-exclamation"; 
-      case "error": return "circle-xmark";
-      case "success": return "circle-check";
-      default: return "circle-info";
-    }
-  };
+  const title =
+    type === "error"
+      ? (t("common.error") ?? "Error")
+      : type === "warning"
+        ? (t("common.warning") ?? "Warning")
+        : (t("common.success") ?? "Success");
 
-  const getIconColor = () => {
-    switch (type) {
-      case "warning": return "#FFA500";
-      case "error": return "#FF0000";
-      case "success": return "#008000";
-      default: return colors.tint;
-    }
-  };
+  const iconName =
+    type === "warning"
+      ? "circle-exclamation"
+      : type === "error"
+        ? "circle-xmark"
+        : "circle-check";
 
-  const resolveMessage = (msg: unknown): string => {
+  const iconColor =
+    type === "warning" ? "#FFA500" : type === "error" ? "#FF3B30" : "#34C759";
+
+  const resolveMessage = (msg: unknown) => {
     if (typeof msg === "string") return msg;
     if (msg instanceof Error) return msg.message;
     try {
@@ -81,196 +76,219 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
     }
   };
 
-  const iconColor = getIconColor();
+  const showTwoButtons = type === "warning" && (onAgree || nextAction);
 
   return (
     <Modal
       transparent
       visible={visible}
       animationType="fade"
+      statusBarTranslucent
       onRequestClose={onClose}
-      statusBarTranslucent={true}
     >
-      <View style={styles.centeredView}>
-        <View style={[styles.modalView, { backgroundColor: colors.card }]}>
-          
-          {/* Icon Header */}
-          <View style={styles.iconContainer}>
-            <FontAwesome6 
-              name={getIconName()}
-              size={normalize(50)}
+      <View style={styles.overlay}>
+        <View style={[styles.modal, { backgroundColor: colors.card }]}>
+          {/* ICON */}
+          <View style={styles.iconWrapper}>
+            <FontAwesome6
+              name={iconName}
+              size={normalize(44)}
               color={iconColor}
             />
           </View>
 
-          {/* Title */}
-          <Text style={[styles.modalTitle, { color: colors.text }]}>
-            {type === "error"
-              ? (t("common.error") || "Error")
-              : type === "warning"
-              ? (t("common.warning") || "Warning")
-              : (t("common.success") || "Success")}
-          </Text>
+          {/* TITLE */}
+          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
 
-          {/* Content */}
-          <Text style={[styles.modalText, { color: colors.text }]}>
+          {/* MESSAGE */}
+          <Text style={[styles.message, { color: colors.text }]}>
             {resolveMessage(message)}
           </Text>
 
           {errorDetails && (
-            <Text style={[styles.errorDetails, { color: colors.icon }]}>{errorDetails}</Text>
-          )}
-
-          {errorCode && (
-            <Text style={[styles.errorCode, { color: colors.icon }]}>
-               {t("common.errorCode")}: {errorCode}
+            <Text style={[styles.detail, { color: colors.icon }]}>
+              {errorDetails}
             </Text>
           )}
 
-          <Text style={[styles.versionText, { color: colors.icon, opacity: 0.7 }]}>
-            {`${appVersion} (${shortUpdateId})`}
+          {errorCode && (
+            <Text style={[styles.detail, { color: colors.icon }]}>
+              {t("common.errorCode")}: {errorCode}
+            </Text>
+          )}
+
+          <Text style={styles.version}>
+            {appVersion} ({updateId})
           </Text>
 
-          {/* Action Buttons */}
-          <View
-            style={[
-              styles.buttonContainer,
-              type === "error" && styles.buttonContainerCentered,
-            ]}
-          >
-            {type === "warning" && (onAgree || nextAction) ? (
-              <>
-                <CustomButton
-                  title={t("common.reject") || "Reject"}
-                  onPress={onClose}
-                  style={styles.btnHalf}
-                  variant="outline" // Dùng variant outline mới cho đẹp
-                  textType="medium"
-                />
-                <CustomButton
-                  title={t("common.agree") || "Agree"}
-                  onPress={() => {
-                    onClose();
-                    if (onAgree) {
-                      onAgree();
-                    } else if (nextAction) {
-                      performNavigationByName(nextAction);
-                    }
-                  }}
-                  style={styles.btnHalf}
-                  variant="contained"
-                  useGradient={true}
-                  textType="medium"
-                />
-              </>
-            ) : (
-              <CustomButton
-                title={
-                  isReload
-                    ? (t("common.reload") || "Reload")
-                    : (t("common.close") || "Close")
-                }
+          {/* ACTIONS */}
+          {showTwoButtons ? (
+            <View style={styles.twoButtonRow}>
+              <View style={styles.sideSpace} />
+
+              <TouchableOpacity
+                style={[styles.button, styles.outlineButton]}
+                onPress={onClose}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.outlineText}>
+                  {t("common.reject") ?? "Reject"}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.middleSpace} />
+
+              <TouchableOpacity
+                style={[styles.button, styles.primaryButton]}
                 onPress={() => {
                   onClose();
-                  if (onReload) onReload();
+                  onAgree?.();
                 }}
-                style={styles.btnClose}
-                variant="contained"
-                useGradient={true}
-                textType="medium"
-              />
-            )}
-          </View>
+                activeOpacity={0.7}
+              >
+                <Text style={styles.primaryText}>
+                  {t("common.agree") ?? "Agree"}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.sideSpace} />
+            </View>
+          ) : (
+            <View style={styles.singleButtonRow}>
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.primaryButton,
+                  styles.singleButton,
+                ]}
+                onPress={() => {
+                  onClose();
+                  onReload?.();
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.primaryText}>
+                  {isReload
+                    ? (t("common.reload") ?? "Reload")
+                    : (t("common.close") ?? "Close")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
     </Modal>
   );
 };
 
+export default NotificationModal;
+
+/* ================= STYLES ================= */
+
 const styles = StyleSheet.create({
-  centeredView: {
+  overlay: {
     flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
-  modalView: {
+
+  modal: {
     width: MODAL_WIDTH,
-    maxWidth: MODAL_WIDTH,
-    minHeight: MODAL_HEIGHT,
     borderRadius: 20,
-    padding: 20,
+    padding: normalize(20),
     alignItems: "center",
-    justifyContent: "space-between",
-    // Shadow
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
-  iconContainer: {
-    width: normalize(60), // Tăng nhẹ kích thước
+
+  iconWrapper: {
+    width: normalize(60),
     height: normalize(60),
     borderRadius: normalize(30),
+    backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: normalize(15),
-    backgroundColor: "white",
-    // Shadow icon
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
+    marginBottom: normalize(12),
   },
-  modalTitle: {
-    textAlign: "center",
-    fontSize: normalize(18),
-    fontFamily: Fonts.bold, // Dùng font Bold cho title
-    marginBottom: 10,
-  },
-  modalText: {
-    textAlign: "center",
-    fontSize: normalize(16),
-    marginBottom: normalize(10),
-    fontFamily: Fonts.medium,
-  },
-  errorDetails: {
-    textAlign: "center",
-    fontSize: normalize(14),
-    marginBottom: normalize(5),
-    fontFamily: Fonts.regular,
-  },
-  errorCode: {
-    textAlign: "center",
-    fontSize: normalize(14),
-    fontFamily: Fonts.regular,
-  },
-  versionText: {
-    textAlign: "center",
-    fontSize: normalize(12),
-    marginTop: normalize(10),
-    fontFamily: Fonts.regular,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    width: "100%",
-    marginTop: normalize(20),
-    gap: normalize(15), // Gap giúp tách nút ra
-  },
-  buttonContainerCentered: {
-    justifyContent: "center",
-  },
-  // Style cho nút
-  btnHalf: {
-    flex: 1, // Để 2 nút chia đều 50-50
-    minWidth: normalize(100),
-  },
-  btnClose: {
-    minWidth: normalize(120),
-    paddingHorizontal: normalize(30),
-  }
-});
 
-export default NotificationModal;
+  title: {
+    fontSize: normalize(18),
+    fontFamily: Fonts.bold,
+    marginBottom: normalize(8),
+    textAlign: "center",
+  },
+
+  message: {
+    fontSize: normalize(16),
+    fontFamily: Fonts.medium,
+    textAlign: "center",
+    marginBottom: normalize(8),
+  },
+
+  detail: {
+    fontSize: normalize(14),
+    fontFamily: Fonts.regular,
+    textAlign: "center",
+  },
+
+  version: {
+    fontSize: normalize(12),
+    opacity: 0.6,
+    marginTop: normalize(8),
+  },
+
+  /* BUTTONS */
+
+  twoButtonRow: {
+    flexDirection: "row",
+    width: "100%",
+    marginTop: normalize(24),
+    alignItems: "center",
+  },
+
+  sideSpace: {
+    width: "10%",
+  },
+
+  middleSpace: {
+    width: "10%",
+  },
+
+  button: {
+    width: "35%",
+    height: normalize(42),
+    borderRadius: normalize(10),
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  primaryButton: {
+    backgroundColor: "#2563EB",
+  },
+
+  outlineButton: {
+    borderWidth: 1,
+    borderColor: "#2563EB",
+  },
+
+  primaryText: {
+    color: "#fff",
+    fontFamily: Fonts.medium,
+    fontSize: normalize(16),
+  },
+
+  outlineText: {
+    color: "#2563EB",
+    fontFamily: Fonts.medium,
+    fontSize: normalize(16),
+  },
+
+  singleButtonRow: {
+    width: "100%",
+    marginTop: normalize(24),
+    alignItems: "center",
+  },
+
+  singleButton: {
+    width: "60%",
+  },
+});

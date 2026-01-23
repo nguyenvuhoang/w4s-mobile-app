@@ -1,70 +1,91 @@
 // src/hooks/useDefaultCurrency.ts
 
-import DefaultCurrencyService, { DefaultCurrency } from '@/services/DefaultCurrencyService';
-import { useEffect, useState } from 'react';
+import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
+import DefaultCurrencyService, {
+  DefaultCurrency,
+} from "@/services/DefaultCurrencyService";
+import { useCallback, useEffect, useState } from "react";
 
 export const useDefaultCurrency = () => {
   const [defaultCurrency, setDefaultCurrency] = useState<DefaultCurrency>({
-    currencyId: 'VND',
-    symbol: 'đ',
-    name: 'Vietnamese Dong',
+    currencyId: "VND",
+    symbol: "₫",
+    name: "Vietnamese Dong",
   });
   const [loading, setLoading] = useState(true);
 
-  /**
-   * Load default currency from storage
-   */
-  const loadDefaultCurrency = async () => {
-    try {
-      setLoading(true);
-      const currency = await DefaultCurrencyService.getDefaultCurrency();
-      setDefaultCurrency(currency);
-    } catch (error) {
-      console.error('[useDefaultCurrency] Failed to load:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Load initial currency
+  useEffect(() => {
+    const loadCurrency = async () => {
+      try {
+        const currency = await DefaultCurrencyService.getDefaultCurrency();
+        console.log("[useDefaultCurrency] Initial load:", currency);
+        setDefaultCurrency(currency);
+      } catch (error) {
+        console.error("[useDefaultCurrency] Failed to load:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCurrency();
+  }, []);
+
+  // Listen for currency changes from other components
+  useEffect(() => {
+    const handleCurrencyChanged = async (currencyId: string) => {
+      console.log(
+        "[useDefaultCurrency] Received currency changed event:",
+        currencyId,
+      );
+
+      // Reload from storage
+      try {
+        const currency = await DefaultCurrencyService.getDefaultCurrency();
+        console.log("[useDefaultCurrency] Reloaded from storage:", currency);
+        setDefaultCurrency(currency);
+      } catch (error) {
+        console.error("[useDefaultCurrency] Failed to reload:", error);
+      }
+    };
+
+    CurrencyEventEmitter.onCurrencyChanged(handleCurrencyChanged);
+
+    return () => {
+      CurrencyEventEmitter.offCurrencyChanged(handleCurrencyChanged);
+    };
+  }, []);
 
   /**
    * Update default currency
+   * @param currency - New currency to set as default
    */
-  const updateDefaultCurrency = async (currency: DefaultCurrency) => {
-    try {
-      await DefaultCurrencyService.setDefaultCurrency(currency);
-      setDefaultCurrency(currency);
-      console.log('[useDefaultCurrency] Updated to:', currency);
-    } catch (error) {
-      console.error('[useDefaultCurrency] Failed to update:', error);
-      throw error;
-    }
-  };
+  const updateDefaultCurrency = useCallback(
+    async (currency: DefaultCurrency) => {
+      try {
+        console.log("[useDefaultCurrency] Updating to:", currency);
 
-  /**
-   * Reset to VND
-   */
-  const resetToDefault = async () => {
-    try {
-      await DefaultCurrencyService.resetToDefault();
-      const currency = await DefaultCurrencyService.getDefaultCurrency();
-      setDefaultCurrency(currency);
-      console.log('[useDefaultCurrency] Reset to VND');
-    } catch (error) {
-      console.error('[useDefaultCurrency] Failed to reset:', error);
-      throw error;
-    }
-  };
+        // Save to storage
+        await DefaultCurrencyService.setDefaultCurrency(currency);
 
-  // Load on mount
-  useEffect(() => {
-    loadDefaultCurrency();
-  }, []);
+        // Update local state
+        setDefaultCurrency(currency);
+
+        // Emit event to notify other components/hooks
+        CurrencyEventEmitter.emitCurrencyChanged(currency.currencyId);
+
+        console.log("[useDefaultCurrency] Updated successfully");
+      } catch (error) {
+        console.error("[useDefaultCurrency] Failed to update:", error);
+        throw error;
+      }
+    },
+    [],
+  );
 
   return {
     defaultCurrency,
     loading,
     updateDefaultCurrency,
-    resetToDefault,
-    refresh: loadDefaultCurrency,
   };
 };
