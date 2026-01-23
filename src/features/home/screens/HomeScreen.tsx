@@ -2,10 +2,11 @@ import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useFinanceSummary } from "@/features/home/hooks/Usefinancesummary";
 import { styles } from "@/features/home/styles/HomeScreen.Style";
-import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
+import { getCurrentDateString, getCurrentMonthString } from "@/utils/formatDate";
+import { formatPercent } from "@/utils/formatNumber";
 import { hp, normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import {
   ActivityIndicator,
   Image,
@@ -23,106 +24,33 @@ interface HomeScreenProps {
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { colors } = useAppTheme();
 
-  // Counter để track renders
-  const renderCountRef = useRef(0);
-  renderCountRef.current++;
-
-  console.log(`[HomeScreen] 🏠 Render #${renderCountRef.current}`);
-
-  // Fetch finance data (always in VND from server)
-  const { data, loading: dataLoading, error, refresh } = useFinanceSummary();
-
-  // Currency converter (sẽ tự động update khi useDefaultCurrency update)
-  const {
-    convertAndFormat,
-    formatPercent,
-    loading: currencyLoading,
-    isReady,
-    defaultCurrency,
-  } = useCurrencyConverter();
+  // Fetch finance data (amounts are pre-formatted by server)
+  const { data, loading, error, refresh } = useFinanceSummary();
 
   const [refreshing, setRefreshing] = React.useState(false);
 
-  // LOG: Dependencies
-  console.log("[HomeScreen] Dependencies:", {
-    hasData: !!data,
-    dataLoading,
-    currencyLoading,
-    isReady,
-    defaultCurrency: defaultCurrency.currencyId,
-  });
-
-  // LOG: When defaultCurrency changes
-  useEffect(() => {
-    console.log("[HomeScreen] 🔔 defaultCurrency CHANGED:", {
-      currencyId: defaultCurrency.currencyId,
-      symbol: defaultCurrency.symbol,
-      name: defaultCurrency.name,
-    });
-  }, [defaultCurrency.currencyId]);
-
-  // LOG: When isReady changes
-  useEffect(() => {
-    console.log("[HomeScreen] 🔔 isReady CHANGED:", isReady);
-  }, [isReady]);
-
-  // LOG: When convertAndFormat reference changes
-  const convertAndFormatRef = useRef(convertAndFormat);
-  useEffect(() => {
-    if (convertAndFormatRef.current !== convertAndFormat) {
-      console.log(
-        "[HomeScreen] 🔔 convertAndFormat function CHANGED (new reference)",
-      );
-      convertAndFormatRef.current = convertAndFormat;
-    }
-  }, [convertAndFormat]);
-
   const onRefresh = React.useCallback(async () => {
-    console.log("[HomeScreen] 🔄 Manual refresh...");
     setRefreshing(true);
     await refresh();
     setRefreshing(false);
   }, [refresh]);
 
-  // Data từ server (VND)
+  // Format currency helper
+  const formatCurrency = (amount: number | undefined) => {
+    if (amount === undefined) return "...";
+    return amount.toLocaleString("vi-VN") + " ₫";
+  };
+
   const incomeTotal = data?.income_expense_summary.income.total || 0;
   const expenseTotal = data?.income_expense_summary.expense.total || 0;
   const totalBalance = incomeTotal - expenseTotal;
 
+  const incomeFormatted = formatCurrency(incomeTotal);
+  const expenseFormatted = formatCurrency(expenseTotal);
+  const balanceFormatted = formatCurrency(totalBalance);
+
   const incomePercent = data?.income_expense_summary.income.change_percent || 0;
-  const expensePercent =
-    data?.income_expense_summary.expense.change_percent || 0;
-
-  const isLoading = dataLoading || !isReady;
-
-  console.log("[HomeScreen] State:", {
-    incomeTotal,
-    expenseTotal,
-    totalBalance,
-    isLoading,
-  });
-
-  // Format ngày
-  const getCurrentDate = () => {
-    return new Date().toLocaleDateString("vi-VN", {
-      weekday: "short",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const getCurrentMonth = () => {
-    return `Tháng ${new Date().getMonth() + 1}`;
-  };
-
-  // LOG: Render balance card
-  console.log("[HomeScreen] Rendering balance card:", {
-    isLoading,
-    hasError: !!error,
-    hasData: !!data,
-    isReady,
-  });
+  const expensePercent = data?.income_expense_summary.expense.change_percent || 0;
 
   return (
     <SafeAreaView
@@ -150,7 +78,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 Chào, HOANG
               </CustomText>
               <CustomText style={[styles.date, { color: colors.icon }]}>
-                {getCurrentDate()}
+                {getCurrentDateString()}
               </CustomText>
             </View>
           </View>
@@ -164,7 +92,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         </View>
 
         {/* Balance Card */}
-        {isLoading && !data ? (
+        {loading && !data ? (
           <View
             style={[
               styles.balanceCard,
@@ -212,14 +140,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <View style={[styles.balanceCard, { backgroundColor: colors.tint }]}>
             <CustomText style={styles.balanceLabel}>Tổng Số Dư</CustomText>
             <CustomText style={styles.balanceAmount}>
-              {isReady ? convertAndFormat(totalBalance) : "..."}
+              {balanceFormatted}
             </CustomText>
 
             <View style={styles.balanceDetails}>
               <View style={styles.balanceItem}>
                 <CustomText style={styles.balanceSubLabel}>Thu vào</CustomText>
                 <CustomText style={styles.incomeAmount}>
-                  {isReady ? `+${convertAndFormat(incomeTotal)}` : "..."}
+                  +{incomeFormatted}
                 </CustomText>
                 {incomePercent !== 0 && (
                   <CustomText
@@ -233,7 +161,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               <View style={styles.balanceItem}>
                 <CustomText style={styles.balanceSubLabel}>Chi Ra</CustomText>
                 <CustomText style={styles.expenseAmount}>
-                  {isReady ? `-${convertAndFormat(expenseTotal)}` : "..."}
+                  -{expenseFormatted}
                 </CustomText>
                 {expensePercent !== 0 && (
                   <CustomText
@@ -244,7 +172,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 )}
               </View>
             </View>
-            <CustomText style={styles.month}>{getCurrentMonth()}</CustomText>
+            <CustomText style={styles.month}>{getCurrentMonthString()}</CustomText>
           </View>
         )}
 
@@ -332,7 +260,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#FF6B35"
               name="Mua sắm"
               transactions="32 Giao dịch"
-              amount={isReady ? convertAndFormat(1248000) : "..."}
+              amount="1.248.000 ₫"
               color="#FF6B35"
               progress={0.75}
               colors={colors}
@@ -342,7 +270,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#4CAF50"
               name="Thực phẩm"
               transactions="28 Giao dịch"
-              amount={isReady ? convertAndFormat(842000) : "..."}
+              amount="842.000 ₫"
               color="#4CAF50"
               progress={0.6}
               colors={colors}
@@ -352,7 +280,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#9C27B0"
               name="Giải trí"
               transactions="15 Giao dịch"
-              amount={isReady ? convertAndFormat(425000) : "..."}
+              amount="425.000 ₫"
               color="#9C27B0"
               progress={0.4}
               colors={colors}
@@ -381,7 +309,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#2196F3"
               name="Nội Thất"
               time="Hôm nay, 2:30 PM"
-              amount={isReady ? `-${convertAndFormat(89000)}` : "..."}
+              amount="-89.000 ₫"
               isExpense
               colors={colors}
             />
@@ -390,7 +318,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#4CAF50"
               name="Lương hàng tháng"
               time="Hôm qua, 9:00 AM"
-              amount={isReady ? `+${convertAndFormat(24200000)}` : "..."}
+              amount="+24.200.000 ₫"
               isExpense={false}
               colors={colors}
             />
@@ -399,7 +327,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#FF9800"
               name="Shopee"
               time="Hôm qua, 8:15 AM"
-              amount={isReady ? `-${convertAndFormat(6000)}` : "..."}
+              amount="-6.000 ₫"
               isExpense
               colors={colors}
             />
@@ -408,7 +336,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               iconColor="#2196F3"
               name="Nội Thất"
               time="Hôm qua, 2:30 PM"
-              amount={isReady ? `-${convertAndFormat(89000)}` : "..."}
+              amount="-89.000 ₫"
               isExpense
               colors={colors}
             />

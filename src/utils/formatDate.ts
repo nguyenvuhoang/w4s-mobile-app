@@ -19,3 +19,16 @@ export const isSameDate = (date1: string, date2: string): boolean => {
   const d2 = dayjs(formatDate(date2, "DD/MM/YYYY"), "DD/MM/YYYY");
   return d1.isValid() && d2.isValid() && d1.isSame(d2, "day");
 };
+
+export const getCurrentDateString = () => {
+  return new Date().toLocaleDateString("vi-VN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+export const getCurrentMonthString = () => {
+  return `Tháng ${new Date().getMonth() + 1}`;
+};

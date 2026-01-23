@@ -5,11 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 
 interface ExpenseSummary {
   total: number;
+  formatted_total: string;
   change_percent: number;
 }
 
 interface IncomeSummary {
   total: number;
+  formatted_total: string;
   change_percent: number;
 }
 
