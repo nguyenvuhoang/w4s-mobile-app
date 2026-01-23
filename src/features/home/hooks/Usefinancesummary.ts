@@ -1,4 +1,6 @@
+import StorageKey from "@/constants/StorageKey";
 import { financeSummaryRepository } from "@/services/repositories/financeSummary.repository";
+import StorageService from "@/services/StorageService";
 import { useCallback, useEffect, useState } from "react";
 
 interface ExpenseSummary {
@@ -40,9 +42,14 @@ export const useFinanceSummary = (): UseFinanceSummaryReturn => {
       setLoading(true);
       setError(null);
 
+      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      if (!userCode) {
+        throw new Error("Missing user code");
+      }
+
       const response = await financeSummaryRepository.getIncomeExpenseSummary({
         period_type: "M",
-        usercode: "6a2616b6-e6c2-48e1-8751-0f804fd78e09",
+        usercode: userCode,
       });
 
       if (response.isSuccess() && response.data) {
