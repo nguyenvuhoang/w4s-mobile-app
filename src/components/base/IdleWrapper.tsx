@@ -78,10 +78,10 @@ const IdleWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const now = Date.now();
     const timeSinceLastInteraction = now - lastInteractionTime.current;
     
-    console.log('[IdleWrapper] Time since last interaction:', Math.floor(timeSinceLastInteraction / 1000), 'seconds');
+
 
     if (timeSinceLastInteraction >= AppConfig.SESSION.IDLE_TIMEOUT) {
-      console.log('[IdleWrapper] Idle timeout exceeded, performing logout');
+      // console.log('[IdleWrapper] Idle timeout exceeded, performing logout');
       performLogout();
     } else {
       const remainingTime = AppConfig.SESSION.IDLE_TIMEOUT - timeSinceLastInteraction;
@@ -113,10 +113,10 @@ const IdleWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         appState.current.match(/inactive|background/) &&
         nextAppState === 'active'
       ) {
-        console.log('[IdleWrapper] App returned to foreground, checking idle time');
+        // console.log('[IdleWrapper] App returned to foreground, checking idle time');
         checkIdleTime();
       } else if (nextAppState.match(/inactive|background/)) {
-        console.log('[IdleWrapper] App moved to background');
+        // console.log('[IdleWrapper] App moved to background');
         clearIdleTimer(); 
       }
       appState.current = nextAppState;
@@ -131,12 +131,12 @@ const IdleWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     if (appInfo?.is_login && newLoginName) {
       if (isNewSession) {
-        console.log('[IdleWrapper] New login session detected, resetting timer');
+        // console.log('[IdleWrapper] New login session detected, resetting timer');
         isLoggingOut.current = false;
         currentLoginName.current = newLoginName;
       }
       
-      console.log('[IdleWrapper] Logged in, starting idle timer');
+      // console.log('[IdleWrapper] Logged in, starting idle timer');
       lastInteractionTime.current = Date.now();
       startIdleTimer();
     } else {

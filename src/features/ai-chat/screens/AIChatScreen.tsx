@@ -1,5 +1,3 @@
-// src/features/ai-chat/screens/AIChatScreen.tsx
-
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
@@ -7,7 +5,7 @@ import { hp, normalize, wp } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -16,9 +14,12 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// 🔥 MOCK STREAM HOOK
+import { useChatStreamMock } from '@/features/ai-chat/hooks/useChatStream.mock';
 
 interface Message {
   id: string;
@@ -31,11 +32,26 @@ const AIChatScreen = () => {
   const { colors } = useAppTheme();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const handleSend = async () => {
-    if (!inputText.trim()) return;
+  const { startStream, stopStream } = useChatStreamMock();
+
+  useEffect(() => {
+    return () => {
+      stopStream();
+    };
+  }, []);
+
+  const scrollToBottom = () => {
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    });
+  };
+
+  const handleSend = () => {
+    if (!inputText.trim() || isProcessing || isStreaming) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -46,47 +62,118 @@ const AIChatScreen = () => {
 
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
-    setIsTyping(true);
+    scrollToBottom();
 
-    // Scroll to bottom
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    const aiMessageId = (Date.now() + 1).toString();
 
-    // TODO: Call AI API here
-    try {
-      // Simulate AI response
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: 'Đây là câu trả lời mẫu từ AI. Bạn cần tích hợp API thực tế ở đây.',
-        isUser: false,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, aiMessage]);
-    } catch (error) {
-      console.error('AI Error:', error);
-    } finally {
-      setIsTyping(false);
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }
+    // 🔥 STREAM MOCK với processing delay
+    startStream({
+      onProcessing: (processing) => {
+        setIsProcessing(processing);
+        if (!processing) {
+          // Chỉ tạo message AI khi bắt đầu stream
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: aiMessageId,
+              text: '',
+              isUser: false,
+              timestamp: new Date(),
+            },
+          ]);
+          setIsStreaming(true);
+          scrollToBottom();
+        }
+      },
+      onMessage: (chunk) => {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessageId
+              ? { ...msg, text: msg.text + chunk }
+              : msg
+          )
+        );
+        scrollToBottom();
+      },
+      onDone: () => {
+        setIsProcessing(false);
+        setIsStreaming(false);
+        scrollToBottom();
+      },
+      processingDelay: 1500, // 1.5 giây delay "đang xử lý"
+    });
   };
 
   const handleCopyMessage = async (text: string) => {
     await Clipboard.setStringAsync(text);
-    // TODO: Show toast "Đã copy"
     console.log('Copied:', text);
   };
 
-  const renderMessage = ({ item }: { item: Message }) => {
+  const handleSuggestionPress = (text: string) => {
+    if (isProcessing || isStreaming) return;
+
+    setInputText(text);
+
+    // Tự động gửi tin nhắn
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: text,
+      isUser: true,
+      timestamp: new Date(),
+    };
+
+    setMessages([userMessage]);
+    setInputText('');
+    scrollToBottom();
+
+    const aiMessageId = (Date.now() + 1).toString();
+
+    startStream({
+      onProcessing: (processing) => {
+        setIsProcessing(processing);
+        if (!processing) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: aiMessageId,
+              text: '',
+              isUser: false,
+              timestamp: new Date(),
+            },
+          ]);
+          setIsStreaming(true);
+          scrollToBottom();
+        }
+      },
+      onMessage: (chunk) => {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessageId
+              ? { ...msg, text: msg.text + chunk }
+              : msg
+          )
+        );
+        scrollToBottom();
+      },
+      onDone: () => {
+        setIsProcessing(false);
+        setIsStreaming(false);
+        scrollToBottom();
+      },
+      processingDelay: 1500,
+    });
+  };
+
+  const renderMessage = (item: Message) => {
     if (item.isUser) {
       return (
         <View style={styles.userMessageContainer}>
-          <View style={[styles.userMessageBubble, { backgroundColor: colors.card }]}>
+          <View
+            style={[
+              styles.userMessageBubble,
+              { backgroundColor: colors.card },
+            ]}
+          >
             <CustomText style={[styles.messageText, { color: colors.text }]}>
               {item.text}
             </CustomText>
@@ -95,7 +182,11 @@ const AIChatScreen = () => {
             style={styles.copyButton}
             onPress={() => handleCopyMessage(item.text)}
           >
-            <Ionicons name="copy-outline" size={normalize(20)} color={colors.icon} />
+            <Ionicons
+              name="copy-outline"
+              size={normalize(20)}
+              color={colors.icon}
+            />
           </TouchableOpacity>
         </View>
       );
@@ -103,27 +194,39 @@ const AIChatScreen = () => {
 
     return (
       <View style={styles.aiMessageContainer}>
-        <View style={[styles.aiMessageBubble, { backgroundColor: colors.tint + '15' }]}>
+        <View
+          style={[
+            styles.aiMessageBubble,
+            { backgroundColor: colors.tint + '15' },
+          ]}
+        >
           <CustomText style={[styles.messageText, { color: colors.text }]}>
             {item.text}
           </CustomText>
         </View>
-        <TouchableOpacity
-          style={styles.copyButton}
-          onPress={() => handleCopyMessage(item.text)}
-        >
-          <Ionicons name="copy-outline" size={normalize(20)} color={colors.icon} />
-        </TouchableOpacity>
+        {item.text && (
+          <TouchableOpacity
+            style={styles.copyButton}
+            onPress={() => handleCopyMessage(item.text)}
+          >
+            <Ionicons
+              name="copy-outline"
+              size={normalize(20)}
+              color={colors.icon}
+            />
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.background }]}>
@@ -131,7 +234,11 @@ const AIChatScreen = () => {
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={normalize(24)} color={colors.text} />
+            <Ionicons
+              name="arrow-back"
+              size={normalize(24)}
+              color={colors.text}
+            />
           </TouchableOpacity>
           <CustomText style={[styles.headerTitle, { color: colors.text }]}>
             Chatbot AI
@@ -140,7 +247,11 @@ const AIChatScreen = () => {
             style={styles.historyButton}
             onPress={() => router.push('/(protected)/ai-chat/history')}
           >
-            <Ionicons name="chatbubbles-outline" size={normalize(24)} color={colors.text} />
+            <Ionicons
+              name="chatbubbles-outline"
+              size={normalize(24)}
+              color={colors.text}
+            />
           </TouchableOpacity>
         </View>
 
@@ -148,32 +259,115 @@ const AIChatScreen = () => {
         <ScrollView
           ref={scrollViewRef}
           style={styles.messagesContainer}
-          contentContainerStyle={styles.messagesContent}
+          contentContainerStyle={[
+            styles.messagesContent,
+            messages.length === 0 && styles.messagesContentEmpty,
+          ]}
           showsVerticalScrollIndicator={false}
         >
-          {messages.map((message) => (
-            <View key={message.id}>
-              {renderMessage({ item: message })}
-            </View>
-          ))}
+          {messages.length === 0 ? (
+            // Welcome Screen
+            <View style={styles.emptyContainer}>
+              <View style={[styles.aiIconContainer, { backgroundColor: colors.tint + '20' }]}>
+                <Ionicons
+                  name="sparkles"
+                  size={normalize(48)}
+                  color={colors.tint}
+                />
+              </View>
+              <CustomText style={[styles.emptyTitle, { color: colors.text }]}>
+                Xin chào! 👋
+              </CustomText>
+              <CustomText style={[styles.emptySubtitle, { color: colors.icon }]}>
+                Tôi là trợ lý AI của bạn. Hãy hỏi tôi bất cứ điều gì!
+              </CustomText>
 
-          {/* Typing Indicator */}
-          {isTyping && (
-            <View style={styles.typingContainer}>
-              <View style={[styles.typingBubble, { backgroundColor: colors.card }]}>
-                <ActivityIndicator size="small" color={colors.tint} />
-                <CustomText style={[styles.typingText, { color: colors.icon }]}>
-                  Đang suy nghĩ ....
-                </CustomText>
+              {/* Suggestion Cards */}
+              <View style={styles.suggestionsContainer}>
+                <TouchableOpacity
+                  style={[styles.suggestionCard, { backgroundColor: colors.card }]}
+                  onPress={() => handleSuggestionPress('Cách tạo ví trong W4S như thế nào?')}
+                  activeOpacity={0.7}
+                  disabled={isProcessing || isStreaming}
+                >
+                  <Ionicons name="wallet-outline" size={normalize(24)} color={colors.tint} />
+                  <CustomText style={[styles.suggestionText, { color: colors.text }]}>
+                    Cách tạo ví
+                  </CustomText>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.suggestionCard, { backgroundColor: colors.card }]}
+                  onPress={() => handleSuggestionPress('Hướng dẫn tạo giao dịch thu chi')}
+                  activeOpacity={0.7}
+                  disabled={isProcessing || isStreaming}
+                >
+                  <Ionicons name="swap-horizontal-outline" size={normalize(24)} color={colors.tint} />
+                  <CustomText style={[styles.suggestionText, { color: colors.text }]}>
+                    Tạo giao dịch
+                  </CustomText>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.suggestionCard, { backgroundColor: colors.card }]}
+                  onPress={() => handleSuggestionPress('Cách quản lý ngân sách hiệu quả')}
+                  activeOpacity={0.7}
+                  disabled={isProcessing || isStreaming}
+                >
+                  <Ionicons name="pie-chart-outline" size={normalize(24)} color={colors.tint} />
+                  <CustomText style={[styles.suggestionText, { color: colors.text }]}>
+                    Quản lý ngân sách
+                  </CustomText>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.suggestionCard, { backgroundColor: colors.card }]}
+                  onPress={() => handleSuggestionPress('Mẹo tiết kiệm tiền cho sinh viên')}
+                  activeOpacity={0.7}
+                  disabled={isProcessing || isStreaming}
+                >
+                  <Ionicons name="trending-up-outline" size={normalize(24)} color={colors.tint} />
+                  <CustomText style={[styles.suggestionText, { color: colors.text }]}>
+                    Mẹo tiết kiệm
+                  </CustomText>
+                </TouchableOpacity>
               </View>
             </View>
+          ) : (
+            // Messages List
+            <>
+              {messages.map((msg) => (
+                <View key={msg.id}>{renderMessage(msg)}</View>
+              ))}
+
+              {/* Processing Indicator */}
+              {isProcessing && (
+                <View style={styles.typingContainer}>
+                  <View
+                    style={[
+                      styles.typingBubble,
+                      { backgroundColor: colors.tint + '15' },
+                    ]}
+                  >
+                    <ActivityIndicator size="small" color={colors.tint} />
+                    <CustomText
+                      style={[styles.typingText, { color: colors.text }]}
+                    >
+                      Đang xử lý...
+                    </CustomText>
+                  </View>
+                </View>
+              )}
+            </>
           )}
 
           <View style={{ height: hp(2) }} />
         </ScrollView>
 
         {/* Input */}
-        <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
+        <View
+          style={[styles.inputContainer, { backgroundColor: colors.background }]}
+        >
           <View style={[styles.inputWrapper, { backgroundColor: colors.card }]}>
             <TextInput
               style={[styles.input, { color: colors.text }]}
@@ -183,16 +377,17 @@ const AIChatScreen = () => {
               onChangeText={setInputText}
               multiline
               maxLength={500}
+              editable={!isProcessing && !isStreaming}
             />
           </View>
           <TouchableOpacity
             style={[
               styles.sendButton,
               { backgroundColor: colors.tint },
-              !inputText.trim() && styles.sendButtonDisabled,
+              (!inputText.trim() || isProcessing || isStreaming) && styles.sendButtonDisabled,
             ]}
             onPress={handleSend}
-            disabled={!inputText.trim()}
+            disabled={!inputText.trim() || isProcessing || isStreaming}
           >
             <Ionicons name="send" size={normalize(20)} color="#fff" />
           </TouchableOpacity>
@@ -206,7 +401,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
 
-  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -235,19 +429,63 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Messages
-  messagesContainer: {
-    flex: 1,
-  },
+  messagesContainer: { flex: 1 },
   messagesContent: {
     paddingHorizontal: wp(5),
     paddingTop: hp(2),
   },
+  messagesContentEmpty: {
+    flexGrow: 1,
+  },
 
-  // User Message
+  // Empty State
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(5),
+    gap: normalize(16),
+  },
+  aiIconContainer: {
+    width: normalize(100),
+    height: normalize(100),
+    borderRadius: normalize(50),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: normalize(8),
+  },
+  emptyTitle: {
+    fontSize: normalize(24),
+    fontFamily: Fonts.bold,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: normalize(15),
+    fontFamily: Fonts.regular,
+    textAlign: 'center',
+    lineHeight: normalize(22),
+    paddingHorizontal: wp(10),
+  },
+  suggestionsContainer: {
+    width: '100%',
+    gap: normalize(12),
+    marginTop: normalize(16),
+  },
+  suggestionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: normalize(12),
+    padding: normalize(16),
+    borderRadius: normalize(16),
+  },
+  suggestionText: {
+    fontSize: normalize(15),
+    fontFamily: Fonts.medium,
+    flex: 1,
+  },
+
   userMessageContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
     justifyContent: 'flex-end',
     marginBottom: hp(2),
     gap: normalize(8),
@@ -259,10 +497,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: normalize(4),
   },
 
-  // AI Message
   aiMessageContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
     justifyContent: 'flex-start',
     marginBottom: hp(2),
     gap: normalize(8),
@@ -288,10 +524,8 @@ const styles = StyleSheet.create({
     marginTop: normalize(4),
   },
 
-  // Typing
   typingContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
     marginBottom: hp(2),
   },
   typingBubble: {
@@ -299,6 +533,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: normalize(8),
     padding: normalize(12),
+    paddingHorizontal: normalize(16),
     borderRadius: normalize(20),
     borderTopLeftRadius: normalize(4),
   },
@@ -307,7 +542,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
   },
 
-  // Input
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',

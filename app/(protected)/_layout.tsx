@@ -79,6 +79,16 @@ export default function ProtectedLayout() {
           }}
         />
 
+        <Stack.Screen
+          name="profile"
+          options={{
+            presentation: "modal",
+            animation: "slide_from_bottom",
+            animationDuration: 300,
+            headerShown: false,
+          }}
+        />
+
         {/* ✅ THÊM AI-CHAT ROUTES */}
         <Stack.Screen name="ai-chat" options={{ headerShown: false }} />
       </Stack>

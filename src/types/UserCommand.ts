@@ -42,6 +42,7 @@ export interface AppInfo {
     is_smart_otp_active: boolean;
     is_login: boolean;
     user_banner: string;
+    currency_code: string;
 }
 
 export interface DepositInfo {

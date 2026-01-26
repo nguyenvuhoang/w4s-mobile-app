@@ -11,12 +11,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -68,7 +68,7 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
     };
     
     // Convert object => string => lưu storage
-    console.log('[CurrencySelect] Saving currency:', currencyData);
+
     await StorageService.setItem('temp_selected_currency', JSON.stringify(currencyData));
 
     // Callback nếu có
@@ -80,7 +80,7 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
 
   const handleEndReached = useCallback(() => {
     if (hasMore && !loading) {
-      console.log('[Screen] End reached, calling loadMore');
+
       loadMore();
     }
   }, [hasMore, loading, loadMore]);

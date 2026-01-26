@@ -1,7 +1,7 @@
 import AppHeader from "@/components/base/AppHeader";
 import MoneyInput from "@/components/base/MoneyInput";
 import BottomSelectModal, {
-    BottomSelectOption,
+  BottomSelectOption,
 } from "@/components/modals/SelectModal";
 import { ThemedText } from "@/components/themed-text";
 import { Fonts } from "@/core/theme/font";
@@ -10,11 +10,11 @@ import { hp, normalize, wp } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -42,8 +42,8 @@ const InterestCalculatorScreen: React.FC = () => {
   const { colors } = useAppTheme();
 
   /* ---------- STATE ---------- */
-  const [principal, setPrincipal] = useState<number>(5_000_000);
-  const [interestRate, setInterestRate] = useState("6");
+  const [principal, setPrincipal] = useState<number>(0);
+  const [interestRate, setInterestRate] = useState("0");
 
   const [period, setPeriod] = useState(PERIOD_OPTIONS[2]); // 6 tháng
   const [calculationType, setCalculationType] = useState(CALCULATION_OPTIONS[0]);
@@ -98,7 +98,7 @@ const InterestCalculatorScreen: React.FC = () => {
     >
       <AppHeader title="Tính lãi suất" showBackButton />
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -210,7 +210,7 @@ const InterestCalculatorScreen: React.FC = () => {
             <ThemedText style={[styles.resultLabel, { color: colors.icon }]} numberOfLines={1}>
               Tiền lãi
             </ThemedText>
-            <ThemedText 
+            <ThemedText
               style={[styles.resultValue, { color: colors.text }]}
               numberOfLines={1}
               adjustsFontSizeToFit
@@ -226,7 +226,7 @@ const InterestCalculatorScreen: React.FC = () => {
             <ThemedText style={[styles.resultLabel, { color: colors.text }]} numberOfLines={1}>
               Tổng nhận cuối kỳ
             </ThemedText>
-            <ThemedText 
+            <ThemedText
               style={[styles.highlightValue, { color: colors.tint }]}
               numberOfLines={1}
               adjustsFontSizeToFit
@@ -269,8 +269,8 @@ export default InterestCalculatorScreen;
 /* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1 
+  container: {
+    flex: 1
   },
   scrollContent: {
     paddingHorizontal: wp(5),

@@ -1,5 +1,6 @@
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { transactionRepository } from "@/services/repositories/transaction.repository";
+import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { AccountType } from "@/types/wallet";
 import { useContext, useState } from "react";
 
@@ -72,10 +73,6 @@ export const useTransaction = () => {
         );
       }
 
-      console.log(
-        `[useTransaction] Using account: ${account.accountNumber} (${account.accountTypeCaption}) for ${data.type}`,
-      );
-
       // Format participants cho server
       const formattedParticipants =
         data.participants?.map((p) => {
@@ -119,12 +116,10 @@ export const useTransaction = () => {
         with_users: formattedParticipants,
       };
 
-      console.log("[useTransaction] Creating transaction:", payload);
-
       const response = await transactionRepository.createTransaction(payload);
 
       if (response.isSuccess()) {
-        console.log("[useTransaction] Transaction created successfully");
+        TransactionEventEmitter.emitTransactionChanged();
         return response;
       } else {
         throw new Error(response.getError() || "Không thể tạo giao dịch");

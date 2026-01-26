@@ -2,6 +2,7 @@ import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useFinanceSummary } from "@/features/home/hooks/Usefinancesummary";
 import { styles } from "@/features/home/styles/HomeScreen.Style";
+import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { getCurrentDateString, getCurrentMonthString } from "@/utils/formatDate";
 import { formatPercent } from "@/utils/formatNumber";
 import { hp, normalize } from "@/utils/layout";
@@ -23,8 +24,9 @@ interface HomeScreenProps {
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { colors } = useAppTheme();
+  const { defaultCurrency, loading: currencyLoading } = useDefaultCurrency();
 
-  // Fetch finance data (amounts are pre-formatted by server)
+  // Fetch finance data (amounts already in correct currency from server)
   const { data, loading, error, refresh } = useFinanceSummary();
 
   const [refreshing, setRefreshing] = React.useState(false);
@@ -35,10 +37,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     setRefreshing(false);
   }, [refresh]);
 
-  // Format currency helper
+  // Format currency for display (no conversion - server returns correct currency)
   const formatCurrency = (amount: number | undefined) => {
     if (amount === undefined) return "...";
-    return amount.toLocaleString("vi-VN") + " ₫";
+    const formatted = amount.toLocaleString();
+    return `${formatted} ${defaultCurrency.symbol}`;
   };
 
   const incomeTotal = data?.income_expense_summary.income.total || 0;
@@ -145,7 +148,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
             <View style={styles.balanceDetails}>
               <View style={styles.balanceItem}>
-                <CustomText style={styles.balanceSubLabel}>Thu vào</CustomText>
+                <CustomText style={styles.balanceSubLabel}>Thu Vào</CustomText>
                 <CustomText style={styles.incomeAmount}>
                   +{incomeFormatted}
                 </CustomText>
@@ -180,7 +183,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => console.log("Navigate to Send Money")}
+            onPress={() => {}}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.tint }]}>
               <Ionicons name="arrow-up" size={normalize(24)} color="#fff" />
@@ -192,7 +195,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => console.log("Navigate to Receive Money")}
+            onPress={() => {}}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <Ionicons
@@ -208,7 +211,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => console.log("Navigate to Cards")}
+            onPress={() => {}}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <Ionicons
@@ -224,7 +227,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => console.log("Show more actions")}
+            onPress={() => {}}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <Ionicons
@@ -246,7 +249,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               Chi tiêu nhiều nhất
             </CustomText>
             <TouchableOpacity
-              onPress={() => console.log("Navigate to Categories")}
+              onPress={() => {}}
             >
               <CustomText style={[styles.seeMore, { color: colors.tint }]}>
                 Xem Thêm
@@ -295,7 +298,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               Giao dịch gần đây
             </CustomText>
             <TouchableOpacity
-              onPress={() => console.log("Navigate to Transactions")}
+              onPress={() => {}}
             >
               <CustomText style={[styles.seeMore, { color: colors.tint }]}>
                 Xem thêm

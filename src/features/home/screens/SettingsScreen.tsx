@@ -10,12 +10,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useContext, useState } from "react";
 import {
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
   Switch,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -27,10 +28,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { handleLogout, touchIDClick, isUsingTouchID } = useSettingService();
   const { appInfo } = useContext(GlobalContext);
   const { mode, setMode, colors, isDark } = useAppTheme();
-  const { defaultCurrency, loading, updateDefaultCurrency, resetToDefault } =
+  const { defaultCurrency, loading, updateDefaultCurrency } =
     useDefaultCurrency();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [updatingCurrency, setUpdatingCurrency] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -41,11 +43,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           );
 
           if (selectedCurrencyStr) {
+            setUpdatingCurrency(true);
             const selectedCurrency = JSON.parse(selectedCurrencyStr);
-            console.log(
-              "[CurrencySettings] Updating default currency:",
-              selectedCurrency,
-            );
+
 
             await updateDefaultCurrency(selectedCurrency);
             await StorageService.removeItem("temp_selected_currency");
@@ -55,6 +55,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             "[CurrencySettings] Failed to load selected currency:",
             error,
           );
+          Alert.alert("Lỗi", "Không thể cập nhật tiền tệ. Vui lòng thử lại.");
+        } finally {
+          setUpdatingCurrency(false);
         }
       };
 
@@ -114,7 +117,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="person-outline"
               title="Thông tin cá nhân"
-              onPress={() => {}}
+              onPress={() => {
+                router.push("/(protected)/profile");
+              }}
               colors={colors}
             />
             <SettingItem
@@ -144,7 +149,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="receipt-outline"
               title="Sổ nợ"
-              onPress={() => {}}
+              onPress={() => {
+                router.push("/(protected)/paybook");
+              }}
               colors={colors}
             />
             <SettingItem
@@ -173,7 +180,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="calendar-outline"
               title="Giao dịch định kỳ"
-              onPress={() => {}}
+              onPress={() => {
+                router.push({
+                  pathname: "/(protected)/invoice/recurring-list",
+                });
+              }}
               colors={colors}
             />
             <SettingItem
@@ -204,7 +215,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               icon="time-outline"
               title="Nhắc giao dịch"
               value="Tắt chuông báo"
-              onPress={() => {}}
+              onPress={() => { }}
               colors={colors}
             />
             <SettingItemWithSwitch
@@ -228,7 +239,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               icon="language-outline"
               title="Ngôn ngữ"
               value="Tiếng Việt"
-              onPress={() => {}}
+              onPress={() => { }}
               colors={colors}
             />
             <SettingItem
@@ -265,20 +276,20 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="document-text-outline"
               title="Chính sách bảo mật"
-              onPress={() => {}}
+              onPress={() => { }}
               colors={colors}
             />
             <SettingItem
               icon="phone-portrait-outline"
               title="Thông tin đăng nhập"
-              onPress={() => {}}
+              onPress={() => { }}
               colors={colors}
             />
             <SettingItem
               icon="information-circle-outline"
               title="Thông tin ứng dụng"
               value="v1.0.0"
-              onPress={() => {}}
+              onPress={() => { }}
               colors={colors}
             />
           </View>

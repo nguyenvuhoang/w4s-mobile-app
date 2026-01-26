@@ -1,6 +1,8 @@
 import StorageKey from "@/constants/StorageKey";
+import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
 import { financeSummaryRepository } from "@/services/repositories/financeSummary.repository";
 import StorageService from "@/services/StorageService";
+import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { useCallback, useEffect, useState } from "react";
 
 interface ExpenseSummary {
@@ -33,6 +35,7 @@ interface UseFinanceSummaryReturn {
 
 /**
  * Hook for fetching income and expense summary
+ * Automatically refetches when currency or transaction changes
  */
 export const useFinanceSummary = (): UseFinanceSummaryReturn => {
   const [data, setData] = useState<FinanceSummaryData | null>(null);
@@ -55,7 +58,6 @@ export const useFinanceSummary = (): UseFinanceSummaryReturn => {
       });
 
       if (response.isSuccess() && response.data) {
-        console.log("Finance summary data:", response.data);
         setData(response.data);
       } else {
         setError(response.message || "Failed to fetch finance summary");
@@ -74,6 +76,32 @@ export const useFinanceSummary = (): UseFinanceSummaryReturn => {
     fetchSummary();
   }, [fetchSummary]);
 
+  // Listen for currency changes
+  useEffect(() => {
+    const handleCurrencyChanged = () => {
+      fetchSummary();
+    };
+
+    CurrencyEventEmitter.onCurrencyChanged(handleCurrencyChanged);
+
+    return () => {
+      CurrencyEventEmitter.offCurrencyChanged(handleCurrencyChanged);
+    };
+  }, [fetchSummary]);
+
+  // Listen for transaction changes (create/update/delete)
+  useEffect(() => {
+    const handleTransactionChanged = () => {
+      fetchSummary();
+    };
+
+    TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
+
+    return () => {
+      TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
+    };
+  }, [fetchSummary]);
+
   return {
     data,
     loading,
@@ -81,3 +109,4 @@ export const useFinanceSummary = (): UseFinanceSummaryReturn => {
     refresh: fetchSummary,
   };
 };
+

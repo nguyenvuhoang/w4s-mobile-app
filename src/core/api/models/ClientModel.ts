@@ -216,3 +216,13 @@ export const getError = (response: BaseResponse): string => {
   if (response.errors.length === 0) return response.message;
   return response.errors[0].info;
 };
+
+
+export interface ChatStreamOptions {
+  url: string;
+  token?: string;
+  headers?: Record<string, string>;
+  onMessage: (chunk: string) => void;
+  onDone?: () => void;
+  onError?: (error: any) => void;
+}

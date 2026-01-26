@@ -1,3 +1,4 @@
+import { normalize } from '@/utils/layout';
 import React, { useEffect } from 'react';
 import { Dimensions, Image, StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -19,17 +20,14 @@ interface FloatingButtonProps {
   initialPosition?: { x: number; y: number };
   onPress?: () => void;
   snapToEdge?: boolean;
-  glowColor?: string; // Màu glow (mặc định: xanh dương)
-  enablePulse?: boolean; // Bật hiệu ứng nhấp nháy
+  glowColor?: string;
+  enablePulse?: boolean;
 }
 
 const FloatingButton: React.FC<FloatingButtonProps> = ({
   imageSource,
-  size = 50,
-  initialPosition = {
-    x: SCREEN_WIDTH - 80,
-    y: SCREEN_HEIGHT / 2,
-  },
+  size = normalize(50),
+  initialPosition,
   onPress,
   snapToEdge = true,
   glowColor = '#4A90E2',
@@ -38,8 +36,16 @@ const FloatingButton: React.FC<FloatingButtonProps> = ({
   /** ======================
    * Shared values
    ======================= */
-  const translateX = useSharedValue(initialPosition.x);
-  const translateY = useSharedValue(initialPosition.y);
+  // Vị trí mặc định sát mép phải, giữa màn hình theo chiều dọc
+  const defaultPosition = {
+    x: SCREEN_WIDTH - size - 4, // 4px padding từ mép phải
+    y: SCREEN_HEIGHT / 2,
+  };
+
+  const finalInitialPosition = initialPosition || defaultPosition;
+
+  const translateX = useSharedValue(finalInitialPosition.x);
+  const translateY = useSharedValue(finalInitialPosition.y);
   const scale = useSharedValue(1);
 
   const startX = useSharedValue(0);

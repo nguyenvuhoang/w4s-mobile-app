@@ -1,9 +1,11 @@
 // src/hooks/useDefaultCurrency.ts
 
+import STORAGE_KEY from "@/constants/StorageKey";
 import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
 import DefaultCurrencyService, {
-  DefaultCurrency,
+    DefaultCurrency,
 } from "@/services/DefaultCurrencyService";
+import StorageService from "@/services/StorageService";
 import { useCallback, useEffect, useState } from "react";
 
 export const useDefaultCurrency = () => {
@@ -19,7 +21,7 @@ export const useDefaultCurrency = () => {
     const loadCurrency = async () => {
       try {
         const currency = await DefaultCurrencyService.getDefaultCurrency();
-        console.log("[useDefaultCurrency] Initial load:", currency);
+
         setDefaultCurrency(currency);
       } catch (error) {
         console.error("[useDefaultCurrency] Failed to load:", error);
@@ -34,18 +36,16 @@ export const useDefaultCurrency = () => {
   // Listen for currency changes from other components
   useEffect(() => {
     const handleCurrencyChanged = async (currencyId: string) => {
-      console.log(
-        "[useDefaultCurrency] Received currency changed event:",
-        currencyId,
-      );
-
-      // Reload from storage
+      // Only read from local storage to avoid duplicate API call
+      // The currency was already saved to storage by updateDefaultCurrency()
       try {
-        const currency = await DefaultCurrencyService.getDefaultCurrency();
-        console.log("[useDefaultCurrency] Reloaded from storage:", currency);
-        setDefaultCurrency(currency);
+        const storedCurrencyStr = await StorageService.getItem(STORAGE_KEY.defaultCurrency);
+        if (storedCurrencyStr) {
+          const currency = JSON.parse(storedCurrencyStr) as DefaultCurrency;
+          setDefaultCurrency(currency);
+        }
       } catch (error) {
-        console.error("[useDefaultCurrency] Failed to reload:", error);
+        console.error("[useDefaultCurrency] Failed to reload from storage:", error);
       }
     };
 
@@ -63,7 +63,7 @@ export const useDefaultCurrency = () => {
   const updateDefaultCurrency = useCallback(
     async (currency: DefaultCurrency) => {
       try {
-        console.log("[useDefaultCurrency] Updating to:", currency);
+
 
         // Save to storage
         await DefaultCurrencyService.setDefaultCurrency(currency);
@@ -74,7 +74,7 @@ export const useDefaultCurrency = () => {
         // Emit event to notify other components/hooks
         CurrencyEventEmitter.emitCurrencyChanged(currency.currencyId);
 
-        console.log("[useDefaultCurrency] Updated successfully");
+
       } catch (error) {
         console.error("[useDefaultCurrency] Failed to update:", error);
         throw error;

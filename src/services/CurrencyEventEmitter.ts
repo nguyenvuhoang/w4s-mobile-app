@@ -14,10 +14,6 @@ class CurrencyEventEmitter {
   }
 
   emitCurrencyChanged(currencyId: string) {
-    console.log(
-      "[CurrencyEventEmitter] Emitting currency changed:",
-      currencyId,
-    );
     this.listeners.forEach((listener) => {
       try {
         listener(currencyId);
@@ -28,12 +24,10 @@ class CurrencyEventEmitter {
   }
 
   onCurrencyChanged(callback: Listener) {
-    console.log("[CurrencyEventEmitter] Listener registered");
     this.listeners.push(callback);
   }
 
   offCurrencyChanged(callback: Listener) {
-    console.log("[CurrencyEventEmitter] Listener removed");
     const index = this.listeners.indexOf(callback);
     if (index > -1) {
       this.listeners.splice(index, 1);
@@ -41,7 +35,6 @@ class CurrencyEventEmitter {
   }
 
   removeAllListeners() {
-    console.log("[CurrencyEventEmitter] All listeners removed");
     this.listeners = [];
   }
 }

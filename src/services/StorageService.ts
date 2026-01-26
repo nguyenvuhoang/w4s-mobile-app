@@ -160,7 +160,7 @@ class StorageService {
           return parsedCommandIds;
         }
       } catch (error) {
-        console.log('Failed to parse cached role command:', error);
+        console.warn('Failed to parse cached role command:', error);
       }
     }
     return [];

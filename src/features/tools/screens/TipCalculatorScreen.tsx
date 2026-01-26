@@ -11,9 +11,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const TipCalculatorScreen = () => {
   const { colors } = useAppTheme();
-  const [billAmount, setBillAmount] = useState("450000");
+  const [billAmount, setBillAmount] = useState("0");
   const [tipPercent, setTipPercent] = useState(10);
-  const [numberOfPeople, setNumberOfPeople] = useState(2);
+  const [tipPercentInput, setTipPercentInput] = useState("10");
+  const [isManualInput, setIsManualInput] = useState(false);
+  const [numberOfPeople, setNumberOfPeople] = useState(1);
   const [tipAmount, setTipAmount] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [perPerson, setPerPerson] = useState(0);
@@ -24,7 +26,7 @@ const TipCalculatorScreen = () => {
 
   const calculateTip = () => {
     const bill = parseFloat(billAmount.replace(/[^\d]/g, ""));
-    
+
     if (!isNaN(bill) && bill > 0) {
       const tip = bill * (tipPercent / 100);
       const total = bill + tip;
@@ -49,6 +51,21 @@ const TipCalculatorScreen = () => {
     setBillAmount(cleaned);
   };
 
+  const handleTipPercentInputChange = (text: string) => {
+    const cleaned = text.replace(/[^\d]/g, "");
+    setTipPercentInput(cleaned);
+    setIsManualInput(true);
+
+    const value = parseInt(cleaned || "0");
+    setTipPercent(value);
+  };
+
+  const handleSliderChange = (value: number) => {
+    setIsManualInput(false);
+    setTipPercent(value);
+    setTipPercentInput(value.toString());
+  };
+
   const handleDecreasePeople = () => {
     if (numberOfPeople > 1) {
       setNumberOfPeople(numberOfPeople - 1);
@@ -67,7 +84,7 @@ const TipCalculatorScreen = () => {
     >
       <AppHeader title="Tính tiền típ" showBackButton />
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -107,20 +124,28 @@ const TipCalculatorScreen = () => {
               <ThemedText style={[styles.label, { color: colors.text }]}>
                 Phần trăm típ
               </ThemedText>
-              <View style={[styles.percentBadge, { backgroundColor: colors.tint }]}>
-                <ThemedText style={styles.percentBadgeText}>
-                  {tipPercent}%
+              <View style={[styles.percentInputWrapper, { borderColor: colors.border }]}>
+                <TextInput
+                  style={[styles.percentInput, { color: colors.text }]}
+                  value={tipPercentInput}
+                  onChangeText={handleTipPercentInputChange}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor={colors.icon}
+                />
+                <ThemedText style={[styles.percentSymbol, { color: colors.icon }]}>
+                  %
                 </ThemedText>
               </View>
             </View>
 
             <Slider
-              style={styles.slider}
+              style={[styles.slider, isManualInput && { opacity: 0.3 }]}
               minimumValue={0}
               maximumValue={30}
               step={1}
               value={tipPercent}
-              onValueChange={setTipPercent}
+              onValueChange={handleSliderChange}
               minimumTrackTintColor={colors.tint}
               maximumTrackTintColor={colors.border}
               thumbTintColor={colors.tint}
@@ -133,18 +158,22 @@ const TipCalculatorScreen = () => {
                   key={preset}
                   style={[
                     styles.presetButton,
-                    { 
-                      backgroundColor: tipPercent === preset ? colors.tint : colors.background,
+                    {
+                      backgroundColor: tipPercent === preset && !isManualInput ? colors.tint : colors.background,
                       borderColor: colors.border,
                     }
                   ]}
-                  onPress={() => setTipPercent(preset)}
+                  onPress={() => {
+                    setIsManualInput(false);
+                    setTipPercent(preset);
+                    setTipPercentInput(preset.toString());
+                  }}
                   activeOpacity={0.7}
                 >
                   <ThemedText
                     style={[
                       styles.presetText,
-                      { color: tipPercent === preset ? "#fff" : colors.text }
+                      { color: tipPercent === preset && !isManualInput ? "#fff" : colors.text }
                     ]}
                   >
                     {preset}%
@@ -162,12 +191,12 @@ const TipCalculatorScreen = () => {
             <ThemedText style={[styles.label, { color: colors.text }]}>
               Số người chia
             </ThemedText>
-            
+
             <View style={styles.peopleContainer}>
               <TouchableOpacity
                 style={[
-                  styles.peopleButton, 
-                  { 
+                  styles.peopleButton,
+                  {
                     backgroundColor: colors.background,
                     borderColor: colors.border,
                   }
@@ -176,13 +205,13 @@ const TipCalculatorScreen = () => {
                 activeOpacity={0.7}
                 disabled={numberOfPeople <= 1}
               >
-                <Ionicons 
-                  name="remove" 
-                  size={normalize(24)} 
-                  color={numberOfPeople <= 1 ? colors.icon : colors.text} 
+                <Ionicons
+                  name="remove"
+                  size={normalize(24)}
+                  color={numberOfPeople <= 1 ? colors.icon : colors.text}
                 />
               </TouchableOpacity>
-              
+
               <View style={styles.peopleCountWrapper}>
                 <ThemedText style={[styles.peopleCount, { color: colors.text }]}>
                   {numberOfPeople}
@@ -191,11 +220,11 @@ const TipCalculatorScreen = () => {
                   người
                 </ThemedText>
               </View>
-              
+
               <TouchableOpacity
                 style={[
-                  styles.peopleButton, 
-                  { 
+                  styles.peopleButton,
+                  {
                     backgroundColor: colors.background,
                     borderColor: colors.border,
                   }
@@ -219,8 +248,8 @@ const TipCalculatorScreen = () => {
             <ThemedText style={[styles.resultLabel, { color: colors.icon }]} numberOfLines={1}>
               Tiền típ
             </ThemedText>
-            <ThemedText 
-              style={[styles.resultValue, { color: colors.text }]} 
+            <ThemedText
+              style={[styles.resultValue, { color: colors.text }]}
               numberOfLines={1}
               adjustsFontSizeToFit
               minimumFontScale={0.8}
@@ -233,7 +262,7 @@ const TipCalculatorScreen = () => {
             <ThemedText style={[styles.resultLabel, { color: colors.icon }]} numberOfLines={1}>
               Tổng hóa đơn
             </ThemedText>
-            <ThemedText 
+            <ThemedText
               style={[styles.resultValue, { color: colors.text }]}
               numberOfLines={1}
               adjustsFontSizeToFit
@@ -249,7 +278,7 @@ const TipCalculatorScreen = () => {
             <ThemedText style={[styles.resultLabel, { color: colors.text }]} numberOfLines={1}>
               Mỗi người trả
             </ThemedText>
-            <ThemedText 
+            <ThemedText
               style={[styles.highlightValue, { color: colors.tint }]}
               numberOfLines={1}
               adjustsFontSizeToFit
@@ -277,7 +306,7 @@ const styles = StyleSheet.create({
     paddingVertical: hp(2),
     gap: normalize(16),
   },
-  
+
   // Subtitle
   subtitle: {
     fontSize: normalize(14),
@@ -331,6 +360,29 @@ const styles = StyleSheet.create({
     fontSize: normalize(20),
     fontFamily: Fonts.medium,
     marginLeft: normalize(8),
+  },
+
+  // Percent Input
+  percentInputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderRadius: normalize(8),
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(6),
+    minWidth: normalize(70),
+  },
+  percentInput: {
+    fontSize: normalize(16),
+    fontFamily: Fonts.bold,
+    padding: 0,
+    textAlign: "center",
+    minWidth: normalize(30),
+  },
+  percentSymbol: {
+    fontSize: normalize(16),
+    fontFamily: Fonts.medium,
+    marginLeft: normalize(4),
   },
 
   // Slider

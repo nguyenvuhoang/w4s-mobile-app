@@ -23,10 +23,49 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const logoImg = Images.appLogoLight;
 
+// Validation helpers
+const validateEmail = (email: string): string | null => {
+  if (!email.trim()) return 'Email không được để trống';
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) return 'Email không hợp lệ';
+  return null;
+};
+
+const validatePhone = (phone: string): string | null => {
+  if (!phone.trim()) return 'Số điện thoại không được để trống';
+  const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
+  if (!phoneRegex.test(phone.trim())) {
+    return 'Số điện thoại không hợp lệ';
+  }
+  return null;
+};
+
+const validateFullName = (name: string): string | null => {
+  if (!name.trim()) return 'Họ và tên không được để trống';
+  if (name.trim().length < 2) return 'Họ và tên phải có ít nhất 2 ký tự';
+  return null;
+};
+
+const validateAddress = (address: string): string | null => {
+  if (!address.trim()) return 'Địa chỉ không được để trống';
+  if (address.trim().length < 5) return 'Địa chỉ phải có ít nhất 5 ký tự';
+  return null;
+};
+
+const validateBirthday = (birthday: string): string | null => {
+  if (!birthday) return 'Vui lòng chọn ngày sinh';
+  // const birthDate = new Date(birthday);
+  // const today = new Date();
+  // const age = today.getFullYear() - birthDate.getFullYear();
+  // if (age < 13) return 'Bạn phải từ 13 tuổi trở lên';
+  // if (age > 120) return 'Ngày sinh không hợp lệ';
+  return null;
+};
+
 const RegisterScreen = () => {
   const router = useRouter();
   const { colors } = useAppTheme();
-  
+
   const {
     fullName,
     setFullName,
@@ -44,6 +83,20 @@ const RegisterScreen = () => {
   } = useRegisterService();
 
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [errors, setErrors] = useState({
+    fullName: '',
+    phone: '',
+    email: '',
+    address: '',
+    birthday: '',
+  });
+  const [touched, setTouched] = useState({
+    fullName: false,
+    phone: false,
+    email: false,
+    address: false,
+    birthday: false,
+  });
 
   const handleLogin = () => {
     router.back();
@@ -53,6 +106,9 @@ const RegisterScreen = () => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
       setBirthday(selectedDate.toISOString());
+      setTouched(prev => ({ ...prev, birthday: true }));
+      const error = validateBirthday(selectedDate.toISOString());
+      setErrors(prev => ({ ...prev, birthday: error || '' }));
     }
   };
 
@@ -72,10 +128,104 @@ const RegisterScreen = () => {
     return new Date();
   };
 
+  const handleFullNameChange = (text: string) => {
+    setFullName(text);
+    if (touched.fullName) {
+      const error = validateFullName(text);
+      setErrors(prev => ({ ...prev, fullName: error || '' }));
+    }
+  };
+
+  const handlePhoneChange = (text: string) => {
+    // Chỉ cho phép nhập số
+    const numericText = text.replace(/[^0-9]/g, '');
+    // Giới hạn 10 số
+    const limitedText = numericText.slice(0, 10);
+    setPhone(limitedText);
+    if (touched.phone) {
+      const error = validatePhone(limitedText);
+      setErrors(prev => ({ ...prev, phone: error || '' }));
+    }
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    if (touched.email) {
+      const error = validateEmail(text);
+      setErrors(prev => ({ ...prev, email: error || '' }));
+    }
+  };
+
+  const handleAddressChange = (text: string) => {
+    setAddress(text);
+    if (touched.address) {
+      const error = validateAddress(text);
+      setErrors(prev => ({ ...prev, address: error || '' }));
+    }
+  };
+
+  const handleBlur = (field: keyof typeof touched) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+
+    // Validate on blur
+    switch (field) {
+      case 'fullName':
+        const nameError = validateFullName(fullName);
+        setErrors(prev => ({ ...prev, fullName: nameError || '' }));
+        break;
+      case 'phone':
+        const phoneError = validatePhone(phone);
+        setErrors(prev => ({ ...prev, phone: phoneError || '' }));
+        break;
+      case 'email':
+        const emailError = validateEmail(email);
+        setErrors(prev => ({ ...prev, email: emailError || '' }));
+        break;
+      case 'address':
+        const addressError = validateAddress(address);
+        setErrors(prev => ({ ...prev, address: addressError || '' }));
+        break;
+      case 'birthday':
+        const birthdayError = validateBirthday(birthday);
+        setErrors(prev => ({ ...prev, birthday: birthdayError || '' }));
+        break;
+    }
+  };
+
+  const handleRegisterPress = () => {
+    // Validate all fields
+    const nameError = validateFullName(fullName);
+    const phoneError = validatePhone(phone);
+    const emailError = validateEmail(email);
+    const addressError = validateAddress(address);
+    const birthdayError = validateBirthday(birthday);
+
+    setErrors({
+      fullName: nameError || '',
+      phone: phoneError || '',
+      email: emailError || '',
+      address: addressError || '',
+      birthday: birthdayError || '',
+    });
+
+    setTouched({
+      fullName: true,
+      phone: true,
+      email: true,
+      address: true,
+      birthday: true,
+    });
+
+    // If all valid, proceed with registration
+    if (!nameError && !phoneError && !emailError && !addressError && !birthdayError) {
+      handleRegister();
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView 
+        <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
@@ -104,16 +254,20 @@ const RegisterScreen = () => {
                   {
                     backgroundColor: colors.card,
                     color: colors.text,
-                    borderColor: colors.border,
+                    borderColor: touched.fullName && errors.fullName ? colors.error : colors.border,
                   },
                 ]}
                 placeholder="Họ và tên của bạn"
                 placeholderTextColor={colors.icon}
                 value={fullName}
-                onChangeText={setFullName}
+                onChangeText={handleFullNameChange}
+                onBlur={() => handleBlur('fullName')}
                 autoCapitalize="words"
                 editable={!isRegistering}
               />
+              {touched.fullName && errors.fullName ? (
+                <ThemedText style={[styles.errorText, { color: colors.error }]}>{errors.fullName}</ThemedText>
+              ) : null}
             </View>
 
             {/* Phone Input */}
@@ -127,17 +281,21 @@ const RegisterScreen = () => {
                   {
                     backgroundColor: colors.card,
                     color: colors.text,
-                    borderColor: colors.border,
+                    borderColor: touched.phone && errors.phone ? colors.error : colors.border,
                   },
                 ]}
-                placeholder="Số điện thoại của bạn"
+                placeholder="0912345678"
                 placeholderTextColor={colors.icon}
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={handlePhoneChange}
+                onBlur={() => handleBlur('phone')}
                 keyboardType="phone-pad"
-                autoComplete="tel"
+                maxLength={10}
                 editable={!isRegistering}
               />
+              {touched.phone && errors.phone ? (
+                <ThemedText style={[styles.errorText, { color: colors.error }]}>{errors.phone}</ThemedText>
+              ) : null}
             </View>
 
             {/* Email Input */}
@@ -151,18 +309,22 @@ const RegisterScreen = () => {
                   {
                     backgroundColor: colors.card,
                     color: colors.text,
-                    borderColor: colors.border,
+                    borderColor: touched.email && errors.email ? colors.error : colors.border,
                   },
                 ]}
-                placeholder="Email của bạn"
+                placeholder="example@email.com"
                 placeholderTextColor={colors.icon}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={handleEmailChange}
+                onBlur={() => handleBlur('email')}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
                 editable={!isRegistering}
               />
+              {touched.email && errors.email ? (
+                <ThemedText style={[styles.errorText, { color: colors.error }]}>{errors.email}</ThemedText>
+              ) : null}
             </View>
 
             {/* Address Input */}
@@ -176,16 +338,20 @@ const RegisterScreen = () => {
                   {
                     backgroundColor: colors.card,
                     color: colors.text,
-                    borderColor: colors.border,
+                    borderColor: touched.address && errors.address ? colors.error : colors.border,
                   },
                 ]}
                 placeholder="Địa chỉ của bạn"
                 placeholderTextColor={colors.icon}
                 value={address}
-                onChangeText={setAddress}
+                onChangeText={handleAddressChange}
+                onBlur={() => handleBlur('address')}
                 autoCapitalize="words"
                 editable={!isRegistering}
               />
+              {touched.address && errors.address ? (
+                <ThemedText style={[styles.errorText, { color: colors.error }]}>{errors.address}</ThemedText>
+              ) : null}
             </View>
 
             {/* Birthday Input */}
@@ -203,7 +369,7 @@ const RegisterScreen = () => {
                     styles.dateInput,
                     {
                       backgroundColor: colors.card,
-                      borderColor: colors.border,
+                      borderColor: touched.birthday && errors.birthday ? colors.error : colors.border,
                     },
                   ]}
                 >
@@ -217,6 +383,9 @@ const RegisterScreen = () => {
                   />
                 </View>
               </TouchableOpacity>
+              {touched.birthday && errors.birthday ? (
+                <ThemedText style={[styles.errorText, { color: colors.error }]}>{errors.birthday}</ThemedText>
+              ) : null}
               {showDatePicker && (
                 <DateTimePicker
                   value={getDateValue()}
@@ -231,14 +400,14 @@ const RegisterScreen = () => {
 
             {/* Register Button */}
             <TouchableOpacity
-              onPress={handleRegister}
+              onPress={handleRegisterPress}
               style={[
                 styles.registerButton,
                 { backgroundColor: colors.tint },
-                (!isFormValid || isRegistering) && styles.registerButtonDisabled,
+                isRegistering && styles.registerButtonDisabled,
               ]}
               activeOpacity={0.9}
-              disabled={!isFormValid || isRegistering}
+              disabled={isRegistering}
             >
               {isRegistering ? (
                 <ActivityIndicator color={Tokens.colors.main.white} size="small" />
@@ -331,6 +500,12 @@ const styles = StyleSheet.create({
     fontSize: normalize(16),
     fontFamily: Fonts.regular,
     lineHeight: normalize(22),
+  },
+  errorText: {
+    fontSize: normalize(13),
+    fontFamily: Fonts.regular,
+    marginTop: normalize(4),
+    lineHeight: normalize(18),
   },
   registerButton: {
     height: normalize(52),

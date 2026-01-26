@@ -325,7 +325,7 @@ class ApiClient {
 // ✅ Named export constants
 // export const BASE_URL = "https://emicms.jits.com.vn:2611";
 export const BASE_URL =
-  "https://unmechanised-oliver-unmemorialized.ngrok-free.dev";
+  "https://ungestural-backhandedly-dennise.ngrok-free.dev";
 // export const BASE_URL = "https://41d9f501b89c.ngrok-free.app";
 
 // ✅ Named export instance

@@ -33,7 +33,8 @@ export const styles = StyleSheet.create({
   },
   balanceCard: {
     borderRadius: normalize(24),
-    padding: normalize(24),
+    paddingVertical: normalize(20),
+    paddingHorizontal: normalize(24),
     marginHorizontal: wp(5),
     marginBottom: hp(2.5),
     alignItems: "center",
@@ -42,20 +43,22 @@ export const styles = StyleSheet.create({
     fontSize: normalize(14),
     color: "#fff",
     opacity: 0.8,
-    marginBottom: normalize(8),
+    marginBottom: normalize(4),
   },
   balanceAmount: {
     fontSize: normalize(36),
     fontWeight: "bold",
     color: "#fff",
-    marginBottom: normalize(20),
+    marginBottom: normalize(16),
   },
   balanceDetails: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
+    width: "100%",
   },
   balanceItem: {
+    flex: 1,
     alignItems: "center",
   },
   divider: {
@@ -68,7 +71,7 @@ export const styles = StyleSheet.create({
     fontSize: normalize(12),
     color: "#fff",
     opacity: 0.8,
-    marginBottom: normalize(4),
+    marginBottom: normalize(2),
   },
   incomeAmount: {
     fontSize: normalize(18),
@@ -85,7 +88,7 @@ export const styles = StyleSheet.create({
     color: "#fff",
     opacity: 0.8,
     textAlign: "center",
-    marginTop: normalize(12),
+    marginTop: normalize(10),
   },
   quickActions: {
     flexDirection: "row",
@@ -212,6 +215,6 @@ export const styles = StyleSheet.create({
   },
   changePercent: {
     fontSize: normalize(12),
-    marginTop: normalize(4),
+    marginTop: normalize(2),
   },
 });

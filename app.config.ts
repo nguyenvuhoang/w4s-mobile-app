@@ -24,7 +24,7 @@ export default () => {
       updates: {
         enabled: true,
         fallbackToCacheTimeout: 0,
-        url: "https://u.expo.dev/5f0111f8-627b-4b45-b99d-867f1a417d7a"
+        url: "https://u.expo.dev/81034140-5dd9-4cbc-afc1-86f97250fed6",
       },
       splash: {
         image: "./assets/splash-screen.png",
@@ -211,7 +211,7 @@ export default () => {
       ],
       extra: {
         eas: {
-          projectId: "5f0111f8-627b-4b45-b99d-867f1a417d7a"
+          projectId: "81034140-5dd9-4cbc-afc1-86f97250fed6",
         },
         updateDate: buildDate,
         storeLinks: {
