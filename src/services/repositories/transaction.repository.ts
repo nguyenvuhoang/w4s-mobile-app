@@ -33,6 +33,11 @@ export interface CreateTransactionPayload {
   with_users?: TransactionParticipant[];
 }
 
+export interface GetRecentTransactionsPayload {
+  usercode: string;
+  take: number;
+}
+
 export const transactionRepository = {
   /**
    * Create new transaction (one-time)
@@ -74,6 +79,31 @@ export const transactionRepository = {
     } catch (error) {
       console.error(
         "[transactionRepository] Error creating transaction:",
+        error,
+      );
+      throw error;
+    }
+  },
+  /**
+   * Get recent transactions
+   * @param data Payload
+   * @returns List of transactions
+   */
+  async getRecentTransactions(
+    data: GetRecentTransactionsPayload,
+  ): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_WALLET_RECENT_TRANSACTIONS,
+        {
+          usercode: data.usercode,
+          take: data.take,
+        },
+        false,
+      );
+    } catch (error) {
+      console.error(
+        "[transactionRepository] Error getting recent transactions:",
         error,
       );
       throw error;

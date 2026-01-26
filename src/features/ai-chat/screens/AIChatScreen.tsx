@@ -1,6 +1,10 @@
 import CustomText from '@/components/base/CustomText';
+import StorageKey from '@/constants/StorageKey';
+import { BASE_URL } from '@/core/api/ApiClient';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
+import { ChatStreamService } from '@/services/ChatStreamService';
+import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -18,8 +22,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// 🔥 MOCK STREAM HOOK
-import { useChatStreamMock } from '@/features/ai-chat/hooks/useChatStream.mock';
+const CHAT_API_URL = `${BASE_URL}/api/chat`;
+
 
 interface Message {
   id: string;
@@ -35,12 +39,11 @@ const AIChatScreen = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-
-  const { startStream, stopStream } = useChatStreamMock();
+  const stopStreamRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     return () => {
-      stopStream();
+      stopStreamRef.current?.();
     };
   }, []);
 
@@ -50,12 +53,26 @@ const AIChatScreen = () => {
     });
   };
 
-  const handleSend = () => {
-    if (!inputText.trim() || isProcessing || isStreaming) return;
+  const sendMessage = async (messageText: string) => {
+    if (!messageText.trim() || isProcessing || isStreaming) return;
+
+    // Get token and usercode from storage
+    const session = await StorageService.getUserSession();
+    const token = session?.token;
+    const usercode = await StorageService.getAsyncItem(StorageKey.userCode);
+
+    console.log("=========", token);
+    console.log("============", usercode);
+
+
+    if (!token || !usercode) {
+      console.error('[AIChatScreen] Missing token or usercode');
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputText,
+      text: messageText,
       isUser: true,
       timestamp: new Date(),
     };
@@ -65,43 +82,90 @@ const AIChatScreen = () => {
     scrollToBottom();
 
     const aiMessageId = (Date.now() + 1).toString();
+    let aiMessageCreated = false;
 
-    // 🔥 STREAM MOCK với processing delay
-    startStream({
-      onProcessing: (processing) => {
-        setIsProcessing(processing);
-        if (!processing) {
-          // Chỉ tạo message AI khi bắt đầu stream
+    // Show processing indicator
+    setIsProcessing(true);
+    scrollToBottom();
+
+    // Start real stream
+    stopStreamRef.current = ChatStreamService.start({
+      url: CHAT_API_URL,
+      token: token,
+      body: {
+        message: messageText,
+        user_code: usercode,
+      },
+      onMessage: (chunk) => {
+        setIsProcessing(false);
+        setIsStreaming(true);
+
+        if (!aiMessageCreated) {
+          // Create AI message on first chunk
+          aiMessageCreated = true;
           setMessages((prev) => [
             ...prev,
             {
               id: aiMessageId,
-              text: '',
+              text: chunk,
               isUser: false,
               timestamp: new Date(),
             },
           ]);
-          setIsStreaming(true);
-          scrollToBottom();
+        } else {
+          // Append to existing message
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMessageId
+                ? { ...msg, text: msg.text + chunk }
+                : msg
+            )
+          );
         }
-      },
-      onMessage: (chunk) => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === aiMessageId
-              ? { ...msg, text: msg.text + chunk }
-              : msg
-          )
-        );
         scrollToBottom();
       },
       onDone: () => {
         setIsProcessing(false);
         setIsStreaming(false);
+        stopStreamRef.current = null;
         scrollToBottom();
       },
-      processingDelay: 1500, // 1.5 giây delay "đang xử lý"
+      onError: (error) => {
+        console.error('[AIChatScreen] Stream error:', error);
+        setIsProcessing(false);
+        setIsStreaming(false);
+        stopStreamRef.current = null;
+
+        const errorMessage = error?.message || 'Xin lỗi, đã xảy ra lỗi. Vui lòng thử lại.';
+
+        if (!aiMessageCreated) {
+          // Create error message if AI message doesn't exist yet
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: aiMessageId,
+              text: errorMessage,
+              isUser: false,
+              timestamp: new Date(),
+            },
+          ]);
+        } else {
+          // Update existing message with error
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMessageId
+                ? { ...msg, text: msg.text || errorMessage }
+                : msg
+            )
+          );
+        }
+        scrollToBottom();
+      },
     });
+  };
+
+  const handleSend = () => {
+    sendMessage(inputText);
   };
 
   const handleCopyMessage = async (text: string) => {
@@ -111,57 +175,8 @@ const AIChatScreen = () => {
 
   const handleSuggestionPress = (text: string) => {
     if (isProcessing || isStreaming) return;
-
-    setInputText(text);
-
-    // Tự động gửi tin nhắn
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: text,
-      isUser: true,
-      timestamp: new Date(),
-    };
-
-    setMessages([userMessage]);
-    setInputText('');
-    scrollToBottom();
-
-    const aiMessageId = (Date.now() + 1).toString();
-
-    startStream({
-      onProcessing: (processing) => {
-        setIsProcessing(processing);
-        if (!processing) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: aiMessageId,
-              text: '',
-              isUser: false,
-              timestamp: new Date(),
-            },
-          ]);
-          setIsStreaming(true);
-          scrollToBottom();
-        }
-      },
-      onMessage: (chunk) => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === aiMessageId
-              ? { ...msg, text: msg.text + chunk }
-              : msg
-          )
-        );
-        scrollToBottom();
-      },
-      onDone: () => {
-        setIsProcessing(false);
-        setIsStreaming(false);
-        scrollToBottom();
-      },
-      processingDelay: 1500,
-    });
+    setMessages([]);
+    sendMessage(text);
   };
 
   const renderMessage = (item: Message) => {

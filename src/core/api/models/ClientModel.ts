@@ -28,7 +28,7 @@ export class SimpleRequestModel {
 // Class cho request phức tạp (có bo, use_microservice, etc.)
 export class BaseRequestModel {
   is_get_template: boolean = false;
-  
+
   bo: Array<{
     use_microservice: boolean;
     input: {
@@ -47,7 +47,7 @@ export class BaseRequestModel {
     use_microservice: boolean = true
   ) {
     this.is_get_template = is_get_template;
-    
+
     this.bo = [
       {
         use_microservice: use_microservice,
@@ -198,7 +198,7 @@ export function getValue<T>(
   key?: string
 ): T | undefined {
   if (!response.data) return undefined;
-  
+
   const value = key ? response.data[key] : response.data;
 
   if (typeof value === "string" && (value === "true" || value === "false")) {
@@ -221,6 +221,8 @@ export const getError = (response: BaseResponse): string => {
 export interface ChatStreamOptions {
   url: string;
   token?: string;
+  body?: any;
+  method?: 'GET' | 'POST';
   headers?: Record<string, string>;
   onMessage: (chunk: string) => void;
   onDone?: () => void;

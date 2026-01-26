@@ -1,12 +1,22 @@
 import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useFinanceSummary } from "@/features/home/hooks/Usefinancesummary";
+import {
+  RecentTransaction,
+  useRecentTransactions,
+} from "@/features/home/hooks/useRecentTransactions";
+import {
+  useTopSpendingCategories
+} from "@/features/home/hooks/useTopSpendingCategories";
 import { styles } from "@/features/home/styles/HomeScreen.Style";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
-import { getCurrentDateString, getCurrentMonthString } from "@/utils/formatDate";
+import {
+  getCurrentDateString,
+  getCurrentMonthString,
+} from "@/utils/formatDate";
 import { formatPercent } from "@/utils/formatNumber";
 import { hp, normalize } from "@/utils/layout";
-import { Ionicons } from "@expo/vector-icons";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   ActivityIndicator,
@@ -28,20 +38,99 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   // Fetch finance data (amounts already in correct currency from server)
   const { data, loading, error, refresh } = useFinanceSummary();
+  const {
+    transactions: recentTransactions,
+    loading: transactionsLoading,
+    refresh: refreshTransactions,
+  } = useRecentTransactions(5);
+  const {
+    categories: topCategories,
+    loading: categoriesLoading,
+    refresh: refreshCategories,
+  } = useTopSpendingCategories("M", 5);
 
   const [refreshing, setRefreshing] = React.useState(false);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    await refresh();
+    await Promise.all([refresh(), refreshTransactions(), refreshCategories()]);
     setRefreshing(false);
-  }, [refresh]);
+  }, [refresh, refreshTransactions, refreshCategories]);
 
   // Format currency for display (no conversion - server returns correct currency)
-  const formatCurrency = (amount: number | undefined) => {
+  const formatCurrency = (
+    amount: number | undefined,
+    currencySymbol?: string,
+  ) => {
     if (amount === undefined) return "...";
     const formatted = amount.toLocaleString();
-    return `${formatted} ${defaultCurrency.symbol}`;
+    return `${formatted} ${currencySymbol || defaultCurrency.symbol}`;
+  };
+
+  // Format transaction amount with sign
+  const formatTransactionAmount = (transaction: RecentTransaction) => {
+    const isExpense = transaction.type === "EXPENSE";
+    const sign = isExpense ? "-" : "+";
+    const formatted = transaction.amount.toLocaleString();
+    return `${sign}${formatted} ${defaultCurrency.symbol}`;
+  };
+
+  // Format transaction time
+  const formatTransactionTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+
+    const timeStr = date.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    if (date >= today) {
+      return `Hôm nay, ${timeStr}`;
+    } else if (date >= yesterday) {
+      return `Hôm qua, ${timeStr}`;
+    } else {
+      return date.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    }
+  };
+
+  // Get category icon based on icon or fallback
+  const getCategoryIcon = (transaction: RecentTransaction): string => {
+    if (transaction.icon) {
+      return transaction.icon;
+    }
+    // Fallback icons based on transaction type
+    if (transaction.type === "INCOME") return "cash";
+    if (transaction.type === "EXPENSE") return "cart";
+    return "swap-horizontal";
+  };
+
+  // Get category color based on color or fallback
+  const getCategoryColor = (transaction: RecentTransaction): string => {
+    if (transaction.color) {
+      return transaction.color;
+    }
+    // Fallback colors based on transaction type
+    if (transaction.type === "INCOME") return "#4CAF50";
+    if (transaction.type === "EXPENSE") return "#FF6B6B";
+    return "#2196F3";
+  };
+
+  // Parse category name from JSON string format: {"vi":"Tên","en":"Name"}
+  const parseCategoryName = (name: string | null): string => {
+    if (!name) return "Chưa phân loại";
+    try {
+      const parsed = JSON.parse(name);
+      return parsed.vi || parsed.en || name;
+    } catch {
+      return name;
+    }
   };
 
   const incomeTotal = data?.income_expense_summary.income.total || 0;
@@ -183,7 +272,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => {}}
+            onPress={() => { }}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.tint }]}>
               <Ionicons name="arrow-up" size={normalize(24)} color="#fff" />
@@ -195,7 +284,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => {}}
+            onPress={() => { }}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <Ionicons
@@ -211,7 +300,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => {}}
+            onPress={() => { }}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <Ionicons
@@ -227,7 +316,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => {}}
+            onPress={() => { }}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <Ionicons
@@ -249,7 +338,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               Chi tiêu nhiều nhất
             </CustomText>
             <TouchableOpacity
-              onPress={() => {}}
+              onPress={() => { }}
             >
               <CustomText style={[styles.seeMore, { color: colors.tint }]}>
                 Xem Thêm
@@ -258,36 +347,53 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           </View>
 
           <View style={styles.categoryList}>
-            <CategoryItem
-              icon="cart-outline"
-              iconColor="#FF6B35"
-              name="Mua sắm"
-              transactions="32 Giao dịch"
-              amount="1.248.000 ₫"
-              color="#FF6B35"
-              progress={0.75}
-              colors={colors}
-            />
-            <CategoryItem
-              icon="restaurant-outline"
-              iconColor="#4CAF50"
-              name="Thực phẩm"
-              transactions="28 Giao dịch"
-              amount="842.000 ₫"
-              color="#4CAF50"
-              progress={0.6}
-              colors={colors}
-            />
-            <CategoryItem
-              icon="film-outline"
-              iconColor="#9C27B0"
-              name="Giải trí"
-              transactions="15 Giao dịch"
-              amount="425.000 ₫"
-              color="#9C27B0"
-              progress={0.4}
-              colors={colors}
-            />
+            {categoriesLoading && topCategories.length === 0 ? (
+              <View
+                style={{
+                  padding: 20,
+                  alignItems: "center",
+                }}
+              >
+                <ActivityIndicator size="small" color={colors.tint} />
+                <CustomText
+                  style={{ color: colors.icon, marginTop: 8, fontSize: 14 }}
+                >
+                  Đang tải danh mục...
+                </CustomText>
+              </View>
+            ) : topCategories.length === 0 ? (
+              <View
+                style={{
+                  padding: 20,
+                  alignItems: "center",
+                }}
+              >
+                <Ionicons
+                  name="folder-outline"
+                  size={normalize(40)}
+                  color={colors.icon}
+                />
+                <CustomText
+                  style={{ color: colors.icon, marginTop: 8, fontSize: 14 }}
+                >
+                  Chưa có chi tiêu nào
+                </CustomText>
+              </View>
+            ) : (
+              topCategories.map((category) => (
+                <CategoryItem
+                  key={category.category_id}
+                  icon={category.icon || "pricetag-outline"}
+                  iconColor={category.color || "#9E9E9E"}
+                  name={parseCategoryName(category.name)}
+                  transactions={`${category.transaction_count} Giao dịch`}
+                  amount={formatCurrency(category.total_amount)}
+                  color={category.color || "#9E9E9E"}
+                  progress={category.percentage}
+                  colors={colors}
+                />
+              ))
+            )}
           </View>
         </View>
 
@@ -298,7 +404,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               Giao dịch gần đây
             </CustomText>
             <TouchableOpacity
-              onPress={() => {}}
+              onPress={() => { }}
             >
               <CustomText style={[styles.seeMore, { color: colors.tint }]}>
                 Xem thêm
@@ -307,42 +413,52 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           </View>
 
           <View style={styles.transactionList}>
-            <TransactionItem
-              icon="bag"
-              iconColor="#2196F3"
-              name="Nội Thất"
-              time="Hôm nay, 2:30 PM"
-              amount="-89.000 ₫"
-              isExpense
-              colors={colors}
-            />
-            <TransactionItem
-              icon="cash"
-              iconColor="#4CAF50"
-              name="Lương hàng tháng"
-              time="Hôm qua, 9:00 AM"
-              amount="+24.200.000 ₫"
-              isExpense={false}
-              colors={colors}
-            />
-            <TransactionItem
-              icon="cart"
-              iconColor="#FF9800"
-              name="Shopee"
-              time="Hôm qua, 8:15 AM"
-              amount="-6.000 ₫"
-              isExpense
-              colors={colors}
-            />
-            <TransactionItem
-              icon="home"
-              iconColor="#2196F3"
-              name="Nội Thất"
-              time="Hôm qua, 2:30 PM"
-              amount="-89.000 ₫"
-              isExpense
-              colors={colors}
-            />
+            {transactionsLoading && recentTransactions.length === 0 ? (
+              <View
+                style={{
+                  padding: 20,
+                  alignItems: "center",
+                }}
+              >
+                <ActivityIndicator size="small" color={colors.tint} />
+                <CustomText
+                  style={{ color: colors.icon, marginTop: 8, fontSize: 14 }}
+                >
+                  Đang tải giao dịch...
+                </CustomText>
+              </View>
+            ) : recentTransactions.length === 0 ? (
+              <View
+                style={{
+                  padding: 20,
+                  alignItems: "center",
+                }}
+              >
+                <Ionicons
+                  name="receipt-outline"
+                  size={normalize(40)}
+                  color={colors.icon}
+                />
+                <CustomText
+                  style={{ color: colors.icon, marginTop: 8, fontSize: 14 }}
+                >
+                  Chưa có giao dịch nào
+                </CustomText>
+              </View>
+            ) : (
+              recentTransactions.map((transaction) => (
+                <TransactionItem
+                  key={transaction.transaction_id}
+                  icon={getCategoryIcon(transaction)}
+                  iconColor={getCategoryColor(transaction)}
+                  name={transaction.title || "Giao dịch"}
+                  time={formatTransactionTime(transaction.occurred_at)}
+                  amount={formatTransactionAmount(transaction)}
+                  isExpense={transaction.type === "EXPENSE"}
+                  colors={colors}
+                />
+              ))
+            )}
           </View>
         </View>
 
@@ -366,7 +482,7 @@ const CategoryItem = ({
   <View style={[styles.categoryItem, { backgroundColor: colors.card }]}>
     <View style={styles.categoryLeft}>
       <View style={[styles.categoryIcon, { backgroundColor: iconColor }]}>
-        <Ionicons name={icon} size={normalize(24)} color="#fff" />
+        <FontAwesome6 name={icon} size={normalize(24)} color="#fff" />
       </View>
       <View>
         <CustomText style={[styles.categoryName, { color: colors.text }]}>
@@ -412,7 +528,7 @@ const TransactionItem = ({
     <View
       style={[styles.transactionIcon, { backgroundColor: iconColor + "1A" }]}
     >
-      <Ionicons name={icon} size={normalize(24)} color={iconColor} />
+      <FontAwesome6 name={icon} size={normalize(24)} color={iconColor} />
     </View>
     <View style={styles.transactionInfo}>
       <CustomText style={[styles.transactionName, { color: colors.text }]}>

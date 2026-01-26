@@ -17,6 +17,12 @@ export interface Category {
   web_icon: string;
 }
 
+export interface GetTopSpendingCategoriesPayload {
+  usercode: string;
+  period_type: string;
+  take: number;
+}
+
 export const categoryRepository = {
   /**
    * Get all categories for a wallet
@@ -33,6 +39,32 @@ export const categoryRepository = {
       );
     } catch (error) {
       console.error('[categoryRepository] Error fetching categories:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get top spending categories
+   */
+  async getTopSpendingCategories(
+    data: GetTopSpendingCategoriesPayload
+  ): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_TOP_SPENDING_CATEGORIES,
+        {
+          usercode: data.usercode,
+          period_type: data.period_type,
+          take: data.take,
+        },
+        false,
+        true
+      );
+    } catch (error) {
+      console.error(
+        "[categoryRepository] Error fetching top spending categories:",
+        error
+      );
       throw error;
     }
   },

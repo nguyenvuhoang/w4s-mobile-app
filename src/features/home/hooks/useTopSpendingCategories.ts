@@ -1,0 +1,99 @@
+import StorageKey from "@/constants/StorageKey";
+import { categoryRepository } from "@/services/repositories/category.repository";
+import StorageService from "@/services/StorageService";
+import TransactionEventEmitter from "@/services/TransactionEventEmitter";
+import { useCallback, useEffect, useState } from "react";
+
+export interface TopSpendingCategory {
+    category_id: number;
+    name: string | null;
+    icon: string;
+    color: string;
+    transaction_count: number;
+    total_amount: number;
+    percentage: number;
+}
+
+interface UseTopSpendingCategoriesReturn {
+    categories: TopSpendingCategory[];
+    loading: boolean;
+    error: string | null;
+    refresh: () => Promise<void>;
+}
+
+/**
+ * Hook for fetching top spending categories
+ * Automatically refetches when a transaction is created/updated/deleted
+ */
+export const useTopSpendingCategories = (
+    periodType: string = "M",
+    take: number = 5,
+): UseTopSpendingCategoriesReturn => {
+    const [categories, setCategories] = useState<TopSpendingCategory[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchTopCategories = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+            if (!userCode) {
+                throw new Error("Missing user code");
+            }
+
+            const response = await categoryRepository.getTopSpendingCategories({
+                usercode: userCode,
+                period_type: periodType,
+                take,
+            });
+
+            if (response.isSuccess() && response.data) {
+                // API returns { data: [{ top_categories: [...] }] }
+                let categoryList: TopSpendingCategory[] = [];
+                if (response.data.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
+                    categoryList = response.data.data[0].top_categories || [];
+                } else if (response.data.top_categories) {
+                    categoryList = response.data.top_categories;
+                } else if (Array.isArray(response.data)) {
+                    categoryList = response.data;
+                }
+                setCategories(categoryList);
+            } else {
+                setError(response.message || "Failed to fetch top spending categories");
+            }
+        } catch (err: any) {
+            setError(
+                err.message || "An error occurred while fetching top spending categories",
+            );
+            console.error("Error fetching top spending categories:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, [periodType, take]);
+
+    useEffect(() => {
+        fetchTopCategories();
+    }, [fetchTopCategories]);
+
+    // Listen for transaction changes (create/update/delete)
+    useEffect(() => {
+        const handleTransactionChanged = () => {
+            fetchTopCategories();
+        };
+
+        TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
+
+        return () => {
+            TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
+        };
+    }, [fetchTopCategories]);
+
+    return {
+        categories,
+        loading,
+        error,
+        refresh: fetchTopCategories,
+    };
+};
