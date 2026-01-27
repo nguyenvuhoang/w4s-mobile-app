@@ -55,17 +55,37 @@ const CategorySelectionScreen: React.FC = () => {
   );
 
   /* =====================
+     Available Tabs
+  ===================== */
+  const availableTabs = useMemo((): TabType[] => {
+    // 🔥 Nếu đang select parent, chỉ cho chọn INCOME hoặc EXPENSE
+    if (isSelectParent) {
+      return ["INCOME", "EXPENSE"];
+    }
+    // Normal mode: cho chọn cả 3
+    return ["INCOME", "EXPENSE", "LOAN"];
+  }, [isSelectParent]);
+
+  /* =====================
      Initial Tab
   ===================== */
   const initialTab = useMemo((): TabType => {
-    if (params.selectedType === "income") return "INCOME";
-    if (params.selectedType === "expense") return "EXPENSE";
-    if (params.selectedType === "inout") return "LOAN";
-    if (params.selectedType === "INCOME") return "INCOME";
-    if (params.selectedType === "EXPENSE") return "EXPENSE";
-    if (params.selectedType === "LOAN") return "LOAN";
-    return "INCOME";
-  }, [params.selectedType]);
+    let requestedTab: TabType = "INCOME";
+
+    if (params.selectedType === "income") requestedTab = "INCOME";
+    else if (params.selectedType === "expense") requestedTab = "EXPENSE";
+    else if (params.selectedType === "inout") requestedTab = "LOAN";
+    else if (params.selectedType === "INCOME") requestedTab = "INCOME";
+    else if (params.selectedType === "EXPENSE") requestedTab = "EXPENSE";
+    else if (params.selectedType === "LOAN") requestedTab = "LOAN";
+
+    // 🔥 Nếu requested tab không có trong available tabs, fallback về tab đầu tiên
+    if (!availableTabs.includes(requestedTab)) {
+      return availableTabs[0];
+    }
+
+    return requestedTab;
+  }, [params.selectedType, availableTabs]);
 
   const [selectedTab, setSelectedTab] = useState<TabType>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
@@ -239,7 +259,7 @@ const CategorySelectionScreen: React.FC = () => {
 
       {/* TABS */}
       <View style={styles.tabContainer}>
-        {(["INCOME", "EXPENSE", "LOAN"] as TabType[]).map((tab) => (
+        {availableTabs.map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[
@@ -331,49 +351,52 @@ const CategorySelectionScreen: React.FC = () => {
                   )}
                 </TouchableOpacity>
 
-                {/* CHILDREN */}
-                {!isSelectParent &&
-                  children.map((child) => {
-                    const childName = parseCategoryName(child.category_name);
+                {/* CHILDREN - Chỉ render khi KHÔNG phải select parent mode */}
+                {!isSelectParent && children.length > 0 && (
+                  <>
+                    {children.map((child) => {
+                      const childName = parseCategoryName(child.category_name);
 
-                    return (
-                      <TouchableOpacity
-                        key={child.id}
-                        style={styles.childItem}
-                        onPress={() => handlePressCategory(child)}
-                      >
-                        <View
-                          style={[
-                            styles.childIcon,
-                            { backgroundColor: child.color },
-                          ]}
+                      return (
+                        <TouchableOpacity
+                          key={child.id}
+                          style={styles.childItem}
+                          onPress={() => handlePressCategory(child)}
                         >
-                          <FontAwesome6
-                            name={child.icon as any}
-                            size={normalize(16)}
-                            color="#fff"
-                          />
-                        </View>
+                          <View
+                            style={[
+                              styles.childIcon,
+                              { backgroundColor: child.color },
+                            ]}
+                          >
+                            <FontAwesome6
+                              name={child.icon as any}
+                              size={normalize(16)}
+                              color="#fff"
+                            />
+                          </View>
 
-                        <CustomText
-                          style={[
-                            styles.childName,
-                            { color: colors.text, flex: 1 },
-                          ]}
-                        >
-                          {childName.vi}
-                        </CustomText>
+                          <CustomText
+                            style={[
+                              styles.childName,
+                              { color: colors.text, flex: 1 },
+                            ]}
+                          >
+                            {childName.vi}
+                          </CustomText>
 
-                        {isEdit && (
-                          <Ionicons
-                            name="chevron-forward"
-                            size={normalize(18)}
-                            color={colors.icon}
-                          />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
+                          {isEdit && (
+                            <Ionicons
+                              name="chevron-forward"
+                              size={normalize(18)}
+                              color={colors.icon}
+                            />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </>
+                )}
               </View>
             );
           })}

@@ -218,7 +218,21 @@
     "edit_category": "Edit Category",
     "create_new_category": "+ Create New Category",
     "search_type_placeholder": "Search type...",
-    "search_category_placeholder": "Search category..."
+    "search_category_placeholder": "Search category...",
+    "create_category": "Create Category",
+    "icon": "Icon",
+    "color": "Color",
+    "category_type": "Category Type",
+    "name_vietnamese": "Vietnamese Name",
+    "name_english": "English Name",
+    "auto_translated": "Auto translated",
+    "translation_hint": "You can edit the translation if needed",
+    "parent_category": "Parent Category",
+    "select_parent_optional": "Select parent category (Optional)",
+    "please_enter_name": "Please enter category name",
+    "create_failed": "Failed to create category",
+    "creating": "Creating...",
+    "create": "Create Category"
   },
   "wallet": {
     "error_save": "Cannot save selected wallet",

@@ -218,7 +218,21 @@
     "edit_category": "Chỉnh sửa nhóm",
     "create_new_category": "+ Tạo nhóm mới",
     "search_type_placeholder": "Tìm loại...",
-    "search_category_placeholder": "Tìm kiếm nhóm..."
+    "search_category_placeholder": "Tìm kiếm nhóm...",
+    "create_category": "Tạo Danh Mục",
+    "icon": "Biểu tượng",
+    "color": "Màu sắc",
+    "category_type": "Loại danh mục",
+    "name_vietnamese": "Tên tiếng Việt",
+    "name_english": "Tên tiếng Anh",
+    "auto_translated": "Tự động dịch",
+    "translation_hint": "Bạn có thể chỉnh sửa bản dịch nếu cần",
+    "parent_category": "Danh mục cha",
+    "select_parent_optional": "Chọn danh mục cha (Tùy chọn)",
+    "please_enter_name": "Vui lòng nhập tên danh mục",
+    "create_failed": "Tạo danh mục thất bại",
+    "creating": "Đang tạo...",
+    "create": "Tạo danh mục"
   },
   "wallet": {
     "error_save": "Không thể lưu ví đã chọn",

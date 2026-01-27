@@ -1,14 +1,17 @@
+import CustomText from '@/components/base/CustomText';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
 import { Tokens } from '@/core/theme/theme';
 import { useRegisterService } from '@/features/auth/hooks/useResgisterService';
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
+import StorageService from '@/services/StorageService';
 import { Images } from '@/utils/images';
 import { hasNotch, normalize } from '@/utils/layout';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome6, Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -43,7 +46,54 @@ const RegisterScreen = () => {
     isRegistering,
     isFormValid,
     handleRegister,
+    currency,
+    setCurrency,
   } = useRegisterService();
+
+  const { defaultCurrency, loading: loadingDefaultCurrency } = useDefaultCurrency();
+  const [currencySymbol, setCurrencySymbol] = useState('đ');
+  const [currencyName, setCurrencyName] = useState('Vietnamese Dong');
+
+  useEffect(() => {
+    if (!loadingDefaultCurrency && defaultCurrency) {
+      setCurrency(defaultCurrency.currencyId);
+      setCurrencySymbol(defaultCurrency.symbol);
+      setCurrencyName(defaultCurrency.name);
+    }
+  }, [loadingDefaultCurrency, defaultCurrency]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadSelectedData = async () => {
+        try {
+          const selectedCurrencyStr = await StorageService.getItem('temp_selected_currency');
+          if (selectedCurrencyStr) {
+            try {
+              const selectedCurrency = JSON.parse(selectedCurrencyStr);
+              setCurrency(selectedCurrency.currencyId || 'VND');
+              setCurrencySymbol(selectedCurrency.symbol || 'đ');
+              setCurrencyName(selectedCurrency.name || 'Vietnamese Dong');
+              await StorageService.removeItem('temp_selected_currency');
+            } catch (parseError) {
+              console.error('Failed to parse currency:', parseError);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load selected data:', error);
+        }
+      };
+      loadSelectedData();
+    }, [])
+  );
+
+  const handleSelectCurrency = () => {
+    router.push({
+      pathname: '/(protected)/select-currency',
+      params: {
+        selectedCurrencyId: currency,
+      }
+    });
+  };
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [errors, setErrors] = useState({
@@ -225,6 +275,7 @@ const RegisterScreen = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
         >
           {/* Logo */}
           <View style={styles.logoContainer}>
@@ -395,6 +446,34 @@ const RegisterScreen = () => {
               )}
             </View>
 
+            {/* Currency Selection */}
+            <View style={styles.inputContainer}>
+              <ThemedText style={[styles.label, { color: colors.text }]}>
+                {t('wallet.currency')}
+              </ThemedText>
+              <TouchableOpacity
+                style={[styles.currencySelector, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={handleSelectCurrency}
+              >
+                <View style={styles.currencyLeft}>
+                  <View style={styles.currencyIconWrapper}>
+                    <CustomText style={[styles.currencySymbolText, { color: colors.tint }]} type="bold">
+                      {currencySymbol}
+                    </CustomText>
+                  </View>
+                  <View style={styles.currencyInfo}>
+                    <CustomText style={[styles.currencyNameText, { color: colors.icon }]} type="regular" numberOfLines={1}>
+                      {currencyName}
+                    </CustomText>
+                    <CustomText style={[styles.currencyCode, { color: colors.text }]} type="semiBold">
+                      {currency}
+                    </CustomText>
+                  </View>
+                </View>
+                <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
+              </TouchableOpacity>
+            </View>
+
             {/* Register Button */}
             <TouchableOpacity
               onPress={handleRegisterPress}
@@ -487,6 +566,39 @@ const styles = StyleSheet.create({
     lineHeight: normalize(22),
     paddingTop: normalize(15),
     paddingBottom: normalize(15),
+  },
+  currencySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: normalize(5),
+    borderRadius: normalize(12),
+    borderWidth: 1,
+  },
+  currencyLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  currencyIconWrapper: {
+    width: normalize(48),
+    height: normalize(48),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: normalize(12),
+  },
+  currencySymbolText: {
+    fontSize: normalize(24),
+  },
+  currencyInfo: {
+    flex: 1,
+  },
+  currencyCode: {
+    fontSize: normalize(14),
+    marginBottom: normalize(2),
+  },
+  currencyNameText: {
+    fontSize: normalize(13),
   },
   dateInput: {
     flexDirection: 'row',

@@ -15,12 +15,23 @@ export interface Category {
   icon: string;
   color: string;
   web_icon: string;
+  children?: Category[];
 }
 
 export interface GetTopSpendingCategoriesPayload {
   usercode: string;
   period_type: string;
   take: number;
+}
+
+export interface CreateCategoryPayload {
+  category_group: 'EXPENSE' | 'INCOME' | 'LOAN';
+  category_name: string;
+  category_type: 'EXPENSE' | 'INCOME' | 'LOAN';
+  color: string;
+  icon: string;
+  parent_category_id?: number | string;
+  usercode: string;
 }
 
 export const categoryRepository = {
@@ -65,6 +76,27 @@ export const categoryRepository = {
         "[categoryRepository] Error fetching top spending categories:",
         error
       );
+      throw error;
+    }
+  },
+
+  /**
+   * Create a new category
+   */
+  async createCategory(
+    payload: CreateCategoryPayload
+  ): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_CREATE_WALLET_CATEGORY,
+        {
+            ...payload
+        },
+        false,
+        true
+      );
+    } catch (error) {
+            console.error('[categoryRepository] Error creating category:', error);
       throw error;
     }
   },

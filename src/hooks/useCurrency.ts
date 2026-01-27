@@ -11,13 +11,124 @@ interface UseCurrencyOptions {
   pageSize?: number;
 }
 
-// Session cache - chỉ tồn tại trong runtime, mất khi tắt app
-let sessionCache: {
-  currencies: Currency[];
-  totalCount: number;
-  timestamp: number;
-  searchText: string;
-} | null = null;
+// Global cache object shared between hook and services
+export const currencyCache = {
+  data: null as {
+    currencies: Currency[];
+    totalCount: number;
+    timestamp: number;
+    searchText: string;
+  } | null,
+  
+  clear() {
+    this.data = null;
+  }
+};
+
+/**
+ * Parse currency name from various formats
+ */
+export const parseCurrencyName = (currency: Currency | any): string => {
+  try {
+    // Nếu currency_name là string, trả về luôn
+    const name = currency.currency_name || currency.name;
+    
+    if (typeof name === 'string') {
+      try {
+        // Try parsing if string looks like JSON
+        if (name.startsWith('{')) {
+          const parsed = JSON.parse(name);
+          return parsed.CurrencyName1 || parsed.CurrencyName2 || parsed.vi || parsed.en || name;
+        }
+        return name || currency.currency_id;
+      } catch {
+        return name || currency.currency_id;
+      }
+    }
+
+    // Nếu là object, lấy field phù hợp
+    if (typeof name === 'object') {
+       return name.CurrencyName1 || name.CurrencyName2 || name.vi || name.en || currency.currency_id;
+    }
+    
+    return currency.currency_id || '';
+  } catch (error) {
+    console.warn('[useCurrency] Failed to parse currency name:', error);
+    return currency.currency_id || '';
+  }
+};
+
+/**
+ * Process raw currencies from API
+ */
+const processCurrencies = (rawCurrencies: Currency[]): Currency[] => {
+  const mapped = rawCurrencies.map((c) => ({
+    ...c,
+    displayName: parseCurrencyName(c),
+  }));
+
+  const sorted = mapped.sort((a, b) => a.display_order - b.display_order);
+  return sorted;
+};
+
+/**
+ * Fetch currencies logic - can be used by Hook or Service
+ */
+export const fetchCurrenciesFromApi = async (
+  searchText: string = '', 
+  pageIndex: number = 0, 
+  pageSize: number = 40,
+  skipCache: boolean = false
+) => {
+  // Check cache for first page and matching search
+  if (
+    !skipCache &&
+    pageIndex === 0 &&
+    currencyCache.data &&
+    currencyCache.data.searchText === searchText
+  ) {
+    const isExpired = Date.now() - currencyCache.data.timestamp > AppConfig.CACHE.CATEGORY_TIMEOUT;
+
+    if (!isExpired) {
+      return {
+        currencies: currencyCache.data.currencies,
+        totalCount: currencyCache.data.totalCount,
+        fromCache: true
+      };
+    }
+  }
+
+  // Call API
+  const response = await currencyRepository.getCurrencies({
+    search_text: searchText,
+    page_index: pageIndex,
+    page_size: pageSize,
+  });
+
+  if (response.isSuccess() && response.data) {
+    const rawCurrencies = response.data.items || [];
+    const total = response.data.total_count || 0;
+    const processedCurrencies = processCurrencies(rawCurrencies);
+
+    // Update Cache if first page
+    if (pageIndex === 0) {
+      currencyCache.data = {
+        currencies: processedCurrencies,
+        totalCount: total,
+        timestamp: Date.now(),
+        searchText: searchText,
+      };
+    }
+
+    return {
+      currencies: processedCurrencies,
+      totalCount: total,
+      fromCache: false
+    };
+  } else {
+    throw new Error(response.message || 'Failed to fetch currencies');
+  }
+};
 
 export const useCurrency = (options: UseCurrencyOptions = {}) => {
   const { 
@@ -37,45 +148,6 @@ export const useCurrency = (options: UseCurrencyOptions = {}) => {
   const isFetchingRef = useRef(false);
   const lastSearchRef = useRef(searchText);
 
-  const parseCurrencyName = (currency: Currency): string => {
-    try {
-      // Nếu currency_name là string, trả về luôn
-      if (typeof currency.currency_name === 'string') {
-        return currency.currency_name || currency.currency_id;
-      }
-
-      // Nếu là object, parse JSON
-      const nameObj = typeof currency.currency_name === 'object' 
-        ? currency.currency_name 
-        : JSON.parse(currency.currency_name);
-      
-      return (
-        nameObj.CurrencyName1 ||
-        nameObj.CurrencyName2 ||
-        nameObj.CurrencyName3 ||
-        currency.currency_id
-      );
-    } catch (error) {
-      console.warn('[useCurrency] Failed to parse currency name:', error);
-      return currency.currency_id;
-    }
-  };
-
-  const processCurrencies = (rawCurrencies: Currency[]): Currency[] => {
-
-    
-    const mapped = rawCurrencies.map((c) => ({
-      ...c,
-      displayName: parseCurrencyName(c),
-    }));
-
-    
-    const sorted = mapped.sort((a, b) => a.display_order - b.display_order);
-
-    
-    return sorted;
-  };
-
   const removeDuplicates = (currencyList: Currency[]): Currency[] => {
     const seen = new Set<string>();
     return currencyList.filter((currency) => {
@@ -88,89 +160,34 @@ export const useCurrency = (options: UseCurrencyOptions = {}) => {
   };
 
   /**
-   * Fetch currencies from API
+   * Fetch currencies using shared logic
    */
   const fetchCurrencies = async (skipCache = false, page = 0) => {
-    // Prevent duplicate fetches
-    if (isFetchingRef.current) {
-
-      return;
-    }
-
-    // Check cache for first page and matching search
-    if (
-      !skipCache &&
-      page === 0 &&
-      sessionCache &&
-      sessionCache.searchText === searchText
-    ) {
-      const isExpired =
-        Date.now() - sessionCache.timestamp > AppConfig.CACHE.CATEGORY_TIMEOUT;
-
-      if (!isExpired) {
-        // console.log('[useCurrency] Using cached data:', sessionCache.currencies.length, 'items');
-        setCurrencies(sessionCache.currencies);
-        setTotalCount(sessionCache.totalCount);
-        setCurrentPage(0);
-        setHasMore(sessionCache.currencies.length < sessionCache.totalCount);
-        return;
-      } else {
-        // console.log('[useCurrency] Cache expired, fetching new data');
-      }
-    }
+    if (isFetchingRef.current) return;
 
     isFetchingRef.current = true;
     setLoading(true);
     setError(null);
 
     try {
+      const result = await fetchCurrenciesFromApi(searchText, page, pageSize, skipCache);
 
-      
-      const response = await currencyRepository.getCurrencies({
-        search_text: searchText,
-        page_index: page,
-        page_size: pageSize,
-      });
-
-      if (response.isSuccess() && response.data) {
-        const rawCurrencies = response.data.items || [];
-        const total = response.data.total_count || 0;
-        const processedCurrencies = processCurrencies(rawCurrencies);
-
-
-
-        if (page === 0) {
-          // First page - reset
-          // console.log('[useCurrency] Setting first page with', processedCurrencies.length, 'items');
-          setCurrencies(processedCurrencies);
-          setCurrentPage(0);
-
-          // Cache first page
-          sessionCache = {
-            currencies: processedCurrencies,
-            totalCount: total,
-            timestamp: Date.now(),
-            searchText: searchText,
-          };
-        } else {
-          // Load more - append và remove duplicates
-          setCurrencies((prev) => {
-            const combined = [...prev, ...processedCurrencies];
-            const deduplicated = removeDuplicates(combined);
-
-            return deduplicated;
-          });
-          setCurrentPage(page);
-        }
-
-        setTotalCount(total);
-        setHasMore((page + 1) * pageSize < total);
+      if (page === 0) {
+        setCurrencies(result.currencies);
+        setCurrentPage(0);
       } else {
-        throw new Error(response.message || 'Failed to fetch currencies');
+        setCurrencies((prev) => {
+          const combined = [...prev, ...result.currencies];
+          return removeDuplicates(combined);
+        });
+        setCurrentPage(page);
       }
+
+      setTotalCount(result.totalCount);
+      setHasMore((page + 1) * pageSize < result.totalCount);
+      
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to fetch currencies';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch currencies';
       setError(errorMessage);
       console.error('[useCurrency] Error:', err);
     } finally {
@@ -179,40 +196,32 @@ export const useCurrency = (options: UseCurrencyOptions = {}) => {
     }
   };
 
-
   const loadMore = () => {
     if (hasMore && !loading && !isFetchingRef.current) {
-
       fetchCurrencies(false, currentPage + 1);
     }
   };
 
-
   const search = (text: string) => {
-
-    sessionCache = null;
+    currencyCache.clear();
     setCurrentPage(0);
     setCurrencies([]);
     fetchCurrencies(true, 0);
   };
 
-
   const refetch = () => {
-
-    sessionCache = null;
+    currencyCache.clear();
     setCurrentPage(0);
     setCurrencies([]);
     fetchCurrencies(true, 0);
   };
 
   const clearCache = () => {
-
-    sessionCache = null;
+    currencyCache.clear();
   };
 
   useEffect(() => {
     if (autoFetch && searchText !== lastSearchRef.current) {
-
       lastSearchRef.current = searchText;
       setCurrencies([]);
       setCurrentPage(0);
@@ -223,7 +232,6 @@ export const useCurrency = (options: UseCurrencyOptions = {}) => {
 
   useEffect(() => {
     if (autoFetch) {
-
       fetchCurrencies(forceRefresh, 0);
     }
   }, []); 

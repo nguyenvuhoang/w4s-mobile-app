@@ -38,6 +38,7 @@ export const authRepository = {
     contracttype: string;
     reason?: string;
     usertype: string;
+    currencyCode: string;
   }): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
       WORKFLOWCODE.WF_MB_CREATE_USER,
@@ -57,6 +58,7 @@ export const authRepository = {
         contracttype: payload.contracttype,
         reason: payload.reason || "",
         usertype: payload.usertype,
+        currencyCode: payload.currencyCode,
       },
       false,
       true

@@ -1,6 +1,7 @@
 // src/services/DefaultCurrencyService.ts
 
 import { default as STORAGE_KEY, default as StorageKey } from '@/constants/StorageKey';
+import { fetchCurrenciesFromApi, parseCurrencyName } from '@/hooks/useCurrency';
 import { systemRepository } from '@/services/repositories/system.repository';
 import StorageService from './StorageService';
 
@@ -12,42 +13,31 @@ export interface DefaultCurrency {
 
 const DEFAULT_VND: DefaultCurrency = {
   currencyId: 'VND',
-  symbol: 'đ',
+  symbol: '₫',
   name: 'Vietnamese Dong',
-};
-
-// Currency symbol mapping for common currencies
-const CURRENCY_SYMBOLS: Record<string, { symbol: string; name: string }> = {
-  VND: { symbol: '₫', name: 'Vietnamese Dong' },
-  USD: { symbol: '$', name: 'US Dollar' },
-  EUR: { symbol: '€', name: 'Euro' },
-  GBP: { symbol: '£', name: 'British Pound' },
-  JPY: { symbol: '¥', name: 'Japanese Yen' },
-  CNY: { symbol: '¥', name: 'Chinese Yuan' },
-  KRW: { symbol: '₩', name: 'Korean Won' },
-  THB: { symbol: '฿', name: 'Thai Baht' },
-  SGD: { symbol: 'S$', name: 'Singapore Dollar' },
-  AUD: { symbol: 'A$', name: 'Australian Dollar' },
 };
 
 class DefaultCurrencyService {
   /**
-   * Get default currency - reads from AppInfo (loaded during login) or local storage
+   * Get default currency - Priority: Cache -> API (WF_MB_SIMPLE_SEARCH_CURRENCY)
+   * 1. Check local storage cache first
+   * 2. If no cache, get currency_code from AppInfo then call API to get full info
    */
   async getDefaultCurrency(): Promise<DefaultCurrency> {
-    // First, check local storage cache (set by user or synced from AppInfo)
+    // 1. First, check local storage cache (highest priority)
     try {
       const storedCurrencyStr = await StorageService.getItem(STORAGE_KEY.defaultCurrency);
       
       if (storedCurrencyStr) {
         const storedCurrency = JSON.parse(storedCurrencyStr);
+        console.log('[DefaultCurrency] Using cached currency:', storedCurrency.currencyId);
         return storedCurrency;
       }
     } catch (error) {
       console.warn('[DefaultCurrency] Storage read failed:', error);
     }
 
-    // Try to get from AppInfo (cached during login)
+    // 2. No cache - get currency_code from AppInfo and fetch from API
     try {
       const appInfoStr = await StorageService.getAsyncItem(StorageKey.appInfo);
       
@@ -56,26 +46,39 @@ class DefaultCurrencyService {
         const currencyCode = appInfo.currency_code;
         
         if (currencyCode) {
-          const currencyInfo = CURRENCY_SYMBOLS[currencyCode] || { 
-            symbol: currencyCode, 
-            name: currencyCode 
-          };
+          console.log('[DefaultCurrency] No cache, fetching from API for:', currencyCode);
           
-          const currency: DefaultCurrency = {
-            currencyId: currencyCode,
-            symbol: currencyInfo.symbol,
-            name: currencyInfo.name,
-          };
+          // Call API to get currency info using shared logic from useCurrency
+          // search_text = currencyCode to find exact match
+          const result = await fetchCurrenciesFromApi(currencyCode, 0, 10, false);
           
-          // Cache to local storage for future use
-          await this.cacheToStorage(currency);
-          return currency;
+          const currencies = result.currencies || [];
+          
+          // Find exact match for currency_id
+          const matchedCurrency = currencies.find(
+            (c: any) => c.currency_id === currencyCode || c.short_currency_id === currencyCode
+          );
+
+          if (matchedCurrency) {
+             const currency: DefaultCurrency = {
+              currencyId: matchedCurrency.currency_id,
+              symbol: matchedCurrency.symbol || currencyCode,
+              name: parseCurrencyName(matchedCurrency) || currencyCode,
+            };
+            
+            // Cache to local storage for future use
+            await this.cacheToStorage(currency);
+            console.log('[DefaultCurrency] Fetched and cached from API:', currency);
+            return currency;
+          }
         }
       }
     } catch (error) {
-      console.warn('[DefaultCurrency] AppInfo read failed:', error);
+      console.warn('[DefaultCurrency] Failed to get currency from AppInfo/API:', error);
     }
 
+    // 3. Fallback to VND
+    console.log('[DefaultCurrency] Using fallback VND');
     return DEFAULT_VND;
   }
 

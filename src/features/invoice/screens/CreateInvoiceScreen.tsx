@@ -41,7 +41,7 @@ const CreateRecurringInvoiceScreen = () => {
   const screenTitle = (params.title as string) || "Tạo hóa đơn định kỳ";
 
   // Form states
-  const [sourceWalletId, setSourceWalletId] = useState<string | null>(null);
+  const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
   const [selectedCategoryData, setSelectedCategoryData] =
     useState<SelectedCategoryData | null>(null);
   const [amount, setAmount] = useState("");

@@ -10,16 +10,16 @@ interface UseWalletResult {
   refresh: () => Promise<void>;
 
   // helpers
-  getWalletById: (walletId: string) => WalletSummary | undefined;
+  getWalletById: (walletId: number) => WalletSummary | undefined;
   getWalletsByType: (type: WalletSummary["type"]) => WalletSummary[];
 
   // balance
-  updateWalletBalance: (walletId: string, diff: number) => void;
+  updateWalletBalance: (walletId: number, diff: number) => void;
 
   // default wallet
-  defaultWalletId: string | null;
+  defaultWalletId: number | null;
   defaultWallet?: WalletSummary;
-  setDefaultWalletId: (walletId: string | null) => void;
+  setDefaultWalletId: (walletId: number | null) => void;
 }
 
 export const useWallet = (): UseWalletResult => {
@@ -38,7 +38,7 @@ export const useWallet = (): UseWalletResult => {
 
   const refresh = () => fetchWallets(true);
 
-  const getWalletById = (walletId: string) =>
+  const getWalletById = (walletId: number) =>
     wallets.find((w) => w.walletId === walletId);
 
   const getWalletsByType = (type: WalletSummary["type"]) =>

@@ -122,7 +122,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
 
   const handleSetDefault = () => {
     if (!selectedWallet) return;
-    setDefaultWalletId(String(selectedWallet.walletId));
+    setDefaultWalletId(selectedWallet.walletId);
     setShowActionModal(false);
   };
 
@@ -138,7 +138,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
         icon: "star-outline",
         label: t("wallet.set_default"),
         onPress: handleSetDefault,
-        hide: String(selectedWallet?.walletId) === String(defaultWalletId), // Ẩn nếu đã là default
+        hide: selectedWallet?.walletId === defaultWalletId, // Ẩn nếu đã là default
       },
       {
         id: "edit",
@@ -239,7 +239,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
               <WalletItem
                 key={wallet.walletId}
                 wallet={wallet}
-                isDefault={String(wallet.walletId) === String(defaultWalletId)}
+                isDefault={wallet.walletId === defaultWalletId}
                 colors={colors}
                 mode={mode}
                 onPress={() => handleSelectWallet(wallet)}

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useNotification } from '@/contexts/NotificationContext';
-import { authRepository } from '@/services/repositories/auth.repository';
+import { authRepository } from '@/services/repositories';
 
 interface RegisterFormData {
   fullName: string;
@@ -12,6 +12,7 @@ interface RegisterFormData {
   address: string;
   gender: number;
   birthday: string;
+  currency: string;
 }
 
 export const useRegisterService = () => {
@@ -22,6 +23,7 @@ export const useRegisterService = () => {
   const [address, setAddress] = useState('');
   const [gender, setGender] = useState<number>(1); // 1: Nam, 2: Nữ
   const [birthday, setBirthday] = useState('');
+  const [currency, setCurrency] = useState('VND');
   const [isRegistering, setIsRegistering] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
 
@@ -37,10 +39,11 @@ export const useRegisterService = () => {
       email.trim().length > 0 &&
       phone.trim().length >= 10 &&
       address.trim().length > 0 &&
-      birthday.length > 0;
+      birthday.length > 0 &&
+      currency.trim().length > 0;
 
     setIsFormValid(isValid);
-  }, [fullName, email, phone, address, birthday]);
+  }, [fullName, email, phone, address, birthday, currency]);
 
   const parseFullName = useCallback((fullName: string): {
     firstname: string;
@@ -116,6 +119,7 @@ export const useRegisterService = () => {
         contracttype: 'WAL',
         reason: '',
         usertype: '0502',
+        currencyCode: currency,
       };
 
       const response = await authRepository.register(payload);
@@ -155,7 +159,9 @@ export const useRegisterService = () => {
     parseFullName,
     showNotification,
     t,
+    t,
     router,
+    currency,
   ]);
 
   // Reset form
@@ -166,6 +172,7 @@ export const useRegisterService = () => {
     setAddress('');
     setGender(1);
     setBirthday('');
+    setCurrency('VND');
   }, []);
 
   return {
@@ -182,6 +189,8 @@ export const useRegisterService = () => {
     setGender,
     birthday,
     setBirthday,
+    currency,
+    setCurrency,
     isRegistering,
     isFormValid,
     

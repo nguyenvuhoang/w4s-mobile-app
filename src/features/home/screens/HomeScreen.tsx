@@ -37,7 +37,7 @@ interface HomeScreenProps {
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { colors } = useAppTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { appInfo } = React.useContext(GlobalContext);
   const { showNotification } = useNotification();
   const { defaultCurrency, loading: currencyLoading } = useDefaultCurrency();
@@ -128,12 +128,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     return "#2196F3";
   };
 
-  // Parse category name from JSON string format: {"vi":"Tên","en":"Name"}
-  const parseCategoryName = (name: string | null): string => {
-    if (!name) return t("home.uncategorized");
+  // Parse name from JSON string format: {"vi":"Tên","en":"Name"}
+  const parseName = (name: string | null): string | null => {
+    if (!name) return null;
     try {
       const parsed = JSON.parse(name);
-      return parsed.vi || parsed.en || name;
+      return parsed[i18n.language] || parsed.vi || parsed.en || name;
     } catch {
       return name;
     }
@@ -391,7 +391,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   key={category.category_id}
                   icon={category.icon || "pricetag-outline"}
                   iconColor={category.color || "#9E9E9E"}
-                  name={parseCategoryName(category.name)}
+                  name={parseName(category.name) || t("home.uncategorized")}
                   transactions={`${category.transaction_count} ${t("home.transactions_count")}`}
                   amount={formatCurrency(category.total_amount)}
                   color={category.color || "#9E9E9E"}
@@ -457,7 +457,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   key={transaction.transaction_id}
                   icon={getCategoryIcon(transaction)}
                   iconColor={getCategoryColor(transaction)}
-                  name={transaction.title || t("home.transaction_default_name")}
+                  name={parseName(transaction.title) || t("home.transaction_default_name")}
                   time={formatTransactionTime(transaction.occurred_at)}
                   amount={formatTransactionAmount(transaction)}
                   isExpense={transaction.type === "EXPENSE"}

@@ -43,7 +43,7 @@ const CreateBudgetScreen = () => {
   const { wallets, defaultWallet } = useWallet();
 
   const [selectedType, setSelectedType] = useState<BudgetType>("expense");
-  const [sourceWalletId, setSourceWalletId] = useState<string | null>(null);
+  const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
   const [selectedCategoryData, setSelectedCategoryData] =
     useState<SelectedCategoryData | null>(null);
   const [amount, setAmount] = useState("");

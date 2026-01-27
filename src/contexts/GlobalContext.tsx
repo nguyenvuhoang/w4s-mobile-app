@@ -71,7 +71,7 @@ interface GlobalContextType {
 
 const GlobalContext = createContext<GlobalContextType>({
   appInfo: null,
-  setAppInfo: () => {},
+  setAppInfo: () => { },
   isReady: false,
   isLogoutConfirmedRef: { current: false },
   isIdleLogoutRef: { current: false },
@@ -79,18 +79,18 @@ const GlobalContext = createContext<GlobalContextType>({
   isOtaUpdateAvailable: false,
   isOtaDownloading: false,
   isOtaUpdateReady: false,
-  startOtaUpdate: async () => {},
-  reloadOtaApp: async () => {},
+  startOtaUpdate: async () => { },
+  reloadOtaApp: async () => { },
   otaError: null,
 
   unreadTotalCount: 0,
-  setUnreadTotalCount: () => {},
+  setUnreadTotalCount: () => { },
   globalPhone: null,
-  setGlobalPhone: () => {},
+  setGlobalPhone: () => { },
   balance: "********",
-  setBalance: () => {},
+  setBalance: () => { },
   walletBalance: "********",
-  setWalletBalance: () => {},
+  setWalletBalance: () => { },
 
   globalLoading: {
     visible: false,
@@ -99,21 +99,21 @@ const GlobalContext = createContext<GlobalContextType>({
     progress: 0,
     mode: "default",
   },
-  showGlobalLoading: () => {},
-  hideGlobalLoading: () => {},
-  setLoadingProgress: () => {},
+  showGlobalLoading: () => { },
+  hideGlobalLoading: () => { },
+  setLoadingProgress: () => { },
 
   // 🔹 ADD — Wallet defaults
   wallets: [],
   walletsUpdatedAt: null,
   walletLoading: false,
   walletError: null,
-  fetchWallets: async () => {},
-  updateWalletBalance: () => {},
+  fetchWallets: async () => { },
+  updateWalletBalance: () => { },
 
   // 🔹 ADD — Default wallet defaults
   defaultWalletId: null,
-  setDefaultWalletId: () => {},
+  setDefaultWalletId: () => { },
   defaultWallet: undefined,
 });
 
@@ -182,10 +182,10 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // 🔹 ADD — Optimistic update
-  const updateWalletBalance = (walletId: string | number, diff: number) => {
+  const updateWalletBalance = (walletId: number, diff: number) => {
     setWallets((prev) =>
       prev.map((w) =>
-        w.walletId === Number(walletId)
+        w.walletId === walletId
           ? { ...w, balance: w.balance + diff }
           : w,
       ),
