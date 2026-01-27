@@ -8,6 +8,7 @@ import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import * as Crypto from 'expo-crypto';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -42,6 +43,8 @@ const AIChatScreen = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const stopStreamRef = useRef<(() => void) | null>(null);
+
+  const [conversationId] = useState(() => Crypto.randomUUID());
 
   useEffect(() => {
     return () => {
@@ -97,6 +100,7 @@ const AIChatScreen = () => {
       body: {
         message: messageText,
         user_code: usercode,
+        conversation_id: conversationId,
       },
       onMessage: (chunk) => {
         setIsProcessing(false);

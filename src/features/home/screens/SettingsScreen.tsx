@@ -6,6 +6,7 @@ import { Tokens } from "@/core/theme/theme";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useSettingService } from "@/features/settings/hooks/useSettingService";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
+import DefaultCurrencyService from "@/services/DefaultCurrencyService";
 import StorageService from "@/services/StorageService";
 import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
@@ -50,6 +51,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             setUpdatingCurrency(true);
             const selectedCurrency = JSON.parse(selectedCurrencyStr);
 
+            await DefaultCurrencyService.setDefaultCurrency(selectedCurrency);
             await updateDefaultCurrency(selectedCurrency);
             await StorageService.removeItem("temp_selected_currency");
           }

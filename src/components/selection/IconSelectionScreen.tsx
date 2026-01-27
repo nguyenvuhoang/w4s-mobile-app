@@ -1,14 +1,17 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
+import { WALLET_ICONS } from '@/constants/IconNameList';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Dimensions,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -17,40 +20,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// FontAwesome 6 finance/money related icons
-const WALLET_ICONS = [
-  'wallet', 'piggy-bank', 'money-bill-1', 'money-bill-wave', 'coins',
-  'credit-card', 'building-columns', 'hand-holding-dollar', 'sack-dollar', 'chart-line',
-  'chart-pie', 'landmark', 'cash-register', 'money-check', 'money-check-dollar',
-  'vault', 'donate', 'gift', 'handshake', 'circle-dollar-to-slot',
-  'money-bill-transfer', 'money-bill-trend-up', 'arrow-trend-up', 'arrow-trend-down', 'scale-balanced',
-  'receipt', 'file-invoice-dollar', 'shopping-cart', 'store', 'briefcase',
-  'house', 'car', 'plane', 'ship', 'bicycle',
-  'book', 'graduation-cap', 'heart', 'utensils', 'coffee',
-  'film', 'gamepad', 'music', 'dumbbell', 'basketball',
-  'football', 'baseball', 'trophy', 'medal', 'star',
-  'fire', 'bolt', 'cloud', 'sun', 'moon',
-  'leaf', 'tree', 'seedling', 'paw', 'cat',
-  'dog', 'fish', 'horse', 'crown', 'gem',
-  'ring', 'glasses', 'shirt', 'shoe-prints', 'umbrella',
-  'key', 'lock', 'unlock', 'shield', 'user',
-  'users', 'user-tie', 'user-doctor', 'user-graduate', 'baby',
-  'child', 'person', 'location-dot', 'map-marker-alt', 'globe',
-  'phone', 'mobile', 'laptop', 'desktop', 'tablet',
-  'camera', 'image', 'video', 'headphones', 'microphone',
-  'bell', 'envelope', 'comment', 'comments', 'thumbs-up',
-  'heart-pulse', 'pills', 'syringe', 'stethoscope', 'bandage',
-  'tooth', 'bone', 'brain', 'eye', 'hand',
-];
+const INITIAL_LOAD = 50; // Load 50 icons initially
+const LOAD_MORE_BATCH = 30; // Load 30 more icons each time
 
 // ================= SCREEN =================
 const SelectWalletIconScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
 
-
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('wallet');
+  const [displayCount, setDisplayCount] = useState(INITIAL_LOAD);
 
   const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -75,9 +55,68 @@ const SelectWalletIconScreen: React.FC = () => {
     return (availableWidth - GAP * (numColumns - 1)) / numColumns;
   }, [SCREEN_WIDTH, numColumns]);
 
-  const filteredIcons = WALLET_ICONS.filter(icon =>
-    icon.toLowerCase().includes(searchQuery.toLowerCase())
+  // ===== Filter icons =====
+  const filteredIcons = useMemo(() => {
+    return WALLET_ICONS.filter(icon =>
+      icon.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery]);
+
+  // Reset display count when search changes
+  useEffect(() => {
+    // When searching, show all results immediately (or at least more)
+    if (searchQuery.trim()) {
+      // Show all search results or limit to reasonable number
+      setDisplayCount(filteredIcons.length);
+    } else {
+      // When not searching, start with initial load
+      setDisplayCount(INITIAL_LOAD);
+    }
+  }, [searchQuery, filteredIcons.length]);
+
+  // Icons to display (limited by displayCount)
+  const displayedIcons = useMemo(() => {
+    const icons = filteredIcons.slice(0, displayCount);
+    // Ensure unique icons (remove duplicates if any)
+    return Array.from(new Set(icons));
+  }, [filteredIcons, displayCount]);
+
+  const hasMore = displayCount < filteredIcons.length;
+
+  // Handle scroll to load more
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (!hasMore || isLoading) return;
+
+      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+      const paddingToBottom = 200;
+      const isCloseToBottom =
+        layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+
+      if (isCloseToBottom) {
+        setIsLoading(true);
+        setDisplayCount(prev => {
+          const newCount = Math.min(prev + LOAD_MORE_BATCH, filteredIcons.length);
+          setTimeout(() => setIsLoading(false), 100); // Debounce
+          return newCount;
+        });
+      }
+    },
+    [hasMore, filteredIcons.length, isLoading]
   );
+
+  // Alternative handler for when scroll ends at bottom
+  const handleScrollEnd = useCallback(() => {
+    if (!hasMore || isLoading) return;
+    setIsLoading(true);
+    setDisplayCount(prev => {
+      const newCount = Math.min(prev + LOAD_MORE_BATCH, filteredIcons.length);
+      setTimeout(() => setIsLoading(false), 100); // Debounce
+      return newCount;
+    });
+  }, [hasMore, filteredIcons.length, isLoading]);
 
   const handleContinue = async () => {
     await StorageService.setItem('temp_selected_icon', selectedIcon);
@@ -111,23 +150,33 @@ const SelectWalletIconScreen: React.FC = () => {
           )}
         </View>
 
-        {/* ===== ICON GRID ===== */}
+        {/* ===== ICON COUNT ===== */}
+        <View style={styles.iconCountContainer}>
+          <CustomText style={[styles.iconCountText, { color: colors.icon }]}>
+            {t('selection.showing')} {displayedIcons.length} / {filteredIcons.length} icons
+          </CustomText>
+        </View>
+
+        {/* ===== ICON GRID WITH PROGRESSIVE LOADING ===== */}
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.iconGridContainer}
+          onScroll={handleScroll}
+          onMomentumScrollEnd={handleScrollEnd}
+          scrollEventThrottle={400}
         >
           <View style={styles.iconGrid}>
-            {filteredIcons.map(icon => (
+            {displayedIcons.map(icon => (
               <TouchableOpacity
                 key={icon}
                 style={[
                   styles.iconItem,
                   {
                     width: ITEM_SIZE,
+                    height: ITEM_SIZE,
                     backgroundColor: colors.card,
                     borderColor: colors.border,
-                    height: ITEM_SIZE
                   },
                   selectedIcon === icon && {
                     borderColor: colors.tint,
@@ -144,6 +193,15 @@ const SelectWalletIconScreen: React.FC = () => {
               </TouchableOpacity>
             ))}
           </View>
+
+          {/* Loading more indicator */}
+          {hasMore && (
+            <View style={styles.loadingMore}>
+              <CustomText style={[styles.loadingMoreText, { color: colors.icon }]}>
+                {t('selection.scroll_for_more')}
+              </CustomText>
+            </View>
+          )}
         </ScrollView>
       </View>
 
@@ -191,13 +249,21 @@ const styles = StyleSheet.create({
     borderRadius: normalize(12),
     borderWidth: 1,
     marginTop: hp(2),
-    marginBottom: hp(2),
+    marginBottom: hp(1),
     gap: normalize(12),
   },
   searchInput: {
     flex: 1,
     fontSize: normalize(15),
     padding: 0,
+  },
+  iconCountContainer: {
+    paddingVertical: normalize(8),
+    marginBottom: hp(1),
+  },
+  iconCountText: {
+    fontSize: normalize(13),
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,
@@ -215,6 +281,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
+  },
+  loadingMore: {
+    paddingVertical: normalize(20),
+    alignItems: 'center',
+  },
+  loadingMoreText: {
+    fontSize: normalize(13),
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(10),
+  },
+  emptyText: {
+    fontSize: normalize(16),
+    marginTop: normalize(16),
   },
   bottomButtons: {
     flexDirection: 'row',

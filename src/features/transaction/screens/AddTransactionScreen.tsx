@@ -76,7 +76,7 @@ type TransactionType = "income" | "expense" | "inout";
 
 const AddTransactionScreen = () => {
   const { colors } = useAppTheme();
-  const { wallets, defaultWallet } = useWallet();
+  const { wallets, defaultWallet, refresh } = useWallet();
   const { currencies, parseCurrencyName } = useCurrency({ autoFetch: true });
   const { convert } = useExchangeRate();
   const { createTransaction, loading: creatingTransaction } = useTransaction();
@@ -467,6 +467,7 @@ const AddTransactionScreen = () => {
 
       console.log("[AddTransaction] Transaction created successfully!");
 
+      await refresh();
       await clearTempData();
       router.back();
     } catch (error) {
