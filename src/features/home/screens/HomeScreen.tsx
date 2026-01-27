@@ -19,6 +19,7 @@ import {
 import { formatPercent } from "@/utils/formatNumber";
 import { hp, normalize } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -462,6 +463,30 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   amount={formatTransactionAmount(transaction)}
                   isExpense={transaction.type === "EXPENSE"}
                   colors={colors}
+                  onPress={() => {
+                    const detailData = {
+                      transactionid: transaction.transaction_id,
+                      transactiondate: transaction.occurred_at,
+                      transactionname: transaction.title,
+                      transactioncode: transaction.type === 'INCOME' ? '01' : '02',
+                      nu_m01: transaction.amount,
+                      nu_m02: 0,
+                      ccyid: transaction.currency || defaultCurrency.currencyId,
+                      cha_r01: '',
+                      cha_r02: '',
+                      sourcetranref: '',
+                      sourceid: '',
+                      trandesc: transaction.title,
+                      status: 'Completed',
+                      icon: getCategoryIcon(transaction),
+                      color: getCategoryColor(transaction),
+                    };
+
+                    router.push({
+                      pathname: '/(protected)/transaction-detail',
+                      params: { transaction: JSON.stringify(detailData) }
+                    });
+                  }}
                 />
               ))
             )}
@@ -529,8 +554,13 @@ const TransactionItem = ({
   amount,
   isExpense,
   colors,
+  onPress,
 }: any) => (
-  <View style={[styles.transactionItem, { backgroundColor: colors.card }]}>
+  <TouchableOpacity
+    style={[styles.transactionItem, { backgroundColor: colors.card }]}
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
     <View
       style={[styles.transactionIcon, { backgroundColor: iconColor + "1A" }]}
     >
@@ -552,7 +582,7 @@ const TransactionItem = ({
     >
       {amount}
     </CustomText>
-  </View>
+  </TouchableOpacity>
 );
 
 export default HomeScreen;
