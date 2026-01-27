@@ -24,7 +24,7 @@ export default () => {
       updates: {
         enabled: true,
         fallbackToCacheTimeout: 0,
-        url: "https://u.expo.dev/81034140-5dd9-4cbc-afc1-86f97250fed6",
+        url: "https://u.expo.dev/da4b2865-9a79-4658-8321-1cf84cef3b33",
       },
       splash: {
         image: "./assets/splash-screen.png",
@@ -59,10 +59,10 @@ export default () => {
             "W4S Mobile needs access to your contacts to select transaction participants.",
           ...(isDevSimulator
             ? {
-                NSAppTransportSecurity: {
-                  NSAllowsArbitraryLoads: true,
-                },
-              }
+              NSAppTransportSecurity: {
+                NSAllowsArbitraryLoads: true,
+              },
+            }
             : {}),
         },
         runtimeVersion: {
@@ -211,7 +211,7 @@ export default () => {
       ],
       extra: {
         eas: {
-          projectId: "81034140-5dd9-4cbc-afc1-86f97250fed6",
+          projectId: "da4b2865-9a79-4658-8321-1cf84cef3b33",
         },
         updateDate: buildDate,
         storeLinks: {
