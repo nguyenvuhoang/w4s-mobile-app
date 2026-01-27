@@ -1,4 +1,6 @@
 import CustomText from "@/components/base/CustomText";
+import { GlobalContext } from "@/contexts/GlobalContext";
+import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useFinanceSummary } from "@/features/home/hooks/Usefinancesummary";
 import {
@@ -18,6 +20,7 @@ import { formatPercent } from "@/utils/formatNumber";
 import { hp, normalize } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Image,
@@ -34,6 +37,9 @@ interface HomeScreenProps {
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
+  const { appInfo } = React.useContext(GlobalContext);
+  const { showNotification } = useNotification();
   const { defaultCurrency, loading: currencyLoading } = useDefaultCurrency();
 
   // Fetch finance data (amounts already in correct currency from server)
@@ -88,9 +94,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     });
 
     if (date >= today) {
-      return `Hôm nay, ${timeStr}`;
+      return `${t("home.today")}, ${timeStr}`;
     } else if (date >= yesterday) {
-      return `Hôm qua, ${timeStr}`;
+      return `${t("home.yesterday")}, ${timeStr}`;
     } else {
       return date.toLocaleDateString("vi-VN", {
         day: "2-digit",
@@ -124,7 +130,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   // Parse category name from JSON string format: {"vi":"Tên","en":"Name"}
   const parseCategoryName = (name: string | null): string => {
-    if (!name) return "Chưa phân loại";
+    if (!name) return t("home.uncategorized");
     try {
       const parsed = JSON.parse(name);
       return parsed.vi || parsed.en || name;
@@ -167,7 +173,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             />
             <View>
               <CustomText style={[styles.greeting, { color: colors.text }]}>
-                Chào, HOANG
+                {t("home.greeting")}{appInfo?.name}
               </CustomText>
               <CustomText style={[styles.date, { color: colors.icon }]}>
                 {getCurrentDateString()}
@@ -200,13 +206,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             <CustomText
               style={[styles.balanceSubLabel, { color: "#fff", marginTop: 8 }]}
             >
-              Đang tải dữ liệu...
+              {t("home.loading_data")}
             </CustomText>
           </View>
         ) : error ? (
           <View style={[styles.balanceCard, { backgroundColor: colors.tint }]}>
             <CustomText style={[styles.balanceLabel, { color: "#fff" }]}>
-              Lỗi tải dữ liệu
+              {t("home.load_error")}
             </CustomText>
             <CustomText
               style={[styles.balanceSubLabel, { color: "#fff", marginTop: 8 }]}
@@ -224,20 +230,20 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               }}
             >
               <CustomText style={{ color: "#fff", fontWeight: "600" }}>
-                Thử lại
+                {t("home.retry")}
               </CustomText>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={[styles.balanceCard, { backgroundColor: colors.tint }]}>
-            <CustomText style={styles.balanceLabel}>Tổng Số Dư</CustomText>
+            <CustomText style={styles.balanceLabel}>{t("home.total_balance")}</CustomText>
             <CustomText style={styles.balanceAmount}>
               {balanceFormatted}
             </CustomText>
 
             <View style={styles.balanceDetails}>
               <View style={styles.balanceItem}>
-                <CustomText style={styles.balanceSubLabel}>Thu Vào</CustomText>
+                <CustomText style={styles.balanceSubLabel}>{t("home.income")}</CustomText>
                 <CustomText style={styles.incomeAmount}>
                   +{incomeFormatted}
                 </CustomText>
@@ -251,7 +257,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               </View>
               <View style={styles.divider} />
               <View style={styles.balanceItem}>
-                <CustomText style={styles.balanceSubLabel}>Chi Ra</CustomText>
+                <CustomText style={styles.balanceSubLabel}>{t("home.expense")}</CustomText>
                 <CustomText style={styles.expenseAmount}>
                   -{expenseFormatted}
                 </CustomText>
@@ -272,19 +278,19 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => { }}
+            onPress={() => showNotification(t("common.feature_developing"), "warning")}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.tint }]}>
               <Ionicons name="arrow-up" size={normalize(24)} color="#fff" />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
-              Gửi
+              {t("home.send")}
             </CustomText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => { }}
+            onPress={() => showNotification(t("common.feature_developing"), "warning")}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <Ionicons
@@ -294,13 +300,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
-              Nhận
+              {t("home.receive")}
             </CustomText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => { }}
+            onPress={() => showNotification(t("common.feature_developing"), "warning")}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <Ionicons
@@ -310,13 +316,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
-              Thẻ
+              {t("home.card")}
             </CustomText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => { }}
+            onPress={() => showNotification(t("common.feature_developing"), "warning")}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <Ionicons
@@ -326,7 +332,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
-              Thêm
+              {t("home.add")}
             </CustomText>
           </TouchableOpacity>
         </View>
@@ -335,13 +341,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
-              Chi tiêu nhiều nhất
+              {t("home.top_spending")}
             </CustomText>
             <TouchableOpacity
               onPress={() => { }}
             >
               <CustomText style={[styles.seeMore, { color: colors.tint }]}>
-                Xem Thêm
+                {t("home.see_more")}
               </CustomText>
             </TouchableOpacity>
           </View>
@@ -358,7 +364,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 <CustomText
                   style={{ color: colors.icon, marginTop: 8, fontSize: 14 }}
                 >
-                  Đang tải danh mục...
+                  {t("home.loading_categories")}
                 </CustomText>
               </View>
             ) : topCategories.length === 0 ? (
@@ -376,7 +382,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 <CustomText
                   style={{ color: colors.icon, marginTop: 8, fontSize: 14 }}
                 >
-                  Chưa có chi tiêu nào
+                  {t("home.no_spending")}
                 </CustomText>
               </View>
             ) : (
@@ -386,7 +392,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   icon={category.icon || "pricetag-outline"}
                   iconColor={category.color || "#9E9E9E"}
                   name={parseCategoryName(category.name)}
-                  transactions={`${category.transaction_count} Giao dịch`}
+                  transactions={`${category.transaction_count} ${t("home.transactions_count")}`}
                   amount={formatCurrency(category.total_amount)}
                   color={category.color || "#9E9E9E"}
                   progress={category.percentage}
@@ -401,13 +407,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
-              Giao dịch gần đây
+              {t("home.recent_transactions")}
             </CustomText>
             <TouchableOpacity
               onPress={() => { }}
             >
               <CustomText style={[styles.seeMore, { color: colors.tint }]}>
-                Xem thêm
+                {t("home.see_more")}
               </CustomText>
             </TouchableOpacity>
           </View>
@@ -424,7 +430,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 <CustomText
                   style={{ color: colors.icon, marginTop: 8, fontSize: 14 }}
                 >
-                  Đang tải giao dịch...
+                  {t("home.loading_transactions")}
                 </CustomText>
               </View>
             ) : recentTransactions.length === 0 ? (
@@ -442,7 +448,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 <CustomText
                   style={{ color: colors.icon, marginTop: 8, fontSize: 14 }}
                 >
-                  Chưa có giao dịch nào
+                  {t("home.no_transactions")}
                 </CustomText>
               </View>
             ) : (
@@ -451,7 +457,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   key={transaction.transaction_id}
                   icon={getCategoryIcon(transaction)}
                   iconColor={getCategoryColor(transaction)}
-                  name={transaction.title || "Giao dịch"}
+                  name={transaction.title || t("home.transaction_default_name")}
                   time={formatTransactionTime(transaction.occurred_at)}
                   amount={formatTransactionAmount(transaction)}
                   isExpense={transaction.type === "EXPENSE"}

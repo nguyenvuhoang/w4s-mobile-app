@@ -4,6 +4,7 @@ import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ScrollView,
   StyleSheet,
@@ -19,9 +20,15 @@ interface BudgetScreenProps {
 
 const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
   const { colors } = useAppTheme();
-  const [selectedPeriod, setSelectedPeriod] = useState('Tuần nay');
+  const { t } = useTranslation();
+  const [selectedPeriod, setSelectedPeriod] = useState('this_week');
 
-  const periods = ['Tuần nay', 'Tháng nay', 'Quý nay', 'Năm nay'];
+  const periods = [
+    { key: 'this_week', label: t('budget.this_week') },
+    { key: 'this_month', label: t('budget.this_month') },
+    { key: 'this_quarter', label: t('budget.this_quarter') },
+    { key: 'this_year', label: t('budget.this_year') },
+  ];
 
   const budgets = [
     {
@@ -77,17 +84,17 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.createButton, { backgroundColor: colors.tint }]}
             onPress={handleCreateBudget}
           >
-            <CustomText style={styles.createButtonText}>Tạo ngân sách</CustomText>
+            <CustomText style={styles.createButtonText}>{t("budget.create_budget")}</CustomText>
           </TouchableOpacity>
 
           <View style={[styles.headerRightWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <View style={styles.cashBadge}>
               <FontAwesome6 name="money-bill-wave" size={normalize(18)} color="#4CAF50" solid />
-              <CustomText style={styles.cashText}>Tiền mặt</CustomText>
+              <CustomText style={styles.cashText}>{t("budget.cash")}</CustomText>
             </View>
             <View style={[styles.dividerVertical, { backgroundColor: colors.border }]} />
             <TouchableOpacity style={styles.dropdownButton}>
@@ -105,22 +112,22 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
           >
             {periods.map((period) => (
               <TouchableOpacity
-                key={period}
+                key={period.key}
                 style={[
                   styles.periodButton,
-                  { 
-                    backgroundColor: selectedPeriod === period ? colors.tint : 'transparent',
+                  {
+                    backgroundColor: selectedPeriod === period.key ? colors.tint : 'transparent',
                   },
                 ]}
-                onPress={() => setSelectedPeriod(period)}
+                onPress={() => setSelectedPeriod(period.key)}
               >
                 <CustomText
                   style={[
                     styles.periodText,
-                    { color: selectedPeriod === period ? '#fff' : colors.icon },
+                    { color: selectedPeriod === period.key ? '#fff' : colors.icon },
                   ]}
                 >
-                  {period}
+                  {period.label}
                 </CustomText>
               </TouchableOpacity>
             ))}
@@ -130,8 +137,8 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         {/* Circular Progress Card */}
         <View style={[styles.circleCard, { backgroundColor: colors.card }]}>
           <View style={styles.circleContainer}>
-            <Svg 
-              width={(radius + strokeWidth) * 2} 
+            <Svg
+              width={(radius + strokeWidth) * 2}
               height={radius + strokeWidth + normalize(20)}
               style={{ overflow: 'visible' }}
             >
@@ -163,11 +170,11 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                 origin={`${radius + strokeWidth}, ${radius + strokeWidth}`}
               />
             </Svg>
-            
+
             {/* Center text */}
             <View style={styles.circleCenter}>
               <CustomText style={[styles.circleLabelSmall, { color: colors.icon }]}>
-                Số tiền có thể chi
+                {t("budget.remaining_budget")}
               </CustomText>
               <CustomText style={[styles.circleAmount, { color: colors.text }]}>
                 {remaining.toLocaleString('vi-VN')} đ
@@ -179,7 +186,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <CustomText style={[styles.statLabel, { color: colors.icon }]}>
-                Tổng ngân sách
+                {t("budget.total_budget")}
               </CustomText>
               <CustomText style={[styles.statValue, { color: colors.text }]}>
                 {totalBudget.toLocaleString('vi-VN')} đ
@@ -190,7 +197,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 
             <View style={styles.statItem}>
               <CustomText style={[styles.statLabel, { color: colors.icon }]}>
-                Tổng đã chi
+                {t("budget.total_spent")}
               </CustomText>
               <CustomText style={[styles.statValue, { color: colors.text }]}>
                 {totalSpent.toLocaleString('vi-VN')} đ
@@ -201,10 +208,10 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 
             <View style={styles.statItem}>
               <CustomText style={[styles.statLabel, { color: colors.icon }]}>
-                Đến cuối tuần
+                {t("budget.days_left")}
               </CustomText>
               <CustomText style={[styles.statValue, { color: colors.text }]}>
-                {daysLeft} Ngày
+                {daysLeft} {t("budget.days")}
               </CustomText>
             </View>
           </View>
@@ -226,6 +233,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 
 // Budget Item Component
 const BudgetItem = ({ budget, colors }: any) => {
+  const { t } = useTranslation();
   const percentage = (budget.spent / budget.total) * 100;
 
   return (
@@ -240,7 +248,7 @@ const BudgetItem = ({ budget, colors }: any) => {
           >
             <Ionicons name={budget.icon} size={normalize(24)} color="#fff" />
           </View>
-          
+
           <View style={styles.budgetInfo}>
             <CustomText style={[styles.budgetCategory, { color: colors.text }]}>
               {budget.category}
@@ -252,7 +260,7 @@ const BudgetItem = ({ budget, colors }: any) => {
             ) : null}
           </View>
         </View>
-        
+
         <CustomText style={[styles.budgetAmount, { color: colors.text }]}>
           {budget.spent.toLocaleString('vi-VN')} đ
         </CustomText>
@@ -285,7 +293,7 @@ const BudgetItem = ({ budget, colors }: any) => {
         </View>
 
         {/* "Hôm nay" marker overlapping the progress bar */}
-        <View 
+        <View
           style={[
             styles.todayMarkerContainer,
             { left: `${budget.todayProgress}%` }
@@ -293,14 +301,14 @@ const BudgetItem = ({ budget, colors }: any) => {
         >
           <View style={[styles.timelineMarker, { backgroundColor: colors.text }]} />
           <CustomText style={[styles.timelineLabel, { color: colors.text }]}>
-            Hôm nay
+            {t("home.today")}
           </CustomText>
         </View>
       </View>
 
       {/* Percentage display */}
       <CustomText style={[styles.percentageText, { color: colors.icon }]}>
-        {percentage.toFixed(0)}% đã sử dụng
+        {percentage.toFixed(0)}{t("budget.percent_used")}
       </CustomText>
     </View>
   );

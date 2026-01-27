@@ -1,11 +1,13 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
+import { useNotification } from '@/contexts/NotificationContext';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { hp, normalize, wp } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ScrollView,
   StyleSheet,
@@ -22,53 +24,58 @@ interface WalletType {
   nextRoute: string;
 }
 
-const WALLET_TYPES: WalletType[] = [
-  {
-    id: 'tracking',
-    name: 'Ví Theo dõi',
-    icon: 'wallet-outline',
-    description:
-      'Theo dõi tài sản, thu chi, công nợ và tiết kiệm.',
-    nextRoute: '/(protected)/wallet/tracker/select-subtype',
-  },
-  {
-    id: 'fiat',
-    name: 'Ví Fiat',
-    icon: 'cash-outline',
-    description:
-      'Ví lưu trữ tiền pháp định như VND, USD.',
-    nextRoute: '/(protected)/wallet/create-fiat-wallet',
-  },
-  {
-    id: 'defi',
-    name: 'Ví DeFi',
-    icon: 'cube-outline',
-    description:
-      'Ví tiền điện tử phi tập trung, kiểm soát hoàn toàn tài sản crypto.',
-    nextRoute: '/(protected)/wallet/create-defi-wallet',
-  },
-];
 
 const SelectWalletTypeScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
+  const { showNotification } = useNotification();
   const [selectedType, setSelectedType] =
     useState<WalletType | null>(null);
 
+  const WALLET_TYPES: WalletType[] = [
+    {
+      id: 'tracking',
+      name: t('wallet.type_tracking_name'),
+      icon: 'wallet-outline',
+      description: t('wallet.type_tracking_desc'),
+      nextRoute: '/(protected)/wallet/tracker/select-subtype',
+    },
+    {
+      id: 'fiat',
+      name: t('wallet.type_fiat_name'),
+      icon: 'cash-outline',
+      description: t('wallet.type_fiat_desc'),
+      nextRoute: '/(protected)/wallet/create-fiat-wallet',
+    },
+    {
+      id: 'defi',
+      name: t('wallet.type_defi_name'),
+      icon: 'cube-outline',
+      description: t('wallet.type_defi_desc'),
+      nextRoute: '/(protected)/wallet/create-defi-wallet',
+    },
+  ];
+
   const handleContinue = () => {
     if (!selectedType) return;
-    router.replace(selectedType.nextRoute);
+
+    if (selectedType.id === 'tracking') {
+      router.replace(selectedType.nextRoute);
+    } else {
+      showNotification(t('common.feature_developing'), 'warning');
+    }
   };
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <AppHeader title="Loại ví bạn muốn?" showBackButton />
+      <AppHeader title={t("wallet.select_type_title")} showBackButton />
 
       <ScrollView style={styles.content}>
         <View style={{ alignItems: 'center' }}>
           <CustomText style={[styles.subtitle, { color: colors.icon }]}>
-            Chọn loại ví phù hợp với nhu cầu quản lý tài chính của bạn.
+            {t("wallet.select_type_subtitle")}
           </CustomText>
         </View>
 
@@ -150,7 +157,7 @@ const SelectWalletTypeScreen: React.FC = () => {
             style={styles.continueButtonGradient}
           >
             <CustomText style={styles.continueButtonText}>
-              Tiếp tục
+              {t("common.continue")}
             </CustomText>
           </LinearGradient>
         </TouchableOpacity>

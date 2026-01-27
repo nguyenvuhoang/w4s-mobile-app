@@ -12,6 +12,7 @@ import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -30,6 +31,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
   onSelectWallet,
 }) => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
 
   // ✅ Lấy mode từ route params
   const params = useLocalSearchParams();
@@ -64,7 +66,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
         router.back();
       } catch (error) {
         console.error('[WalletList] Failed to save wallet:', error);
-        Alert.alert('Lỗi', 'Không thể lưu ví đã chọn');
+        Alert.alert(t("common.error"), t("wallet.error_save"));
       }
     } else {
       // Mode manage: mở modal options
@@ -81,19 +83,19 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
 
     setTimeout(() => {
       Alert.alert(
-        "Xác nhận xóa",
-        `Bạn có chắc muốn xóa ví "${selectedWallet.name}"?`,
+        t("wallet.confirm_delete_title"),
+        t("wallet.confirm_delete_message", { name: selectedWallet.name }),
         [
-          { text: "Hủy", style: "cancel" },
+          { text: t("common.cancel"), style: "cancel" },
           {
-            text: "Xóa",
+            text: t("wallet.delete_wallet"),
             style: "destructive",
             onPress: async () => {
               try {
                 // TODO: call delete API with selectedWallet.walletId
                 await refresh();
               } catch {
-                Alert.alert("Lỗi", "Không thể xóa ví");
+                Alert.alert(t("common.error"), "Cannot delete wallet");
               }
             },
           },
@@ -120,7 +122,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
 
   const handleSetDefault = () => {
     if (!selectedWallet) return;
-    setDefaultWalletId(selectedWallet.walletId);
+    setDefaultWalletId(String(selectedWallet.walletId));
     setShowActionModal(false);
   };
 
@@ -134,26 +136,26 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
       {
         id: "set-default",
         icon: "star-outline",
-        label: "Đặt làm mặc định",
+        label: t("wallet.set_default"),
         onPress: handleSetDefault,
-        hide: selectedWallet?.walletId === defaultWalletId, // Ẩn nếu đã là default
+        hide: String(selectedWallet?.walletId) === String(defaultWalletId), // Ẩn nếu đã là default
       },
       {
         id: "edit",
         icon: "create-outline",
-        label: "Chỉnh sửa",
+        label: t("wallet.edit"),
         onPress: handleEditWallet,
       },
       {
         id: "transfer",
         icon: "swap-horizontal-outline",
-        label: "Chuyển tiền",
+        label: t("wallet.transfer"),
         onPress: handleTransferMoney,
       },
       {
         id: "delete",
         icon: "trash-outline",
-        label: "Xóa ví",
+        label: t("wallet.delete_wallet"),
         onPress: handleDeleteWallet,
         destructive: true,
       },
@@ -168,11 +170,11 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
       >
-        <AppHeader title="Ví của tôi" showBackButton />
+        <AppHeader title={t("wallet.my_wallets")} showBackButton />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.tint} />
           <CustomText style={{ marginTop: normalize(12) }} type="regular">
-            Đang tải...
+            {t("common.loading_data")}
           </CustomText>
         </View>
       </SafeAreaView>
@@ -184,7 +186,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
       >
-        <AppHeader title="Ví của tôi" showBackButton />
+        <AppHeader title={t("wallet.my_wallets")} showBackButton />
         <View style={styles.centerContainer}>
           <CustomText
             style={{ textAlign: "center", marginBottom: normalize(16) }}
@@ -197,7 +199,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
             onPress={refresh}
           >
             <CustomText style={{ color: "#fff" }} type="semiBold">
-              Thử lại
+              {t("common.retry")}
             </CustomText>
           </TouchableOpacity>
         </View>
@@ -210,7 +212,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <AppHeader
-        title={mode === "select" ? "Chọn nguồn tiền" : "Quản lý ví"}
+        title={mode === "select" ? t("wallet.select_source") : t("wallet.manage_wallets")}
         showBackButton
       />
 
@@ -222,13 +224,13 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
           style={[styles.sectionTitle, { color: colors.text }]}
           type="semiBold"
         >
-          Ví của tôi
+          {t("wallet.my_wallets")}
         </CustomText>
 
         {wallets.length === 0 ? (
           <View style={styles.emptyContainer}>
             <CustomText style={{ color: colors.icon }} type="regular">
-              Chưa có ví nào
+              {t("wallet.no_wallets")}
             </CustomText>
           </View>
         ) : (
@@ -237,7 +239,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
               <WalletItem
                 key={wallet.walletId}
                 wallet={wallet}
-                isDefault={wallet.walletId === defaultWalletId}
+                isDefault={String(wallet.walletId) === String(defaultWalletId)}
                 colors={colors}
                 mode={mode}
                 onPress={() => handleSelectWallet(wallet)}
@@ -258,7 +260,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
         >
           <Ionicons name="add" size={normalize(24)} color="#fff" />
           <CustomText style={styles.addButtonText} type="semiBold">
-            Thêm ví mới
+            {t("wallet.add_new_wallet")}
           </CustomText>
         </TouchableOpacity>
       </View>
@@ -271,7 +273,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
         subtitle={getWalletTypeLabel(selectedWallet?.type || "")}
         actions={walletActions}
         colors={colors}
-        cancelText="Hủy"
+        cancelText={t("common.cancel")}
       />
     </SafeAreaView>
   );
@@ -308,6 +310,7 @@ const WalletItem: React.FC<WalletItemProps> = ({
   mode,
   onPress,
 }) => {
+  const { t } = useTranslation();
   return (
     <TouchableOpacity
       style={[styles.walletItem, { backgroundColor: colors.card }]}
@@ -337,7 +340,7 @@ const WalletItem: React.FC<WalletItemProps> = ({
                 style={[styles.defaultTag, { backgroundColor: colors.tint }]}
               >
                 <CustomText style={styles.defaultTagText} type="semiBold">
-                  Mặc định
+                  {t("wallet.default")}
                 </CustomText>
               </View>
             )}

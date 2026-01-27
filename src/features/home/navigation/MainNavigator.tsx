@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import React from "react";
 import { Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 
+import { useTranslation } from "react-i18next";
 import BudgetScreen from "../screens/BudgetScreen";
 import HomeScreen from "../screens/HomeScreen";
 import SettingsScreen from "../screens/SettingsScreen";
@@ -35,6 +36,7 @@ const CustomTabBarButton = ({ children }: any) => {
 
 export default function MainNavigator() {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
 
   return (
     <Tab.Navigator
@@ -59,7 +61,7 @@ export default function MainNavigator() {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarLabel: "Trang Chủ",
+          tabBarLabel: t("navigation.home"),
           tabBarIcon: ({ color, focused }) => (
             <FontAwesome6
               name="house"
@@ -75,7 +77,7 @@ export default function MainNavigator() {
         name="Statistics"
         component={StatisticsScreen}
         options={{
-          tabBarLabel: "Thống kê",
+          tabBarLabel: t("navigation.statistics"),
           tabBarIcon: ({ color, focused }) => (
             <FontAwesome6
               name="chart-simple"
@@ -113,7 +115,7 @@ export default function MainNavigator() {
         name="Budget"
         component={BudgetScreen}
         options={{
-          tabBarLabel: "Ngân sách",
+          tabBarLabel: t("navigation.budget"),
           tabBarIcon: ({ color, focused }) => (
             <FontAwesome6
               name="wallet"
@@ -129,7 +131,7 @@ export default function MainNavigator() {
         name="Settings"
         component={SettingsScreen}
         options={{
-          tabBarLabel: "Cài đặt",
+          tabBarLabel: t("navigation.settings"),
           tabBarIcon: ({ color, focused }) => (
             <FontAwesome6
               name="gear"

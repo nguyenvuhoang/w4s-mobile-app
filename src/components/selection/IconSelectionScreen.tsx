@@ -6,6 +6,7 @@ import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dimensions,
   ScrollView,
@@ -45,6 +46,8 @@ const WALLET_ICONS = [
 // ================= SCREEN =================
 const SelectWalletIconScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
+
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('wallet');
@@ -83,7 +86,7 @@ const SelectWalletIconScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader title="Chọn Icon" showBackButton />
+      <AppHeader title={t('selection.select_icon')} showBackButton />
 
       <View style={styles.content}>
         {/* ===== SEARCH ===== */}
@@ -96,7 +99,7 @@ const SelectWalletIconScreen: React.FC = () => {
           <FontAwesome6 name="magnifying-glass" size={normalize(16)} color={colors.icon} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Tìm kiếm icon..."
+            placeholder={t('selection.search_icon_placeholder')}
             placeholderTextColor={colors.icon}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -156,7 +159,7 @@ const SelectWalletIconScreen: React.FC = () => {
           onPress={() => router.back()}
         >
           <CustomText style={[styles.cancelButtonText, { color: colors.text }]}>
-            Hủy bỏ
+            {t('selection.cancel')}
           </CustomText>
         </TouchableOpacity>
 
@@ -164,7 +167,7 @@ const SelectWalletIconScreen: React.FC = () => {
           style={[styles.confirmButton, { backgroundColor: colors.tint }]}
           onPress={handleContinue}
         >
-          <CustomText style={styles.confirmButtonText}>Xác nhận</CustomText>
+          <CustomText style={styles.confirmButtonText}>{t('selection.confirm')}</CustomText>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

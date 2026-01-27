@@ -1,100 +1,59 @@
+import StorageService from "@/services/StorageService";
 import * as Localization from "expo-localization";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import "./polyfills";
 
-import { loadAllTranslationsFromAsyncStorage } from "@/core/i18n/TranslationStorageService";
-import StorageService from "@/services/StorageService";
-// import i18next from "i18next";
+// Import local translation files
+import en from "./locales/en.json";
+import vi from "./locales/vi.json";
 
-const supportedLngs = ["en", "vi", "lo", "zh"];
+const resources = {
+  en: { translation: en },
+  vi: { translation: vi }
+};
 
-let i18nInitialized = false;
+export const supportedLngs = ["en", "vi"];
 
-const getBestAvailableLanguage = (): string => {
-	const deviceLanguage = Localization.getLocales()[0]?.languageCode;
-	if (deviceLanguage && supportedLngs.includes(deviceLanguage)) {
-		return deviceLanguage;
-	}
-	return "en"; 
+const getBestAvailableLanguage = async (): Promise<string> => {
+  try {
+    const savedLanguage = await StorageService.getItem("language");
+    if (savedLanguage && supportedLngs.includes(savedLanguage)) {
+      return savedLanguage;
+    }
+  } catch (error) {
+    console.log("Error reading language from storage:", error);
+  }
+
+  const deviceLanguage = Localization.getLocales()[0]?.languageCode;
+  if (deviceLanguage && supportedLngs.includes(deviceLanguage)) {
+    return deviceLanguage;
+  }
+  return "vi";
 };
 
 export const initializeTranslations = async () => {
-  if (i18nInitialized) {
-    console.log("i18n đã được khởi tạo. Bỏ qua khởi tạo lại.");
+  if (i18n.isInitialized) {
     return;
   }
 
-  try {
-    const asyncStorageTranslations =
-      await loadAllTranslationsFromAsyncStorage();
-    const initialResources: Record<string, any> = {};
-    if (Object.keys(asyncStorageTranslations).length > 0) {
-      console.log(
-        "Tìm thấy bản dịch trong AsyncStorage. Đang tải từ AsyncStorage."
-      );
-      for (const lang of supportedLngs) {
-        if (asyncStorageTranslations[lang]) {
-          initialResources[lang] = {
-            translation: asyncStorageTranslations[lang],
-          };
-        } else {
-          console.warn(`AsyncStorage thiếu bản dịch cho ngôn ngữ "${lang}".`);
-        }
-      }
-      await i18n.use(initReactI18next).init({
-        resources: initialResources,
-        lng: getBestAvailableLanguage(),
-        fallbackLng: "en",
-        interpolation: {
-          escapeValue: false,
-        },
-        supportedLngs: supportedLngs,
-      });
-      console.log(
-        "Tìm thấy bản dịch trong AsyncStorage. Khởi tạo có tài nguyên."
-      );
-    } else {
-      console.log(
-        "Không tìm thấy bản dịch trong AsyncStorage. Khởi tạo với tài nguyên trống."
-      );
-      i18n.use(initReactI18next).init({
-        resources: {},
-        lng: getBestAvailableLanguage(),
-        fallbackLng: "en",
-        interpolation: {
-          escapeValue: false,
-        },
-        supportedLngs: supportedLngs,
-        debug: __DEV__,
-      });
-      // i18n.init();
-    }
+  const language = await getBestAvailableLanguage();
 
-    i18nInitialized = true;
-    console.log("Khởi tạo i18n hoàn tất.");
-  } catch (error) {
-    console.error(
-      "Đã xảy ra lỗi trong quá trình khởi tạo i18n. Đang khởi tạo với tài nguyên trống:",
-      error
-    );
-    i18n.use(initReactI18next).init({
-      resources: {},
-      lng: getBestAvailableLanguage(),
-      fallbackLng: "en",
-      interpolation: {
-        escapeValue: false,
-      },
-      supportedLngs: supportedLngs,
-      debug: __DEV__,
-    });
-    // i18n.init();
-    i18nInitialized = true;
-  }
+  await i18n.use(initReactI18next).init({
+    resources,
+    lng: language,
+    fallbackLng: "vi",
+    interpolation: {
+      escapeValue: false,
+    },
+    react: {
+      useSuspense: false,
+    }
+  });
 };
 
 export const changeLanguage = async (lang: string): Promise<string> => {
-  const languageToSet = supportedLngs.includes(lang) ? lang : "en";
+  const languageToSet = supportedLngs.includes(lang) ? lang : "vi";
   await i18n.changeLanguage(languageToSet);
   await StorageService.setItem("language", languageToSet);
   return languageToSet;
@@ -102,16 +61,12 @@ export const changeLanguage = async (lang: string): Promise<string> => {
 
 export default i18n;
 
-const languageMap: Record<string, string> = {
+export const languageMap: Record<string, string> = {
   en: "English",
-  vi: "Vietnamese",
-  lo: "Lao",
-  zh: "Chinese",
+  vi: "Tiếng Việt",
 };
 
-export const supportedLanguages = Array.isArray(i18n.options.supportedLngs)
-  ? i18n.options.supportedLngs
-      .filter((lng) => lng !== "cimode")
+export const supportedLanguages = supportedLngs
       .map((lng) => languageMap[lng] || lng)
-      .join(", ")
-  : "N/A";
+      .join(", ");
+

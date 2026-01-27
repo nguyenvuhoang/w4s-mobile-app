@@ -1,11 +1,13 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
+import { useNotification } from '@/contexts/NotificationContext';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { hp, normalize, wp } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ScrollView,
   StyleSheet,
@@ -22,50 +24,57 @@ interface TrackerWalletType {
   nextRoute: string;
 }
 
-const TRACKER_WALLET_TYPES: TrackerWalletType[] = [
-  {
-    id: 'basic',
-    name: 'Ví cơ bản',
-    icon: 'wallet-outline',
-    description: 'Theo dõi thu chi hằng ngày.',
-    nextRoute: '/(protected)/wallet/tracker/create-basic',
-  },
-  {
-    id: 'debt',
-    name: 'Ví công nợ',
-    icon: 'swap-horizontal-outline',
-    description: 'Theo dõi vay – cho vay.',
-    nextRoute: '/(protected)/wallet/tracker/create-debt-wallet',
-  },
-  {
-    id: 'saving',
-    name: 'Ví tiết kiệm',
-    icon: 'trending-up-outline',
-    description: 'Theo dõi tiền tiết kiệm và mục tiêu.',
-    nextRoute: '/(protected)/wallet/tracker/create-saving-wallet',
-  },
-];
-
 const SelectTrackerWalletTypeScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
+  const { showNotification } = useNotification();
   const [selected, setSelected] =
     useState<TrackerWalletType | null>(null);
 
+  const TRACKER_WALLET_TYPES: TrackerWalletType[] = [
+    {
+      id: 'basic',
+      name: t('wallet.type_basic_name'),
+      icon: 'wallet-outline',
+      description: t('wallet.type_basic_desc'),
+      nextRoute: '/(protected)/wallet/tracker/create-basic',
+    },
+    {
+      id: 'debt',
+      name: t('wallet.type_debt_name'),
+      icon: 'swap-horizontal-outline',
+      description: t('wallet.type_debt_desc'),
+      nextRoute: '/(protected)/wallet/tracker/create-debt-wallet',
+    },
+    {
+      id: 'saving',
+      name: t('wallet.type_saving_name'),
+      icon: 'trending-up-outline',
+      description: t('wallet.type_saving_desc'),
+      nextRoute: '/(protected)/wallet/tracker/create-saving-wallet',
+    },
+  ];
+
   const handleContinue = () => {
     if (!selected) return;
-    router.push(selected.nextRoute);
+
+    if (selected.id === 'basic') {
+      router.push(selected.nextRoute);
+    } else {
+      showNotification(t('common.feature_developing'), 'warning');
+    }
   };
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <AppHeader title="Loại ví theo dõi" showBackButton />
+      <AppHeader title={t('wallet.select_tracker_type_title')} showBackButton />
 
       <ScrollView style={styles.content}>
         <View style={{ alignItems: 'center' }}>
           <CustomText style={[styles.subtitle, { color: colors.icon }]}>
-            Chọn loại ví theo dõi bạn muốn tạo.
+            {t('wallet.select_tracker_type_subtitle')}
           </CustomText>
         </View>
 
@@ -147,7 +156,7 @@ const SelectTrackerWalletTypeScreen: React.FC = () => {
             style={styles.continueButtonGradient}
           >
             <CustomText style={styles.continueButtonText}>
-              Tiếp tục
+              {t('common.continue')}
             </CustomText>
           </LinearGradient>
         </TouchableOpacity>

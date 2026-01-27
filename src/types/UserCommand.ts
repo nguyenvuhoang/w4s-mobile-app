@@ -43,6 +43,7 @@ export interface AppInfo {
     is_login: boolean;
     user_banner: string;
     currency_code: string;
+    refresh_token: string;
 }
 
 export interface DepositInfo {

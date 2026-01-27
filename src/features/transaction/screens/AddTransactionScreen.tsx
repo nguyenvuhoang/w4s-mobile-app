@@ -22,6 +22,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Image,
@@ -80,6 +81,7 @@ const AddTransactionScreen = () => {
   const { convert } = useExchangeRate();
   const { createTransaction, loading: creatingTransaction } = useTransaction();
   const { showNotification } = useNotification();
+  const { t } = useTranslation();
 
   const [selectedType, setSelectedType] = useState<TransactionType>("expense");
   const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
@@ -342,7 +344,7 @@ const AddTransactionScreen = () => {
 
   const handlePickImage = async () => {
     const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!granted) return alert("Cần quyền truy cập thư viện ảnh!");
+    if (!granted) return alert(t("transaction.camera_permission_error"));
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -469,7 +471,7 @@ const AddTransactionScreen = () => {
       router.back();
     } catch (error) {
       showNotification(
-        error instanceof Error ? error.message : "Không thể tạo giao dịch!",
+        error instanceof Error ? error.message : t("transaction.create_error"),
         "error",
       );
     }
@@ -494,9 +496,9 @@ const AddTransactionScreen = () => {
   const parseCategoryNameJSON = (nameJson: string) => {
     try {
       const parsed = JSON.parse(nameJson);
-      return parsed.vi || parsed.en || "Chọn nhóm";
+      return parsed.vi || parsed.en || t("transaction.select_category");
     } catch {
-      return "Chọn nhóm";
+      return t("transaction.select_category");
     }
   };
 
@@ -566,7 +568,7 @@ const AddTransactionScreen = () => {
     if (participants.length === 0) {
       return (
         <CustomText style={[styles.placeholderText, { color: colors.icon }]}>
-          Chọn người tham gia
+          {t("transaction.select_participants")}
         </CustomText>
       );
     }
@@ -615,7 +617,7 @@ const AddTransactionScreen = () => {
           )}
         </View>
         <CustomText style={[styles.participantCount, { color: colors.text }]}>
-          {participants.length} người
+          {participants.length} {t("transaction.participants_count")}
         </CustomText>
       </View>
     );
@@ -629,7 +631,7 @@ const AddTransactionScreen = () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.flex}
       >
-        <AppHeader title="Thêm giao dịch" />
+        <AppHeader title={t("transaction.add_transaction")} />
 
         <ScrollView
           style={styles.flex}
@@ -640,9 +642,9 @@ const AddTransactionScreen = () => {
           <View style={styles.section}>
             <View style={styles.typeContainer}>
               {[
-                { type: "income" as const, label: "Khoản thu" },
-                { type: "expense" as const, label: "Khoản chi" },
-                { type: "inout" as const, label: "Vay/Nợ" },
+                { type: "income" as const, label: t("transaction.type_income") },
+                { type: "expense" as const, label: t("transaction.type_expense") },
+                { type: "inout" as const, label: t("transaction.type_debt_loan") },
               ].map(({ type, label }) => (
                 <TouchableOpacity
                   key={type}
@@ -678,7 +680,7 @@ const AddTransactionScreen = () => {
           {/* Source Wallet - REQUIRED */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Nguồn tiền <CustomText style={{ color: "red" }}>*</CustomText>
+              {t("transaction.source_wallet")} <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
               style={[
@@ -697,7 +699,7 @@ const AddTransactionScreen = () => {
                   solid
                 />
                 <CustomText style={[styles.fieldText, { color: colors.text }]}>
-                  {selectedWallet?.name || "Chọn ví"}
+                  {selectedWallet?.name || t("transaction.select_wallet")}
                 </CustomText>
               </View>
             </TouchableOpacity>
@@ -706,7 +708,7 @@ const AddTransactionScreen = () => {
           {/* Category - REQUIRED */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Nhóm <CustomText style={{ color: "red" }}>*</CustomText>
+              {t("transaction.category")} <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
               style={[
@@ -754,7 +756,7 @@ const AddTransactionScreen = () => {
                     <CustomText
                       style={[styles.fieldText, { color: colors.icon }]}
                     >
-                      Chọn nhóm
+                      {t("transaction.select_category")}
                     </CustomText>
                   </>
                 )}
@@ -765,7 +767,7 @@ const AddTransactionScreen = () => {
           {/* Amount - REQUIRED */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Số tiền <CustomText style={{ color: "red" }}>*</CustomText>
+              {t("transaction.amount")} <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <View
               style={[
@@ -832,7 +834,7 @@ const AddTransactionScreen = () => {
           {/* Event - Optional */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Sự kiện
+              {t("settings.event")}
             </CustomText>
 
             <TouchableOpacity
@@ -879,7 +881,7 @@ const AddTransactionScreen = () => {
                     <CustomText
                       style={[styles.fieldText, { color: colors.icon }]}
                     >
-                      Chọn sự kiện (tuỳ chọn)
+                      {t("transaction.select_event_optional", { defaultValue: "Select Event (Optional)" })}
                     </CustomText>
                   </>
                 )}
@@ -890,7 +892,7 @@ const AddTransactionScreen = () => {
           {/* Participants - Optional */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Người tham gia
+              {t("transaction.participants")}
             </CustomText>
             <TouchableOpacity
               style={[
@@ -919,7 +921,7 @@ const AddTransactionScreen = () => {
           {/* Location - Optional */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Địa điểm
+              {t("transaction.location")}
             </CustomText>
             <View style={styles.locationContainer}>
               <TextInput
@@ -931,7 +933,7 @@ const AddTransactionScreen = () => {
                     color: colors.text,
                   },
                 ]}
-                placeholder="Nhập địa điểm (tùy chọn)"
+                placeholder={t("transaction.location_placeholder", { defaultValue: "Input location (Optional)" })}
                 placeholderTextColor={colors.icon}
                 value={location}
                 onChangeText={setLocation}
@@ -964,7 +966,7 @@ const AddTransactionScreen = () => {
           {/* Note - Optional */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Ghi chú
+              {t("transaction.note")}
             </CustomText>
             <TextInput
               style={[
@@ -975,7 +977,7 @@ const AddTransactionScreen = () => {
                   color: colors.text,
                 },
               ]}
-              placeholder="Thêm ghi chú (tùy chọn)"
+              placeholder={t("transaction.note_placeholder_optional", { defaultValue: "Add note (Optional)" })}
               placeholderTextColor={colors.icon}
               multiline
               numberOfLines={3}
@@ -988,7 +990,7 @@ const AddTransactionScreen = () => {
           {/* Date Picker - WITH PICKER */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Ngày
+              {t("transaction.date")}
             </CustomText>
             <TouchableOpacity
               style={[
@@ -1014,7 +1016,7 @@ const AddTransactionScreen = () => {
           {/* Reminder - NEW FIELD */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Nhắc nhở
+              {t("transaction.reminder")}
             </CustomText>
             <TouchableOpacity
               style={[
@@ -1038,7 +1040,7 @@ const AddTransactionScreen = () => {
                 >
                   {reminderDate
                     ? formatDateTime(reminderDate)
-                    : "Đặt nhắc nhở (tùy chọn)"}
+                    : t("transaction.set_reminder_optional", { defaultValue: "Set Reminder (Optional)" })}
                 </CustomText>
               </View>
               {reminderDate && (
@@ -1056,7 +1058,7 @@ const AddTransactionScreen = () => {
           {/* Image Upload - Optional */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Hình ảnh
+              {t("transaction.image")}
             </CustomText>
             {imageUri ? (
               <View
@@ -1094,7 +1096,7 @@ const AddTransactionScreen = () => {
                   color={colors.icon}
                 />
                 <CustomText style={[styles.uploadText, { color: colors.icon }]}>
-                  Tải lên
+                  {t("transaction.upload", { defaultValue: "Upload" })}
                 </CustomText>
               </TouchableOpacity>
             )}
@@ -1103,7 +1105,7 @@ const AddTransactionScreen = () => {
           {/* Include in Report Toggle */}
           <View style={[styles.toggle, { backgroundColor: colors.card }]}>
             <CustomText style={[styles.toggleLabel, { color: colors.text }]}>
-              Đi vay để trả khoản này
+              {t("transaction.borrow_to_pay")}
             </CustomText>
             <Switch
               value={borrowToPayExpense}
@@ -1116,7 +1118,7 @@ const AddTransactionScreen = () => {
           {/* Include in Report Toggle */}
           <View style={[styles.toggle, { backgroundColor: colors.card }]}>
             <CustomText style={[styles.toggleLabel, { color: colors.text }]}>
-              Tính vào báo cáo
+              {t("transaction.include_in_report", { defaultValue: "Include in report" })}
             </CustomText>
             <Switch
               value={includeInReport}
@@ -1173,7 +1175,7 @@ const AddTransactionScreen = () => {
               <CustomText
                 style={[styles.pickerButtonText, { color: colors.tint }]}
               >
-                Xong
+                {t("common.done", { defaultValue: "Done" })}
               </CustomText>
             </TouchableOpacity>
           </View>
@@ -1195,7 +1197,7 @@ const AddTransactionScreen = () => {
             disabled={creatingTransaction}
           >
             <CustomText style={[styles.cancelText, { color: colors.tint }]}>
-              Hủy
+              {t("common.cancel")}
             </CustomText>
           </TouchableOpacity>
 
@@ -1213,7 +1215,7 @@ const AddTransactionScreen = () => {
             {creatingTransaction ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <CustomText style={styles.createText}>Tạo</CustomText>
+              <CustomText style={styles.createText}>{t("transaction.save")}</CustomText>
             )}
           </TouchableOpacity>
         </View>

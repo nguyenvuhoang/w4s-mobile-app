@@ -1,8 +1,8 @@
 import { FontAwesome6 } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import * as Updates from "expo-updates";
-import { t } from "i18next";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dimensions,
   Modal,
@@ -45,16 +45,17 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
   isReload,
 }) => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
 
   const appVersion = Constants.expoConfig?.version ?? "?";
   const updateId = Updates.updateId ? Updates.updateId.slice(0, 8) : "dev";
 
   const title =
     type === "error"
-      ? (t("common.error") ?? "Error")
+      ? (t("common.error"))
       : type === "warning"
-        ? (t("common.warning") ?? "Warning")
-        : (t("common.success") ?? "Success");
+        ? (t("common.warning"))
+        : (t("common.success"));
 
   const iconName =
     type === "warning"
@@ -132,7 +133,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                 activeOpacity={0.7}
               >
                 <Text style={styles.outlineText}>
-                  {t("common.reject") ?? "Reject"}
+                  {t("common.reject")}
                 </Text>
               </TouchableOpacity>
 
@@ -147,7 +148,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                 activeOpacity={0.7}
               >
                 <Text style={styles.primaryText}>
-                  {t("common.agree") ?? "Agree"}
+                  {t("common.agree")}
                 </Text>
               </TouchableOpacity>
 
@@ -169,8 +170,8 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
               >
                 <Text style={styles.primaryText}>
                   {isReload
-                    ? (t("common.reload") ?? "Reload")
-                    : (t("common.close") ?? "Close")}
+                    ? t("common.reload")
+                    : t("common.close")}
                 </Text>
               </TouchableOpacity>
             </View>

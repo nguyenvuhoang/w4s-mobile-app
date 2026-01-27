@@ -1,3 +1,4 @@
+import { initializeTranslations } from "@/core/i18n/i18n";
 import { AppProviders } from "@/core/providers/AppProviders";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import {
@@ -10,12 +11,13 @@ import {
 } from "@expo-google-fonts/quicksand";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const [isI18nInitialized, setIsI18nInitialized] = useState(false);
   const [fontsLoaded] = useFonts({
     "Quicksand-Light": Quicksand_300Light,
     "Quicksand-Regular": Quicksand_400Regular,
@@ -25,12 +27,20 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
+    const init = async () => {
+      await initializeTranslations();
+      setIsI18nInitialized(true);
+    };
+    init();
+  }, []);
+
+  useEffect(() => {
+    if (fontsLoaded && isI18nInitialized) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, isI18nInitialized]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || !isI18nInitialized) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

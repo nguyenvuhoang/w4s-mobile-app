@@ -27,9 +27,9 @@ class StorageService {
     try {
       await this.setItem(StorageKey.userSession, JSON.stringify({ token: session }));
 
-      const channelId = await this.getItem(StorageKey.channelId);
-      const key = channelId ? `${StorageKey.userSession}_${channelId}` : StorageKey.userSession;
-      await this.setItem(key, JSON.stringify({ token: session }));
+      // const channelId = await this.getItem(StorageKey.channelId);
+      // const key = channelId ? `${StorageKey.userSession}_${channelId}` : StorageKey.userSession;
+      // await this.setItem(key, JSON.stringify({ token: session }));
     } catch (error) {
       console.error("Error setting user session:", error);
     }

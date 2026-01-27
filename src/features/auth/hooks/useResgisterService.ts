@@ -86,13 +86,13 @@ export const useRegisterService = () => {
 
       // Validate email
       if (!isValidEmail(email)) {
-        showNotification(t('validation.invalidEmail') || 'Email không hợp lệ', 'warning');
+        showNotification(t('validation.invalid_email'), 'warning');
         return false;
       }
 
       // Validate phone
       if (!isValidPhone(phone)) {
-        showNotification(t('validation.invalidPhone') || 'Số điện thoại không hợp lệ', 'warning');
+        showNotification(t('validation.invalid_phone'), 'warning');
         return false;
       }
 
@@ -122,21 +122,21 @@ export const useRegisterService = () => {
 
       if (response.isSuccess()) {
         showNotification(
-          t('register.success') || 'Đăng ký thành công! Vui lòng đăng nhập.',
+          t('auth.register_success'),
           'success'
         );
         
         router.replace('/(auth)/login' as any);
         return true;
       } else {
-        const errorMessage = response.getError() || t('register.failed') || 'Đăng ký thất bại';
+        const errorMessage = response.getError() || t('auth.register_failed');
         showNotification(errorMessage, 'error');
         return false;
       }
     } catch (error: any) {
       console.error('Registration error:', error);
       showNotification(
-        error.message || t('errors.networkError') || 'Lỗi kết nối mạng',
+        error.message || t('common.network_error'),
         'error'
       );
       return false;

@@ -5,6 +5,7 @@ import { settingRepository } from "@/services/repositories";
 import StorageService from "@/services/StorageService";
 import { encrypt } from "@/utils/Utils";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert } from "react-native";
 import { useSettingService } from "./useSettingService";
 
@@ -16,6 +17,7 @@ interface ChangePasswordParams {
 export const useChangePassword = () => {
   const { showNotification } = useNotification();
   const { handleLogout } = useSettingService();
+  const { t } = useTranslation();
 
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -46,18 +48,18 @@ export const useChangePassword = () => {
       setLoading(true);
 
       if (newPassword === password) {
-        Alert.alert("Lỗi", "Mật khẩu mới không được trùng với mật khẩu cũ");
+        Alert.alert(t("common.error"), t("auth.new_password_same_as_old"));
         return {
           success: false,
-          message: "Mật khẩu mới không được trùng với mật khẩu cũ",
+          message: t("auth.new_password_same_as_old"),
         };
       }
 
       if (!passwordRegex.test(newPassword)) {
-        Alert.alert("Lỗi", "Mật khẩu không đáp ứng yêu cầu bảo mật");
+        Alert.alert(t("common.error"), t("auth.password_not_secure"));
         return {
           success: false,
-          message: "Mật khẩu không đáp ứng yêu cầu bảo mật",
+          message: t("auth.password_not_secure"),
         };
       }
       const appInfo = await StorageService.getAsyncItem(StorageKey.appInfo);
@@ -73,7 +75,7 @@ export const useChangePassword = () => {
           "true"
         );
         showNotification(
-          "Đổi mật khẩu thành công!",
+          t("auth.change_password_success"),
           "success",
           undefined,
           undefined,
@@ -84,7 +86,7 @@ export const useChangePassword = () => {
           }
         );
       } else {
-        throw new Error("Mật khẩu hiện tại không đúng");
+        throw new Error(t("auth.current_password_incorrect"));
       }
     } catch (error) {
       throw error;

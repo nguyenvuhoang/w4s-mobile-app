@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -34,6 +35,7 @@ interface Message {
 
 const AIChatScreen = () => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -136,7 +138,7 @@ const AIChatScreen = () => {
         setIsStreaming(false);
         stopStreamRef.current = null;
 
-        const errorMessage = error?.message || 'Xin lỗi, đã xảy ra lỗi. Vui lòng thử lại.';
+        const errorMessage = error?.message || t('ai_chat.error_processing');
 
         if (!aiMessageCreated) {
           // Create error message if AI message doesn't exist yet
@@ -256,7 +258,7 @@ const AIChatScreen = () => {
             />
           </TouchableOpacity>
           <CustomText style={[styles.headerTitle, { color: colors.text }]}>
-            Chatbot AI
+            {t('ai_chat.title')}
           </CustomText>
           <TouchableOpacity
             style={styles.historyButton}
@@ -291,10 +293,10 @@ const AIChatScreen = () => {
                 />
               </View>
               <CustomText style={[styles.emptyTitle, { color: colors.text }]}>
-                Xin chào! 👋
+                {t('ai_chat.greeting')}
               </CustomText>
               <CustomText style={[styles.emptySubtitle, { color: colors.icon }]}>
-                Tôi là trợ lý AI của bạn. Hãy hỏi tôi bất cứ điều gì!
+                {t('ai_chat.ai_assistant_intro')}
               </CustomText>
 
               {/* Suggestion Cards */}
@@ -307,7 +309,7 @@ const AIChatScreen = () => {
                 >
                   <Ionicons name="wallet-outline" size={normalize(24)} color={colors.tint} />
                   <CustomText style={[styles.suggestionText, { color: colors.text }]}>
-                    Cách tạo ví
+                    {t('ai_chat.suggestion_create_wallet')}
                   </CustomText>
                 </TouchableOpacity>
 
@@ -319,7 +321,7 @@ const AIChatScreen = () => {
                 >
                   <Ionicons name="swap-horizontal-outline" size={normalize(24)} color={colors.tint} />
                   <CustomText style={[styles.suggestionText, { color: colors.text }]}>
-                    Tạo giao dịch
+                    {t('ai_chat.suggestion_create_transaction')}
                   </CustomText>
                 </TouchableOpacity>
 
@@ -331,7 +333,7 @@ const AIChatScreen = () => {
                 >
                   <Ionicons name="pie-chart-outline" size={normalize(24)} color={colors.tint} />
                   <CustomText style={[styles.suggestionText, { color: colors.text }]}>
-                    Quản lý ngân sách
+                    {t('ai_chat.suggestion_manage_budget')}
                   </CustomText>
                 </TouchableOpacity>
 
@@ -343,7 +345,7 @@ const AIChatScreen = () => {
                 >
                   <Ionicons name="trending-up-outline" size={normalize(24)} color={colors.tint} />
                   <CustomText style={[styles.suggestionText, { color: colors.text }]}>
-                    Mẹo tiết kiệm
+                    {t('ai_chat.suggestion_saving_tips')}
                   </CustomText>
                 </TouchableOpacity>
               </View>
@@ -368,7 +370,7 @@ const AIChatScreen = () => {
                     <CustomText
                       style={[styles.typingText, { color: colors.text }]}
                     >
-                      Đang xử lý...
+                      {t('ai_chat.processing')}
                     </CustomText>
                   </View>
                 </View>
@@ -386,7 +388,7 @@ const AIChatScreen = () => {
           <View style={[styles.inputWrapper, { backgroundColor: colors.card }]}>
             <TextInput
               style={[styles.input, { color: colors.text }]}
-              placeholder="Hãy cho tôi biết ...."
+              placeholder={t('ai_chat.input_placeholder')}
               placeholderTextColor={colors.icon}
               value={inputText}
               onChangeText={setInputText}

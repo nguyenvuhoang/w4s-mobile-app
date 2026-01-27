@@ -6,6 +6,7 @@ import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Dimensions, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -124,6 +125,7 @@ const MOCK_FREQUENT_EXPENSES = [
 
 const StatisticsScreen = () => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
 
   const totalBalance = useMemo(
     () => MOCK_WALLETS.reduce((sum, w) => sum + w.balance, 0),
@@ -160,7 +162,7 @@ const StatisticsScreen = () => {
               />
             </View>
             <CustomText type="medium" size={14}>
-              Tổng số dư
+              {t("home.total_balance")}
             </CustomText>
           </View>
           <CustomText type="bold" size={32}>
@@ -170,7 +172,7 @@ const StatisticsScreen = () => {
 
         {/* ===== WALLETS ===== */}
         <SectionHeader
-          title="Ví của tôi"
+          title={t("statistics.my_wallets")}
           showAction={true}
           onPressAction={() => router.push("/(protected)/wallet/wallet-list")}
         />
@@ -200,28 +202,28 @@ const StatisticsScreen = () => {
 
         {/* ===== CHARTS ===== */}
         <SectionHeader
-          title="Báo cáo tháng này"
+          title={t("statistics.monthly_report")}
           showAction={true}
-          actionText="Xem báo cáo"
+          actionText={t("statistics.view_report")}
           onPressAction={() => router.push("../report")}
         />
 
         <LineChartCard
-          label="Khoản chi"
+          label={t("home.expense")}
           color="#F44336"
           data={MOCK_MONTHLY_EXPENSES}
           formatYLabel={formatYLabel}
         />
 
         <LineChartCard
-          label="Khoản thu"
+          label={t("home.income")}
           color="#2196F3"
           data={MOCK_MONTHLY_INCOME}
           formatYLabel={formatYLabel}
         />
 
         {/* ===== CATEGORY ===== */}
-        <SectionHeader title="Phân tích danh mục" />
+        <SectionHeader title={t("statistics.category_analysis")} />
 
         <View style={styles.categoryList}>
           {MOCK_CATEGORIES.map((c) => (
@@ -271,7 +273,7 @@ const StatisticsScreen = () => {
         </View>
 
         {/* ===== FREQUENT ===== */}
-        <SectionHeader title="Chi phí hằng ngày" />
+        <SectionHeader title={t("statistics.daily_expenses")} />
 
         <View style={styles.frequentList}>
           {MOCK_FREQUENT_EXPENSES.map((i) => (
@@ -308,7 +310,7 @@ const StatisticsScreen = () => {
 /* ================= STYLES ================= */
 
 const styles = StyleSheet.create({
-  container: { flex: 1,marginBottom: normalize(50),},
+  container: { flex: 1, marginBottom: normalize(50), },
 
   balanceCard: {
     margin: wp(5),

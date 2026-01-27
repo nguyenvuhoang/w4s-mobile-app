@@ -4,7 +4,9 @@ import { Fonts } from '@/core/theme/font';
 import { Tokens } from '@/core/theme/theme';
 import { Images } from '@/utils/images';
 import { hasNotch, hp, normalize } from '@/utils/layout';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,62 +15,64 @@ const logoImg = Images.appLogoLight;
 const StartScreen = () => {
   const router = useRouter();
   const { colors, isDark } = useAppTheme();
+  const { t } = useTranslation();
 
   const backgroundColor = isDark ? colors.background : colors.tint;
-  const onBackgroundColor = Tokens.colors.main.white; 
+  const onBackgroundColor = Tokens.colors.main.white;
   const buttonTextColor = backgroundColor;
 
   const handleStart = () => {
     router.push('/(auth)/intro');
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    await AsyncStorage.setItem('hasSeenIntro', 'true');
     router.push('/(auth)/login');
   };
 
   return (
     <View style={[styles.container, { backgroundColor }]}>
       <SafeAreaView style={styles.safeArea}>
-        
+
         {/* === HEADER === */}
         <View style={styles.headerContainer}>
           <View style={styles.logoWrapper}>
-            <Image 
-              source={logoImg} 
-              style={styles.logo} 
-              resizeMode="contain" 
+            <Image
+              source={logoImg}
+              style={styles.logo}
+              resizeMode="contain"
             />
           </View>
-          
+
           <View style={styles.textContainer}>
             <ThemedText style={[styles.appName, { color: onBackgroundColor }]}>
               W4S Mobile
             </ThemedText>
             <ThemedText style={[styles.slogan, { color: onBackgroundColor }]}>
-              Đồng hành cùng tài chính của bạn
+              {t('common.slogan')}
             </ThemedText>
           </View>
         </View>
 
         {/* === FOOTER === */}
         <View style={styles.footerContainer}>
-          <TouchableOpacity 
-            onPress={handleStart} 
-            style={styles.startBtn} 
+          <TouchableOpacity
+            onPress={handleStart}
+            style={styles.startBtn}
             activeOpacity={0.9}
           >
             <ThemedText style={[styles.startText, { color: buttonTextColor }]}>
-              Bắt đầu
+              {t('common.start')}
             </ThemedText>
           </TouchableOpacity>
 
           <View style={styles.loginRow}>
             <ThemedText style={[styles.haveAccountText, { color: onBackgroundColor }]}>
-              Đã có tài khoản?
+              {t('auth.have_account')}
             </ThemedText>
             <TouchableOpacity onPress={handleLogin} style={styles.loginBtn}>
               <ThemedText style={[styles.loginText, { color: onBackgroundColor }]}>
-                Đăng nhập
+                {t('auth.login')}
               </ThemedText>
             </TouchableOpacity>
           </View>
@@ -86,9 +90,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
   },
-  
+
   headerContainer: {
-    height: hp(60), 
+    height: hp(60),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -107,7 +111,7 @@ const styles = StyleSheet.create({
     fontSize: normalize(32),
     fontFamily: Fonts.bold,
     letterSpacing: normalize(1),
-    lineHeight: normalize(42), 
+    lineHeight: normalize(42),
     paddingVertical: normalize(4),
   },
   slogan: {
@@ -128,7 +132,7 @@ const styles = StyleSheet.create({
   startBtn: {
     backgroundColor: Tokens.colors.main.white,
     paddingVertical: normalize(16),
-    borderRadius: normalize(100), 
+    borderRadius: normalize(100),
     alignItems: 'center',
     width: '100%',
     shadowColor: Tokens.colors.main.black,
@@ -142,7 +146,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     lineHeight: normalize(24),
   },
-  
+
   loginRow: {
     flexDirection: 'row',
     justifyContent: 'center',

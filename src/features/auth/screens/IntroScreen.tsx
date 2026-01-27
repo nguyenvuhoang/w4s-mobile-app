@@ -2,6 +2,7 @@ import { Images } from '@/utils/images';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Animated,
   Dimensions,
@@ -33,25 +34,7 @@ interface Slide {
   image?: any;
 }
 
-const SLIDES: Slide[] = [
-  {
-    id: 1,
-    title: 'Ngân sách thông minh',
-    description: 'Lập ngân sách hàng tháng, theo dõi chi tiêu và tiết kiệm hiệu quả hơn.',
-  },
-  {
-    id: 2,
-    title: 'Tối ưu hóa tài chính của bạn',
-    description:
-      'Liên kết tài khoản ngân hàng, thẻ tín dụng và nhiều hơn nữa để theo dõi liền mạch. Nhận cập nhật theo thời gian thực và kiểm soát tài chính của bạn.',
-  },
-  {
-    id: 3,
-    title: 'Nắm quyền kiểm soát tài chính',
-    description:
-      'Chào mừng đến với W4S! Người bạn đồng hành tài chính cá nhân của bạn. Kiểm soát tiền bạc của bạn một cách dễ dàng và hơn thế.',
-  },
-];
+
 
 const IntroScreen = () => {
   const router = useRouter();
@@ -59,11 +42,30 @@ const IntroScreen = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<Slide>>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
+  const { t } = useTranslation();
 
   // Use light background and dark text
   const backgroundColor = colors.background;
   const textColor = colors.text;
   const tintColor = colors.tint;
+
+  const SLIDES: Slide[] = [
+    {
+      id: 1,
+      title: t('intro.slide1_title'),
+      description: t('intro.slide1_desc'),
+    },
+    {
+      id: 2,
+      title: t('intro.slide2_title'),
+      description: t('intro.slide2_desc'),
+    },
+    {
+      id: 3,
+      title: t('intro.slide3_title'),
+      description: t('intro.slide3_desc'),
+    },
+  ];
 
   const handleNext = () => {
     if (currentIndex < SLIDES.length - 1) {
@@ -224,13 +226,13 @@ const IntroScreen = () => {
               activeOpacity={0.9}
             >
               <ThemedText style={styles.nextText}>
-                {currentIndex === SLIDES.length - 1 ? 'Bắt đầu' : 'Tiếp tục'}
+                {currentIndex === SLIDES.length - 1 ? t('common.start') : t('common.continue')}
               </ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
               <ThemedText style={[styles.skipText, { color: textColor }]}>
-                Bỏ qua
+                {t('common.skip')}
               </ThemedText>
             </TouchableOpacity>
           </View>

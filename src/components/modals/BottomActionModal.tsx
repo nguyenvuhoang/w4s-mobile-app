@@ -29,6 +29,7 @@ interface BottomActionModalProps {
   actions: ActionItem[];
   colors: any;
   cancelText?: string;
+  hasBottomNav?: boolean;
 }
 
 const BottomActionModal: React.FC<BottomActionModalProps> = ({
@@ -39,6 +40,7 @@ const BottomActionModal: React.FC<BottomActionModalProps> = ({
   actions,
   colors,
   cancelText = "Hủy",
+  hasBottomNav = false,
 }) => {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const visibleActions = actions.filter((action) => !action.hide);
@@ -87,15 +89,20 @@ const BottomActionModal: React.FC<BottomActionModalProps> = ({
   return (
     <BottomSheet
       ref={bottomSheetRef}
-      index={0} // ✅ Changed: Start từ index 0 khi visible
+      index={0}
       snapPoints={snapPoints}
       enablePanDownToClose
       backdropComponent={renderBackdrop}
       onChange={handleSheetChange}
       backgroundStyle={{ backgroundColor: colors.card }}
       handleIndicatorStyle={{ backgroundColor: colors.icon }}
+      bottomInset={hasBottomNav ? normalize(80) : 0}
     >
-      <BottomSheetView style={styles.contentContainer}>
+      <BottomSheetView
+        style={[
+          styles.contentContainer,
+        ]}
+      >
         {/* Header */}
         {(title || subtitle) && (
           <View style={styles.modalHeader}>

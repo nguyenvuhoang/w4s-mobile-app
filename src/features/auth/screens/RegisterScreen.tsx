@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Image,
@@ -23,48 +24,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const logoImg = Images.appLogoLight;
 
-// Validation helpers
-const validateEmail = (email: string): string | null => {
-  if (!email.trim()) return 'Email không được để trống';
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) return 'Email không hợp lệ';
-  return null;
-};
-
-const validatePhone = (phone: string): string | null => {
-  if (!phone.trim()) return 'Số điện thoại không được để trống';
-  const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
-  if (!phoneRegex.test(phone.trim())) {
-    return 'Số điện thoại không hợp lệ';
-  }
-  return null;
-};
-
-const validateFullName = (name: string): string | null => {
-  if (!name.trim()) return 'Họ và tên không được để trống';
-  if (name.trim().length < 2) return 'Họ và tên phải có ít nhất 2 ký tự';
-  return null;
-};
-
-const validateAddress = (address: string): string | null => {
-  if (!address.trim()) return 'Địa chỉ không được để trống';
-  if (address.trim().length < 5) return 'Địa chỉ phải có ít nhất 5 ký tự';
-  return null;
-};
-
-const validateBirthday = (birthday: string): string | null => {
-  if (!birthday) return 'Vui lòng chọn ngày sinh';
-  // const birthDate = new Date(birthday);
-  // const today = new Date();
-  // const age = today.getFullYear() - birthDate.getFullYear();
-  // if (age < 13) return 'Bạn phải từ 13 tuổi trở lên';
-  // if (age > 120) return 'Ngày sinh không hợp lệ';
-  return null;
-};
-
 const RegisterScreen = () => {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
 
   const {
     fullName,
@@ -97,6 +60,40 @@ const RegisterScreen = () => {
     address: false,
     birthday: false,
   });
+
+  // Validation helpers inside component to use translation
+  const validateEmail = (email: string): string | null => {
+    if (!email.trim()) return t('validation.required_email');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return t('validation.invalid_email');
+    return null;
+  };
+
+  const validatePhone = (phone: string): string | null => {
+    if (!phone.trim()) return t('validation.required_phone');
+    const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
+    if (!phoneRegex.test(phone.trim())) {
+      return t('validation.invalid_phone');
+    }
+    return null;
+  };
+
+  const validateFullName = (name: string): string | null => {
+    if (!name.trim()) return t('validation.required_fullname');
+    if (name.trim().length < 2) return t('validation.invalid_fullname');
+    return null;
+  };
+
+  const validateAddress = (address: string): string | null => {
+    if (!address.trim()) return t('validation.required_address');
+    if (address.trim().length < 5) return t('validation.invalid_address');
+    return null;
+  };
+
+  const validateBirthday = (birthday: string): string | null => {
+    if (!birthday) return t('validation.required_birthday');
+    return null;
+  };
 
   const handleLogin = () => {
     router.back();
@@ -238,7 +235,7 @@ const RegisterScreen = () => {
 
           {/* Title */}
           <ThemedText style={[styles.title, { color: colors.text }]}>
-            Đăng ký!
+            {t("auth.register_title")}
           </ThemedText>
 
           {/* Form */}
@@ -246,7 +243,7 @@ const RegisterScreen = () => {
             {/* Full Name Input */}
             <View style={styles.inputContainer}>
               <ThemedText style={[styles.label, { color: colors.text }]}>
-                Họ và tên
+                {t("auth.fullname")}
               </ThemedText>
               <TextInput
                 style={[
@@ -257,7 +254,7 @@ const RegisterScreen = () => {
                     borderColor: touched.fullName && errors.fullName ? colors.error : colors.border,
                   },
                 ]}
-                placeholder="Họ và tên của bạn"
+                placeholder={t("auth.fullname_placeholder")}
                 placeholderTextColor={colors.icon}
                 value={fullName}
                 onChangeText={handleFullNameChange}
@@ -273,7 +270,7 @@ const RegisterScreen = () => {
             {/* Phone Input */}
             <View style={styles.inputContainer}>
               <ThemedText style={[styles.label, { color: colors.text }]}>
-                Số điện thoại
+                {t("auth.phone")}
               </ThemedText>
               <TextInput
                 style={[
@@ -284,7 +281,7 @@ const RegisterScreen = () => {
                     borderColor: touched.phone && errors.phone ? colors.error : colors.border,
                   },
                 ]}
-                placeholder="0912345678"
+                placeholder={t("auth.phone_placeholder")}
                 placeholderTextColor={colors.icon}
                 value={phone}
                 onChangeText={handlePhoneChange}
@@ -301,7 +298,7 @@ const RegisterScreen = () => {
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <ThemedText style={[styles.label, { color: colors.text }]}>
-                E-mail
+                {t("auth.email")}
               </ThemedText>
               <TextInput
                 style={[
@@ -330,7 +327,7 @@ const RegisterScreen = () => {
             {/* Address Input */}
             <View style={styles.inputContainer}>
               <ThemedText style={[styles.label, { color: colors.text }]}>
-                Địa chỉ
+                {t("auth.address")}
               </ThemedText>
               <TextInput
                 style={[
@@ -341,7 +338,7 @@ const RegisterScreen = () => {
                     borderColor: touched.address && errors.address ? colors.error : colors.border,
                   },
                 ]}
-                placeholder="Địa chỉ của bạn"
+                placeholder={t("auth.address_placeholder")}
                 placeholderTextColor={colors.icon}
                 value={address}
                 onChangeText={handleAddressChange}
@@ -357,7 +354,7 @@ const RegisterScreen = () => {
             {/* Birthday Input */}
             <View style={styles.inputContainer}>
               <ThemedText style={[styles.label, { color: colors.text }]}>
-                Ngày sinh
+                {t("auth.birthday")}
               </ThemedText>
               <TouchableOpacity
                 onPress={() => setShowDatePicker(true)}
@@ -374,7 +371,7 @@ const RegisterScreen = () => {
                   ]}
                 >
                   <ThemedText style={[styles.dateText, { color: birthday ? colors.text : colors.icon }]}>
-                    {birthday ? formatDate(birthday) : 'Chọn ngày sinh'}
+                    {birthday ? formatDate(birthday) : t("auth.select_birthday")}
                   </ThemedText>
                   <Ionicons
                     name="calendar-outline"
@@ -412,7 +409,7 @@ const RegisterScreen = () => {
               {isRegistering ? (
                 <ActivityIndicator color={Tokens.colors.main.white} size="small" />
               ) : (
-                <ThemedText style={styles.registerButtonText}>Đăng ký</ThemedText>
+                <ThemedText style={styles.registerButtonText}>{t("auth.register")}</ThemedText>
               )}
             </TouchableOpacity>
           </View>
@@ -420,11 +417,11 @@ const RegisterScreen = () => {
           {/* Login Link */}
           <View style={styles.footer}>
             <ThemedText style={[styles.footerText, { color: colors.text }]}>
-              Đã có tài khoản?{' '}
+              {t("auth.have_account")}{' '}
             </ThemedText>
             <TouchableOpacity onPress={handleLogin} disabled={isRegistering}>
               <ThemedText style={[styles.loginLink, { color: colors.tint }]}>
-                Đăng nhập
+                {t("auth.login")}
               </ThemedText>
             </TouchableOpacity>
           </View>

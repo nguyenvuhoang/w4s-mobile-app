@@ -627,19 +627,19 @@ export const useLoginService = () => {
               StorageKey.refreshToken,
               refreshToken,
             );
-            const refreshTokenKey = channelId
-              ? `${StorageKey.refreshToken}_${channelId}`
-              : StorageKey.refreshToken;
+            // const refreshTokenKey = channelId
+            //   ? `${StorageKey.refreshToken}_${channelId}`
+            //   : StorageKey.refreshToken;
 
-            await StorageService.setSecureItem(refreshTokenKey, refreshToken);
+            // await StorageService.setSecureItem(refreshTokenKey, refreshToken);
             await StorageService.setUserSession(userToken);
-            const userSessionKey = channelId
-              ? `${StorageKey.userSession}_${channelId}`
-              : StorageKey.userSession;
-            await StorageService.setAsyncItem(
-              userSessionKey,
-              JSON.stringify({ token: userToken }),
-            );
+            // const userSessionKey = channelId
+            //   ? `${StorageKey.userSession}_${channelId}`
+            //   : StorageKey.userSession;
+            // await StorageService.setAsyncItem(
+            //   userSessionKey,
+            //   JSON.stringify({ token: userToken }),
+            // );
 
             // if (isFirstLogin) {
             //   await proceedFirstLoginFlow(username);

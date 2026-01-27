@@ -12,6 +12,7 @@ import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Image,
@@ -32,6 +33,7 @@ const QuickLoginScreen = () => {
   const router = useRouter();
   const { colors } = useAppTheme();
   const { showNotification } = useNotification();
+  const { t } = useTranslation();
   const hasCheckedLoginStatus = useRef(false);
 
   const {
@@ -69,8 +71,8 @@ const QuickLoginScreen = () => {
   };
 
   const getBiometricLabel = () => {
-    if (biometricType === "facial") return "khuôn mặt";
-    return "vân tay";
+    if (biometricType === "facial") return t('auth.face_id');
+    return t('auth.fingerprint');
   };
 
   /* ================= LOGIC ================= */
@@ -130,13 +132,13 @@ const QuickLoginScreen = () => {
 
   const handleBiometricPress = async () => {
     if (!isBiometricSupported) {
-      showNotification("Thiết bị không hỗ trợ sinh trắc học", "warning");
+      showNotification(t("auth.biometric_not_supported"), "warning");
       return;
     }
 
     if (!appInfo?.is_biometric_supported) {
       showNotification(
-        `Bạn chưa kích hoạt đăng nhập bằng ${getBiometricLabel()}`,
+        t("auth.biometric_not_enabled", { type: getBiometricLabel() }),
         "warning",
       );
       return;
@@ -149,7 +151,7 @@ const QuickLoginScreen = () => {
 
   const handleSwitchAccount = () => {
     showNotification(
-      "Bạn có chắc muốn đăng nhập tài khoản khác?",
+      t("auth.switch_account_confirm"),
       "warning",
       undefined,
       undefined,
@@ -173,7 +175,8 @@ const QuickLoginScreen = () => {
     await StorageService.removeAsyncItem(StorageKey.user);
     await StorageService.removeAsyncItem(StorageKey.isVerifyFirstLogin);
     await StorageService.removeAsyncItem(StorageKey.token);
-    await StorageService.removeAsyncItem(StorageKey.userSession);
+    await StorageService.clearSession();
+    // await StorageService.removeAsyncItem(StorageKey.userSession);
   };
 
   const isFormValid = password.trim() !== "";
@@ -187,7 +190,7 @@ const QuickLoginScreen = () => {
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={colors.tint} />
           <ThemedText style={[styles.loadingText, { color: "#fff" }]}>
-            {isLoggingIn ? "Đang đăng nhập..." : "Đang tải thông tin..."}
+            {isLoggingIn ? t("auth.logging_in") : t("auth.loading_info")}
           </ThemedText>
         </View>
       )}
@@ -220,7 +223,7 @@ const QuickLoginScreen = () => {
                 </View>
               </View>
               <ThemedText style={[styles.title, { color: colors.text }]}>
-                Đăng nhập
+                {t("auth.login")}
               </ThemedText>
             </View>
 
@@ -236,14 +239,14 @@ const QuickLoginScreen = () => {
                   />
                 </View>
                 <ThemedText style={[styles.username, { color: colors.text }]}>
-                  Xin chào, {appInfo?.name || appInfo?.login_name || "User"}
+                  {t("common.hello")}, {appInfo?.name || appInfo?.login_name || "User"}
                 </ThemedText>
               </View>
 
               {/* Password */}
               <View style={styles.inputContainer}>
                 <ThemedText style={[styles.label, { color: colors.text }]}>
-                  Mật khẩu
+                  {t("auth.password")}
                 </ThemedText>
                 <View style={styles.passwordContainer}>
                   <TextInput
@@ -256,7 +259,7 @@ const QuickLoginScreen = () => {
                         borderColor: colors.border,
                       },
                     ]}
-                    placeholder="Nhập mật khẩu"
+                    placeholder={t("auth.password_placeholder")}
                     placeholderTextColor={colors.icon}
                     value={password}
                     onChangeText={setPassword}
@@ -292,7 +295,7 @@ const QuickLoginScreen = () => {
                             borderColor: colors.tint,
                             opacity:
                               !isBiometricSupported ||
-                              !appInfo?.is_biometric_supported
+                                !appInfo?.is_biometric_supported
                                 ? 0.4
                                 : 1,
                           },
@@ -320,19 +323,19 @@ const QuickLoginScreen = () => {
                 disabled={!isFormValid || isLoadingAny}
               >
                 <ThemedText style={styles.loginButtonText}>
-                  Đăng nhập
+                  {t("auth.login")}
                 </ThemedText>
               </TouchableOpacity>
 
               <View style={styles.linksContainer}>
                 <TouchableOpacity onPress={handleSwitchAccount}>
                   <ThemedText style={{ color: colors.tint }}>
-                    Đổi tài khoản
+                    {t("auth.switch_account")}
                   </ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleForgotPassword}>
                   <ThemedText style={{ color: colors.tint }}>
-                    Quên mật khẩu?
+                    {t("auth.forgot_password")}
                   </ThemedText>
                 </TouchableOpacity>
               </View>
@@ -340,7 +343,7 @@ const QuickLoginScreen = () => {
               <View style={styles.footer}>
                 <TouchableOpacity onPress={handleCreateAccount}>
                   <ThemedText style={{ color: colors.text }}>
-                    Tạo tài khoản
+                    {t("auth.create_account")}
                   </ThemedText>
                 </TouchableOpacity>
               </View>

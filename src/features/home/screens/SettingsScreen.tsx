@@ -1,7 +1,9 @@
 import CustomText from "@/components/base/CustomText";
+import BottomActionModal, { ActionItem } from "@/components/modals/BottomActionModal";
 import { GlobalContext } from "@/contexts/GlobalContext";
-import { useAppTheme } from "@/core/theme/ThemeContext";
+import { changeLanguage, languageMap } from "@/core/i18n/i18n";
 import { Tokens } from "@/core/theme/theme";
+import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useSettingService } from "@/features/settings/hooks/useSettingService";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import StorageService from "@/services/StorageService";
@@ -9,6 +11,7 @@ import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useContext, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Image,
@@ -25,6 +28,7 @@ interface SettingsScreenProps {
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
+  const { t, i18n } = useTranslation();
   const { handleLogout, touchIDClick, isUsingTouchID } = useSettingService();
   const { appInfo } = useContext(GlobalContext);
   const { mode, setMode, colors, isDark } = useAppTheme();
@@ -33,7 +37,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [updatingCurrency, setUpdatingCurrency] = useState(false);
-
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
   useFocusEffect(
     useCallback(() => {
       const loadSelectedCurrency = async () => {
@@ -45,7 +49,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           if (selectedCurrencyStr) {
             setUpdatingCurrency(true);
             const selectedCurrency = JSON.parse(selectedCurrencyStr);
-
 
             await updateDefaultCurrency(selectedCurrency);
             await StorageService.removeItem("temp_selected_currency");
@@ -72,10 +75,33 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     }
   };
 
+  const handleApplyLanguage = async (lang: string) => {
+    await changeLanguage(lang);
+    setShowLanguageModal(false); // ✅ Đóng modal sau khi chọn
+  };
+
+  // ✅ Tạo danh sách actions cho modal
+  const languageActions: ActionItem[] = [
+    {
+      id: "vi",
+      icon: "checkmark-circle" as keyof typeof Ionicons.glyphMap,
+      label: "Tiếng Việt",
+      onPress: () => handleApplyLanguage("vi"),
+      color: i18n.language === "vi" ? colors.tint : colors.text,
+    },
+    {
+      id: "en",
+      icon: "checkmark-circle" as keyof typeof Ionicons.glyphMap,
+      label: "English",
+      onPress: () => handleApplyLanguage("en"),
+      color: i18n.language === "en" ? colors.tint : colors.text,
+    },
+  ];
+
   // Format currency display text
   const getCurrencyDisplayText = () => {
     if (loading) {
-      return "Đang tải...";
+      return "Loading...";
     }
     return `${defaultCurrency.currencyId} (${defaultCurrency.symbol})`;
   };
@@ -88,7 +114,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         {/* Header */}
         <View style={styles.header}>
           <CustomText style={[styles.headerTitle, { color: colors.text }]}>
-            Cài đặt
+            {t("settings.title")}
           </CustomText>
         </View>
 
@@ -111,12 +137,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         {/* Account Settings */}
         <View style={styles.section}>
           <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
-            Tài khoản
+            {t("settings.account")}
           </CustomText>
           <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
             <SettingItem
               icon="person-outline"
-              title="Thông tin cá nhân"
+              title={t("settings.personal_info")}
               onPress={() => {
                 router.push("/(protected)/profile");
               }}
@@ -124,7 +150,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             <SettingItem
               icon="wallet-outline"
-              title="Ví của tôi"
+              title={t("settings.my_wallet")}
               onPress={() => {
                 router.push({
                   pathname: "/(protected)/wallet/wallet-list",
@@ -135,7 +161,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             <SettingItem
               icon="cube-outline"
-              title="Nhóm"
+              title={t("settings.group")}
               onPress={() => {
                 router.push({
                   pathname: "/(protected)/select-category",
@@ -148,7 +174,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             <SettingItem
               icon="receipt-outline"
-              title="Sổ nợ"
+              title={t("settings.paybook")}
               onPress={() => {
                 router.push("/(protected)/paybook");
               }}
@@ -156,7 +182,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             <SettingItem
               icon="document-text-outline"
-              title="Hóa đơn"
+              title={t("settings.invoice")}
               onPress={() => {
                 router.push({
                   pathname: "/(protected)/invoice/invoice-list",
@@ -166,7 +192,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             <SettingItem
               icon="briefcase-outline"
-              title="Sự kiện"
+              title={t("settings.event")}
               onPress={() => {
                 router.push({
                   pathname: "/(protected)/event/event-list",
@@ -179,7 +205,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             <SettingItem
               icon="calendar-outline"
-              title="Giao dịch định kỳ"
+              title={t("settings.recurring_transaction")}
               onPress={() => {
                 router.push({
                   pathname: "/(protected)/invoice/recurring-list",
@@ -189,7 +215,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             <SettingItem
               icon="construct-outline"
-              title="Công cụ"
+              title={t("settings.tools")}
               onPress={() => {
                 router.push("/(protected)/tools");
               }}
@@ -201,50 +227,51 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         {/* App Settings */}
         <View style={styles.section}>
           <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
-            Cài đặt ứng dụng
+            {t("settings.app_settings")}
           </CustomText>
           <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
             <SettingItemWithSwitch
               icon="notifications-outline"
-              title="Thông báo"
+              title={t("settings.notifications")}
               value={notificationsEnabled}
               onValueChange={setNotificationsEnabled}
               colors={colors}
             />
             <SettingItem
               icon="time-outline"
-              title="Nhắc giao dịch"
-              value="Tắt chuông báo"
+              title={t("settings.transaction_reminder")}
+              value="OFF"
               onPress={() => { }}
               colors={colors}
             />
             <SettingItemWithSwitch
               icon="finger-print-outline"
-              title="Sinh trắc học"
-              subtitle="Sử dụng Face ID/Touch ID"
+              title={t("settings.biometrics")}
+              subtitle={t("settings.biometrics_subtitle")}
               value={isUsingTouchID}
               onValueChange={handleBiometricToggle}
               colors={colors}
             />
             <SettingItemWithSwitch
               icon="moon-outline"
-              title="Chế độ tối"
+              title={t("settings.dark_mode")}
               value={isDark}
               onValueChange={(val: boolean) => {
                 setMode(val ? "dark" : "light");
               }}
               colors={colors}
             />
+            {/* ✅ Thay đổi chỗ này - mở modal thay vì Alert */}
             <SettingItem
               icon="language-outline"
-              title="Ngôn ngữ"
-              value="Tiếng Việt"
-              onPress={() => { }}
+              title={t("common.language")}
+              value={languageMap[i18n.language] || i18n.language}
+              onPress={() => setShowLanguageModal(true)}
               colors={colors}
             />
             <SettingItem
               icon="cash-outline"
-              title="Tiền tệ"
+              title={t("settings.currency")}
               value={getCurrencyDisplayText()}
               onPress={() => {
                 router.push({
@@ -262,12 +289,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         {/* Data & Privacy */}
         <View style={styles.section}>
           <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
-            Dữ liệu & Bảo mật
+            {t("settings.data_privacy")}
           </CustomText>
           <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
             <SettingItem
               icon="lock-closed-outline"
-              title="Đổi mật khẩu"
+              title={t("settings.change_password")}
               onPress={() => {
                 router.push("/(protected)/change-password");
               }}
@@ -275,19 +302,19 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             <SettingItem
               icon="document-text-outline"
-              title="Chính sách bảo mật"
+              title={t("settings.privacy_policy")}
               onPress={() => { }}
               colors={colors}
             />
             <SettingItem
               icon="phone-portrait-outline"
-              title="Thông tin đăng nhập"
+              title={t("settings.login_info")}
               onPress={() => { }}
               colors={colors}
             />
             <SettingItem
               icon="information-circle-outline"
-              title="Thông tin ứng dụng"
+              title={t("settings.app_info")}
               value="v1.0.0"
               onPress={() => { }}
               colors={colors}
@@ -307,7 +334,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             size={normalize(20)}
             color="#FF3B30"
           />
-          <CustomText style={styles.logoutText}>Đăng xuất</CustomText>
+          <CustomText style={styles.logoutText}>{t("common.logout")}</CustomText>
         </TouchableOpacity>
 
         <View style={styles.footer}>
@@ -316,6 +343,17 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           </CustomText>
         </View>
       </ScrollView>
+
+      <BottomActionModal
+        visible={showLanguageModal}
+        onClose={() => setShowLanguageModal(false)}
+        title={t("common.select_language")}
+        subtitle={t("settings.language_subtitle") || "Chọn ngôn ngữ hiển thị"}
+        actions={languageActions}
+        colors={colors}
+        cancelText={t("common.cancel")}
+        hasBottomNav={true}
+      />
     </SafeAreaView>
   );
 };

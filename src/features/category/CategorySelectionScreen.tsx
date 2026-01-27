@@ -1,6 +1,7 @@
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   ScrollView,
@@ -36,6 +37,7 @@ const STORAGE_KEY = "temp_selected_category";
 ===================== */
 const CategorySelectionScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
 
   const params = useLocalSearchParams<{
     selectedType?: string;
@@ -180,7 +182,7 @@ const CategorySelectionScreen: React.FC = () => {
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
       >
-        <AppHeader title="Chọn nhóm" showBackButton />
+        <AppHeader title={t("category.title")} showBackButton />
         <View style={styles.centerContainer}>
           <CustomText style={[styles.errorText, { color: colors.text }]}>
             {error}
@@ -189,7 +191,7 @@ const CategorySelectionScreen: React.FC = () => {
             style={[styles.retryButton, { backgroundColor: colors.tint }]}
             onPress={refetch}
           >
-            <CustomText style={styles.retryButtonText}>Thử lại</CustomText>
+            <CustomText style={styles.retryButtonText}>{t("common.retry")}</CustomText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -206,10 +208,10 @@ const CategorySelectionScreen: React.FC = () => {
       <AppHeader
         title={
           isSelectParent
-            ? "Chọn loại (danh mục cha)"
+            ? t("category.select_type_parent")
             : isEdit
-            ? "Chỉnh sửa nhóm"
-            : "Chọn nhóm"
+              ? t("category.edit_category")
+              : t("category.title")
         }
         showBackButton
       />
@@ -221,7 +223,7 @@ const CategorySelectionScreen: React.FC = () => {
             style={[styles.createButton, { backgroundColor: colors.tint }]}
             onPress={() => {
               router.push({
-                pathname: "/(protected)/category/create",
+                pathname: "/(protected)/category/create-category",
                 params: {
                   type: selectedTab,
                 },
@@ -229,7 +231,7 @@ const CategorySelectionScreen: React.FC = () => {
             }}
           >
             <CustomText style={styles.createButtonText}>
-              + Tạo nhóm mới
+              {t("category.create_new_category")}
             </CustomText>
           </TouchableOpacity>
         </View>
@@ -250,10 +252,10 @@ const CategorySelectionScreen: React.FC = () => {
               style={{ color: selectedTab === tab ? "#fff" : "#666" }}
             >
               {tab === "INCOME"
-                ? "Khoản thu"
+                ? t("transaction.type_income")
                 : tab === "EXPENSE"
-                ? "Khoản chi"
-                : "Vay/Nợ"}
+                  ? t("transaction.type_expense")
+                  : t("transaction.type_debt_loan")}
             </CustomText>
           </TouchableOpacity>
         ))}
@@ -265,7 +267,7 @@ const CategorySelectionScreen: React.FC = () => {
         <TextInput
           style={[styles.searchInput, { color: colors.text }]}
           placeholder={
-            isSelectParent ? "Tìm loại..." : "Tìm kiếm nhóm..."
+            isSelectParent ? t("category.search_type_placeholder") : t("category.search_category_placeholder")
           }
           placeholderTextColor={colors.icon}
           value={searchQuery}

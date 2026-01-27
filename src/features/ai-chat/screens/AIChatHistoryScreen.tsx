@@ -2,18 +2,20 @@
 
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
+import { useNotification } from '@/contexts/NotificationContext';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
 import { hp, normalize, wp } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
-    Alert,
-    FlatList,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -27,6 +29,8 @@ interface ChatHistory {
 
 const AIChatHistoryScreen = () => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
+  const { showNotification } = useNotification();
 
   // Mock data - Replace with real data from API
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([
@@ -66,12 +70,12 @@ const AIChatHistoryScreen = () => {
 
   const handleDeleteChat = (chatId: string) => {
     Alert.alert(
-      'Xóa cuộc trò chuyện',
-      'Bạn có chắc muốn xóa cuộc trò chuyện này?',
+      t('ai_chat.delete_chat_title'),
+      t('ai_chat.delete_chat_message'),
       [
-        { text: 'Hủy', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Xóa',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => {
             setChatHistory((prev) => prev.filter((chat) => chat.id !== chatId));
@@ -84,7 +88,7 @@ const AIChatHistoryScreen = () => {
 
   const handleRenameChat = (chatId: string) => {
     // TODO: Show rename modal
-    Alert.alert('Thông báo', 'Chức năng đổi tên đang được phát triển');
+    showNotification(t('common.feature_developing'), 'warning');
   };
 
   const renderChatItem = ({ item }: { item: ChatHistory }) => (
@@ -119,20 +123,20 @@ const AIChatHistoryScreen = () => {
 
   const showMenu = (chatId: string) => {
     Alert.alert(
-      'Tùy chọn',
-      'Chọn hành động',
+      t('ai_chat.options'),
+      t('common.select_action'),
       [
         {
-          text: 'Đổi tên',
+          text: t('ai_chat.rename_chat'),
           onPress: () => handleRenameChat(chatId),
         },
         {
-          text: 'Xóa',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => handleDeleteChat(chatId),
         },
         {
-          text: 'Hủy',
+          text: t('common.cancel'),
           style: 'cancel',
         },
       ]
@@ -141,7 +145,7 @@ const AIChatHistoryScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader title="Lịch sử chat" showBackButton />
+      <AppHeader title={t('ai_chat.chat_history')} showBackButton />
 
       <FlatList
         data={chatHistory}
@@ -158,7 +162,7 @@ const AIChatHistoryScreen = () => {
               style={{ opacity: 0.3 }}
             />
             <CustomText style={[styles.emptyText, { color: colors.icon }]}>
-              Chưa có cuộc trò chuyện nào
+              {t('ai_chat.no_chats')}
             </CustomText>
           </View>
         }
@@ -171,7 +175,7 @@ const AIChatHistoryScreen = () => {
           onPress={handleNewChat}
         >
           <CustomText style={styles.newChatButtonText}>
-            Cuộc trò chuyện mới
+            {t('ai_chat.new_chat')}
           </CustomText>
         </TouchableOpacity>
       </View>

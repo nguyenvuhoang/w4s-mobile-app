@@ -7,6 +7,8 @@ import { Images } from '@/utils/images';
 import { hasNotch, normalize } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Image,
@@ -22,6 +24,7 @@ const logoImg = Images.appLogoLight;
 const LoginScreen = () => {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
 
   const {
     username,
@@ -35,6 +38,40 @@ const LoginScreen = () => {
     handleLogin,
     handleForgotPassword,
   } = useLoginService();
+
+  const [errors, setErrors] = useState({
+    username: '',
+  });
+  const [touched, setTouched] = useState({
+    username: false,
+  });
+
+  const validatePhone = (phone: string): string | null => {
+    if (!phone.trim()) return t('validation.required_phone');
+    const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
+    if (!phoneRegex.test(phone.trim())) {
+      return t('validation.invalid_phone');
+    }
+    return null;
+  };
+
+  const handlePhoneChange = (text: string) => {
+    // Only allow numbers
+    const numericText = text.replace(/[^0-9]/g, '');
+    const limitedText = numericText.slice(0, 10);
+    setUsername(limitedText);
+
+    if (touched.username) {
+      const error = validatePhone(limitedText);
+      setErrors(prev => ({ ...prev, username: error || '' }));
+    }
+  };
+
+  const handleBlur = () => {
+    setTouched(prev => ({ ...prev, username: true }));
+    const error = validatePhone(username);
+    setErrors(prev => ({ ...prev, username: error || '' }));
+  };
 
   const handleCreateAccount = () => {
     router.push('/(auth)/register' as any);
@@ -52,15 +89,15 @@ const LoginScreen = () => {
 
         {/* Title */}
         <ThemedText style={[styles.title, { color: colors.text }]}>
-          Đăng nhập
+          {t('auth.login')}
         </ThemedText>
 
         {/* Form */}
         <View style={styles.formContainer}>
-          {/* Username Input */}
+          {/* Phone Input (mapped to username) */}
           <View style={styles.inputContainer}>
             <ThemedText style={[styles.label, { color: colors.text }]}>
-              Tên đăng nhập
+              {t('auth.phone')}
             </ThemedText>
             <TextInput
               style={[
@@ -68,23 +105,27 @@ const LoginScreen = () => {
                 {
                   backgroundColor: colors.card,
                   color: colors.text,
-                  borderColor: colors.border,
+                  borderColor: touched.username && errors.username ? colors.error : colors.border,
                 },
               ]}
-              placeholder="Tên đăng nhập của bạn"
+              placeholder={t('auth.phone_placeholder')}
               placeholderTextColor={colors.icon}
               value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              autoComplete="username"
+              onChangeText={handlePhoneChange}
+              onBlur={handleBlur}
+              keyboardType="numeric"
+              maxLength={10}
               editable={!isLoggingIn}
             />
+            {touched.username && errors.username ? (
+              <ThemedText style={[styles.errorText, { color: colors.error }]}>{errors.username}</ThemedText>
+            ) : null}
           </View>
 
           {/* Password Input */}
           <View style={styles.inputContainer}>
             <ThemedText style={[styles.label, { color: colors.text }]}>
-              Mật khẩu
+              {t('auth.password')}
             </ThemedText>
             <View style={styles.passwordContainer}>
               <TextInput
@@ -97,7 +138,7 @@ const LoginScreen = () => {
                     borderColor: colors.border,
                   },
                 ]}
-                placeholder="Mật khẩu của bạn"
+                placeholder={t('auth.password_placeholder')}
                 placeholderTextColor={colors.icon}
                 value={password}
                 onChangeText={setPassword}
@@ -127,25 +168,25 @@ const LoginScreen = () => {
             disabled={isLoggingIn}
           >
             <ThemedText style={[styles.forgotPasswordText, { color: colors.tint }]}>
-              Quên mật khẩu ?
+              {t('auth.forgot_password')}
             </ThemedText>
           </TouchableOpacity>
 
           {/* Login Button */}
           <TouchableOpacity
-            onPress={() => handleLogin(true)} 
+            onPress={() => handleLogin(true)}
             style={[
               styles.loginButton,
               { backgroundColor: colors.tint },
-              (!isFormValid || isLoggingIn) && styles.loginButtonDisabled,
+              (!isFormValid || isLoggingIn || !!errors.username) && styles.loginButtonDisabled,
             ]}
             activeOpacity={0.9}
-            disabled={!isFormValid || isLoggingIn}
+            disabled={!isFormValid || isLoggingIn || !!errors.username}
           >
             {isLoggingIn ? (
               <ActivityIndicator color={Tokens.colors.main.white} size="small" />
             ) : (
-              <ThemedText style={styles.loginButtonText}>Đăng nhập</ThemedText>
+              <ThemedText style={styles.loginButtonText}>{t('auth.login')}</ThemedText>
             )}
           </TouchableOpacity>
         </View>
@@ -154,7 +195,7 @@ const LoginScreen = () => {
         <View style={styles.footer}>
           <TouchableOpacity onPress={handleCreateAccount} disabled={isLoggingIn}>
             <ThemedText style={[styles.createAccountText, { color: colors.text }]}>
-              Tạo tài khoản
+              {t('auth.create_account')}
             </ThemedText>
           </TouchableOpacity>
         </View>
@@ -266,6 +307,12 @@ const styles = StyleSheet.create({
     fontSize: normalize(16),
     fontFamily: Fonts.medium,
     lineHeight: normalize(22),
+  },
+  errorText: {
+    fontSize: normalize(13),
+    fontFamily: Fonts.regular,
+    marginTop: normalize(4),
+    lineHeight: normalize(18),
   },
 });
 

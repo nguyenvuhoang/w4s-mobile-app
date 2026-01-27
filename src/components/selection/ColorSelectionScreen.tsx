@@ -6,6 +6,7 @@ import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dimensions,
   StyleSheet,
@@ -29,6 +30,7 @@ const PRESET_COLORS = [
 
 const SelectWalletColorScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const icon = params.icon as string;
 
@@ -51,7 +53,7 @@ const SelectWalletColorScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader title="Chọn màu" showBackButton />
+      <AppHeader title={t('selection.select_color')} showBackButton />
 
       {/* ===== MAIN CONTENT (NO SCROLL) ===== */}
       <View style={styles.content}>
@@ -93,7 +95,7 @@ const SelectWalletColorScreen: React.FC = () => {
         {/* Preset colors */}
         <View style={styles.presetContainer}>
           <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
-            Màu sẵn có
+            {t('selection.preset_colors')}
           </CustomText>
 
           <View style={styles.presetColors}>
@@ -126,7 +128,7 @@ const SelectWalletColorScreen: React.FC = () => {
           onPress={() => router.back()}
         >
           <CustomText style={[styles.cancelButtonText, { color: colors.text }]}>
-            Hủy bỏ
+            {t('selection.cancel')}
           </CustomText>
         </TouchableOpacity>
 
@@ -134,7 +136,7 @@ const SelectWalletColorScreen: React.FC = () => {
           style={[styles.confirmButton, { backgroundColor: colors.tint }]}
           onPress={handleContinue}
         >
-          <CustomText style={styles.confirmButtonText}>Xác nhận</CustomText>
+          <CustomText style={styles.confirmButtonText}>{t('selection.confirm')}</CustomText>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

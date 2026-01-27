@@ -9,6 +9,7 @@ import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -23,6 +24,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const CreateWalletDetailsScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const walletType = params.walletType as string;
 
@@ -70,17 +72,17 @@ const CreateWalletDetailsScreen: React.FC = () => {
           // Load selected currency: Storage => String => Parse => Object
           const selectedCurrencyStr = await StorageService.getItem('temp_selected_currency');
           console.log('[CreateWallet] Raw currency from storage:', selectedCurrencyStr);
-          
+
           if (selectedCurrencyStr) {
             try {
               // String => Object
               const selectedCurrency = JSON.parse(selectedCurrencyStr);
               console.log('[CreateWallet] Parsed currency:', selectedCurrency);
-              
+
               setCurrency(selectedCurrency.currencyId || 'VND');
               setCurrencySymbol(selectedCurrency.symbol || 'đ');
               setCurrencyName(selectedCurrency.name || 'Vietnamese Dong');
-              
+
               await StorageService.removeItem('temp_selected_currency');
             } catch (parseError) {
               console.error('[CreateWallet] Failed to parse currency:', parseError);
@@ -97,7 +99,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
 
   const handleCreate = async () => {
     if (!walletName.trim()) {
-      alert('Vui lòng nhập tên ví');
+      alert(t('wallet.error_wallet_name_required'));
       return;
     }
 
@@ -120,7 +122,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
         color: iconColor,
         icon,
         isIncludeReport: includeInReport,
-        amount : parseFloat(initialBalance) || 0,
+        amount: parseFloat(initialBalance) || 0,
         walletType,
       });
       await refresh();
@@ -128,14 +130,14 @@ const CreateWalletDetailsScreen: React.FC = () => {
       router.replace('/(protected)/wallet/wallet-list');
     } catch (error) {
       console.error('[CreateWallet] Create wallet failed:', error);
-      alert('Không thể tạo ví lúc này. Vui lòng thử lại.');
+      alert(t('wallet.error_create_wallet'));
     }
   };
 
   const handleSelectIcon = () => {
     router.push({
       pathname: '/(protected)/select-icon',
-      params: { 
+      params: {
         color: iconColor,
       }
     });
@@ -171,13 +173,13 @@ const CreateWalletDetailsScreen: React.FC = () => {
   const handleBalanceChange = (text: string) => {
     // Remove all non-numeric characters except decimal point
     const cleaned = text.replace(/[^0-9.]/g, '');
-    
+
     // Prevent multiple decimal points
     const parts = cleaned.split('.');
     if (parts.length > 2) {
       return;
     }
-    
+
     setInitialBalance(cleaned);
   };
 
@@ -191,7 +193,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader title="Tạo ví theo dõi cơ bản" showBackButton />
+      <AppHeader title={t('wallet.create_basic_wallet_title')} showBackButton />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -220,12 +222,12 @@ const CreateWalletDetailsScreen: React.FC = () => {
                 <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
               </View>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[styles.selectorCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={handleSelectColor}
             >
-              <CustomText style={[styles.selectorLabel, { color: colors.text }]}>Màu sắc</CustomText>
+              <CustomText style={[styles.selectorLabel, { color: colors.text }]}>{t('wallet.color')}</CustomText>
               <View style={styles.selectorValue}>
                 <View style={[styles.colorDot, { backgroundColor: iconColor }]} />
                 <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
@@ -236,12 +238,12 @@ const CreateWalletDetailsScreen: React.FC = () => {
           {/* Wallet Name */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-              Tên Ví
+              {t('wallet.wallet_name')}
             </CustomText>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput
                 style={[styles.input, { color: colors.text }]}
-                placeholder="Tiền mặt"
+                placeholder={t('wallet.wallet_name_placeholder')}
                 placeholderTextColor={colors.icon}
                 value={walletName}
                 onChangeText={setWalletName}
@@ -252,7 +254,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
           {/* Currency */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-              Đơn vị tiền tệ
+              {t('wallet.currency')}
             </CustomText>
             <TouchableOpacity
               style={[styles.currencySelector, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -280,7 +282,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
           {/* Initial Balance */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-              Số tiền khởi tạo
+              {t('wallet.initial_balance')}
             </CustomText>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput
@@ -298,7 +300,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
               ) : null}
             </View>
             <CustomText style={[styles.helperText, { color: colors.icon }]} type="regular">
-              Nhập số tiền ban đầu trong ví này
+              {t('wallet.initial_balance_helper')}
             </CustomText>
           </View>
 
@@ -307,7 +309,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
             <View style={[styles.toggleCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.toggleLeft}>
                 <CustomText style={[styles.toggleLabel, { color: colors.text }]} type="semiBold">
-                  Tính vào báo cáo
+                  {t('transaction.include_in_report')}
                 </CustomText>
               </View>
               <Switch
@@ -332,23 +334,23 @@ const CreateWalletDetailsScreen: React.FC = () => {
             disabled={creatingWallet}
           >
             <CustomText style={[styles.cancelButtonText, { color: colors.text }]} type="semiBold">
-              Hủy
+              {t('common.cancel')}
             </CustomText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[
-              styles.createButton, 
-              { 
-                backgroundColor: colors.tint, 
-                opacity: creatingWallet || !walletName.trim() ? 0.5 : 1 
+              styles.createButton,
+              {
+                backgroundColor: colors.tint,
+                opacity: creatingWallet || !walletName.trim() ? 0.5 : 1
               }
             ]}
             onPress={handleCreate}
             disabled={creatingWallet || !walletName.trim()}
           >
             <CustomText style={styles.createButtonText} type="bold">
-              {creatingWallet ? 'Đang tạo...' : 'Tạo'}
+              {creatingWallet ? t('wallet.creating') : t('wallet.create')}
             </CustomText>
           </TouchableOpacity>
         </View>

@@ -8,6 +8,7 @@ import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Animated,
   KeyboardAvoidingView,
@@ -25,6 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ChangePasswordScreen = () => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const oldPass = params.oldPass as string | undefined;
   const isFirstLogin = params.isFirstLogin === 'true';
@@ -49,6 +51,72 @@ const ChangePasswordScreen = () => {
   } = useChangePassword();
 
   const slideAnim = useRef(new Animated.Value(0)).current;
+
+  const [errors, setErrors] = React.useState({
+    password: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [touched, setTouched] = React.useState({
+    password: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
+
+  // Validation helpers
+  const validateCurrentPassword = (val: string) => {
+    if (!val) return t('validation.required_field');
+    return null;
+  };
+
+  const validateNewPassword = (val: string) => {
+    if (!val) return t('validation.required_field');
+    const passwordRegex = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!?.*_-])[A-Za-z0-9@#$%^&+=!?.*_-]{8,20}$/;
+    if (!passwordRegex.test(val)) return t('validation.invalid_password_format');
+    return null;
+  };
+
+  const validateConfirmPassword = (val: string, newPass: string) => {
+    if (!val) return t('validation.required_field');
+    if (val !== newPass) return t('validation.password_mismatch');
+    return null;
+  };
+
+  const handleBlur = (field: 'password' | 'newPassword' | 'confirmPassword') => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    let error = '';
+
+    if (field === 'password') error = validateCurrentPassword(password) || '';
+    if (field === 'newPassword') error = validateNewPassword(newPassword) || '';
+    if (field === 'confirmPassword') error = validateConfirmPassword(confirmPassword, newPassword) || '';
+
+    setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (touched.password) {
+      setErrors(prev => ({ ...prev, password: validateCurrentPassword(text) || '' }));
+    }
+  };
+
+  const handleNewPasswordChange = (text: string) => {
+    setNewPassword(text);
+    if (touched.newPassword) {
+      setErrors(prev => ({ ...prev, newPassword: validateNewPassword(text) || '' }));
+    }
+    // Also re-validate confirm password if it was touched
+    if (touched.confirmPassword) {
+      setErrors(prev => ({ ...prev, confirmPassword: validateConfirmPassword(confirmPassword, text) || '' }));
+    }
+  };
+
+  const handleConfirmPasswordChange = (text: string) => {
+    setConfirmPassword(text);
+    if (touched.confirmPassword) {
+      setErrors(prev => ({ ...prev, confirmPassword: validateConfirmPassword(text, newPassword) || '' }));
+    }
+  };
   const [modalVisible, setModalVisible] = React.useState(false);
 
   // Set initial password if provided
@@ -81,6 +149,22 @@ const ChangePasswordScreen = () => {
   });
 
   const handleChangePassword = async () => {
+    const pwdError = validateCurrentPassword(password);
+    const newPwdError = validateNewPassword(newPassword);
+    const confirmPwdError = validateConfirmPassword(confirmPassword, newPassword);
+
+    setErrors({
+      password: pwdError || '',
+      newPassword: newPwdError || '',
+      confirmPassword: confirmPwdError || '',
+    });
+    setTouched({
+      password: true,
+      newPassword: true,
+      confirmPassword: true,
+    });
+
+    if (pwdError || newPwdError || confirmPwdError) return;
     if (!valid) return;
 
     await changePassword({
@@ -100,9 +184,9 @@ const ChangePasswordScreen = () => {
         style={styles.keyboardView}
       >
         {/* Header */}
-        <AppHeader title="Đổi mật khẩu" />
+        <AppHeader title={t('settings.change_password')} />
 
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -110,118 +194,139 @@ const ChangePasswordScreen = () => {
           {/* First Login Notice */}
           {isFirstLogin && (
             <View style={[styles.firstLoginNotice, { backgroundColor: '#FFF7E6' }]}>
-              <FontAwesome6 
-                name="circle-exclamation" 
-                size={normalize(18)} 
-                color="#FF9900" 
+              <FontAwesome6
+                name="circle-exclamation"
+                size={normalize(18)}
+                color="#FF9900"
                 style={styles.noticeIconLeft}
               />
               <CustomText style={styles.firstLoginNoticeText}>
-                Đây là lần đăng nhập đầu tiên, vui lòng đổi mật khẩu để bảo mật tài khoản
+                {t('auth.first_login_notice')}
               </CustomText>
             </View>
           )}
 
-          
+
 
           {/* Current Password */}
           {!isFirstLogin && (
             <View style={styles.section}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                Mật khẩu hiện tại
+                {t('auth.current_password')}
               </CustomText>
-              <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.inputContainer, {
+                backgroundColor: colors.card,
+                borderColor: touched.password && errors.password ? colors.error : colors.border
+              }]}>
                 <TextInput
                   style={[styles.input, { color: colors.text }]}
                   value={password}
-                  onChangeText={setPassword}
-                  placeholder="Nhập mật khẩu hiện tại"
+                  onChangeText={handlePasswordChange}
+                  onBlur={() => handleBlur('password')}
+                  placeholder={t('auth.enter_current_password')}
                   placeholderTextColor={colors.icon}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                 />
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
                   style={styles.eyeButton}
                 >
-                  <FontAwesome6 
-                    name={showPassword ? 'eye' : 'eye-slash'} 
-                    size={normalize(16)} 
-                    color={colors.icon} 
+                  <FontAwesome6
+                    name={showPassword ? 'eye' : 'eye-slash'}
+                    size={normalize(16)}
+                    color={colors.icon}
                   />
                 </TouchableOpacity>
               </View>
+              {touched.password && errors.password ? (
+                <CustomText style={[styles.errorText, { color: colors.error }]}>{errors.password}</CustomText>
+              ) : null}
             </View>
           )}
 
           {/* New Password */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Mật khẩu mới
+              {t('auth.new_password')}
             </CustomText>
-            <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.inputContainer, {
+              backgroundColor: colors.card,
+              borderColor: touched.newPassword && errors.newPassword ? colors.error : colors.border
+            }]}>
               <TextInput
                 style={[styles.input, { color: colors.text }]}
                 value={newPassword}
-                onChangeText={setNewPassword}
-                placeholder="Nhập mật khẩu mới"
+                onChangeText={handleNewPasswordChange}
+                onBlur={() => handleBlur('newPassword')}
+                placeholder={t('auth.enter_new_password')}
                 placeholderTextColor={colors.icon}
                 secureTextEntry={!showNewPassword}
                 autoCapitalize="none"
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShowNewPassword(!showNewPassword)}
                 style={styles.eyeButton}
               >
-                <FontAwesome6 
-                  name={showNewPassword ? 'eye' : 'eye-slash'} 
-                  size={normalize(16)} 
-                  color={colors.icon} 
+                <FontAwesome6
+                  name={showNewPassword ? 'eye' : 'eye-slash'}
+                  size={normalize(16)}
+                  color={colors.icon}
                 />
               </TouchableOpacity>
             </View>
+            {touched.newPassword && errors.newPassword ? (
+              <CustomText style={[styles.errorText, { color: colors.error }]}>{errors.newPassword}</CustomText>
+            ) : null}
           </View>
 
           {/* Confirm Password */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Xác nhận mật khẩu
+              {t('auth.confirm_password')}
             </CustomText>
-            <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.inputContainer, {
+              backgroundColor: colors.card,
+              borderColor: touched.confirmPassword && errors.confirmPassword ? colors.error : colors.border
+            }]}>
               <TextInput
                 style={[styles.input, { color: colors.text }]}
                 value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Nhập lại mật khẩu mới"
+                onChangeText={handleConfirmPasswordChange}
+                onBlur={() => handleBlur('confirmPassword')}
+                placeholder={t('auth.enter_confirm_password')}
                 placeholderTextColor={colors.icon}
                 secureTextEntry={!showConfirmPassword}
                 autoCapitalize="none"
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 style={styles.eyeButton}
               >
-                <FontAwesome6 
-                  name={showConfirmPassword ? 'eye' : 'eye-slash'} 
-                  size={normalize(16)} 
-                  color={colors.icon} 
+                <FontAwesome6
+                  name={showConfirmPassword ? 'eye' : 'eye-slash'}
+                  size={normalize(16)}
+                  color={colors.icon}
                 />
               </TouchableOpacity>
             </View>
+            {touched.confirmPassword && errors.confirmPassword ? (
+              <CustomText style={[styles.errorText, { color: colors.error }]}>{errors.confirmPassword}</CustomText>
+            ) : null}
           </View>
 
           {/* Password Regulations Notice */}
           <View style={[styles.noticeBox, { backgroundColor: colors.background }]}>
             <View style={[styles.noticeIconCircle, { backgroundColor: colors.tint + '20' }]}>
-              <FontAwesome6 
-                name="circle-info" 
-                size={normalize(20)} 
-                color={colors.tint} 
+              <FontAwesome6
+                name="circle-info"
+                size={normalize(20)}
+                color={colors.tint}
               />
             </View>
             <TouchableOpacity onPress={openModal} style={styles.noticeTextContainer}>
               <CustomText style={[styles.noticeText, { color: colors.tint }]}>
-                Quy định thiết lập mật khẩu
+                {t('auth.password_regulations')}
               </CustomText>
             </TouchableOpacity>
           </View>
@@ -235,7 +340,7 @@ const ChangePasswordScreen = () => {
           <TouchableOpacity
             style={[
               styles.createButton,
-              { 
+              {
                 backgroundColor: valid ? colors.tint : colors.border,
                 opacity: loading ? 0.6 : 1,
               },
@@ -244,9 +349,9 @@ const ChangePasswordScreen = () => {
             disabled={!valid || loading}
           >
             {loading ? (
-              <CustomText style={styles.createButtonText}>Đang xử lý...</CustomText>
+              <CustomText style={styles.createButtonText}>{t('auth.processing')}</CustomText>
             ) : (
-              <CustomText style={styles.createButtonText}>Đổi mật khẩu</CustomText>
+              <CustomText style={styles.createButtonText}>{t('settings.change_password')}</CustomText>
             )}
           </TouchableOpacity>
         </View>
@@ -264,18 +369,18 @@ const ChangePasswordScreen = () => {
           <View style={styles.modalOverlay} />
         </TouchableWithoutFeedback>
 
-        <Animated.View 
+        <Animated.View
           style={[
-            styles.modalContainer, 
-            { 
+            styles.modalContainer,
+            {
               backgroundColor: colors.card,
-              transform: [{ translateY }] 
+              transform: [{ translateY }]
             }
           ]}
         >
           <View style={styles.modalHeader}>
             <CustomText style={[styles.modalTitle, { color: colors.text }]}>
-              Quy định thiết lập mật khẩu
+              {t('auth.password_regulations')}
             </CustomText>
             <Pressable onPress={closeModal}>
               <FontAwesome6 name="xmark" size={normalize(24)} color={colors.text} />
@@ -284,49 +389,49 @@ const ChangePasswordScreen = () => {
 
           <View style={styles.modalBody}>
             <CustomText style={[styles.modalText, { color: colors.text }]}>
-              Mật khẩu phải đáp ứng các yêu cầu sau:
+              {t('auth.password_requirements')}
             </CustomText>
-            
+
             <View style={styles.requirementsList}>
               <View style={styles.requirementItem}>
                 <FontAwesome6 name="check" size={normalize(12)} color="#4CAF50" />
                 <CustomText style={[styles.requirementText, { color: colors.text }]}>
-                  Tối thiểu 8 ký tự
+                  {t('auth.req_min_chars')}
                 </CustomText>
               </View>
-              
+
               <View style={styles.requirementItem}>
                 <FontAwesome6 name="check" size={normalize(12)} color="#4CAF50" />
                 <CustomText style={[styles.requirementText, { color: colors.text }]}>
-                  Ít nhất 1 chữ in hoa (A-Z)
+                  {t('auth.req_uppercase')}
                 </CustomText>
               </View>
-              
+
               <View style={styles.requirementItem}>
                 <FontAwesome6 name="check" size={normalize(12)} color="#4CAF50" />
                 <CustomText style={[styles.requirementText, { color: colors.text }]}>
-                  Ít nhất 1 chữ thường (a-z)
+                  {t('auth.req_lowercase')}
                 </CustomText>
               </View>
-              
+
               <View style={styles.requirementItem}>
                 <FontAwesome6 name="check" size={normalize(12)} color="#4CAF50" />
                 <CustomText style={[styles.requirementText, { color: colors.text }]}>
-                  Ít nhất 1 chữ số (0-9)
+                  {t('auth.req_number')}
                 </CustomText>
               </View>
-              
+
               <View style={styles.requirementItem}>
                 <FontAwesome6 name="check" size={normalize(12)} color="#4CAF50" />
                 <CustomText style={[styles.requirementText, { color: colors.text }]}>
-                  Ít nhất 1 ký tự đặc biệt (!@#$%^&*)
+                  {t('auth.req_special')}
                 </CustomText>
               </View>
             </View>
 
             <View style={[styles.exampleBox, { backgroundColor: colors.background }]}>
               <CustomText style={[styles.exampleLabel, { color: colors.icon }]}>
-                Ví dụ:
+                {t('auth.example')}:
               </CustomText>
               <CustomText style={[styles.exampleText, { color: colors.text }]}>
                 Anhben@3894
@@ -501,6 +606,12 @@ const styles = StyleSheet.create({
   exampleText: {
     fontSize: normalize(15),
     fontFamily: Fonts.semiBold,
+  },
+  errorText: {
+    fontSize: normalize(13),
+    fontFamily: Fonts.regular,
+    marginTop: normalize(4),
+    lineHeight: normalize(18),
   },
 });
 

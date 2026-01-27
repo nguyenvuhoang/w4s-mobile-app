@@ -5,11 +5,13 @@ import { Fonts } from "@/core/theme/font";
 import { hp, normalize, wp } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const ProfileScreen = () => {
     const { colors } = useAppTheme();
+    const { t } = useTranslation();
 
     // Mock user data - replace with actual user data from your auth/state management
     const [userData] = useState({
@@ -23,12 +25,12 @@ const ProfileScreen = () => {
     });
 
     const profileItems = [
-        { icon: "person-outline", label: "Họ và tên", value: userData.name },
-        { icon: "mail-outline", label: "Email", value: userData.email },
-        { icon: "call-outline", label: "Số điện thoại", value: userData.phone },
-        { icon: "calendar-outline", label: "Ngày sinh", value: userData.dateOfBirth },
-        { icon: "male-female-outline", label: "Giới tính", value: userData.gender },
-        { icon: "location-outline", label: "Địa chỉ", value: userData.address },
+        { icon: "person-outline", label: t("profile.fullname"), value: userData.name },
+        { icon: "mail-outline", label: t("profile.email"), value: userData.email },
+        { icon: "call-outline", label: t("profile.phone"), value: userData.phone },
+        { icon: "calendar-outline", label: t("profile.birthday"), value: userData.dateOfBirth },
+        { icon: "male-female-outline", label: t("profile.gender"), value: userData.gender },
+        { icon: "location-outline", label: t("profile.address"), value: userData.address },
     ];
 
     const handleChangeAvatar = () => {
@@ -45,7 +47,7 @@ const ProfileScreen = () => {
         <SafeAreaView
             style={[styles.container, { backgroundColor: colors.background }]}
         >
-            <AppHeader title="Thông tin cá nhân" showBackButton />
+            <AppHeader title={t("profile.title")} showBackButton />
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
@@ -83,7 +85,7 @@ const ProfileScreen = () => {
                         activeOpacity={0.7}
                     >
                         <Ionicons name="create-outline" size={normalize(18)} color="#fff" />
-                        <ThemedText style={styles.editButtonText}>Chỉnh sửa thông tin</ThemedText>
+                        <ThemedText style={styles.editButtonText}>{t("profile.edit_info")}</ThemedText>
                     </TouchableOpacity>
                 </View>
 
