@@ -8,6 +8,7 @@ import { apiService } from "@/core/api";
 import { BaseResponseModel } from "@/core/api/models/ClientModel";
 
 export interface EventSearchParams {
+  userCode: string;
   status?: string;
   event_type?: string;
   wallet_id?: number;
@@ -49,6 +50,7 @@ export const eventRepository = {
       return await apiService.executeWorkflow(
         WORKFLOWCODE.WF_MB_RETRIEVE_WALLET_EVENT,
         {
+          usercode: params.userCode,
           search_text: params.search_text || "",
           page_index: params.page_index,
           page_size: params.page_size,

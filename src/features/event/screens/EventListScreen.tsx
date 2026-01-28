@@ -1,7 +1,7 @@
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
 import BottomActionModal, {
-    ActionItem,
+  ActionItem,
 } from "@/components/modals/BottomActionModal";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useAppTheme } from "@/core/theme/ThemeContext";
@@ -12,13 +12,13 @@ import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    RefreshControl,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEvent } from "../hooks/useEvent";
@@ -67,7 +67,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
     useCallback(() => {
       console.log("[EventListScreen] Fetching all events");
       fetchAllEvents();
-      return () => {};
+      return () => { };
     }, [fetchAllEvents])
   );
 
@@ -232,16 +232,6 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
             ? "Chưa có sự kiện đang diễn ra"
             : "Chưa có sự kiện đã kết thúc"}
         </CustomText>
-        {activeTab === "ACTIVE" && (
-          <TouchableOpacity
-            style={[styles.emptyButton, { backgroundColor: colors.tint }]}
-            onPress={handleCreateEvent}
-          >
-            <CustomText style={styles.emptyButtonText} type="bold">
-              Tạo sự kiện đầu tiên
-            </CustomText>
-          </TouchableOpacity>
-        )}
       </View>
     );
   };

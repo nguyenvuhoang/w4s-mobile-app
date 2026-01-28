@@ -1,10 +1,12 @@
 import { AppConfig } from "@/config/AppConfig";
+import StorageKey from "@/constants/StorageKey";
 import { Event } from "@/features/event/types/Event";
 import {
-    CreateEventPayload,
-    eventRepository,
-    EventSearchParams,
+  CreateEventPayload,
+  eventRepository,
+  EventSearchParams,
 } from "@/services/repositories/event.repository";
+import StorageService from "@/services/StorageService";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const PAGE_SIZE = 9999;
@@ -48,8 +50,13 @@ export const useEvent = (options: UseEventOptions = {}) => {
     try {
       setLoading(true);
       setError(null);
+      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      if (!userCode) {
+        throw new Error('Missing user code');
+      }
 
       const params: EventSearchParams = {
+        userCode: userCode,
         status: "",
         event_type: "",
         wallet_id: undefined,
