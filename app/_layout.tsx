@@ -13,7 +13,6 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -56,6 +55,7 @@ function RootStack() {
 
   return (
     <Stack
+      initialRouteName="index"
       screenOptions={{
         headerShown: false,
         animation: "slide_from_right",
@@ -67,21 +67,19 @@ function RootStack() {
       }}
     >
       <Stack.Screen
+        name="index"
+        options={{
+          animation: "fade",
+        }}
+      />
+      <Stack.Screen
         name="(auth)"
         options={{
           animation: "fade",
           animationDuration: 200,
         }}
       />
-
       <Stack.Screen name="(protected)" />
-
-      <Stack.Screen
-        name="index"
-        options={{
-          animation: "fade",
-        }}
-      />
     </Stack>
   );
 }

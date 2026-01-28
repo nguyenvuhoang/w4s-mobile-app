@@ -4,15 +4,87 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "preview": {
+      "channel": "production",
+      "android": {
+        "buildType": "apk",
+        "env": {
+          "EXPO_ANDROID_TARGET_SDK_VERSION": "35"
+        }
+      }
+    },
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "production",
+      "android": {
+        "gradleCommand": ":app:assembleDebug",
+        "buildType": "apk",
+        "resourceClass": "medium"
+      },
+      "ios": {
+        "buildConfiguration": "Debug",
+        "distribution": "internal",
+        "resourceClass": "medium"
+      },
+      "env": {
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
+        "EXPO_ANDROID_TARGET_SDK_VERSION": "35"
+      }
     },
-    "preview": {
-      "distribution": "internal"
+    "dev-simulator": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "ios": {
+        "simulator": true,
+        "buildConfiguration": "Debug",
+        "resourceClass": "medium"
+      },
+      "android": {
+        "gradleCommand": ":app:assembleDebug",
+        "buildType": "apk",
+        "resourceClass": "medium"
+      },
+      "env": {
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
+        "EXPO_ANDROID_TARGET_SDK_VERSION": "35"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "distribution": "store",
+      "credentialsSource": "remote",
+      "channel": "production",
+      "ios": {
+        "buildConfiguration": "Release",
+        "resourceClass": "m-medium",
+        "image": "macos-sequoia-15.3-xcode-16.2"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+      }
+    },
+    "appgallery": {
+      "distribution": "store",
+      "channel": "production",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "BUILD_TARGET": "huawei"
+      }
+    },
+    "ad-hoc": {
+      "distribution": "internal",
+      "credentialsSource": "remote",
+      "ios": {
+        "buildConfiguration": "Release",
+        "resourceClass": "m-medium",
+        "image": "macos-sequoia-15.3-xcode-16.2"
+      }
     }
   },
   "submit": {

@@ -1,10 +1,11 @@
 import { ThemedText } from '@/components/themed-text';
+import StorageKey from '@/constants/StorageKey';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
 import { Tokens } from '@/core/theme/theme';
+import StorageService from '@/services/StorageService';
 import { Images } from '@/utils/images';
 import { hasNotch, hp, normalize } from '@/utils/layout';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -26,7 +27,7 @@ const StartScreen = () => {
   };
 
   const handleLogin = async () => {
-    await AsyncStorage.setItem('hasSeenIntro', 'true');
+    await StorageService.setAsyncItem(StorageKey.hasSeenIntro, 'true');
     router.push('/(auth)/login');
   };
 

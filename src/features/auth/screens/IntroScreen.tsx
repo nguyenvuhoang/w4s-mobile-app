@@ -1,5 +1,4 @@
 import { Images } from '@/utils/images';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,9 +15,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import StorageKey from '@/constants/StorageKey';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
 import { Tokens } from '@/core/theme/theme';
+import StorageService from '@/services/StorageService';
 import { hasNotch, normalize } from '@/utils/layout';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -84,7 +85,7 @@ const IntroScreen = () => {
 
   const goToLogin = async () => {
     try {
-      await AsyncStorage.setItem('hasSeenIntro', 'true');
+      await StorageService.setAsyncItem(StorageKey.hasSeenIntro, 'true');
     } catch (error) {
       console.error('Error saving intro status:', error);
     }

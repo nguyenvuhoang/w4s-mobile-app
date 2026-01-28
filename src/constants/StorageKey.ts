@@ -12,6 +12,7 @@ export default {
   TEMP_ICON_STORAGE: "temp_selected_icon",
   TEMP_COLOR_STORAGE: "temp_selected_color",
   TEMP_EVENT_STORAGE: "temp_selected_event",
+  hasSeenIntro: "hasSeenIntro",
 
   roleCommand: "rolecommand",
   password: "password",

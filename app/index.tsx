@@ -1,6 +1,5 @@
 import StorageKey from '@/constants/StorageKey';
 import StorageService from '@/services/StorageService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -15,18 +14,13 @@ export default function Index() {
 
   const checkStatusAndNavigate = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      const seenIntro = await AsyncStorage.getItem('hasSeenIntro');
-      const hasSeenIntro = seenIntro === 'true';
+      const seenIntro = await StorageService.getAsyncItem(StorageKey.hasSeenIntro);
+      const hasSeenIntro = seenIntro == 'true';
 
-      console.log('hasSeenIntro:', hasSeenIntro);
-
-      const isVerifyFirstLogin = await StorageService.getAsyncItem(
-        StorageKey.isVerifyFirstLogin
-      );
-      const isLogged = isVerifyFirstLogin === 'true';
-      console.log('isLogged:', isLogged);
+      const isVerifyFirstLogin = await StorageService.getAsyncItem(StorageKey.isVerifyFirstLogin);
+      const isLogged = isVerifyFirstLogin == 'true';
 
       if (!hasSeenIntro) {
         router.replace("/(auth)/start");

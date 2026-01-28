@@ -13,6 +13,7 @@ export default () => {
 
   return {
     expo: {
+      platforms: ["ios", "android"],
       name: "W4S Mobile",
       slug: "w4s",
       version: versionName,
@@ -98,7 +99,7 @@ export default () => {
           "android.permission.READ_MEDIA_VIDEO",
           "android.permission.READ_MEDIA_AUDIO",
         ],
-        package: "com.w4s.development",
+        package: "com.o24.mbanking.w4s.development",
         googleServicesFile: "./config/google-services.json",
         config: {
           googleMaps: {
