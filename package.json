@@ -4,11 +4,15 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
     "lint": "expo lint"
+    "build:version": "ts-node -r tsconfig-paths/register --project tsconfig.scripts.json scripts/bumpVersion.ts",
+
+    "prebuild": "npm run build:version",
+
+    "build:minor": "npm run build:version -- --minor --user=%USERNAME%",
+    "build:major": "npm run build:version -- --major --user=%USERNAME%",
+
+    "eas-build-pre": "echo 'Running expo-optimize' && npm run optimize && npm run build:version"
   },
   "dependencies": {
     "@expo-google-fonts/quicksand": "^0.4.1",
