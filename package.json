@@ -4,14 +4,11 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
-    "lint": "expo lint"
+    "lint": "expo lint",
     "build:version": "ts-node -r tsconfig-paths/register --project tsconfig.scripts.json scripts/bumpVersion.ts",
-
     "prebuild": "npm run build:version",
-
     "build:minor": "npm run build:version -- --minor --user=%USERNAME%",
     "build:major": "npm run build:version -- --major --user=%USERNAME%",
-
     "eas-build-pre": "echo 'Running expo-optimize' && npm run optimize && npm run build:version"
   },
   "dependencies": {
@@ -94,6 +91,8 @@
     "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "~5.9.2"
   },
   "private": true
