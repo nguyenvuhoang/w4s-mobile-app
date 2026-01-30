@@ -39,6 +39,7 @@ export const authRepository = {
     reason?: string;
     usertype: string;
     currencyCode: string;
+    initialBamountalance: number;
   }): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
       WORKFLOWCODE.WF_MB_CREATE_USER,
@@ -59,6 +60,7 @@ export const authRepository = {
         reason: payload.reason || "",
         usertype: payload.usertype,
         currencyCode: payload.currencyCode,
+        amount: payload.initialBamountalance,
       },
       false,
       true

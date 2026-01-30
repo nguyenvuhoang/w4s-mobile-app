@@ -24,6 +24,7 @@ export const useRegisterService = () => {
   const [gender, setGender] = useState<number>(1); // 1: Nam, 2: Nữ
   const [birthday, setBirthday] = useState('');
   const [currency, setCurrency] = useState('VND');
+  const [initialBalance, setInitialBalance] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
 
@@ -120,6 +121,7 @@ export const useRegisterService = () => {
         reason: '',
         usertype: '0502',
         currencyCode: currency,
+        initialBamountalance: initialBalance ? parseFloat(initialBalance.replace(/,/g, '')) : 0,
       };
 
       const response = await authRepository.register(payload);
@@ -162,6 +164,7 @@ export const useRegisterService = () => {
     t,
     router,
     currency,
+    initialBalance,
   ]);
 
   // Reset form
@@ -173,6 +176,7 @@ export const useRegisterService = () => {
     setGender(1);
     setBirthday('');
     setCurrency('VND');
+    setInitialBalance('');
   }, []);
 
   return {
@@ -191,6 +195,8 @@ export const useRegisterService = () => {
     setBirthday,
     currency,
     setCurrency,
+    initialBalance,
+    setInitialBalance,
     isRegistering,
     isFormValid,
     
