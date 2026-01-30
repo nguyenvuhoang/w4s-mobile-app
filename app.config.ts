@@ -176,7 +176,7 @@ export default () => {
         [
           "expo-splash-screen",
           {
-            backgroundColor: "#38B68C",
+            backgroundColor: "#0059df",
             android: {
               image: "./assets/logo/W4S_Light.png",
               imageResizeMode: "contain",
