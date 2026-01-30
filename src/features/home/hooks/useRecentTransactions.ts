@@ -1,4 +1,5 @@
 import StorageKey from "@/constants/StorageKey";
+import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
 import { transactionRepository } from "@/services/repositories/transaction.repository";
 import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
@@ -78,10 +79,16 @@ export const useRecentTransactions = (
             fetchRecentTransactions();
         };
 
+        const handleCurrencyChanged = () => {
+            fetchRecentTransactions();
+        };
+
         TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
+        CurrencyEventEmitter.onCurrencyChanged(handleCurrencyChanged);
 
         return () => {
             TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
+            CurrencyEventEmitter.offCurrencyChanged(handleCurrencyChanged);
         };
     }, [fetchRecentTransactions]);
 

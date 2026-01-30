@@ -1,4 +1,5 @@
 import StorageKey from "@/constants/StorageKey";
+import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
 import { categoryRepository } from "@/services/repositories/category.repository";
 import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
@@ -83,10 +84,16 @@ export const useTopSpendingCategories = (
             fetchTopCategories();
         };
 
+        const handleCurrencyChanged = () => {
+            fetchTopCategories();
+        };
+
         TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
+        CurrencyEventEmitter.onCurrencyChanged(handleCurrencyChanged);
 
         return () => {
             TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
+            CurrencyEventEmitter.offCurrencyChanged(handleCurrencyChanged);
         };
     }, [fetchTopCategories]);
 
