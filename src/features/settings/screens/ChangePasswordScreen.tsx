@@ -28,7 +28,7 @@ const ChangePasswordScreen = () => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
   const params = useLocalSearchParams();
-  const oldPass = params.oldPass as string | undefined;
+  const oldPassword = params.oldPassword as string | undefined;
   const isFirstLogin = params.isFirstLogin === 'true';
 
   // Use custom hook
@@ -121,10 +121,10 @@ const ChangePasswordScreen = () => {
 
   // Set initial password if provided
   useEffect(() => {
-    if (oldPass) {
-      setPassword(oldPass);
+    if (oldPassword) {
+      setPassword(oldPassword);
     }
-  }, [oldPass]);
+  }, [oldPassword]);
 
   const openModal = () => {
     setModalVisible(true);

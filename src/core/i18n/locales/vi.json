@@ -22,6 +22,7 @@
     "reject": "Từ chối",
     "close": "Đóng",
     "reload": "Tải lại",
+    "resend": "Gửi lại",
     "errorCode": "Mã lỗi",
     "feature_developing": "Tính năng đang được phát triển"
   },
@@ -61,6 +62,7 @@
     "birthday": "Ngày sinh",
     "select_birthday": "Chọn ngày sinh",
     "have_account": "Đã có tài khoản?",
+    "otp_fetch_phone_error": "Không thể lấy được thông tin số điện thoại để thực hiện gửi OTP",
     "register_success": "Đăng ký thành công! Thông tin tài khoản sẽ được gửi qua email đã đăng ký của bạn.",
     "register_failed": "Đăng ký thất bại",
     "email_placeholder": "Nhập email của bạn",
@@ -315,5 +317,20 @@
     "birthday": "Ngày sinh",
     "gender": "Giới tính",
     "address": "Địa chỉ"
+  },
+  "otpModal": {
+    "title": "Xác thực OTP",
+    "description": "Nhập mã OTP được gửi đến số điện thoại của bạn",
+    "loginDescription": "Nhập mã OTP được gửi đến số điện thoại {{phone}}",
+    "enterValidOTP": "Vui lòng nhập mã OTP hợp lệ",
+    "continueButton": "Tiếp tục"
+  },
+  "otpNote": {
+    "notreceiveotp": "Bạn không nhận được mã?",
+    "resend": "Gửi lại",
+    "resentSuccess": "Đã gửi lại mã OTP thành công",
+    "resentFailed": "Gửi lại mã OTP thất bại",
+    "notransactionid": "Không tìm thấy mã giao dịch",
+    "invalidOTP": "Mã OTP không hợp lệ"
   }
 }

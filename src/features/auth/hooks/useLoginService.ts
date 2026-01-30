@@ -4,15 +4,16 @@ import { useCallback, useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { COMMAND_NAME } from "@/constants/CommandName";
-import { OTPTYPE } from "@/constants/Common";
+import { ChannelId, OTPChannel, OTPTYPE } from "@/constants/Common";
 import StorageKey from "@/constants/StorageKey";
 import { WORKFLOWCODE } from "@/constants/WorkflowCode";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useOTP } from "@/contexts/OTPContext";
 import { usePushNotification } from "@/contexts/PushNotificationContext";
-import { changeLanguage as i18nChangeLanguage } from "@/core/i18n/i18n";
+import { useOTPService } from "@/hooks/useOTPService";
 import { authRepository } from "@/services/repositories/auth.repository";
+import { otpRepository } from "@/services/repositories/otp.repository";
 import StorageService from "@/services/StorageService";
 import { AppInfo } from "@/types/UserCommand";
 import { encrypt } from "@/utils/Utils";
@@ -31,7 +32,6 @@ export const useLoginService = () => {
   >("none");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isFetchingAppInfo, setIsFetchingAppInfo] = useState(false);
-  const [verifyOTPCode, setVerifyOTPCode] = useState<string>("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   // Hooks
@@ -88,24 +88,16 @@ export const useLoginService = () => {
       : t("login.fingerprintPrompt");
   }, [biometricType, t]);
 
-  const handleChangeLanguage = useCallback(async (lang: string) => {
-    await i18nChangeLanguage(lang);
-  }, []);
-
   const goToHome = () => {
     router.replace("/(protected)/(tabs)");
   };
 
-  // ✅ FIX 3: Move these functions UP before showLoginOTPModal uses them
   const getPhoneNumberByUserName = useCallback(
     async (userName: string): Promise<string> => {
       try {
-        const channelId = await StorageService.getAsyncItem(
-          StorageKey.channelId,
-        );
         const response = await authRepository.getPhoneByUserName(
           userName,
-          channelId,
+          ChannelId.Mobile,
         );
 
         if (response.isSuccess()) {
@@ -154,42 +146,23 @@ export const useLoginService = () => {
     [],
   );
 
-  const handleGenerateLoginOTP = useCallback(
-    async (phonenumber: string): Promise<string | null> => {
-      try {
-        const response = await authRepository.generateOTP({
-          phonenumber,
-          purpose: OTPTYPE.VERIFYLOGIN,
-          withoutsession: true,
-        });
+  const {
+    verifyOTPCode,
+    setVerifyOTPCode,
+    handleGenerateOTP,
+    handleVerifySMSOTP,
+    handleResendOTP,
+    showLoginOTPModal,
+  } = useOTPService();
 
-        if (response.isSuccess()) {
-          const transaction_id = response.getValue("transaction_id") as string;
-          if (transaction_id) {
-            return transaction_id;
-          } else {
-            showNotification(t("otpNote.notransactionid"), "error", "38942");
-            return null;
-          }
-        } else {
-          showNotification(
-            response.getError() ?? t("errors.login.verifyFailed"),
-            "error",
-            "38942",
-          );
-          return null;
-        }
-      } catch (error: any) {
-        showNotification(
-          error.message || t("errors.login.verifyFailed"),
-          "error",
-          "38942",
-        );
-        return null;
-      }
-    },
-    [showNotification, t],
-  );
+  /* 
+   * This is redundant but needs to be kept to prevent breaking changes in the component
+   * until we completely switch over to useOTPService everywhere in this file.
+   * However, we are destructuring it above so we don't need to redefine it here.
+   * The issue is likely that replace_file_content removed too much context 
+   * and broke the file structure (closing braces for the hook).
+   * I will restore the file structure properly.
+   */
 
   const checkIsLogged = useCallback(async (): Promise<boolean> => {
     const userSession = await StorageService.getUserSession();
@@ -224,29 +197,53 @@ export const useLoginService = () => {
 
   const handleVerifyForgotPassword = useCallback(
     async (
-      otpCode: string,
-      phoneVerifyOTP: string,
-      verifyOTPCode: string,
-    ): Promise<boolean> => {
-      if (!otpCode) return false;
-
+      usernameforgotpassword: string,
+      idcard: string,
+      phone: string,
+      email: string
+    ): Promise<{ success: boolean; userCode?: string }> => {
       try {
-        const response = await authRepository.verifySMSOTP({
-          phonenumber: phoneVerifyOTP,
-          purpose: OTPTYPE.VERIFYLOGIN,
-          otpcode: otpCode,
-          verifyotpcode: verifyOTPCode,
-        });
+        console.log("==========Start Verify Forgot Password================");
 
+        if (!usernameforgotpassword || !idcard) {
+          showNotification(t("warning.login.emptyUsernamePassword"), "warning");
+          return { success: false };
+        }
+
+        setIsLoading(true);
+        const response = await authRepository.verifyForgotPassword(
+          usernameforgotpassword,
+          idcard,
+          phone,
+          email
+        );
+        
         if (response.isSuccess()) {
-          return response.getValue("data") as boolean;
+          const isvalid = response.getValue("data");
+          if (!isvalid) {
+            showNotification(t("forgotPassword1.incorrectinformation"), "error");
+            return { success: false };
+          }
+
+          const userCode = response.getValue("user_code");
+          return {
+            success: true,
+            userCode: typeof userCode === "string" ? userCode : undefined,
+          };
         } else {
-          showNotification(response.getError(), "error", "38942");
-          return false;
+          showNotification(
+            t("forgotPassword1.incorrectinformation") + " " + response.getError(),
+            "error"
+          );
+          console.error("handleVerifyForgotPassword failed:", response.getError());
+          return { success: false };
         }
       } catch (error) {
-        showNotification(t("errors.networkError"), "error");
-        return false;
+        console.error("Verify failed", error);
+        showNotification(t("errors.login.loginFailed"), "error");
+        return { success: false };
+      } finally {
+        setIsLoading(false);
       }
     },
     [showNotification, t],
@@ -257,15 +254,17 @@ export const useLoginService = () => {
       otpCode: string,
       phoneVerifyOTP: string,
       verifyOTPCode: string,
+      type: string = OTPChannel.ZALO,
     ): Promise<AppInfo | null> => {
       if (!otpCode) return null;
-
+      console.log("===========", JSON.stringify(type));
       try {
-        const response = await authRepository.verifySMSOTP({
+        const response = await otpRepository.verifySMSOTP({
           phonenumber: phoneVerifyOTP,
           purpose: OTPTYPE.VERIFYLOGIN,
           otpcode: otpCode,
           verifyotpcode: verifyOTPCode,
+          type,
         });
 
         if (!response.isSuccess()) {
@@ -275,15 +274,25 @@ export const useLoginService = () => {
 
         const isValid = response.getValue("data");
         if (!isValid) {
-          showNotification(t("otpNote.invalidOTP"), "error", "38942");
+          showNotification(t("otpNote.notransactionid"), "error", "38942");
           return null;
         }
 
-        const appInfo = await handleGetAppInfo();
-        return appInfo;
+        const appInfoData = await handleGetAppInfo();
+        if (appInfoData && !appInfoData.is_first_login) {
+          await StorageService.setAsyncItem(StorageKey.isVerifyFirstLogin, "true");
+          const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
+          if (channelId) {
+            const isVerifyFirstLogin_channel = `${StorageKey.isVerifyFirstLogin}_${channelId}`;
+            await StorageService.setAsyncItem(isVerifyFirstLogin_channel, "true");
+          }
+        }
+        return appInfoData;
       } catch (error) {
         showNotification(t("errors.networkError"), "error");
         return null;
+      } finally {
+        setIsFetchingAppInfo(false);
       }
     },
     [handleGetAppInfo, showNotification, t],
@@ -298,15 +307,17 @@ export const useLoginService = () => {
       dateOfBirth: string,
       licenseID: string,
       licenseType: string,
+      type: string = OTPChannel.SMS,
     ): Promise<boolean> => {
       if (!otpCode) return false;
 
       try {
-        const response = await authRepository.verifySMSOTP({
+        const response = await otpRepository.verifySMSOTP({
           phonenumber: phoneVerifyOTP,
           purpose: OTPTYPE.VERIFYLOGIN,
           otpcode: otpCode,
           verifyotpcode: verifyOTPCode,
+          type,
         });
 
         if (!response.isSuccess()) {
@@ -350,6 +361,11 @@ export const useLoginService = () => {
             StorageKey.isVerifyFirstLogin,
             "true",
           );
+          const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
+          if (channelId) {
+            const isVerifyFirstLogin_channel = `${StorageKey.isVerifyFirstLogin}_${channelId}`;
+            await StorageService.setAsyncItem(isVerifyFirstLogin_channel, "true");
+          }
           return true;
         }
       } catch (error) {
@@ -382,96 +398,64 @@ export const useLoginService = () => {
     [showNotification, t],
   );
 
-  // ✅ Now showLoginOTPModal can use the functions above
-  const showLoginOTPModal = useCallback(
-    async (phoneNumber: string, transactionId: string) => {
-      showOTP({
-        title: t("otpModal.title"),
-        description: t("otpModal.loginDescription", { phone: phoneNumber }),
-        isresend: true,
-        blockSeconds: 120,
-        showOtpCode: true,
+  // Flow handlers
+  const proceedFirstLoginFlow = useCallback(
+    async (username?: string, phoneNumber?: string) => {
+      let finalPhoneNumber = phoneNumber;
 
-        // Verify OTP Handler
-        handleVerifyOTP: async (otpCode: string) => {
-          try {
-            const appInfo = await handleVerifyOTPAndGetAppInfo(
-              otpCode,
-              phoneNumber,
-              transactionId,
-            );
+      if (!finalPhoneNumber && username) {
+        setUsername(username);
+        finalPhoneNumber = await getPhoneNumberByUserName(username);
+      }
 
-            if (appInfo) {
-              return { success: true };
-            }
-            return {
-              success: false,
-              error: t("errors.login.verifyFailed"),
-            };
-          } catch (error: any) {
-            return {
-              success: false,
-              error: error.message || t("errors.login.verifyFailed"),
-            };
-          }
-        },
+      if (!finalPhoneNumber) {
+        showNotification(t("auth.otp_fetch_phone_error"), "error");
+        return;
+      }
 
-        // Resend OTP Handler
-        handleResent: async () => {
-          try {
-            const newTransactionId = await handleGenerateLoginOTP(phoneNumber);
-            if (newTransactionId) {
-              setVerifyOTPCode(newTransactionId);
-              return { success: true };
-            }
-            return {
-              success: false,
-              error: t("otpNote.resentFailed"),
-            };
-          } catch (error: any) {
-            return {
-              success: false,
-              error: error.message || t("otpNote.resentFailed"),
-            };
-          }
-        },
+      setPhone(finalPhoneNumber);
+      setGlobalPhone(finalPhoneNumber);
 
-        // ✅ FIX 1: These callbacks are now supported in OTPConfig
-        // Success Callback
-        onSuccess: () => {
-          console.log("✅ OTP Verified Successfully");
-          // Check if first login and navigate
-          if (appInfo?.is_first_login) {
-            router.replace("/(auth)/change-password" as any);
-          } else {
-            router.replace("/(protected)/(tabs)");
-          }
-        },
-
-        // ✅ FIX 2: Add explicit type for error parameter
-        // Error Callback
-        onError: (error: string) => {
-          console.error("❌ OTP Verification Error:", error);
-          showNotification(error, "error");
-        },
-
-        // Close Callback
-        onClose: () => {
-          console.log("🔒 OTP Modal Closed");
-          setIsLoggingIn(false);
-        },
-      });
+      const transaction_id = await handleGenerateOTP(
+        finalPhoneNumber,
+        OTPTYPE.VERIFYLOGIN,
+        OTPChannel.ZALO,
+      );
+      if (transaction_id) {
+        setVerifyOTPCode(transaction_id);
+        // Get current appInfo before showing modal
+        const currentAppInfo = await handleGetAppInfo();
+        if (currentAppInfo) {
+          showLoginOTPModal(
+            finalPhoneNumber,
+            transaction_id,
+            currentAppInfo,
+            OTPChannel.ZALO,
+            password,
+          );
+        }
+      }
     },
     [
-      showOTP,
-      t,
-      router,
-      appInfo,
-      showNotification,
-      handleVerifyOTPAndGetAppInfo,
-      handleGenerateLoginOTP,
+      getPhoneNumberByUserName,
+      setGlobalPhone,
+      handleGenerateOTP,
+      handleGetAppInfo,
+      showLoginOTPModal,
+      password,
     ],
   );
+
+  const proceedNormalLoginFlow = useCallback(async () => {
+    const result = await handleGetAppInfo();
+    if (result) {
+      if (!globalPhone) {
+        const PhoneNumber = await getPhoneNumberByUserName(result.login_name);
+        setGlobalPhone(PhoneNumber);
+      }
+      goToHome();
+    }
+  }, [handleGetAppInfo, globalPhone, getPhoneNumberByUserName, setGlobalPhone]);
 
   const handleBiometricLogin = async () => {
     try {
@@ -552,43 +536,6 @@ export const useLoginService = () => {
     }
   };
 
-  // const proceedFirstLoginFlow = useCallback(
-  //   async (username?: string, phoneNumber?: string) => {
-  //     let finalPhoneNumber = phoneNumber;
-
-  //     if (!finalPhoneNumber && username) {
-  //       setUsername(username);
-  //       finalPhoneNumber = await getPhoneNumberByUserName(username);
-  //     }
-
-  //     if (!finalPhoneNumber) {
-  //       console.warn('Cần cung cấp username hoặc phoneNumber');
-  //       return;
-  //     }
-
-  //     setPhone(finalPhoneNumber);
-  //     setGlobalPhone(finalPhoneNumber);
-
-  //     const transaction_id = await handleGenerateLoginOTP(finalPhoneNumber);
-  //     if (transaction_id) {
-  //       setVerifyOTPCode(transaction_id);
-  //       showLoginOTPModal(finalPhoneNumber, transaction_id);
-  //     }
-  //   },
-  //   [getPhoneNumberByUserName, setGlobalPhone, handleGenerateLoginOTP, showLoginOTPModal]
-  // );
-
-  // const proceedNormalLoginFlow = async () => {
-  //   const result = await handleGetAppInfo();
-  //   if (result) {
-  //     if (!globalPhone) {
-  //       const PhoneNumber = await getPhoneNumberByUserName(result.login_name);
-  //       setGlobalPhone(PhoneNumber);
-  //     }
-  //     goToHome();
-  //   }
-  // };
-
   const handleLogin = useCallback(
     async (isFirstLogin?: boolean) => {
       setIsLoggingIn(true);
@@ -627,39 +574,51 @@ export const useLoginService = () => {
               StorageKey.refreshToken,
               refreshToken,
             );
-            // const refreshTokenKey = channelId
-            //   ? `${StorageKey.refreshToken}_${channelId}`
-            //   : StorageKey.refreshToken;
+            const refreshTokenKey = channelId
+              ? `${StorageKey.refreshToken}_${channelId}`
+              : StorageKey.refreshToken;
 
-            // await StorageService.setSecureItem(refreshTokenKey, refreshToken);
+            await StorageService.setSecureItem(refreshTokenKey, refreshToken);
             await StorageService.setUserSession(userToken);
-            // const userSessionKey = channelId
-            //   ? `${StorageKey.userSession}_${channelId}`
-            //   : StorageKey.userSession;
-            // await StorageService.setAsyncItem(
-            //   userSessionKey,
-            //   JSON.stringify({ token: userToken }),
-            // );
-
-            // if (isFirstLogin) {
-            //   await proceedFirstLoginFlow(username);
-            // } else {
-            //   await proceedNormalLoginFlow();
-            await handleGetAppInfo();
+            const userSessionKey = channelId
+              ? `${StorageKey.userSession}_${channelId}`
+              : StorageKey.userSession;
             await StorageService.setAsyncItem(
-              StorageKey.isVerifyFirstLogin,
-              "true",
+              userSessionKey,
+              JSON.stringify({ token: userToken }),
             );
-            goToHome();
-            // }
+
+            if (isFirstLogin) {
+              await proceedFirstLoginFlow(username);
+            } else {
+              await proceedNormalLoginFlow();
+            }
           } catch (error: any) {
             showNotification(`${error.message || error}`, "error", "38942");
           }
         } else {
-          showNotification(response.getError(), "error", "38942");
+          setIsLoggingIn(false);
+          if (!response.getError()) {
+            showNotification(t("errors.login.loginFailed"), "error");
+          } else {
+            if (response.getNextAction()) {
+              await StorageService.setSecureItem(StorageKey.user, username);
+              showNotification(
+                response.getError(),
+                "warning",
+                "0",
+                response.getNextAction()
+              );
+            } else {
+              showNotification(response.getError(), "error");
+            }
+          }
         }
-      } catch (error: any) {
-        showNotification(`${error.message || error}`, "error", "38942");
+      } catch (error) {
+        console.error("Login failed", error);
+        showNotification(t("errors.login.loginFailed"), "error");
+        setIsLoggingIn(false);
+        setIsFetchingAppInfo(false);
       } finally {
         setIsLoggingIn(false);
       }
@@ -669,7 +628,9 @@ export const useLoginService = () => {
       password,
       isBiometricSupported,
       fcmToken,
-      // proceedFirstLoginFlow,
+      handleBiometricLogin,
+      proceedFirstLoginFlow,
+      proceedNormalLoginFlow,
       showNotification,
       t,
     ],
@@ -697,7 +658,6 @@ export const useLoginService = () => {
     checkIsLogged,
     appInfo,
     setAppInfo,
-    handleChangeLanguage,
     handleLogin,
     handleBiometricLogin,
     handleForgotPassword,
@@ -705,9 +665,10 @@ export const useLoginService = () => {
     handleVerifyForgotPassword,
     handleVerifyOTPAndGetAppInfo,
     handleVerifyOTPForChangeDeviceAndGetAppInfo,
-    handleGenerateLoginOTP,
+    handleGenerateOTP,
     handleGetStatusLogin,
-    // proceedFirstLoginFlow,
+    handleResendOTP,
+    proceedFirstLoginFlow,
     verifyOTPCode,
     getPhoneNumberByUserName,
     getPhoneNumberByUserCode,

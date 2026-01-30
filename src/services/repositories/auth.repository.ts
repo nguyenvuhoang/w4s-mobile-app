@@ -122,58 +122,7 @@ export const authRepository = {
   //   );
   // },
 
-  // ===== OTP =====
-  async generateOTP(payload: {
-    phonenumber: string;
-    purpose: string;
-    withoutsession?: boolean;
-  }): Promise<BaseResponseModel> {
-    const workflowId = payload.withoutsession
-      ? WORKFLOWCODE.MB_GENERATEOTP_WITHOUT_LOGIN
-      : WORKFLOWCODE.MB_GENERATEOTP;
 
-    return await apiService.executeWorkflow(
-      workflowId,
-      {
-        phonenumber: payload.phonenumber,
-        purpose: payload.purpose,
-      },
-      false,
-      true
-    );
-  },
-
-  async verifySMSOTP(payload: {
-    phonenumber: string;
-    purpose: string;
-    otpcode: string;
-    verifyotpcode: string;
-  }): Promise<BaseResponseModel> {
-    return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_VERIFY_SMSOTP,
-      {
-        phonenumber: payload.phonenumber,
-        purpose: payload.purpose,
-        otpcode: payload.otpcode,
-        verifyotpcode: payload.verifyotpcode,
-      },
-      false,
-      true
-    );
-  },
-
-  async verifySmartOTP(payload: {
-    usercode: string;
-    otpcode: string;
-    purpose: string;
-  }): Promise<BaseResponseModel> {
-    return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_VERIFY_SMSOTP,
-      payload,
-      false,
-      true
-    );
-  },
 
   // ===== Device =====
   async verifyChangeDevice(payload: {
@@ -217,7 +166,7 @@ export const authRepository = {
     channelId: string
   ): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_EXECUTE_SQL_FROM_CTH_WITHOUT_LOGIN,
+      WORKFLOWCODE.WF_MB_EXECUTE_SQL_FROM_CTH_WITHOUT_LOGIN,
       {
         commandname: COMMAND_NAME.getPhoneByUserName,
         searchtext: "",
@@ -236,7 +185,7 @@ export const authRepository = {
     channelId: string
   ): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_EXECUTE_SQL_FROM_CTH_WITHOUT_LOGIN,
+      WORKFLOWCODE.WF_MB_EXECUTE_SQL_FROM_CTH_WITHOUT_LOGIN,
       {
         commandname: COMMAND_NAME.getPhoneByUserCode,
         searchtext: "",

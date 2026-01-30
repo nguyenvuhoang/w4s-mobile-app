@@ -29,6 +29,16 @@ export const BankAccountType = {
     REVOLVING_BANK_ACCOUNT: "RV",
 }
 
+export const ChannelId = {
+    Mobile: "MB",
+}
+
+export const OTPChannel = {
+    SMS: "SMS",
+    ZALO: "ZALO",
+    MAIL: "MAIL"
+}
+
 export const OtpConfig = {
     timeStep: 30
 }

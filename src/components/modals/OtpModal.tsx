@@ -3,9 +3,12 @@ import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
+  Animated,
   BackHandler,
   Dimensions,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -56,6 +59,8 @@ const OTPModal: React.FC<OTPModalProps> = memo(({
   const [countdown, setCountdown] = useState(blockSeconds);
   const [inputFocused, setInputFocused] = useState(false);
 
+  // Animation for cursor
+  const cursorOpacity = useRef(new Animated.Value(0)).current;
   const inputRef = useRef<TextInput | null>(null);
 
   // Responsive modal dimensions
@@ -88,6 +93,10 @@ const OTPModal: React.FC<OTPModalProps> = memo(({
       setIsLoading(false);
       setInputFocused(false);
       setCountdown(blockSeconds);
+      // Auto focus after a short delay to ensure modal is ready
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 300);
     }
   }, [visible, blockSeconds]);
 
@@ -101,11 +110,29 @@ const OTPModal: React.FC<OTPModalProps> = memo(({
     }
   }, [countdown, visible]);
 
-  const focusInput = useCallback(() => {
-    if (inputRef.current && !isLoading) {
-      inputRef.current.focus();
+  // Blink animation for cursor
+  useEffect(() => {
+    if (inputFocused) {
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(cursorOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(cursorOpacity, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animation.start();
+      return () => animation.stop();
+    } else {
+      cursorOpacity.setValue(0);
     }
-  }, [isLoading]);
+  }, [inputFocused]);
 
   const handleOTPChange = useCallback((text: string) => {
     const numericText = text.replace(/[^0-9]/g, '');
@@ -172,135 +199,150 @@ const OTPModal: React.FC<OTPModalProps> = memo(({
       statusBarTranslucent
     >
       <View style={styles.overlay}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContainer}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          style={{ flex: 1, width: '100%' }}
         >
-          <View style={[styles.modalContent, { width: modalWidth, backgroundColor: colors.card }]}>
-            {/* Close Button */}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onClose}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="close" size={normalize(24)} color={colors.text} />
-            </TouchableOpacity>
+          <ScrollView
+            contentContainerStyle={styles.scrollContainer}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={[styles.modalContent, { width: modalWidth, backgroundColor: colors.card }]}>
+              {/* Close Button */}
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={onClose}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={normalize(24)} color={colors.text} />
+              </TouchableOpacity>
 
-            {/* Icon */}
-            <View style={[styles.iconContainer, { backgroundColor: colors.tint + '20' }]}>
-              <Ionicons name="shield-checkmark" size={normalize(40)} color={colors.tint} />
-            </View>
+              {/* Icon */}
+              <View style={[styles.iconContainer, { backgroundColor: colors.tint + '20' }]}>
+                <Ionicons name="shield-checkmark" size={normalize(40)} color={colors.tint} />
+              </View>
 
-            {/* Title */}
-            <ThemedText style={[styles.title, { color: colors.text }]}>
-              {title || t('otpModal.title')}
-            </ThemedText>
+              {/* Title */}
+              <ThemedText style={[styles.title, { color: colors.text }]}>
+                {title || t('otpModal.title')}
+              </ThemedText>
 
-            {/* Description */}
-            <ThemedText style={[styles.description, { color: colors.text }]}>
-              {description || t('otpModal.description')}
-            </ThemedText>
+              {/* Description */}
+              <ThemedText style={[styles.description, { color: colors.text }]}>
+                {description || t('otpModal.description')}
+              </ThemedText>
 
-            {/* OTP Input */}
-            <TouchableOpacity
-              style={styles.otpContainer}
-              onPress={focusInput}
-              activeOpacity={1}
-            >
-              {Array.from({ length: OTP_LENGTH }).map((_, index) => {
-                const hasValue = !!otp[index];
-                const isFocused = inputFocused && index === otp.length;
+              {/* OTP Input Container */}
+              <View style={styles.otpContainer}>
+                {/* Transparent Overlay Input */}
+                <TextInput
+                  ref={inputRef}
+                  value={otp}
+                  onChangeText={handleOTPChange}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
+                  maxLength={OTP_LENGTH}
+                  keyboardType="numeric"
+                  style={styles.overlayInput}
+                  editable={!isLoading}
+                  caretHidden={true}
+                />
 
-                return (
-                  <View
-                    key={`otp-box-${index}`}
-                    style={[
-                      styles.otpBox,
-                      {
-                        width: otpBoxWidth,
-                        height: otpBoxWidth,
-                        borderColor: hasValue || isFocused ? colors.tint : colors.border,
-                        borderWidth: hasValue || isFocused ? 2 : 1,
-                        backgroundColor: colors.background,
-                      },
-                    ]}
-                  >
-                    <ThemedText style={styles.otpText}>
-                      {showOtpCode ? otp[index] || '' : otp[index] ? '●' : ''}
-                    </ThemedText>
-                    {isFocused && <View style={[styles.cursor, { backgroundColor: colors.tint }]} />}
-                  </View>
-                );
-              })}
-            </TouchableOpacity>
+                {/* Visual Boxes */}
+                <View style={styles.boxesContainer} pointerEvents="none">
+                  {Array.from({ length: OTP_LENGTH }).map((_, index) => {
+                    const hasValue = !!otp[index];
+                    const isFocused = inputFocused && index === otp.length;
 
-            {/* Hidden Input */}
-            <TextInput
-              ref={inputRef}
-              value={otp}
-              onChangeText={handleOTPChange}
-              onFocus={() => setInputFocused(true)}
-              onBlur={() => setInputFocused(false)}
-              maxLength={OTP_LENGTH}
-              keyboardType="numeric"
-              style={styles.hiddenInput}
-              editable={!isLoading}
-              autoFocus={visible}
-            />
-
-            {/* Resend */}
-            {isresend && (
-              <View style={styles.resendContainer}>
-                {countdown > 0 ? (
-                  <ThemedText style={[styles.resendText, { color: colors.text }]}>
-                    {t('otpNote.notreceiveotp')}{' '}
-                    <ThemedText style={{ color: colors.tint, opacity: 0.5 }}>
-                      {t('common.resend')}
-                    </ThemedText>
-                    <ThemedText style={{ opacity: 0.6 }}> ({countdown}s)</ThemedText>
-                  </ThemedText>
-                ) : (
-                  <View style={styles.resendRow}>
-                    <ThemedText style={[styles.resendText, { color: colors.text }]}>
-                      {t('otpNote.notreceiveotp')}{' '}
-                    </ThemedText>
-                    <TouchableOpacity onPress={handleResendOTP} disabled={isLoading}>
-                      <ThemedText
+                    return (
+                      <View
+                        key={`otp-box-${index}`}
                         style={[
-                          styles.resendLink,
-                          { color: colors.tint, opacity: isLoading ? 0.5 : 1 },
+                          styles.otpBox,
+                          {
+                            width: otpBoxWidth,
+                            height: otpBoxWidth,
+                            borderColor: hasValue || isFocused ? colors.tint : colors.border,
+                            borderWidth: hasValue || isFocused ? 2 : 1,
+                            backgroundColor: colors.background,
+                          },
                         ]}
                       >
+                        <ThemedText style={styles.otpText}>
+                          {showOtpCode ? otp[index] || '' : otp[index] ? '●' : ''}
+                        </ThemedText>
+                        {isFocused && (
+                          <Animated.View
+                            style={[
+                              styles.cursor,
+                              {
+                                backgroundColor: colors.tint,
+                                opacity: cursorOpacity
+                              }
+                            ]}
+                          />
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Resend */}
+              {isresend && (
+                <View style={styles.resendContainer}>
+                  {countdown > 0 ? (
+                    <ThemedText style={[styles.resendText, { color: colors.text }]}>
+                      {t('otpNote.notreceiveotp')}{' '}
+                      <ThemedText style={{ color: colors.tint, opacity: 0.5 }}>
                         {t('common.resend')}
                       </ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            )}
-
-            {/* Confirm Button */}
-            <TouchableOpacity
-              onPress={handleConfirmOTP}
-              style={[
-                styles.confirmButton,
-                { backgroundColor: colors.tint },
-                (otp.length !== OTP_LENGTH || isLoading) && styles.confirmButtonDisabled,
-              ]}
-              disabled={otp.length !== OTP_LENGTH || isLoading}
-              activeOpacity={0.9}
-            >
-              {isLoading ? (
-                <ActivityIndicator color={Tokens.colors.main.white} size="small" />
-              ) : (
-                <ThemedText style={styles.confirmButtonText}>
-                  {t('otpModal.continueButton')}
-                </ThemedText>
+                      <ThemedText style={{ opacity: 0.6 }}> ({countdown}s)</ThemedText>
+                    </ThemedText>
+                  ) : (
+                    <View style={styles.resendRow}>
+                      <ThemedText style={[styles.resendText, { color: colors.text }]}>
+                        {t('otpNote.notreceiveotp')}{' '}
+                      </ThemedText>
+                      <TouchableOpacity onPress={handleResendOTP} disabled={isLoading}>
+                        <ThemedText
+                          style={[
+                            styles.resendLink,
+                            { color: colors.tint, opacity: isLoading ? 0.5 : 1 },
+                          ]}
+                        >
+                          {t('common.resend')}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
               )}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+
+              {/* Confirm Button */}
+              <TouchableOpacity
+                onPress={handleConfirmOTP}
+                style={[
+                  styles.confirmButton,
+                  { backgroundColor: colors.tint },
+                  (otp.length !== OTP_LENGTH || isLoading) && styles.confirmButtonDisabled,
+                ]}
+                disabled={otp.length !== OTP_LENGTH || isLoading}
+                activeOpacity={0.9}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color={Tokens.colors.main.white} size="small" />
+                ) : (
+                  <ThemedText style={styles.confirmButtonText}>
+                    {t('otpModal.continueButton')}
+                  </ThemedText>
+                )}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -363,11 +405,18 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   otpContainer: {
+    width: '100%',
+    marginBottom: normalize(24),
+    position: 'relative',
+    height: normalize(50), // Ensure height for the input
+    justifyContent: 'center',
+  },
+  boxesContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: normalize(24),
     gap: normalize(8),
+    width: '100%',
   },
   otpBox: {
     borderRadius: normalize(12),
@@ -386,13 +435,14 @@ const styles = StyleSheet.create({
     height: '50%',
     borderRadius: 1,
   },
-  hiddenInput: {
+  overlayInput: {
     position: 'absolute',
-    top: -1000,
-    left: -1000,
-    width: 1,
-    height: 1,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     opacity: 0,
+    zIndex: 2, // Ensure it's above boxes
   },
   resendContainer: {
     marginBottom: normalize(20),

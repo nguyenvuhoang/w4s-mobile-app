@@ -22,6 +22,7 @@
     "reject": "Reject",
     "close": "Close",
     "reload": "Reload",
+    "resend": "Resend",
     "errorCode": "Error Code",
     "feature_developing": "Feature under development"
   },
@@ -61,6 +62,7 @@
     "birthday": "Date of Birth",
     "select_birthday": "Select Date of Birth",
     "have_account": "Have an account?",
+    "otp_fetch_phone_error": "Cannot retrieve phone number information to send OTP",
     "register_success": "Registration successful! Account information will be sent to your registered email.",
     "register_failed": "Registration failed",
     "email_placeholder": "Your email",
@@ -315,5 +317,20 @@
     "birthday": "Date of Birth",
     "gender": "Gender",
     "address": "Address"
+  },
+  "otpModal": {
+    "title": "OTP Verification",
+    "description": "Enter the OTP sent to your phone number",
+    "loginDescription": "Enter the OTP sent to phone number {{phone}}",
+    "enterValidOTP": "Please enter a valid OTP",
+    "continueButton": "Continue"
+  },
+  "otpNote": {
+    "notreceiveotp": "Did not receive the code?",
+    "resend": "Resend",
+    "resentSuccess": "OTP resent successfully",
+    "resentFailed": "Failed to resend OTP",
+    "notransactionid": "Transaction ID not found",
+    "invalidOTP": "Invalid OTP code"
   }
 }
