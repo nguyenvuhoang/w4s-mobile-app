@@ -67,11 +67,16 @@ export const useOTPService = (): UseOTPServiceReturn => {
   const handleVerifySMSOTP = useCallback(
     async (phoneNumber: string, otpCode: string, verifyOtpCode: string, purpose: string = OTPTYPE.VERIFYLOGIN): Promise<boolean> => {
       try {
+        const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+        if (!userCode) {
+          throw new Error("Missing user code");
+        }
         const response = await otpRepository.verifySMSOTP({
           phonenumber: phoneNumber,
           purpose,
           otpcode: otpCode,
           verifyotpcode: verifyOtpCode,
+          usercode: userCode,
         });
 
         if (response.isSuccess()) {
@@ -173,6 +178,8 @@ export const useOTPService = (): UseOTPServiceReturn => {
    */
   const showLoginOTPModal = useCallback(
     async (phoneNumber: string, transactionId: string, currentAppInfo: AppInfo, type: string = OTPChannel.SMS, password?: string) => {
+      let verifiedAppInfo: AppInfo | null = null;
+
       showOTP({
         title: t('otpModal.title'),
         description: t('otpModal.loginDescription', { phone: phoneNumber }),
@@ -187,6 +194,7 @@ export const useOTPService = (): UseOTPServiceReturn => {
             );
 
             if (appInfo) {
+              verifiedAppInfo = appInfo;
               return { success: true };
             }
             return {
@@ -200,7 +208,7 @@ export const useOTPService = (): UseOTPServiceReturn => {
         onSuccess: () => {
           if (currentAppInfo?.is_first_login) {
             router.replace({
-              pathname: '/(auth)/change-password',
+              pathname: '/(protected)/change-password',
               params: { oldPassword: password || '', isFirstLogin: 'true' }
             } as any);
           } else {

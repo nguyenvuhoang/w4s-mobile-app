@@ -257,13 +257,17 @@ export const useLoginService = () => {
       type: string = OTPChannel.ZALO,
     ): Promise<AppInfo | null> => {
       if (!otpCode) return null;
-      console.log("===========", JSON.stringify(type));
+      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      if (!userCode) {
+        throw new Error("Missing user code");
+      }
       try {
         const response = await otpRepository.verifySMSOTP({
           phonenumber: phoneVerifyOTP,
           purpose: OTPTYPE.VERIFYLOGIN,
           otpcode: otpCode,
           verifyotpcode: verifyOTPCode,
+          usercode: userCode,
           type,
         });
 

@@ -30,15 +30,17 @@ export const otpRepository = {
     purpose: string;
     otpcode: string;
     verifyotpcode: string;
+    usercode?: string;
     type?: string;
   }): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
       WORKFLOWCODE.WF_MB_VERIFY_SMSOTP,
       {
-        phonenumber: payload.phonenumber,
+        phone_number: payload.phonenumber,
         purpose: payload.purpose,
-        otpcode: payload.otpcode,
+        otp: payload.otpcode,
         verifyotpcode: payload.verifyotpcode,
+        usercode: payload.usercode,
         type: payload.type,
       },
       false,
