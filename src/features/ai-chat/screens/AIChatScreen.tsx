@@ -289,6 +289,9 @@ const AIChatScreen = () => {
           {messages.length === 0 ? (
             // Welcome Screen
             <View style={styles.emptyContainer}>
+              <CustomText style={[styles.sloganText, { color: colors.icon }]}>
+                The Intelligence Core of O24{'\n'}One Core. Every Answer.
+              </CustomText>
               <View style={[styles.aiIconContainer, { backgroundColor: colors.tint + '20' }]}>
                 <Ionicons
                   name="sparkles"
@@ -474,6 +477,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: normalize(8),
+  },
+  sloganText: {
+    fontSize: normalize(12),
+    fontFamily: Fonts.medium,
+    textAlign: 'center',
+    marginBottom: normalize(20),
+    lineHeight: normalize(18),
   },
   emptyTitle: {
     fontSize: normalize(24),

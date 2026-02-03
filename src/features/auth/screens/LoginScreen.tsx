@@ -1,4 +1,6 @@
+import BottomActionModal, { ActionItem } from '@/components/modals/BottomActionModal';
 import { ThemedText } from '@/components/themed-text';
+import { changeLanguage } from '@/core/i18n/i18n';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
 import { Tokens } from '@/core/theme/theme';
@@ -24,7 +26,8 @@ const logoImg = Images.appLogoLight;
 const LoginScreen = () => {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   const {
     username,
@@ -77,9 +80,44 @@ const LoginScreen = () => {
     router.push('/(auth)/register' as any);
   };
 
+  const handleApplyLanguage = async (lang: string) => {
+    await changeLanguage(lang);
+    setShowLanguageModal(false);
+  };
+
+  const languageActions: ActionItem[] = [
+    {
+      id: 'vi',
+      icon: 'checkmark-circle' as keyof typeof Ionicons.glyphMap,
+      label: 'Tiếng Việt',
+      onPress: () => handleApplyLanguage('vi'),
+      color: i18n.language === 'vi' ? colors.tint : colors.text,
+    },
+    {
+      id: 'en',
+      icon: 'checkmark-circle' as keyof typeof Ionicons.glyphMap,
+      label: 'English',
+      onPress: () => handleApplyLanguage('en'),
+      color: i18n.language === 'en' ? colors.tint : colors.text,
+    },
+  ];
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SafeAreaView style={styles.safeArea}>
+        {/* Language Switcher */}
+        <View style={styles.topContainer}>
+          <TouchableOpacity
+            onPress={() => setShowLanguageModal(true)}
+            style={[styles.langBtn, { borderColor: colors.border }]}
+          >
+            <Ionicons name="globe-outline" size={normalize(20)} color={colors.text} />
+            <ThemedText style={[styles.langText, { color: colors.text }]}>
+              {i18n.language === 'vi' ? 'Tiếng Việt' : 'English'}
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+
         {/* Logo */}
         <View style={styles.logoContainer}>
           <View style={[styles.logoWrapper, { backgroundColor: colors.tint }]}>
@@ -201,6 +239,17 @@ const LoginScreen = () => {
         </View>
 
       </SafeAreaView>
+
+      <BottomActionModal
+        visible={showLanguageModal}
+        onClose={() => setShowLanguageModal(false)}
+        title={t('common.select_language')}
+        subtitle={t('settings.language_subtitle') || 'Chọn ngôn ngữ hiển thị'}
+        actions={languageActions}
+        colors={colors}
+        cancelText={t('common.cancel')}
+        hasBottomNav={false}
+      />
     </View>
   );
 };
@@ -212,6 +261,23 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     paddingHorizontal: normalize(24),
+  },
+  topContainer: {
+    alignItems: 'flex-end',
+    paddingTop: normalize(10),
+  },
+  langBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: normalize(6),
+    paddingVertical: normalize(6),
+    paddingHorizontal: normalize(12),
+    borderRadius: normalize(20),
+    borderWidth: 1,
+  },
+  langText: {
+    fontSize: normalize(14),
+    fontFamily: Fonts.medium,
   },
   logoContainer: {
     alignItems: 'center',

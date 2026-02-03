@@ -282,7 +282,7 @@
     "error_wallet_name_required": "Please enter wallet name"
   },
   "ai_chat": {
-    "title": "AI Chatbot",
+    "title": "O24 Nexus AI",
     "greeting": "Hello! 👋",
     "ai_assistant_intro": "I'm your AI assistant. Ask me anything!",
     "input_placeholder": "Tell me something...",
