@@ -126,8 +126,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
         walletType,
       });
       await refresh();
-      router.dismissAll();
-      router.replace('/(protected)/wallet/wallet-list');
+      router.navigate('/(protected)/wallet/wallet-list');
     } catch (error) {
       console.error('[CreateWallet] Create wallet failed:', error);
       alert(t('wallet.error_create_wallet'));
