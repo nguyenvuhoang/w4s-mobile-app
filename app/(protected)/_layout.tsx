@@ -89,6 +89,14 @@ export default function ProtectedLayout() {
           }}
         />
 
+        <Stack.Screen
+          name="category-detail"
+          options={{
+            animation: "slide_from_right",
+            headerShown: false,
+          }}
+        />
+
         {/* ✅ THÊM AI-CHAT ROUTES */}
         <Stack.Screen name="ai-chat" options={{ headerShown: false }} />
       </Stack>

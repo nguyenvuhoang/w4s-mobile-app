@@ -45,7 +45,7 @@ const ToolsScreen = () => {
           <ToolItem
             icon="location-outline"
             title="Tìm vị trí ATM/Ngân hàng"
-            onPress={() => {}}
+            onPress={() => router.push("/(protected)/tools/atm-finder")}
             colors={colors}
           />
 

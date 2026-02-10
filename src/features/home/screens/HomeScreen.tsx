@@ -398,6 +398,22 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   color={category.color || "#9E9E9E"}
                   progress={category.percentage}
                   colors={colors}
+                  onPress={() => {
+                    router.push({
+                      pathname: '/(protected)/category-detail',
+                      params: {
+                        category: JSON.stringify({
+                          category_id: category.category_id,
+                          name: category.name,
+                          icon: category.icon || 'pricetag-outline',
+                          color: category.color || '#9E9E9E',
+                          transaction_count: category.transaction_count,
+                          total_amount: category.total_amount,
+                          percentage: category.percentage,
+                        }),
+                      },
+                    });
+                  }}
                 />
               ))
             )}
@@ -509,8 +525,13 @@ const CategoryItem = ({
   color,
   progress,
   colors,
+  onPress,
 }: any) => (
-  <View style={[styles.categoryItem, { backgroundColor: colors.card }]}>
+  <TouchableOpacity
+    style={[styles.categoryItem, { backgroundColor: colors.card }]}
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
     <View style={styles.categoryLeft}>
       <View style={[styles.categoryIcon, { backgroundColor: iconColor }]}>
         <FontAwesome6 name={icon} size={normalize(24)} color="#fff" />
@@ -542,7 +563,7 @@ const CategoryItem = ({
         ]}
       />
     </View>
-  </View>
+  </TouchableOpacity>
 );
 
 // Transaction Item Component

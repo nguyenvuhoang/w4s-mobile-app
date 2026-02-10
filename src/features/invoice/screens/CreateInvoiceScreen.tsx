@@ -14,6 +14,7 @@ import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -37,8 +38,14 @@ const CreateRecurringInvoiceScreen = () => {
   const params = useLocalSearchParams();
   const { wallets, defaultWallet } = useWallet();
 
-  // Get title from params or use default
-  const screenTitle = (params.title as string) || "Tạo hóa đơn định kỳ";
+  // Determine if we're in edit mode
+  const isEditMode = (params.mode as string) === "edit";
+  const editId = params.id as string | undefined;
+
+  // Get title from params or use default based on mode
+  const screenTitle = isEditMode
+    ? "Chỉnh sửa giao dịch định kỳ"
+    : (params.title as string) || "Tạo hóa đơn định kỳ";
 
   // Form states
   const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
@@ -55,6 +62,57 @@ const CreateRecurringInvoiceScreen = () => {
   const [isForever, setIsForever] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([1]);
   const [recurringLabel, setRecurringLabel] = useState("Hàng Tháng - 12 lần");
+
+  // Load edit data from params
+  useEffect(() => {
+    if (isEditMode) {
+      // Pre-fill amount
+      if (params.amount) {
+        setAmount(params.amount as string);
+      }
+      // Pre-fill note
+      if (params.note) {
+        setNote(params.note as string);
+      }
+      // Pre-fill recurring type
+      if (params.recurring) {
+        const recurType = params.recurring as RecurringType;
+        setRecurringType(recurType);
+        // Set matching label
+        const labelMap: Record<string, string> = {
+          daily: "Hàng ngày",
+          weekly: "Hàng tuần",
+          monthly: "Hàng tháng",
+          yearly: "Hàng năm",
+        };
+        setRecurringLabel(labelMap[recurType] || "Hàng Tháng - 12 lần");
+      }
+      // Pre-fill date
+      if (params.nextDate) {
+        const dateParts = (params.nextDate as string).split("/");
+        if (dateParts.length === 3) {
+          const date = new Date(
+            parseInt(dateParts[2]),
+            parseInt(dateParts[1]) - 1,
+            parseInt(dateParts[0]),
+          );
+          if (!isNaN(date.getTime())) {
+            setSelectedDate(date);
+          }
+        }
+      }
+      // Pre-fill category from params (icon, color, type)
+      if (params.icon && params.color) {
+        setSelectedCategoryData({
+          category_id: params.categoryId as string || "",
+          category_name: JSON.stringify({ vi: params.editTitle || params.title || "" }),
+          category_type: (params.type as string) === "income" ? "INCOME" : "EXPENSE",
+          icon: params.icon as string,
+          color: params.color as string,
+        });
+      }
+    }
+  }, [isEditMode]);
 
   const selectedWallet = useMemo(
     () => wallets.find((w) => w.walletId === sourceWalletId),
@@ -149,7 +207,7 @@ const CreateRecurringInvoiceScreen = () => {
   const handleCreate = useCallback(() => {
     if (!isValid) return;
 
-    console.log("Create recurring invoice", {
+    const invoiceData = {
       wallet: selectedWallet,
       category: selectedCategoryData,
       amount: parseFloat(amount.replace(/,/g, "")),
@@ -161,11 +219,21 @@ const CreateRecurringInvoiceScreen = () => {
         isForever,
         selectedDays: recurringType === "weekly" ? selectedDays : null,
       },
-    });
+    };
+
+    if (isEditMode) {
+      console.log("Update recurring invoice", { id: editId, ...invoiceData });
+      // TODO: Call update API
+    } else {
+      console.log("Create recurring invoice", invoiceData);
+      // TODO: Call create API
+    }
 
     router.back();
   }, [
     isValid,
+    isEditMode,
+    editId,
     selectedWallet,
     selectedCategoryData,
     amount,
@@ -176,6 +244,26 @@ const CreateRecurringInvoiceScreen = () => {
     selectedDays,
     isForever,
   ]);
+
+  // Delete handler (only in edit mode)
+  const handleDelete = useCallback(() => {
+    Alert.alert(
+      "Xác nhận xóa",
+      "Bạn có chắc muốn xóa giao dịch định kỳ này không?",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: () => {
+            console.log("Delete recurring invoice:", editId);
+            // TODO: Call delete API with editId
+            router.back();
+          },
+        },
+      ],
+    );
+  }, [editId]);
 
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -421,12 +509,27 @@ const CreateRecurringInvoiceScreen = () => {
 
         {/* Bottom Buttons */}
         <View style={styles.bottomBar}>
-          <TouchableOpacity
-            style={styles.cancelBtn}
-            onPress={() => router.back()}
-          >
-            <CustomText style={styles.cancelText}>Hủy</CustomText>
-          </TouchableOpacity>
+          {isEditMode ? (
+            <TouchableOpacity
+              style={styles.deleteBtn}
+              onPress={handleDelete}
+            >
+              <FontAwesome6
+                name="trash-can"
+                size={normalize(16)}
+                color="#EF4444"
+                solid
+              />
+              <CustomText style={styles.deleteText}>Xóa</CustomText>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={() => router.back()}
+            >
+              <CustomText style={styles.cancelText}>Hủy</CustomText>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[
@@ -436,7 +539,9 @@ const CreateRecurringInvoiceScreen = () => {
             onPress={handleCreate}
             disabled={!isValid}
           >
-            <CustomText style={styles.createText}>Tạo</CustomText>
+            <CustomText style={styles.createText}>
+              {isEditMode ? "Lưu" : "Tạo"}
+            </CustomText>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -603,6 +708,22 @@ const createStyles = (colors: any) =>
     createText: {
       fontSize: normalize(16),
       color: "#fff",
+      fontFamily: Fonts.semiBold,
+    },
+    deleteBtn: {
+      flex: 1,
+      paddingVertical: hp(1.5),
+      borderRadius: normalize(12),
+      borderWidth: 2,
+      borderColor: "#EF4444",
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
+      gap: wp(2),
+    },
+    deleteText: {
+      fontSize: normalize(16),
+      color: "#EF4444",
       fontFamily: Fonts.semiBold,
     },
   });

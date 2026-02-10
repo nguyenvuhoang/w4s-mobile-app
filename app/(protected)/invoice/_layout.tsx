@@ -22,6 +22,19 @@ export default function invoiceLayout() {
         }}
       />
       <Stack.Screen
+        name="edit-invoice"
+        options={{
+          title: "Chỉnh sửa giao dịch định kỳ",
+          presentation: "modal",
+        }}
+      />
+      <Stack.Screen
+        name="recurring-list"
+        options={{
+          title: "Giao dịch định kỳ",
+        }}
+      />
+      <Stack.Screen
         name="[id]"
         options={{
           title: "Chi tiết hóa đơn",

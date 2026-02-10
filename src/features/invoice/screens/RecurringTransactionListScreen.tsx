@@ -1,5 +1,8 @@
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
+import BottomActionModal, {
+  ActionItem,
+} from "@/components/modals/BottomActionModal";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
 import { hp, normalize, wp } from "@/utils/layout";
@@ -7,16 +10,32 @@ import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// Type for recurring transaction
+export interface RecurringTransaction {
+  id: string;
+  title: string;
+  nextDate: string;
+  amount: number;
+  icon: string;
+  color: string;
+  type: "expense" | "income";
+  recurring?: string;
+  note?: string;
+  walletId?: number;
+  categoryId?: string;
+}
+
 // Mock Data - Recurring Transactions
-const MOCK_RECURRING_TRANSACTIONS = [
+const INITIAL_MOCK_RECURRING_TRANSACTIONS: RecurringTransaction[] = [
   {
     id: "1",
     title: "Gửi Xe",
@@ -25,6 +44,7 @@ const MOCK_RECURRING_TRANSACTIONS = [
     icon: "motorcycle",
     color: "#3B82F6", // Blue
     type: "expense",
+    recurring: "monthly",
   },
   {
     id: "2",
@@ -34,6 +54,7 @@ const MOCK_RECURRING_TRANSACTIONS = [
     icon: "mug-hot",
     color: "#10B981", // Green
     type: "expense",
+    recurring: "monthly",
   },
   {
     id: "3",
@@ -43,6 +64,7 @@ const MOCK_RECURRING_TRANSACTIONS = [
     icon: "piggy-bank",
     color: "#8B5CF6", // Purple
     type: "income",
+    recurring: "monthly",
   },
   {
     id: "4",
@@ -52,6 +74,7 @@ const MOCK_RECURRING_TRANSACTIONS = [
     icon: "tv",
     color: "#EF4444", // Red
     type: "expense",
+    recurring: "monthly",
   },
   {
     id: "5",
@@ -61,6 +84,7 @@ const MOCK_RECURRING_TRANSACTIONS = [
     icon: "music",
     color: "#22C55E", // Green
     type: "expense",
+    recurring: "monthly",
   },
   {
     id: "6",
@@ -70,6 +94,7 @@ const MOCK_RECURRING_TRANSACTIONS = [
     icon: "wallet",
     color: "#F59E0B", // Amber
     type: "income",
+    recurring: "monthly",
   },
   {
     id: "7",
@@ -79,6 +104,7 @@ const MOCK_RECURRING_TRANSACTIONS = [
     icon: "mobile-screen",
     color: "#06B6D4", // Cyan
     type: "expense",
+    recurring: "monthly",
   },
   {
     id: "8",
@@ -88,12 +114,19 @@ const MOCK_RECURRING_TRANSACTIONS = [
     icon: "wifi",
     color: "#EC4899", // Pink
     type: "expense",
+    recurring: "monthly",
   },
 ];
 
 const RecurringTransactionListScreen = () => {
   const { colors } = useAppTheme();
   const [refreshing, setRefreshing] = useState(false);
+  const [transactions, setTransactions] = useState<RecurringTransaction[]>(
+    INITIAL_MOCK_RECURRING_TRANSACTIONS,
+  );
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<RecurringTransaction | null>(null);
+  const [showActionModal, setShowActionModal] = useState(false);
 
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -109,11 +142,85 @@ const RecurringTransactionListScreen = () => {
     return new Intl.NumberFormat("vi-VN").format(Math.abs(amount));
   }, []);
 
-  const handleTransactionPress = useCallback((transactionId: string) => {
-    console.log("Navigate to recurring transaction detail:", transactionId);
-    // TODO: Navigate to recurring transaction detail/edit screen
-    // router.push(`/(protected)/invoice/recurring/${transactionId}`);
-  }, []);
+  // Open action modal when pressing a transaction card
+  const handleTransactionPress = useCallback(
+    (transaction: RecurringTransaction) => {
+      setSelectedTransaction(transaction);
+      setShowActionModal(true);
+    },
+    [],
+  );
+
+  // Edit handler - navigate to edit screen with transaction data
+  const handleEditTransaction = useCallback(() => {
+    setShowActionModal(false);
+    if (!selectedTransaction) return;
+
+    setTimeout(() => {
+      router.push({
+        pathname: "/(protected)/invoice/edit-invoice",
+        params: {
+          mode: "edit",
+          id: selectedTransaction.id,
+          editTitle: selectedTransaction.title,
+          amount: Math.abs(selectedTransaction.amount).toString(),
+          icon: selectedTransaction.icon,
+          color: selectedTransaction.color,
+          type: selectedTransaction.type,
+          nextDate: selectedTransaction.nextDate,
+          recurring: selectedTransaction.recurring || "monthly",
+          note: selectedTransaction.note || "",
+        },
+      });
+    }, 300);
+  }, [selectedTransaction]);
+
+  // Delete handler - show confirmation alert
+  const handleDeleteTransaction = useCallback(() => {
+    if (!selectedTransaction) return;
+    setShowActionModal(false);
+
+    setTimeout(() => {
+      Alert.alert(
+        "Xác nhận xóa",
+        `Bạn có chắc muốn xóa giao dịch định kỳ "${selectedTransaction.title}"?`,
+        [
+          { text: "Hủy", style: "cancel" },
+          {
+            text: "Xóa",
+            style: "destructive",
+            onPress: () => {
+              // TODO: call delete API with selectedTransaction.id
+              setTransactions((prev) =>
+                prev.filter((t) => t.id !== selectedTransaction.id),
+              );
+              setSelectedTransaction(null);
+            },
+          },
+        ],
+      );
+    }, 300);
+  }, [selectedTransaction]);
+
+  // Action items for the bottom action modal
+  const transactionActions: ActionItem[] = useMemo(
+    () => [
+      {
+        id: "edit",
+        icon: "create-outline",
+        label: "Chỉnh sửa",
+        onPress: handleEditTransaction,
+      },
+      {
+        id: "delete",
+        icon: "trash-outline",
+        label: "Xóa giao dịch",
+        onPress: handleDeleteTransaction,
+        destructive: true,
+      },
+    ],
+    [handleEditTransaction, handleDeleteTransaction],
+  );
 
   const handleCreateRecurringTransaction = useCallback(() => {
     // Navigate to create invoice screen
@@ -121,7 +228,7 @@ const RecurringTransactionListScreen = () => {
   }, []);
 
   const renderTransactionCard = useCallback(
-    (transaction: (typeof MOCK_RECURRING_TRANSACTIONS)[0]) => {
+    (transaction: RecurringTransaction) => {
       const isIncome = transaction.type === "income";
       const amountColor = isIncome ? "#22C55E" : "#EF4444";
       const amountPrefix = isIncome ? "+" : "-";
@@ -130,7 +237,7 @@ const RecurringTransactionListScreen = () => {
         <TouchableOpacity
           key={transaction.id}
           style={styles.transactionCard}
-          onPress={() => handleTransactionPress(transaction.id)}
+          onPress={() => handleTransactionPress(transaction)}
           activeOpacity={0.7}
         >
           <View style={styles.transactionLeft}>
@@ -176,9 +283,9 @@ const RecurringTransactionListScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {MOCK_RECURRING_TRANSACTIONS.length > 0 ? (
+        {transactions.length > 0 ? (
           <View style={styles.listContainer}>
-            {MOCK_RECURRING_TRANSACTIONS.map(renderTransactionCard)}
+            {transactions.map(renderTransactionCard)}
           </View>
         ) : (
           <View style={styles.emptyContainer}>
@@ -210,6 +317,17 @@ const RecurringTransactionListScreen = () => {
           </CustomText>
         </TouchableOpacity>
       </View>
+
+      {/* Action Modal for Edit/Delete */}
+      <BottomActionModal
+        visible={showActionModal}
+        onClose={() => setShowActionModal(false)}
+        title={selectedTransaction?.title}
+        subtitle={`Lần tiếp theo: ${selectedTransaction?.nextDate || ""}`}
+        actions={transactionActions}
+        colors={colors}
+        cancelText="Hủy"
+      />
     </SafeAreaView>
   );
 };
