@@ -217,4 +217,20 @@ export const styles = StyleSheet.create({
     fontSize: normalize(12),
     marginTop: normalize(2),
   },
+  searchBar: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    // backgroundColor: "rgba(0,0,0,0.05)",
+    backgroundColor: "#fff",
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(8),
+    borderRadius: normalize(12),
+    marginRight: normalize(12),
+    gap: normalize(8),
+  },
+  searchPlaceholder: {
+    fontSize: normalize(14),
+    opacity: 1,
+  },
 });

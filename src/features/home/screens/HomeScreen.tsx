@@ -1,4 +1,5 @@
 import CustomText from "@/components/base/CustomText";
+import { formatPercent } from "@/config/TaxConfig";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
@@ -12,23 +13,17 @@ import {
 } from "@/features/home/hooks/useTopSpendingCategories";
 import { styles } from "@/features/home/styles/HomeScreen.Style";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
-import {
-  getCurrentDateString,
-  getCurrentMonthString,
-} from "@/utils/formatDate";
-import { formatPercent } from "@/utils/formatNumber";
 import { hp, normalize } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
+import React, { useCallback, useContext, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  Image,
   RefreshControl,
   ScrollView,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -39,7 +34,7 @@ interface HomeScreenProps {
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { colors } = useAppTheme();
   const { t, i18n } = useTranslation();
-  const { appInfo } = React.useContext(GlobalContext);
+  const { appInfo } = useContext(GlobalContext);
   const { showNotification } = useNotification();
   const { defaultCurrency, loading: currencyLoading } = useDefaultCurrency();
 
@@ -58,32 +53,32 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   const [refreshing, setRefreshing] = React.useState(false);
 
-  const onRefresh = React.useCallback(async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([refresh(), refreshTransactions(), refreshCategories()]);
     setRefreshing(false);
   }, [refresh, refreshTransactions, refreshCategories]);
 
   // Format currency for display (no conversion - server returns correct currency)
-  const formatCurrency = (
+  const formatCurrency = useCallback((
     amount: number | undefined,
     currencySymbol?: string,
   ) => {
     if (amount === undefined) return "...";
     const formatted = amount.toLocaleString();
     return `${formatted} ${currencySymbol || defaultCurrency.symbol}`;
-  };
+  }, [defaultCurrency.symbol]);
 
   // Format transaction amount with sign
-  const formatTransactionAmount = (transaction: RecentTransaction) => {
+  const formatTransactionAmount = useCallback((transaction: RecentTransaction) => {
     const isExpense = transaction.type === "EXPENSE";
     const sign = isExpense ? "-" : "+";
     const formatted = transaction.amount.toLocaleString();
     return `${sign}${formatted} ${defaultCurrency.symbol}`;
-  };
+  }, [defaultCurrency.symbol]);
 
   // Format transaction time
-  const formatTransactionTime = (dateString: string) => {
+  const formatTransactionTime = useCallback((dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -105,10 +100,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         year: "numeric",
       });
     }
-  };
+  }, [t]);
 
   // Get category icon based on icon or fallback
-  const getCategoryIcon = (transaction: RecentTransaction): string => {
+  const getCategoryIcon = useCallback((transaction: RecentTransaction): string => {
     if (transaction.icon) {
       return transaction.icon;
     }
@@ -116,10 +111,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     if (transaction.type === "INCOME") return "cash";
     if (transaction.type === "EXPENSE") return "cart";
     return "swap-horizontal";
-  };
+  }, []);
 
   // Get category color based on color or fallback
-  const getCategoryColor = (transaction: RecentTransaction): string => {
+  const getCategoryColor = useCallback((transaction: RecentTransaction): string => {
     if (transaction.color) {
       return transaction.color;
     }
@@ -127,10 +122,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     if (transaction.type === "INCOME") return "#4CAF50";
     if (transaction.type === "EXPENSE") return "#FF6B6B";
     return "#2196F3";
-  };
+  }, []);
 
   // Parse name from JSON string format: {"vi":"Tên","en":"Name"}
-  const parseName = (name: string | null): string | null => {
+  const parseName = useCallback((name: string | null): string | null => {
     if (!name) return null;
     try {
       const parsed = JSON.parse(name);
@@ -138,23 +133,106 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     } catch {
       return name;
     }
-  };
+  }, [i18n.language]);
 
-  const incomeTotal = data?.income_expense_summary.income.total || 0;
-  const expenseTotal = data?.income_expense_summary.expense.total || 0;
-  const totalBalance = data?.total_balance || 0;
+  // Memoize calculated values
+  const financialSummary = useMemo(() => {
+    const incomeTotal = data?.income_expense_summary.income.total || 0;
+    const expenseTotal = data?.income_expense_summary.expense.total || 0;
+    const totalBalance = data?.total_balance || 0;
 
-  const incomeFormatted = formatCurrency(incomeTotal);
-  const expenseFormatted = formatCurrency(expenseTotal);
-  const balanceFormatted = formatCurrency(totalBalance);
+    return {
+      incomeFormatted: formatCurrency(incomeTotal),
+      expenseFormatted: formatCurrency(expenseTotal),
+      balanceFormatted: formatCurrency(totalBalance),
+      incomePercent: data?.income_expense_summary.income.change_percent || 0,
+      expensePercent: data?.income_expense_summary.expense.change_percent || 0,
+    };
+  }, [data, formatCurrency]);
 
-  const incomePercent = data?.income_expense_summary.income.change_percent || 0;
-  const expensePercent = data?.income_expense_summary.expense.change_percent || 0;
+  const handleFeatureDeveloping = useCallback(() => {
+    showNotification(t("common.feature_developing"), "warning");
+  }, [showNotification, t]);
+
+  const handleCategoryPress = useCallback((category: any) => {
+    router.push({
+      pathname: '/(protected)/category-detail',
+      params: {
+        category: JSON.stringify({
+          category_id: category.category_id,
+          name: category.name,
+          icon: category.icon || 'pricetag-outline',
+          color: category.color || '#9E9E9E',
+          transaction_count: category.transaction_count,
+          total_amount: category.total_amount,
+          percentage: category.percentage,
+        }),
+      },
+    });
+  }, []);
+
+  const handleTransactionPress = useCallback((transaction: RecentTransaction) => {
+    const detailData = {
+      transactionid: transaction.transaction_id,
+      transactiondate: transaction.occurred_at,
+      transactionname: transaction.title,
+      transactioncode: transaction.type === 'INCOME' ? '01' : '02',
+      nu_m01: transaction.amount,
+      nu_m02: 0,
+      ccyid: transaction.currency || defaultCurrency.currencyId,
+      cha_r01: '',
+      cha_r02: '',
+      sourcetranref: '',
+      sourceid: '',
+      trandesc: transaction.title,
+      status: 'Completed',
+      icon: getCategoryIcon(transaction),
+      color: getCategoryColor(transaction),
+    };
+
+    router.push({
+      pathname: '/(protected)/transaction-detail',
+      params: { transaction: JSON.stringify(detailData) }
+    });
+  }, [defaultCurrency.currencyId, getCategoryIcon, getCategoryColor]);
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
+      {/* Fixed Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.searchBar}
+          onPress={handleFeatureDeveloping}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="search" size={normalize(20)} color={colors.text} style={{ opacity: 0.5 }} />
+          <CustomText style={[styles.searchPlaceholder, { color: colors.text }]}>
+            {t("common.search") || "Search"}
+          </CustomText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => router.push('/notification')}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 19,
+            backgroundColor: colors.card,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <Ionicons
+            name="notifications-outline"
+            size={normalize(22)}
+            color={colors.text}
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* Scrollable Content */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -165,41 +243,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           />
         }
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.userInfo}>
-            <Image
-              source={{ uri: "https://via.placeholder.com/50" }}
-              style={styles.avatar}
-            />
-            <View>
-              <CustomText style={[styles.greeting, { color: colors.text }]}>
-                {t("home.greeting")}{appInfo?.name}
-              </CustomText>
-              <CustomText style={[styles.date, { color: colors.icon }]}>
-                {getCurrentDateString()}
-              </CustomText>
-            </View>
-          </View>
-          <TouchableOpacity
-            onPress={() => router.push('/notification')}
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 19,
-              backgroundColor: colors.card,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Ionicons
-              name="notifications-outline"
-              size={normalize(22)}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-        </View>
-
         {/* Balance Card */}
         {loading && !data ? (
           <View
@@ -249,20 +292,20 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <View style={[styles.balanceCard, { backgroundColor: colors.tint }]}>
             <CustomText style={styles.balanceLabel}>{t("home.total_balance")}</CustomText>
             <CustomText style={styles.balanceAmount}>
-              {balanceFormatted}
+              {financialSummary.balanceFormatted}
             </CustomText>
 
             <View style={styles.balanceDetails}>
               <View style={styles.balanceItem}>
                 <CustomText style={styles.balanceSubLabel}>{t("home.income")}</CustomText>
                 <CustomText style={styles.incomeAmount}>
-                  +{incomeFormatted}
+                  +{financialSummary.incomeFormatted}
                 </CustomText>
-                {incomePercent !== 0 && (
+                {financialSummary.incomePercent !== 0 && (
                   <CustomText
                     style={[styles.changePercent, { color: "#4CAF50" }]}
                   >
-                    {formatPercent(incomePercent)}
+                    {formatPercent(financialSummary.incomePercent)}
                   </CustomText>
                 )}
               </View>
@@ -270,26 +313,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               <View style={styles.balanceItem}>
                 <CustomText style={styles.balanceSubLabel}>{t("home.expense")}</CustomText>
                 <CustomText style={styles.expenseAmount}>
-                  -{expenseFormatted}
+                  -{financialSummary.expenseFormatted}
                 </CustomText>
-                {expensePercent !== 0 && (
+                {financialSummary.expensePercent !== 0 && (
                   <CustomText
                     style={[styles.changePercent, { color: "#FF6B6B" }]}
                   >
-                    {formatPercent(expensePercent)}
+                    {formatPercent(financialSummary.expensePercent)}
                   </CustomText>
                 )}
               </View>
             </View>
-            <CustomText style={styles.month}>{getCurrentMonthString()}</CustomText>
           </View>
         )}
-
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => showNotification(t("common.feature_developing"), "warning")}
+            onPress={handleFeatureDeveloping}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.tint }]}>
               <Ionicons name="arrow-up" size={normalize(24)} color="#fff" />
@@ -301,7 +342,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => showNotification(t("common.feature_developing"), "warning")}
+            onPress={handleFeatureDeveloping}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <Ionicons
@@ -317,7 +358,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => showNotification(t("common.feature_developing"), "warning")}
+            onPress={handleFeatureDeveloping}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <Ionicons
@@ -333,7 +374,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => showNotification(t("common.feature_developing"), "warning")}
+            onPress={handleFeatureDeveloping}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <Ionicons
@@ -408,22 +449,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   color={category.color || "#9E9E9E"}
                   progress={category.percentage}
                   colors={colors}
-                  onPress={() => {
-                    router.push({
-                      pathname: '/(protected)/category-detail',
-                      params: {
-                        category: JSON.stringify({
-                          category_id: category.category_id,
-                          name: category.name,
-                          icon: category.icon || 'pricetag-outline',
-                          color: category.color || '#9E9E9E',
-                          transaction_count: category.transaction_count,
-                          total_amount: category.total_amount,
-                          percentage: category.percentage,
-                        }),
-                      },
-                    });
-                  }}
+                  onPress={() => handleCategoryPress(category)}
                 />
               ))
             )}
@@ -489,30 +515,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   amount={formatTransactionAmount(transaction)}
                   isExpense={transaction.type === "EXPENSE"}
                   colors={colors}
-                  onPress={() => {
-                    const detailData = {
-                      transactionid: transaction.transaction_id,
-                      transactiondate: transaction.occurred_at,
-                      transactionname: transaction.title,
-                      transactioncode: transaction.type === 'INCOME' ? '01' : '02',
-                      nu_m01: transaction.amount,
-                      nu_m02: 0,
-                      ccyid: transaction.currency || defaultCurrency.currencyId,
-                      cha_r01: '',
-                      cha_r02: '',
-                      sourcetranref: '',
-                      sourceid: '',
-                      trandesc: transaction.title,
-                      status: 'Completed',
-                      icon: getCategoryIcon(transaction),
-                      color: getCategoryColor(transaction),
-                    };
-
-                    router.push({
-                      pathname: '/(protected)/transaction-detail',
-                      params: { transaction: JSON.stringify(detailData) }
-                    });
-                  }}
+                  onPress={() => handleTransactionPress(transaction)}
                 />
               ))
             )}
@@ -525,8 +528,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   );
 };
 
-// Category Item Component
-const CategoryItem = ({
+// Category Item Component - Memoized để tránh re-render không cần thiết
+const CategoryItem = React.memo(({
   icon,
   iconColor,
   name,
@@ -574,10 +577,10 @@ const CategoryItem = ({
       />
     </View>
   </TouchableOpacity>
-);
+));
 
-// Transaction Item Component
-const TransactionItem = ({
+// Transaction Item Component - Memoized để tránh re-render không cần thiết
+const TransactionItem = React.memo(({
   icon,
   iconColor,
   name,
@@ -614,6 +617,6 @@ const TransactionItem = ({
       {amount}
     </CustomText>
   </TouchableOpacity>
-);
+));
 
 export default HomeScreen;
