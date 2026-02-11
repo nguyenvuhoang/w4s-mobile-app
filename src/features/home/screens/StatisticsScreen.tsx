@@ -174,7 +174,7 @@ const StatisticsScreen = () => {
         <SectionHeader
           title={t("statistics.my_wallets")}
           showAction={true}
-          onPressAction={() => router.push("/(protected)/wallet/wallet-list")}
+          onPressAction={() => router.push("/(protected)/wallet/wallet-list?mode=viewOnly")}
         />
 
         <View style={styles.walletList}>

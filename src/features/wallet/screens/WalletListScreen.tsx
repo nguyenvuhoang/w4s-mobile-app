@@ -35,7 +35,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
 
   // ✅ Lấy mode từ route params
   const params = useLocalSearchParams();
-  const mode = (params.mode as "select" | "manage") || "select";
+  const mode = (params.mode as "select" | "manage" | "viewOnly") || "select";
 
   const [selectedWallet, setSelectedWallet] = useState<WalletSummary | null>(
     null
@@ -53,6 +53,8 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
   } = useWallet();
 
   const handleSelectWallet = async (wallet: WalletSummary) => {
+    if (mode === "viewOnly") return;
+
     if (mode === "select") {
       // Mode select: Lưu vào storage và quay lại
       try {
@@ -212,7 +214,13 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <AppHeader
-        title={mode === "select" ? t("wallet.select_source") : t("wallet.manage_wallets")}
+        title={
+          mode === "select"
+            ? t("wallet.select_source")
+            : mode === "manage"
+              ? t("wallet.manage_wallets")
+              : t("wallet.my_wallets")
+        }
         showBackButton
       />
 
@@ -299,7 +307,7 @@ interface WalletItemProps {
   wallet: WalletSummary;
   isDefault: boolean;
   colors: any;
-  mode: "select" | "manage";
+  mode: "select" | "manage" | "viewOnly";
   onPress: () => void;
 }
 
@@ -316,6 +324,7 @@ const WalletItem: React.FC<WalletItemProps> = ({
       style={[styles.walletItem, { backgroundColor: colors.card }]}
       onPress={onPress}
       activeOpacity={0.7}
+      disabled={mode === "viewOnly"}
     >
       <View style={styles.walletLeft}>
         <View style={[styles.walletIcon, { backgroundColor: wallet.color }]}>

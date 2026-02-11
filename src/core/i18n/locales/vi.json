@@ -151,6 +151,9 @@
     "yesterday": "Hôm qua",
     "transaction_default_name": "Giao dịch"
   },
+  "transaction_history": {
+    "title": "Lịch sử giao dịch"
+  },
   "statistics": {
     "my_wallets": "Ví của tôi",
     "monthly_report": "Báo cáo tháng này",

@@ -48,4 +48,23 @@ export const financeSummaryRepository = {
       throw error;
     }
   },
+
+  async getTotalBalance(usercode: string): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_WALLET_TOTAL_BALANCE,
+        {
+          usercode: usercode,
+        },
+        false,
+        true,
+      );
+    } catch (error) {
+      console.error(
+        "[financeSummaryRepository] Error fetching Total Balance:",
+        error,
+      );
+      throw error;
+    }
+  },
 };

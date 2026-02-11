@@ -142,7 +142,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   const incomeTotal = data?.income_expense_summary.income.total || 0;
   const expenseTotal = data?.income_expense_summary.expense.total || 0;
-  const totalBalance = incomeTotal - expenseTotal;
+  const totalBalance = data?.total_balance || 0;
 
   const incomeFormatted = formatCurrency(incomeTotal);
   const expenseFormatted = formatCurrency(expenseTotal);
@@ -181,10 +181,20 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               </CustomText>
             </View>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate("Notification")}>
+          <TouchableOpacity
+            onPress={() => router.push('/notification')}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              backgroundColor: colors.card,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
             <Ionicons
               name="notifications-outline"
-              size={normalize(24)}
+              size={normalize(22)}
               color={colors.text}
             />
           </TouchableOpacity>
@@ -427,7 +437,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               {t("home.recent_transactions")}
             </CustomText>
             <TouchableOpacity
-              onPress={() => { }}
+              onPress={() => router.push('/(protected)/transaction-history')}
             >
               <CustomText style={[styles.seeMore, { color: colors.tint }]}>
                 {t("home.see_more")}

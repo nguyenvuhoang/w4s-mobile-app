@@ -151,6 +151,9 @@
     "yesterday": "Yesterday",
     "transaction_default_name": "Transaction"
   },
+  "transaction_history": {
+    "title": "Transaction History"
+  },
   "statistics": {
     "my_wallets": "My Wallets",
     "monthly_report": "Monthly Report",

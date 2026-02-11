@@ -24,6 +24,7 @@ interface IncomeExpenseSummary {
 
 interface FinanceSummaryData {
   income_expense_summary: IncomeExpenseSummary;
+  total_balance?: number;
 }
 
 interface UseFinanceSummaryReturn {
@@ -52,19 +53,40 @@ export const useFinanceSummary = (): UseFinanceSummaryReturn => {
         throw new Error("Missing user code");
       }
 
-      const response = await financeSummaryRepository.getIncomeExpenseSummary({
-        period_type: "M",
-        usercode: userCode,
-      });
+      const [summaryResponse, balanceResponse] = await Promise.all([
+        financeSummaryRepository.getIncomeExpenseSummary({
+          period_type: "M",
+          usercode: userCode,
+        }),
+        financeSummaryRepository.getTotalBalance(userCode),
+      ]);
 
-      if (response.isSuccess() && response.data) {
-        setData(response.data);
+      if (summaryResponse.isSuccess() && summaryResponse.data) {
+        let totalBalance = 0;
+        if (balanceResponse.isSuccess() && balanceResponse.data) {
+          const balanceData = balanceResponse.data;
+          if (typeof balanceData === "number") {
+            totalBalance = balanceData;
+          } else if (typeof balanceData === "object") {
+            const tb = balanceData.total_balance;
+            if (typeof tb === "number") {
+              totalBalance = tb;
+            } else if (typeof tb === "object" && tb !== null) {
+              totalBalance = tb.total_balance ?? 0;
+            }
+          }
+        }
+
+        setData({
+          ...summaryResponse.data,
+          total_balance: totalBalance,
+        });
       } else {
-        setError(response.message || "Failed to fetch finance summary");
+        setError(summaryResponse.message || "Failed to fetch finance summary");
       }
     } catch (err: any) {
       setError(
-        err.message || "An error occurred while fetching finance summary",
+        err.message || "An error occurred while fetching finance summary"
       );
       console.error("Error fetching finance summary:", err);
     } finally {
