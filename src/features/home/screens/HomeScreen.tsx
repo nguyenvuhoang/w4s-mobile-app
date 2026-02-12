@@ -42,6 +42,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { data, loading, error, refresh } = useFinanceSummary();
   const {
     transactions: recentTransactions,
+    totalCount: totalTransactionsCount,
     loading: transactionsLoading,
     refresh: refreshTransactions,
   } = useRecentTransactions(5);

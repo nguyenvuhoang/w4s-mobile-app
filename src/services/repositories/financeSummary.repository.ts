@@ -15,6 +15,14 @@ export interface FinanceSummaryRequest {
   year?: number;
 }
 
+export interface GetWalletOpeningClosingBalancePayload {
+  usercode: string;
+  period_type: string;
+  anchor_date: string;
+  type: string;
+  wallet_id?: number;
+}
+
 /* =======================
  * Repository
  * ======================= */
@@ -62,6 +70,31 @@ export const financeSummaryRepository = {
     } catch (error) {
       console.error(
         "[financeSummaryRepository] Error fetching Total Balance:",
+        error,
+      );
+      throw error;
+    }
+  },
+
+  async getWalletOpeningClosingBalance(
+    params: GetWalletOpeningClosingBalancePayload,
+  ): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_WALLET_OPENING_CLOSING_BALANCE,
+        {
+          usercode: params.usercode,
+          period_type: params.period_type,
+          anchor_date: params.anchor_date,
+          type: params.type,
+          wallet_id: params.wallet_id,
+        },
+        false,
+        true,
+      );
+    } catch (error) {
+      console.error(
+        "[financeSummaryRepository] Error fetching Wallet Opening Closing Balance:",
         error,
       );
       throw error;

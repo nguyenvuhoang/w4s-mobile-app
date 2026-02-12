@@ -1,42 +1,22 @@
 import CustomText from "@/components/base/CustomText";
 import SectionHeader from "@/components/base/SectionHeader";
 import LineChartCard from "@/components/chart/LineChartCard";
+import STORAGE_KEY from "@/constants/StorageKey";
 import { useAppTheme } from "@/core/theme/ThemeContext";
+import { useFinanceSummary, useWalletOpeningClosingBalance } from "@/features/home/hooks/Usefinancesummary";
+import { useWallet } from "@/features/wallet/hooks/useWallet";
+import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
-import { router } from "expo-router";
-import React, { useMemo } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Dimensions, ScrollView, StyleSheet, View } from "react-native";
+import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
 /* ================= MOCK DATA ================= */
-
-const MOCK_WALLETS = [
-  {
-    id: "1",
-    name: "Tiền mặt",
-    icon: "money-bill",
-    color: "#4CAF50",
-    balance: 2547000,
-  },
-  {
-    id: "2",
-    name: "Ngân hàng A",
-    icon: "building-columns",
-    color: "#2196F3",
-    balance: 5892000,
-  },
-  {
-    id: "3",
-    name: "Ngân hàng B",
-    icon: "building-columns",
-    color: "#F44336",
-    balance: 8234000,
-  },
-];
 
 const MOCK_CATEGORIES = [
   {
@@ -126,13 +106,45 @@ const MOCK_FREQUENT_EXPENSES = [
 const StatisticsScreen = () => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
+  const { wallets, loading: walletsLoading } = useWallet();
+  const { data: financeSummary, loading: summaryLoading } = useFinanceSummary();
+
+  const { fetchBalance, data: openingBalanceData } = useWalletOpeningClosingBalance();
+  const [openingBalance, setOpeningBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Current date as anchor_date (YYYY-MM-DD)
+    const today = new Date().toISOString().split('T')[0];
+
+    fetchBalance({
+      period_type: "M",
+      anchor_date: today,
+      type: "C"
+    });
+  }, [fetchBalance]);
+
+  useEffect(() => {
+    if (openingBalanceData && openingBalanceData.net_balance && openingBalanceData.net_balance.details) {
+      const opening = openingBalanceData.net_balance.details.find(d => d.label === "Opening_Balance");
+      if (opening) {
+        setOpeningBalance(opening.amount);
+      }
+    }
+  }, [openingBalanceData]);
 
   const totalBalance = useMemo(
-    () => MOCK_WALLETS.reduce((sum, w) => sum + w.balance, 0),
-    []
+    () => financeSummary?.total_balance ?? 0,
+    [financeSummary]
   );
 
-  const formatCurrency = (v: number) => v.toLocaleString("vi-VN") + " đ";
+  // Chỉ hiển thị tối đa 3 ví
+  const displayWallets = useMemo(
+    () => wallets.slice(0, 3),
+    [wallets]
+  );
+
+  const formatCurrency = (v: number, currency: string = "đ") =>
+    v.toLocaleString("vi-VN") + " " + currency;
 
   const formatYLabel = (value: string) => {
     const num = Number(value);
@@ -140,6 +152,41 @@ const StatisticsScreen = () => {
     if (num >= 1_000) return `${Math.round(num / 1_000)}k`;
     return "0";
   };
+
+  const handleWalletPress = async (walletId: number) => {
+    try {
+      // Lưu wallet đã chọn vào storage
+      await StorageService.setAsyncItem(
+        STORAGE_KEY.TEMP_WALLET_STORAGE,
+        JSON.stringify({ walletId })
+      );
+      // Navigate đến ReportScreen
+      router.push("../report");
+    } catch (error) {
+      console.error('[StatisticsScreen] Failed to save selected wallet:', error);
+    }
+  };
+
+  // Lắng nghe khi quay lại từ WalletListScreen
+  useFocusEffect(
+    useCallback(() => {
+      const checkWalletSelection = async () => {
+        try {
+          const storedWallet = await StorageService.getAsyncItem(
+            STORAGE_KEY.TEMP_WALLET_STORAGE,
+          );
+          if (storedWallet) {
+            // Nếu có wallet được chọn, navigate đến ReportScreen
+            // Không xóa storage ở đây vì ReportScreen sẽ cần dùng
+            router.push("../report");
+          }
+        } catch (error) {
+          console.error('[StatisticsScreen] Failed to check wallet selection:', error);
+        }
+      };
+      checkWalletSelection();
+    }, [])
+  );
 
   return (
     <SafeAreaView
@@ -168,24 +215,37 @@ const StatisticsScreen = () => {
           <CustomText type="bold" size={32}>
             {formatCurrency(totalBalance)}
           </CustomText>
+
+          {openingBalance !== null && (
+            <View style={{ marginTop: normalize(8), flexDirection: 'row', alignItems: 'center' }}>
+              <CustomText type="medium" size={12} style={{ color: colors.icon }}>
+                Opening Balance:
+              </CustomText>
+              <CustomText type="bold" size={14} style={{ marginLeft: normalize(5), color: colors.text }}>
+                {formatCurrency(openingBalance)}
+              </CustomText>
+            </View>
+          )}
         </View>
 
         {/* ===== WALLETS ===== */}
         <SectionHeader
           title={t("statistics.my_wallets")}
           showAction={true}
-          onPressAction={() => router.push("/(protected)/wallet/wallet-list?mode=viewOnly")}
+          onPressAction={() => router.push("/(protected)/wallet/wallet-list?mode=select")}
         />
 
         <View style={styles.walletList}>
-          {MOCK_WALLETS.map((w) => (
-            <View
-              key={w.id}
+          {displayWallets.map((w) => (
+            <TouchableOpacity
+              key={w.walletId}
               style={[styles.walletItem, { backgroundColor: colors.card }]}
+              onPress={() => handleWalletPress(w.walletId)}
+              activeOpacity={0.7}
             >
-              <View style={[styles.walletIcon, { backgroundColor: w.color }]}>
+              <View style={[styles.walletIcon, { backgroundColor: w.color || colors.tint }]}>
                 <FontAwesome6
-                  name={w.icon as any}
+                  name={(w.icon as any) || "wallet"}
                   size={normalize(16)}
                   color="#fff"
                 />
@@ -194,9 +254,9 @@ const StatisticsScreen = () => {
                 <CustomText type="medium" size={15}>
                   {w.name}
                 </CustomText>
-                <CustomText size={13}>{formatCurrency(w.balance)}</CustomText>
+                <CustomText size={13}>{formatCurrency(w.balance, w.currency)}</CustomText>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
 

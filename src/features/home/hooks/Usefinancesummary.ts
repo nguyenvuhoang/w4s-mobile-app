@@ -132,3 +132,76 @@ export const useFinanceSummary = (): UseFinanceSummaryReturn => {
   };
 };
 
+
+export interface BalanceDetail {
+    label: string;
+    amount: number;
+}
+
+export interface NetBalance {
+    total: number;
+    details: BalanceDetail[];
+}
+
+export interface WalletOpeningClosingBalanceData {
+    net_balance?: NetBalance;
+    opening_balance?: number;
+    closing_balance?: number;
+    income_amount?: number;
+    expense_amount?: number;
+}
+
+export const useWalletOpeningClosingBalance = () => {
+  const [data, setData] = useState<WalletOpeningClosingBalanceData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchBalance = useCallback(
+    async (params: {
+        period_type: string,
+        anchor_date: string,
+        type: string,
+        wallet_id?: number
+    }) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+        if (!userCode) {
+            throw new Error("Missing user code");
+        }
+
+        const response =
+          await financeSummaryRepository.getWalletOpeningClosingBalance({
+            usercode: userCode,
+            ...params
+          });
+
+        if (response.isSuccess() && response.data) {
+          setData(response.data);
+          return response.data;
+        } else {
+          setError(
+            response.message || "Failed to fetch wallet opening closing balance"
+          );
+        }
+      } catch (err: any) {
+        setError(
+          err.message ||
+            "An error occurred while fetching wallet opening closing balance"
+        );
+        console.error("Error fetching wallet opening closing balance:", err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  return {
+    data,
+    loading,
+    error,
+    fetchBalance,
+  };
+};

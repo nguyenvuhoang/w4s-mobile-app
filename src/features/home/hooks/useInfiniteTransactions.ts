@@ -4,44 +4,40 @@ import { transactionRepository } from "@/services/repositories/transaction.repos
 import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { useCallback, useEffect, useState } from "react";
+import { RecentTransaction } from "./useRecentTransactions";
 
-export interface RecentTransaction {
-    transaction_id: string;
-    type: string; // "INCOME", "EXPENSE", "LOAN"
-    category_id: number;
-    category_name: string;
-    title: string;
-    amount: number;
-    currency: string;
-    occurred_at: string;
-    icon: string;
-    color: string;
-}
-
-interface UseRecentTransactionsReturn {
+interface UseInfiniteTransactionsReturn {
     transactions: RecentTransaction[];
     totalCount: number;
     loading: boolean;
+    loadingMore: boolean;
     error: string | null;
+    hasMore: boolean;
     refresh: () => Promise<void>;
+    loadMore: () => Promise<void>;
 }
 
 /**
- * Hook for fetching recent transactions
- * Automatically refetches when a transaction is created/updated/deleted
- * @param pageSize - Number of transactions per page (0 = all transactions)
+ * Hook for fetching transactions with infinite scroll/pagination
+ * @param pageSize - Number of transactions per page
  */
-export const useRecentTransactions = (
-    pageSize: number = 5,
-): UseRecentTransactionsReturn => {
+export const useInfiniteTransactions = (
+    pageSize: number = 10,
+): UseInfiniteTransactionsReturn => {
     const [transactions, setTransactions] = useState<RecentTransaction[]>([]);
     const [totalCount, setTotalCount] = useState(0);
+    const [currentPage, setCurrentPage] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchRecentTransactions = useCallback(async () => {
+    const fetchTransactions = useCallback(async (pageIndex: number, append: boolean = false) => {
         try {
-            setLoading(true);
+            if (!append) {
+                setLoading(true);
+            } else {
+                setLoadingMore(true);
+            }
             setError(null);
 
             const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
@@ -51,40 +47,62 @@ export const useRecentTransactions = (
 
             const response = await transactionRepository.getRecentTransactions({
                 usercode: userCode,
-                page_index: 0,
+                page_index: pageIndex,
                 page_size: pageSize,
             });
 
             if (response.isSuccess() && response.data) {
                 const transactionList = response.data.recent_transactions || [];
                 const total = response.data.total_count || 0;
-                setTransactions(transactionList);
+
+                if (append) {
+                    setTransactions(prev => [...prev, ...transactionList]);
+                } else {
+                    setTransactions(transactionList);
+                }
                 setTotalCount(total);
+                setCurrentPage(pageIndex);
             } else {
-                setError(response.message || "Failed to fetch recent transactions");
+                setError(response.message || "Failed to fetch transactions");
             }
         } catch (err: any) {
             setError(
-                err.message || "An error occurred while fetching recent transactions",
+                err.message || "An error occurred while fetching transactions",
             );
-            console.error("Error fetching recent transactions:", err);
+            console.error("Error fetching transactions:", err);
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     }, [pageSize]);
 
+    const refresh = useCallback(async () => {
+        await fetchTransactions(0, false);
+    }, [fetchTransactions]);
+
+    const loadMore = useCallback(async () => {
+        if (loadingMore || loading) return;
+        
+        const nextPage = currentPage + 1;
+        const hasMore = transactions.length < totalCount;
+        
+        if (hasMore) {
+            await fetchTransactions(nextPage, true);
+        }
+    }, [currentPage, transactions.length, totalCount, loadingMore, loading, fetchTransactions]);
+
     useEffect(() => {
-        fetchRecentTransactions();
-    }, [fetchRecentTransactions]);
+        fetchTransactions(0, false);
+    }, [fetchTransactions]);
 
     // Listen for transaction changes (create/update/delete)
     useEffect(() => {
         const handleTransactionChanged = () => {
-            fetchRecentTransactions();
+            refresh();
         };
 
         const handleCurrencyChanged = () => {
-            fetchRecentTransactions();
+            refresh();
         };
 
         TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
@@ -94,13 +112,18 @@ export const useRecentTransactions = (
             TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
             CurrencyEventEmitter.offCurrencyChanged(handleCurrencyChanged);
         };
-    }, [fetchRecentTransactions]);
+    }, [refresh]);
+
+    const hasMore = transactions.length < totalCount;
 
     return {
         transactions,
         totalCount,
         loading,
+        loadingMore,
         error,
-        refresh: fetchRecentTransactions,
+        hasMore,
+        refresh,
+        loadMore,
     };
 };

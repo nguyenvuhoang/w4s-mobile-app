@@ -1,10 +1,8 @@
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
-import {
-    RecentTransaction,
-    useRecentTransactions,
-} from "@/features/home/hooks/useRecentTransactions";
+import { useInfiniteTransactions } from "@/features/home/hooks/useInfiniteTransactions";
+import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
 import { styles as homeStyles } from "@/features/home/styles/HomeScreen.Style";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { normalize, wp } from "@/utils/layout";
@@ -32,12 +30,15 @@ const TransactionHistoryScreen: React.FC = () => {
     const { t, i18n } = useTranslation();
     const { defaultCurrency } = useDefaultCurrency();
 
-    // Fetch ALL transactions with take = 0
     const {
         transactions,
+        totalCount,
         loading,
+        loadingMore,
+        hasMore,
         refresh,
-    } = useRecentTransactions(0);
+        loadMore,
+    } = useInfiniteTransactions(10);
 
     const [refreshing, setRefreshing] = React.useState(false);
 
@@ -46,6 +47,12 @@ const TransactionHistoryScreen: React.FC = () => {
         await refresh();
         setRefreshing(false);
     }, [refresh]);
+
+    const handleEndReached = React.useCallback(() => {
+        if (hasMore && !loadingMore && !loading) {
+            loadMore();
+        }
+    }, [hasMore, loadingMore, loading, loadMore]);
 
     // Format transaction amount with sign
     const formatTransactionAmount = (transaction: RecentTransaction) => {
@@ -213,6 +220,19 @@ const TransactionHistoryScreen: React.FC = () => {
         </View>
     );
 
+    const renderFooter = () => {
+        if (!loadingMore) return null;
+
+        return (
+            <View style={localStyles.footerLoader}>
+                <ActivityIndicator size="small" color={colors.tint} />
+                <CustomText style={[localStyles.footerText, { color: colors.icon }]}>
+                    {t("common.loading")}...
+                </CustomText>
+            </View>
+        );
+    };
+
     const renderContent = () => {
         if (loading && transactions.length === 0) {
             return (
@@ -267,6 +287,9 @@ const TransactionHistoryScreen: React.FC = () => {
                         tintColor={colors.tint}
                     />
                 }
+                onEndReached={handleEndReached}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={renderFooter}
             />
         );
     };
@@ -311,6 +334,15 @@ const localStyles = StyleSheet.create({
     itemWrapper: {
         paddingHorizontal: wp(5),
         marginBottom: normalize(8),
+    },
+    footerLoader: {
+        paddingVertical: normalize(20),
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    footerText: {
+        marginTop: normalize(8),
+        fontSize: normalize(14),
     },
 });
 

@@ -1,11 +1,16 @@
+import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import SectionHeader from '@/components/base/SectionHeader';
 import PieChartWithLabels from '@/components/chart/PieChartCard';
+import STORAGE_KEY from '@/constants/StorageKey';
 import { useAppTheme } from '@/core/theme/ThemeContext';
+import { useWallet } from '@/features/wallet/hooks/useWallet';
+import StorageService from '@/services/StorageService';
+import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Dimensions,
   ScrollView,
@@ -17,20 +22,38 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
-/* ================= MOCK DATA ================= */
+const generateTimePeriods = () => {
+  const periods = [];
+  const today = new Date();
 
-const MOCK_WALLETS = [
-  { id: '1', name: 'Ngân hàng A', icon: 'building-columns', color: '#2196F3' },
-  { id: '2', name: 'Tiền mặt', icon: 'money-bill', color: '#4CAF50' },
-  { id: '3', name: 'Ngân hàng B', icon: 'building-columns', color: '#F44336' },
-];
+  // Generate last 3 months + current month
+  for (let i = 3; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const isCurrentMonth = i === 0;
 
-const TIME_PERIODS = [
-  { id: '1', label: 'TH09/25' },
-  { id: '2', label: 'TH10/25' },
-  { id: '3', label: 'TH11/25' },
-  { id: '4', label: 'Tháng này' },
-];
+    let label = '';
+    if (isCurrentMonth) {
+      label = 'Tháng này';
+    } else {
+      const month = d.getMonth() + 1;
+      const year = d.getFullYear().toString().slice(-2);
+      label = `TH${month.toString().padStart(2, '0')}/${year}`;
+    }
+    const year = d.getFullYear();
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    periods.push({
+      id: i.toString(),
+      label,
+      date: dateStr
+    });
+  }
+  return periods;
+};
+
+const TIME_PERIODS = generateTimePeriods();
 
 const MOCK_EXPENSE_CATEGORIES = [
   { name: 'Thực phẩm', value: 3245000, color: '#7B68EE' },
@@ -46,11 +69,6 @@ const MOCK_INCOME_CATEGORIES = [
   { name: 'Được tặng', value: 9, color: '#4DD0E1' },
 ];
 
-const MOCK_BALANCE_DETAILS = [
-  { label: 'Số dư đầu', amount: 3279321 },
-  { label: 'Số dư cuối', amount: 5161000 },
-];
-
 const MOCK_DEBT_DETAILS = [
   { label: 'Nợ', amount: 0 },
   { label: 'Cho vay', amount: 0 },
@@ -59,32 +77,105 @@ const MOCK_DEBT_DETAILS = [
 
 /* ================= SCREEN ================= */
 
+import { useWalletOpeningClosingBalance } from '@/features/home/hooks/Usefinancesummary';
+
 const ReportScreen = () => {
   const { colors } = useAppTheme();
-  const [selectedWallet, setSelectedWallet] = useState(MOCK_WALLETS[0]);
-  const [selectedPeriod, setSelectedPeriod] = useState(TIME_PERIODS[3]);
+  const { wallets, defaultWallet, loading } = useWallet();
+  const [selectedWallet, setSelectedWallet] = useState<WalletSummary | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState(TIME_PERIODS[TIME_PERIODS.length - 1]);
 
-  const totalExpense = 6258000;
-  const totalIncome = 8420000;
-  const netBalance = 5161000;
-  const expenseChange = -12.5;
-  const incomeChange = 8.2;
+  const { fetchBalance, data: balanceData, loading: balanceLoading } = useWalletOpeningClosingBalance();
 
-  const formatCurrency = (v: number) => v.toLocaleString('vi-VN') + ' đ';
+  // Initialize selected wallet with default wallet or first wallet
+  useEffect(() => {
+    if (!selectedWallet && wallets.length > 0) {
+      setSelectedWallet(defaultWallet || wallets[0]);
+    }
+  }, [wallets, defaultWallet, selectedWallet]);
+
+  useEffect(() => {
+    if (selectedWallet && selectedPeriod) {
+      fetchBalance({
+        period_type: 'M',
+        anchor_date: selectedPeriod.date,
+        type: 'W',
+        wallet_id: selectedWallet.walletId
+      });
+    }
+  }, [selectedWallet, selectedPeriod, fetchBalance]);
+
+  // Handle wallet selection from WalletListScreen
+  useFocusEffect(
+    useCallback(() => {
+      const loadSelectedWallet = async () => {
+        try {
+          const storedWallet = await StorageService.getAsyncItem(
+            STORAGE_KEY.TEMP_WALLET_STORAGE,
+          );
+          if (storedWallet) {
+            const { walletId } = JSON.parse(storedWallet);
+            const wallet = wallets.find((w) => w.walletId === walletId);
+            if (wallet) {
+              setSelectedWallet(wallet);
+            }
+            await StorageService.removeAsyncItem(
+              STORAGE_KEY.TEMP_WALLET_STORAGE,
+            );
+          }
+        } catch (error) {
+          console.error('[ReportScreen] Failed to load selected wallet:', error);
+        }
+      };
+      loadSelectedWallet();
+    }, [wallets]),
+  );
+
+  const getBalanceValue = (key: 'opening' | 'closing') => {
+    if (balanceData?.net_balance?.details) {
+      const detail = balanceData.net_balance.details.find(d =>
+        key === 'opening' ? d.label === 'Opening_Balance' : d.label === 'Closing_Balance'
+      );
+      if (detail) return detail.amount;
+    }
+    return key === 'opening' ? (balanceData?.opening_balance ?? 0) : (balanceData?.closing_balance ?? 0);
+  };
+
+  const totalExpense = balanceData?.expense_amount ?? 0;
+  const totalIncome = balanceData?.income_amount ?? 0;
+  const netBalance = balanceData?.net_balance?.total ?? ((balanceData?.closing_balance || 0) - (balanceData?.opening_balance || 0));
+
+  const openingBalance = getBalanceValue('opening');
+  const closingBalance = getBalanceValue('closing');
+
+  // Use real data if available, otherwise 0
+  const expenseChange = 0;
+  const incomeChange = 0;
+
+  const formatCurrency = (v: number, currency: string = 'đ') => v.toLocaleString('vi-VN') + ' ' + currency;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <AppHeader title="Báo cáo" showBackButton />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* ===== HEADER: WALLET SELECTOR ===== */}
-        <View style={[styles.headerCard, { backgroundColor: colors.card }]}>
+        <TouchableOpacity
+          style={[styles.headerCard, { backgroundColor: colors.card }]}
+          onPress={() => router.push('/(protected)/wallet/wallet-list?mode=select')}
+          activeOpacity={0.7}
+        >
           <View style={styles.walletSelector}>
-            <FontAwesome6 name={selectedWallet.icon as any} size={normalize(16)} color={colors.tint} />
+            <FontAwesome6
+              name={selectedWallet?.icon ? selectedWallet.icon as any : 'wallet'}
+              size={normalize(16)}
+              color={selectedWallet?.color || colors.tint}
+            />
             <CustomText type="medium" size={15}>
-              {selectedWallet.name}
+              {selectedWallet?.name || 'Chọn ví'}
             </CustomText>
             <FontAwesome6 name="chevron-down" size={normalize(14)} color={colors.tint} />
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* ===== TIME PERIOD TABS ===== */}
         <View style={styles.periodTabs}>
@@ -126,7 +217,7 @@ const ReportScreen = () => {
               <CustomText size={14}>Tổng chi tiêu</CustomText>
             </View>
             <CustomText type="bold" size={20} style={{ marginTop: normalize(8) }}>
-              {formatCurrency(totalExpense)}
+              {formatCurrency(totalExpense, selectedWallet?.currency)}
             </CustomText>
             <View style={styles.changeIndicator}>
               <FontAwesome6 name="arrow-down" size={normalize(10)} color="#F44336" />
@@ -145,7 +236,7 @@ const ReportScreen = () => {
               <CustomText size={14}>Tổng thu nhập</CustomText>
             </View>
             <CustomText type="bold" size={20} style={{ marginTop: normalize(8) }}>
-              {formatCurrency(totalIncome)}
+              {formatCurrency(totalIncome, selectedWallet?.currency)}
             </CustomText>
             <View style={styles.changeIndicator}>
               <FontAwesome6 name="arrow-up" size={normalize(10)} color="#4CAF50" />
@@ -162,21 +253,25 @@ const ReportScreen = () => {
             <View style={[styles.balanceIcon, { backgroundColor: colors.tint + '20' }]}>
               <FontAwesome6 name="shield-halved" size={normalize(16)} color={colors.tint} />
             </View>
-            <CustomText size={14}>Tổng số dư rồng</CustomText>
+            <CustomText size={14}>Tổng số dư ròng</CustomText>
           </View>
           <CustomText type="bold" size={24} style={{ marginTop: normalize(8) }}>
-            {formatCurrency(netBalance)}
+            {balanceLoading ? "Loading..." : formatCurrency(netBalance, selectedWallet?.currency)}
           </CustomText>
 
           <View style={styles.balanceDetails}>
-            {MOCK_BALANCE_DETAILS.map((item, index) => (
-              <View key={index} style={styles.balanceDetailRow}>
-                <CustomText size={13}>{item.label}</CustomText>
-                <CustomText type="medium" size={13}>
-                  {formatCurrency(item.amount)}
-                </CustomText>
-              </View>
-            ))}
+            <View style={styles.balanceDetailRow}>
+              <CustomText size={13}>Số dư đầu</CustomText>
+              <CustomText type="medium" size={13}>
+                {formatCurrency(openingBalance, selectedWallet?.currency)}
+              </CustomText>
+            </View>
+            <View style={styles.balanceDetailRow}>
+              <CustomText size={13}>Số dư cuối</CustomText>
+              <CustomText type="medium" size={13}>
+                {formatCurrency(closingBalance, selectedWallet?.currency)}
+              </CustomText>
+            </View>
           </View>
         </View>
 

@@ -35,7 +35,8 @@ export interface CreateTransactionPayload {
 
 export interface GetRecentTransactionsPayload {
   usercode: string;
-  take: number;
+  page_index: number;
+  page_size: number;
 }
 
 export const transactionRepository = {
@@ -97,13 +98,40 @@ export const transactionRepository = {
         WORKFLOWCODE.WF_MB_WALLET_RECENT_TRANSACTIONS,
         {
           usercode: data.usercode,
-          take: data.take,
+          page_index: data.page_index,
+          page_size: data.page_size,
         },
         false,
       );
     } catch (error) {
       console.error(
         "[transactionRepository] Error getting recent transactions:",
+        error,
+      );
+      throw error;
+    }
+  },
+  /**
+   * Get recent transactions
+   * @param data Payload
+   * @returns List of transactions
+   */
+  async getTransactionsByTransactionId(
+    transactionid: string,
+    usercode: string,
+  ): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_GET_TRAN_BY_TRANSACTIONID,
+        {
+          transaction_id: transactionid,
+          usercode: usercode,
+        },
+        false,
+      );
+    } catch (error) { 
+      console.error(
+        "[transactionRepository] Error getting transactions by transaction id:",
         error,
       );
       throw error;
