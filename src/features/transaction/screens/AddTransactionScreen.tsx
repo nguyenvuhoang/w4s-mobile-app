@@ -40,7 +40,8 @@ interface SelectedCategoryData {
   id: number;
   category_id: string;
   category_name: string;
-  category_type: "EXPENSE" | "INCOME" | "LOAN";
+  category_type: string;
+  category_group: "EXPENSE" | "INCOME" | "LOAN";
   icon: string;
   color: string;
 }
@@ -258,7 +259,12 @@ const AddTransactionScreen = () => {
               EXPENSE: "expense",
               LOAN: "inout",
             } as const;
-            setSelectedType(typeMap[categoryData.category_type]);
+
+            // Use category_group preference over category_type for reliability
+            const groupKey = categoryData.category_group || categoryData.category_type;
+            if (groupKey && typeMap[groupKey as keyof typeof typeMap]) {
+              setSelectedType(typeMap[groupKey as keyof typeof typeMap]);
+            }
 
             await StorageService.removeAsyncItem(
               STORAGE_KEY.TEMP_CATEGORY_STORAGE,
@@ -336,7 +342,10 @@ const AddTransactionScreen = () => {
         expense: "EXPENSE",
         inout: "LOAN",
       } as const;
-      if (selectedCategoryData.category_type !== typeMap[newType]) {
+
+      const categoryGroup = selectedCategoryData.category_group || selectedCategoryData.category_type;
+
+      if (categoryGroup !== typeMap[newType]) {
         setSelectedCategoryData(null);
       }
     }
@@ -463,6 +472,7 @@ const AddTransactionScreen = () => {
         images: imageUri ? [imageUri] : [],
         participants: participantsData,
         isLoanForFund: borrowToPayExpense,
+        categoryGroup: selectedCategoryData?.category_group,
       });
 
       console.log("[AddTransaction] Transaction created successfully!");

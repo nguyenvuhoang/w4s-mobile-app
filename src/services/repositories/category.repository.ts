@@ -5,13 +5,13 @@ import { apiService } from "@/core/api";
 import { BaseResponseModel } from "@/core/api/models/ClientModel";
 
 export interface Category {
-  id: string;
+  id: number;
   category_code: string;
-  wallet_id: string;
-  parent_category_id: string;
+  wallet_id: number;
+  parent_category_id: number;
   category_group: 'EXPENSE' | 'INCOME' | 'LOAN';
-  category_type: 'EXPENSE' | 'INCOME' | 'LOAN';
-  category_name: string; // JSON string: {"vi":"...", "en":"..."}
+  category_type: string;
+  category_name: string;
   icon: string;
   color: string;
   web_icon: string;
@@ -24,6 +24,7 @@ export interface GetTopSpendingCategoriesPayload {
   take: number;
 }
 
+
 export interface CreateCategoryPayload {
   category_group: 'EXPENSE' | 'INCOME' | 'LOAN';
   category_name: string;
@@ -33,6 +34,14 @@ export interface CreateCategoryPayload {
   parent_category_id?: number | string;
   usercode: string;
 }
+
+export interface AnalyzeCategoryPayload {
+  usercode: string;
+  wallet_id: number;
+  anchor_date: string;
+  period_type: string;
+}
+
 
 export const categoryRepository = {
   /**
@@ -90,13 +99,34 @@ export const categoryRepository = {
       return await apiService.executeWorkflow(
         WORKFLOWCODE.WF_MB_CREATE_WALLET_CATEGORY,
         {
-            ...payload
+          ...payload
         },
         false,
         true
       );
     } catch (error) {
-            console.error('[categoryRepository] Error creating category:', error);
+      console.error('[categoryRepository] Error creating category:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Analyze category
+   */
+  async analyzeCategory(
+    payload: AnalyzeCategoryPayload
+  ): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_WALLET_CATEGORY_ANALYZE,
+        {
+          ...payload
+        },
+        false,
+        true
+      );
+    } catch (error) {
+      console.error('[categoryRepository] Error analyzing category:', error);
       throw error;
     }
   },

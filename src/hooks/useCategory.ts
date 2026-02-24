@@ -1,6 +1,6 @@
 import { AppConfig } from '@/config/AppConfig';
 import StorageKey from '@/constants/StorageKey';
-import { Category, categoryRepository, CreateCategoryPayload } from '@/services/repositories/category.repository';
+import { AnalyzeCategoryPayload, Category, categoryRepository, CreateCategoryPayload } from '@/services/repositories/category.repository';
 import StorageService from '@/services/StorageService';
 import { useEffect, useState } from 'react';
 
@@ -14,6 +14,20 @@ interface CreateCategoryResult {
   message?: string;
 }
 
+export interface CategoryAnalyzeItem {
+  id: number;
+  category_code: string;
+  wallet_id: number;
+  parent_category_id: number;
+  category_group: 'EXPENSE' | 'INCOME' | 'LOAN';
+  category_type: string;
+  category_name: string;
+  icon: string;
+  color: string;
+  total_amount: number;
+  percentage: number;
+}
+
 let sessionCache: {
   categories: Category[];
   timestamp: number;
@@ -22,17 +36,17 @@ let sessionCache: {
 // 🔥 Helper: Flatten nested categories
 const flattenCategories = (categories: Category[]): Category[] => {
   const result: Category[] = [];
-  
+
   categories.forEach(category => {
     // Add parent
     result.push(category);
-    
+
     // Add children if exist
     if (category.children && category.children.length > 0) {
       result.push(...category.children);
     }
   });
-  
+
   return result;
 };
 
@@ -43,11 +57,13 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [categoryAnalysis, setCategoryAnalysis] = useState<CategoryAnalyzeItem[]>([]);
 
   const fetchCategories = async (skipCache = false) => {
     if (!skipCache && sessionCache) {
       const isExpired = Date.now() - sessionCache.timestamp > AppConfig.CACHE.CATEGORY_TIMEOUT;
-      
+
       if (!isExpired) {
         console.log('[useCategory] Using cached data');
         setCategories(sessionCache.categories);
@@ -63,18 +79,18 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
     try {
       const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
       const response = await categoryRepository.getCategories(userCode.toString());
-      
+
       if (response.isSuccess() && response.data) {
         const rawCategories = response.data.data || [];
-        
+
         // 🔥 Flatten nested structure
         const flattenedCategories = flattenCategories(rawCategories);
-        
+
         sessionCache = {
           categories: flattenedCategories,
           timestamp: Date.now(),
         };
-        
+
         setCategories(flattenedCategories);
         console.log('[useCategory] Data fetched and cached');
       } else {
@@ -110,10 +126,10 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
 
       if (response.isSuccess()) {
         console.log('[useCategory] Category created successfully');
-        
+
         // Refetch để cập nhật danh sách
         await fetchCategories(true);
-        
+
         return { success: true };
       } else {
         console.error('[useCategory] Create category failed:', response.message);
@@ -126,6 +142,34 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
       return { success: false, message: errorMessage };
     } finally {
       setCreating(false);
+    }
+  };
+
+  const analyzeCategory = async (payload: Omit<AnalyzeCategoryPayload, 'usercode'>) => {
+    setAnalyzing(true);
+    setError(null);
+
+    try {
+      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+
+      const response = await categoryRepository.analyzeCategory({
+        ...payload,
+        usercode: userCode?.toString() || '',
+      });
+
+      if (response.isSuccess() && response.data) {
+        setCategoryAnalysis(response.data.category_analyze || []);
+        return response.data.category_analyze;
+      } else {
+        throw new Error(response.message || 'Failed to analyze category');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to analyze category';
+      setError(errorMessage);
+      console.error('[useCategory] Error analyzing category:', err);
+      return [];
+    } finally {
+      setAnalyzing(false);
     }
   };
 
@@ -153,5 +197,8 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
     refetch,
     clearCache,
     createCategory,
+    analyzeCategory,
+    analyzing,
+    categoryAnalysis,
   };
 };

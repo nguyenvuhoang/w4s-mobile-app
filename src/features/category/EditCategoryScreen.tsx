@@ -2,12 +2,12 @@ import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -95,7 +95,7 @@ const EditCategoryScreen: React.FC = () => {
   const [parentCategory, setParentCategory] = useState<Category | null>(() => {
     if (!category.parent_category_id || !allCategories.length) return null;
     return (
-      allCategories.find((c) => c.category_id === category.parent_category_id) ||
+      allCategories.find((c) => c.id === category.parent_category_id) ||
       null
     );
   });
@@ -198,7 +198,7 @@ const EditCategoryScreen: React.FC = () => {
       category_name: stringifyCategoryName(nameVi, nameEn),
       icon,
       color,
-      parent_category_id: parentCategory?.category_id || null, // ✅ lấy ID từ object
+      parent_category_id: parentCategory?.id || null, // ✅ lấy ID từ object
     };
 
     console.log("UPDATE CATEGORY:", payload);
@@ -218,7 +218,7 @@ const EditCategoryScreen: React.FC = () => {
         text: "Xóa",
         style: "destructive",
         onPress: async () => {
-          console.log("DELETE CATEGORY:", category.category_id);
+          console.log("DELETE CATEGORY:", category.id);
 
           // TODO: call API delete
           // await deleteCategory(category.category_id)

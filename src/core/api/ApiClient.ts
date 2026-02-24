@@ -162,8 +162,8 @@ class ApiClient {
     const fileType = fileName.endsWith(".png")
       ? "image/png"
       : fileName.endsWith(".jpeg") || fileName.endsWith(".jpg")
-      ? "image/jpeg"
-      : "application/octet-stream";
+        ? "image/jpeg"
+        : "application/octet-stream";
 
     const formData = new FormData();
     formData.append("file", {
@@ -226,8 +226,6 @@ class ApiClient {
 
     try {
       const fullUrl = `${this.axiosInstance.defaults.baseURL}${apiUrl}`;
-      console.log("############");
-      console.log("Request headers:", config?.headers);
       const response = await this.axiosInstance.post(fullUrl, data, config);
       const baseResponse = new BaseResponseModel(response.data);
       if (baseResponse.hasErrors()) {

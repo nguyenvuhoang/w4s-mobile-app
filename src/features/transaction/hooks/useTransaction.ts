@@ -19,6 +19,7 @@ export interface CreateTransactionData {
   images?: string[];
   participants?: ParticipantData[];
   isLoanForFund: boolean;
+  categoryGroup?: "INCOME" | "EXPENSE" | "LOAN";
 }
 
 export interface ParticipantData {
@@ -60,7 +61,18 @@ export const useTransaction = () => {
         inout: "03",
       };
 
-      const accountType = typeToAccountType[data.type];
+      let accountType: AccountType;
+
+      if (data.categoryGroup) {
+        const groupToAccountType: Record<string, AccountType> = {
+          INCOME: "01",
+          EXPENSE: "02",
+          LOAN: "03",
+        };
+        accountType = groupToAccountType[data.categoryGroup];
+      } else {
+        accountType = typeToAccountType[data.type];
+      }
 
       // Lấy account tương ứng với type
       const account = wallet.accounts.find(

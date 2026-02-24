@@ -5,6 +5,7 @@ import PieChartWithLabels from '@/components/chart/PieChartCard';
 import STORAGE_KEY from '@/constants/StorageKey';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
+import { useCategory } from '@/hooks/useCategory';
 import StorageService from '@/services/StorageService';
 import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
@@ -55,19 +56,15 @@ const generateTimePeriods = () => {
 
 const TIME_PERIODS = generateTimePeriods();
 
-const MOCK_EXPENSE_CATEGORIES = [
-  { name: 'Thực phẩm', value: 3245000, color: '#7B68EE' },
-  { name: 'Di chuyển', value: 1763000, color: '#FF7B89' },
-  { name: 'Mua sắm', value: 2672000, color: '#4DD0E1' },
-  { name: 'Khác', value: 200000, color: '#FFB74D' },
-  { name: 'Giải trí', value: 300000, color: '#9C27B0' },
-];
-
-const MOCK_INCOME_CATEGORIES = [
-  { name: 'Lương', value: 79, color: '#7B68EE' },
-  { name: 'Bán đồ', value: 12, color: '#FF7B89' },
-  { name: 'Được tặng', value: 9, color: '#4DD0E1' },
-];
+// Helper: parse category_name JSON {"vi":"...","en":"..."}
+const parseCategoryName = (nameJson: string, lang: string = 'vi'): string => {
+  try {
+    const parsed = JSON.parse(nameJson);
+    return parsed[lang] || parsed['en'] || nameJson;
+  } catch {
+    return nameJson;
+  }
+};
 
 const MOCK_DEBT_DETAILS = [
   { label: 'Nợ', amount: 0 },
@@ -86,6 +83,7 @@ const ReportScreen = () => {
   const [selectedPeriod, setSelectedPeriod] = useState(TIME_PERIODS[TIME_PERIODS.length - 1]);
 
   const { fetchBalance, data: balanceData, loading: balanceLoading } = useWalletOpeningClosingBalance();
+  const { analyzeCategory, categoryAnalysis, analyzing } = useCategory({ autoFetch: false });
 
   // Initialize selected wallet with default wallet or first wallet
   useEffect(() => {
@@ -102,8 +100,14 @@ const ReportScreen = () => {
         type: 'W',
         wallet_id: selectedWallet.walletId
       });
+      // Gọi API phân tích category theo ví đang chọn
+      analyzeCategory({
+        wallet_id: selectedWallet.walletId,
+        anchor_date: selectedPeriod.date,
+        period_type: 'M',
+      });
     }
-  }, [selectedWallet, selectedPeriod, fetchBalance]);
+  }, [selectedWallet, selectedPeriod]);
 
   // Handle wallet selection from WalletListScreen
   useFocusEffect(
@@ -148,11 +152,42 @@ const ReportScreen = () => {
   const openingBalance = getBalanceValue('opening');
   const closingBalance = getBalanceValue('closing');
 
-  // Use real data if available, otherwise 0
   const expenseChange = 0;
   const incomeChange = 0;
 
   const formatCurrency = (v: number, currency: string = 'đ') => v.toLocaleString('vi-VN') + ' ' + currency;
+
+  // Tách EXPENSE / INCOME từ real data
+  const expensePieData = categoryAnalysis
+    .filter(c => c.category_group === 'EXPENSE')
+    .map(c => ({
+      name: parseCategoryName(c.category_name),
+      value: c.total_amount,
+      color: c.color,
+    }));
+
+  const incomePieData = categoryAnalysis
+    .filter(c => c.category_group === 'INCOME')
+    .map(c => ({
+      name: parseCategoryName(c.category_name),
+      value: c.total_amount,
+      color: c.color,
+    }));
+
+  // Navigate sang màn chi tiết với context ví & kỳ đang chọn
+  const handleViewDetail = () => {
+    router.push({
+      pathname: '/(protected)/report/category-report-detail',
+      params: {
+        wallet_id: selectedWallet?.walletId?.toString() ?? '',
+        anchor_date: selectedPeriod.date,
+        period_type: 'M',
+        currency: selectedWallet?.currency ?? 'đ',
+        wallet_name: selectedWallet?.name ?? '',
+        period_label: selectedPeriod.label,
+      }
+    } as any);
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -287,20 +322,53 @@ const ReportScreen = () => {
           ))}
         </View>
 
-        <SectionHeader title="Báo cáo theo nhóm" showAction={true} actionText='Xem chi tiết' onPressAction={() => router.push('/(protected)/category-report-detail')} />
+        <SectionHeader
+          title="Báo cáo theo nhóm"
+          showAction={true}
+          actionText='Xem chi tiết'
+          onPressAction={handleViewDetail}
+        />
 
         {/* ===== PIE CHARTS ===== */}
         <View style={{ marginHorizontal: wp(5) }}>
-          <PieChartWithLabels
-            data={MOCK_EXPENSE_CATEGORIES}
-            title="Khoản chi"
-            backgroundColor={colors.card}
-          />
-          <PieChartWithLabels
-            data={MOCK_INCOME_CATEGORIES}
-            title="Khoản thu"
-            backgroundColor={colors.card}
-          />
+          {analyzing ? (
+            <View style={[styles.loadingCard, { backgroundColor: colors.card }]}>
+              <CustomText size={14} style={{ color: colors.text, textAlign: 'center' }}>
+                Đang tải dữ liệu...
+              </CustomText>
+            </View>
+          ) : (
+            <>
+              {expensePieData.length > 0 ? (
+                <PieChartWithLabels
+                  data={expensePieData}
+                  title="Khoản chi"
+                  backgroundColor={colors.card}
+                />
+              ) : (
+                <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
+                  <FontAwesome6 name="chart-pie" size={normalize(32)} color={colors.icon} />
+                  <CustomText size={14} style={{ color: colors.text, marginTop: normalize(8) }}>
+                    Không có dữ liệu chi tiêu
+                  </CustomText>
+                </View>
+              )}
+              {incomePieData.length > 0 ? (
+                <PieChartWithLabels
+                  data={incomePieData}
+                  title="Khoản thu"
+                  backgroundColor={colors.card}
+                />
+              ) : (
+                <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
+                  <FontAwesome6 name="chart-pie" size={normalize(32)} color={colors.icon} />
+                  <CustomText size={14} style={{ color: colors.text, marginTop: normalize(8) }}>
+                    Không có dữ liệu thu nhập
+                  </CustomText>
+                </View>
+              )}
+            </>
+          )}
         </View>
 
         <View style={{ height: hp(8) }} />
@@ -420,6 +488,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  loadingCard: {
+    padding: normalize(32),
+    borderRadius: normalize(12),
+    marginBottom: normalize(16),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyCard: {
+    padding: normalize(32),
+    borderRadius: normalize(12),
+    marginBottom: normalize(16),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
