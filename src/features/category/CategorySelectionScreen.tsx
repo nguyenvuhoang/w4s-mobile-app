@@ -114,7 +114,7 @@ const CategorySelectionScreen: React.FC = () => {
   ===================== */
   const groupedCategories = useMemo(() => {
     let filtered = categories.filter(
-      (cat) => cat.category_type === selectedTab
+      (cat) => cat.category_group === selectedTab
     );
 
     if (searchQuery) {

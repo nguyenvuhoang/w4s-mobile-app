@@ -33,6 +33,27 @@ interface SelectedCategoryData {
   color: string;
 }
 
+// Interface for autofill data
+interface AutofillData {
+  walletId?: number;
+  category?: {
+    category_id: string;
+    category_name: string;
+    category_type: "EXPENSE" | "INCOME";
+    icon: string;
+    color: string;
+  };
+  amount?: string | number;
+  date?: string | Date; // Can be ISO string or Date object
+  note?: string;
+  recurring?: {
+    type?: RecurringType;
+    count?: number;
+    isForever?: boolean;
+    selectedDays?: number[];
+  };
+}
+
 const CreateRecurringInvoiceScreen = () => {
   const { colors } = useAppTheme();
   const params = useLocalSearchParams();
@@ -62,6 +83,89 @@ const CreateRecurringInvoiceScreen = () => {
   const [isForever, setIsForever] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([1]);
   const [recurringLabel, setRecurringLabel] = useState("Hàng Tháng - 12 lần");
+
+  // Process autofill data from params
+  useEffect(() => {
+    if (params.autofillData) {
+      try {
+        const autofillData: AutofillData =
+          typeof params.autofillData === 'string'
+            ? JSON.parse(params.autofillData as string)
+            : params.autofillData;
+
+        console.log("[CreateInvoice] Autofill data:", autofillData);
+
+        // Autofill wallet
+        if (autofillData.walletId !== undefined) {
+          setSourceWalletId(autofillData.walletId);
+        }
+
+        // Autofill category
+        if (autofillData.category) {
+          setSelectedCategoryData(autofillData.category);
+        }
+
+        // Autofill amount
+        if (autofillData.amount !== undefined) {
+          setAmount(String(autofillData.amount));
+        }
+
+        // Autofill date
+        if (autofillData.date) {
+          const date = typeof autofillData.date === 'string'
+            ? new Date(autofillData.date)
+            : autofillData.date;
+          if (date instanceof Date && !isNaN(date.getTime())) {
+            setSelectedDate(date);
+          }
+        }
+
+        // Autofill note
+        if (autofillData.note) {
+          setNote(autofillData.note);
+        }
+
+        // Autofill recurring settings
+        if (autofillData.recurring) {
+          if (autofillData.recurring.type) {
+            setRecurringType(autofillData.recurring.type);
+
+            // Update label based on type
+            const labelMap: Record<string, string> = {
+              daily: "Hàng ngày",
+              weekly: "Hàng tuần",
+              monthly: "Hàng tháng",
+              yearly: "Hàng năm",
+            };
+
+            let label = labelMap[autofillData.recurring.type] || "Hàng tháng";
+
+            if (autofillData.recurring.count && !autofillData.recurring.isForever) {
+              label += ` - ${autofillData.recurring.count} lần`;
+            } else if (autofillData.recurring.isForever) {
+              label += " - Mãi mãi";
+            }
+
+            setRecurringLabel(label);
+          }
+
+          if (autofillData.recurring.count !== undefined) {
+            setRecurringCount(autofillData.recurring.count);
+          }
+
+          if (autofillData.recurring.isForever !== undefined) {
+            setIsForever(autofillData.recurring.isForever);
+          }
+
+          if (autofillData.recurring.selectedDays) {
+            setSelectedDays(autofillData.recurring.selectedDays);
+          }
+        }
+      } catch (error) {
+        console.error("[CreateInvoice] Failed to parse autofill data:", error);
+      }
+    }
+  }, [params.autofillData]);
 
   // Load edit data from params
   useEffect(() => {
