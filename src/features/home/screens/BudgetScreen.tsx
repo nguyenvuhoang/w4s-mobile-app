@@ -82,7 +82,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
   const strokeDashoffset = circumference - (circumference * percentage) / 100;
 
   const handleCreateBudget = () => {
-    router.push('/(protected)/create-budget')
+    router.push('/(protected)/budget/create-budget')
   };
 
   const handleWalletLocalPress = () => {

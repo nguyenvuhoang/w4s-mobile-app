@@ -10,7 +10,7 @@ import { WalletSummary } from "@/types/wallet";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -25,8 +25,23 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEvent } from "../hooks/useEvent";
 
+// Interface for autofill data
+interface AutofillData {
+  icon?: string;
+  color?: string;
+  eventName?: string;
+  walletId?: number;
+  currency?: {
+    currencyId: string;
+    symbol: string;
+    name: string;
+  };
+  endDate?: string | Date;
+}
+
 const CreateEventScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const params = useLocalSearchParams();
   const { wallets } = useWallet();
   const { refetch } = useEvent();
   const { defaultCurrency, loading: loadingDefaultCurrency } =
@@ -45,6 +60,63 @@ const CreateEventScreen: React.FC = () => {
   const [endDate, setEndDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [creating, setCreating] = useState(false);
+
+  // Process autofill data from params
+  useEffect(() => {
+    if (params.autofillData) {
+      try {
+        const autofillData: AutofillData =
+          typeof params.autofillData === "string"
+            ? JSON.parse(params.autofillData as string)
+            : (params.autofillData as unknown as AutofillData);
+
+        console.log("[CreateEvent] Autofill data:", autofillData);
+
+        // Autofill icon
+        if (autofillData.icon) {
+          setIcon(autofillData.icon);
+        }
+
+        // Autofill color
+        if (autofillData.color) {
+          setColor(autofillData.color);
+        }
+
+        // Autofill eventName
+        if (autofillData.eventName) {
+          setEventName(autofillData.eventName);
+        }
+
+        // Autofill wallet
+        if (autofillData.walletId !== undefined) {
+          const wallet = wallets.find((w) => w.walletId === autofillData.walletId);
+          if (wallet) {
+            setSelectedWallet(wallet);
+          }
+        }
+
+        // Autofill currency
+        if (autofillData.currency) {
+          setCurrency(autofillData.currency.currencyId);
+          setCurrencySymbol(autofillData.currency.symbol);
+          setCurrencyName(autofillData.currency.name);
+        }
+
+        // Autofill endDate
+        if (autofillData.endDate) {
+          const date =
+            typeof autofillData.endDate === "string"
+              ? new Date(autofillData.endDate)
+              : autofillData.endDate;
+          if (date instanceof Date && !isNaN(date.getTime())) {
+            setEndDate(date);
+          }
+        }
+      } catch (error) {
+        console.error("[CreateEvent] Failed to parse autofill data:", error);
+      }
+    }
+  }, [params.autofillData, wallets]);
 
   // Load default currency when component mounts
   useEffect(() => {

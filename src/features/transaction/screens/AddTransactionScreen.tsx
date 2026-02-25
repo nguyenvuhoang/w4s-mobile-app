@@ -14,7 +14,7 @@ import { hp, normalize } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, {
   useCallback,
   useEffect,
@@ -75,8 +75,40 @@ interface SelectedEvent {
 
 type TransactionType = "income" | "expense" | "inout";
 
+// Interface for autofill data
+interface AutofillData {
+  type?: TransactionType;
+  walletId?: number;
+  category?: {
+    id: number;
+    category_id: string;
+    category_name: string;
+    category_type: string;
+    category_group: "EXPENSE" | "INCOME" | "LOAN";
+    icon: string;
+    color: string;
+  };
+  amount?: string | number;
+  date?: string | Date;
+  note?: string;
+  currency?: {
+    currencyId: string;
+    symbol: string;
+    name: string;
+  };
+  event?: {
+    eventId: number;
+    eventName: string;
+    icon: string;
+    color: string;
+  };
+  location?: string;
+  reminderDate?: string | Date;
+}
+
 const AddTransactionScreen = () => {
   const { colors } = useAppTheme();
+  const params = useLocalSearchParams();
   const { wallets, defaultWallet, refresh } = useWallet();
   const { currencies, parseCurrencyName } = useCurrency({ autoFetch: true });
   const { convert } = useExchangeRate();
@@ -215,6 +247,86 @@ const AddTransactionScreen = () => {
 
   const isValid =
     selectedWallet && selectedCategoryData && amount.trim() !== "";
+
+  // Process autofill data from params
+  useEffect(() => {
+    if (params.autofillData) {
+      try {
+        const autofillData: AutofillData =
+          typeof params.autofillData === "string"
+            ? JSON.parse(params.autofillData as string)
+            : (params.autofillData as unknown as AutofillData);
+
+        console.log("[AddTransaction] Autofill data:", autofillData);
+
+        // Autofill type
+        if (autofillData.type) {
+          setSelectedType(autofillData.type);
+        }
+
+        // Autofill wallet
+        if (autofillData.walletId !== undefined) {
+          setSourceWalletId(autofillData.walletId);
+        }
+
+        // Autofill category
+        if (autofillData.category) {
+          setSelectedCategoryData(autofillData.category);
+        }
+
+        // Autofill amount
+        if (autofillData.amount !== undefined) {
+          setAmount(String(autofillData.amount));
+        }
+
+        // Autofill date
+        if (autofillData.date) {
+          const date =
+            typeof autofillData.date === "string"
+              ? new Date(autofillData.date)
+              : autofillData.date;
+          if (date instanceof Date && !isNaN(date.getTime())) {
+            setSelectedDate(date);
+          }
+        }
+
+        // Autofill note
+        if (autofillData.note) {
+          setNote(autofillData.note);
+        }
+
+        // Autofill currency
+        if (autofillData.currency) {
+          setInputCurrency(autofillData.currency);
+          hasManuallySelectedCurrencyRef.current = true;
+        }
+
+        // Autofill event
+        if (autofillData.event) {
+          setSelectedEvent(autofillData.event);
+          setSourceEventId(autofillData.event.eventId);
+        }
+
+        // Autofill location
+        if (autofillData.location) {
+          setLocation(autofillData.location);
+        }
+
+        // Autofill reminder date
+        if (autofillData.reminderDate) {
+          const reminder =
+            typeof autofillData.reminderDate === "string"
+              ? new Date(autofillData.reminderDate)
+              : autofillData.reminderDate;
+          if (reminder instanceof Date && !isNaN(reminder.getTime())) {
+            setReminderDate(reminder);
+          }
+        }
+      } catch (error) {
+        console.error("[AddTransaction] Failed to parse autofill data:", error);
+      }
+    }
+  }, [params.autofillData]);
 
   useEffect(() => {
     if (!sourceWalletId && defaultWallet) {

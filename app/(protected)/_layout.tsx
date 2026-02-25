@@ -42,7 +42,7 @@ export default function ProtectedLayout() {
         />
 
         <Stack.Screen
-          name="create-budget"
+          name="budget/create-budget"
           options={{
             presentation: "modal",
             animation: "slide_from_bottom",

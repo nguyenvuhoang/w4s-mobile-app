@@ -170,6 +170,124 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         }),
       },
     });
+
+    // router.push({
+    //   pathname: "/(protected)/transaction/add-transaction",
+    //   params: {
+    //     autofillData: JSON.stringify({
+    //       type: "expense",
+    //       walletId: 86,
+    //       amount: "150000",
+    //       note: "Mua cà phê",
+    //       category: {
+    //         id: 12,
+    //         category_id: "cat_001",
+    //         category_name: JSON.stringify({ vi: "Ăn uống", en: "Food" }),
+    //         category_type: "EXPENSE",
+    //         category_group: "EXPENSE",
+    //         icon: "coffee",
+    //         color: "#FF6B6B",
+    //       },
+    //       date: new Date().toISOString(),
+    //     }),
+    //   },
+    // });
+
+
+    // router.push({
+    //   pathname: "/(protected)/invoice/create-invoice",
+    //   params: {
+    //     autofillData: JSON.stringify({
+    //       walletId: 86,
+    //       category: {
+    //         category_id: "cat_001",
+    //         category_name: JSON.stringify({ vi: "Tiền điện" }),
+    //         category_type: "EXPENSE",
+    //         icon: "bolt",
+    //         color: "#FFB800"
+    //       },
+    //       amount: 150000,
+    //       date: "2026-02-15",
+    //       note: "Tiền điện tháng 2",
+    //       recurring: {
+    //         type: "monthly",
+    //         count: 12,
+    //         isForever: false,
+    //         selectedDays: [1]
+    //       }
+    //     })
+    //   }
+    // });
+
+    // router.push({
+    //   pathname: "/(protected)/create-budget",
+    //   params: {
+    //     autofillData: JSON.stringify({
+    //       type: "expense",
+    //       walletId: 86,
+    //       amount: "2000000",
+    //       note: "Ngân sách ăn uống tháng 3",
+    //     }),
+    //   },
+    // });
+
+    // router.push({
+    //   pathname: "/(protected)/create-budget",
+    //   params: {
+    //     autofillData: JSON.stringify({
+    //       period: "THIS_MONTH",
+    //       walletId: 86,
+    //       amount: "2000000",
+    //       category: {
+    //         category_id: "cat_food",
+    //         category_name: JSON.stringify({ vi: "Ăn uống" }),
+    //         category_type: "EXPENSE",
+    //         icon: "utensils",
+    //         color: "#FF6B6B",
+    //       },
+    //     }),
+    //   },
+    // });
+
+    // router.push({
+    //   pathname: "/(protected)/budget/create-budget",
+    //   params: {
+    //     autofillData: JSON.stringify({
+    //       // Ngày tùy chỉnh: truyền startDate + endDate thay vì period
+    //       startDate: "2026-03-15",           // hoặc new Date(...).toISOString()
+    //       endDate: "2026-04-20",
+    //       dateRangeLabel: "15/03 - 20/04",   // nhãn hiện thị tuỳ ý (tùy chọn)
+
+    //       walletId: 86,
+    //       amount: "2000000",
+    //       category: {
+    //         category_id: "cat_food",
+    //         category_name: JSON.stringify({ vi: "Ăn uống" }),
+    //         category_type: "EXPENSE",
+    //         icon: "utensils",
+    //         color: "#FF6B6B",
+    //       },
+    //     }),
+    //   },
+    // });
+
+
+
+    // router.push({
+    //   pathname: "/(protected)/event/create-event",
+    //   params: {
+    //     autofillData: JSON.stringify({
+    //       icon: "plane",
+    //       color: "#4CAF50",
+    //       eventName: "Du lịch Đà Nẵng",
+    //       walletId: 86,
+    //       currency: { currencyId: "VND", symbol: "đ", name: "Việt Nam Đồng" },
+    //       endDate: "2026-03-31T00:00:00.000Z",
+    //     }),
+    //   },
+    // });
+
+
   }, []);
 
   const handleTransactionPress = useCallback((transaction: RecentTransaction) => {
