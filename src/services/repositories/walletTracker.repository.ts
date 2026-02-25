@@ -77,13 +77,14 @@ export const walletTrackerRepository = {
   //   );
   // },
 
-  // async deleteCategory(categoryId: string): Promise<BaseResponseModel> {
-  //   return await apiService.executeWorkflowNew(
-  //     WORKFLOWCODE.MB_DELETE_CATEGORY,
-  //     {
-  //       category_id: categoryId,
-  //     },
-  //     false
-  //   );
-  // },
+  async deleteWalletTracker(userCode: string, walletId: number): Promise<BaseResponseModel> {
+    return await apiService.executeWorkflowNew(
+      WORKFLOWCODE.WF_MB_DELETE_WALLET,
+      {
+        usercode: userCode,
+        wallet_id: walletId,
+      },
+      false
+    );
+  },
 };

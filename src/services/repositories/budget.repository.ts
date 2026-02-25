@@ -1,0 +1,203 @@
+/**
+ * Budget Repository
+ * Repository for handling budget-related API calls using executeWorkflow
+ */
+
+import { WORKFLOWCODE } from "@/constants/WorkflowCode";
+import { apiService } from "@/core/api";
+import { BaseResponseModel } from "@/core/api/models/ClientModel";
+
+export interface BudgetSearchParams {
+  userCode: string;
+  status?: string;
+  budget_type?: string;
+  wallet_id?: number;
+  from_date?: string;
+  to_date?: string;
+  search_text?: string;
+  page_index: number;
+  page_size: number;
+}
+
+export interface CreateBudgetPayload {
+  amount: number;
+  category_id: number;
+  end_date: string;
+  period_type: string;
+  source_gudget: string;
+  source_tracker: number;
+  start_date: string;
+  wallet_id: number;
+  note?: string;
+  include_in_report?: boolean;
+  is_auto_repeat?: boolean;
+}
+
+export interface UpdateBudgetParams {
+  budget_id: number;
+  title?: string;
+  description?: string;
+  location?: string;
+  color?: string;
+  icon?: string;
+  start_on_utc?: string;
+  end_on_utc?: string;
+  is_all_day?: boolean;
+  budget_type?: string;
+  status?: string;
+}
+
+export const budgetRepository = {
+  /**
+   * Get budgets list
+   */
+  async getBudgets(params: BudgetSearchParams): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_RETRIEVE_WALLET_EVENT,
+        {
+          usercode: params.userCode,
+          search_text: params.search_text || "",
+          page_index: params.page_index,
+          page_size: params.page_size,
+        },
+        false,
+        true
+      );
+    } catch (error) {
+      console.error("[budgetRepository] Error fetching budgets:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get budget by ID
+   */
+  //   async getBudgetById(budgetId: number): Promise<BaseResponseModel> {
+  //     try {
+  //       return await apiService.executeWorkflow(
+  //         WORKFLOWCODE.WF_EVENT_GET_DETAIL,
+  //         {
+  //           budget_id: budgetId,
+  //         },
+  //         false,
+  //         true
+  //       );
+  //     } catch (error) {
+  //       console.error("[budgetRepository] Error fetching budget detail:", error);
+  //       throw error;
+  //     }
+  //   },
+
+  /**
+   * Create new budget
+   */
+  async createBudget(data: CreateBudgetPayload): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_CREATE_WALLET_BUDGET,
+        {
+          amount: data.amount,
+          category_id: data.category_id,
+          end_date: data.end_date,
+          period_type: data.period_type,
+          source_gudget: data.source_gudget,
+          source_tracker: data.source_tracker,
+          start_date: data.start_date,
+          wallet_id: data.wallet_id,
+          note: data.note,
+          include_in_report: data.include_in_report,
+          is_auto_repeat: data.is_auto_repeat,
+        },
+        false
+      );
+    } catch (error) {
+      console.error("[budgetRepository] Error creating budget:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update budget
+   */
+  //   async updateBudget(params: UpdateBudgetParams): Promise<BaseResponseModel> {
+  //     try {
+  //       return await apiService.executeWorkflow(
+  //         WORKFLOWCODE.WF_EVENT_UPDATE,
+  //         {
+  //           budget_id: params.budget_id,
+  //           title: params.title,
+  //           description: params.description,
+  //           location: params.location,
+  //           color: params.color,
+  //           icon: params.icon,
+  //           start_on_utc: params.start_on_utc,
+  //           end_on_utc: params.end_on_utc,
+  //           is_all_day: params.is_all_day,
+  //           budget_type: params.budget_type,
+  //           status: params.status,
+  //         },
+  //         false
+  //       );
+  //     } catch (error) {
+  //       console.error("[budgetRepository] Error updating budget:", error);
+  //       throw error;
+  //     }
+  //   },
+
+  /**
+   * Delete budget
+   */
+  //   async deleteBudget(budgetId: number): Promise<BaseResponseModel> {
+  //     try {
+  //       return await apiService.executeWorkflow(
+  //         WORKFLOWCODE.WF_EVENT_DELETE,
+  //         {
+  //           budget_id: budgetId,
+  //         },
+  //         false
+  //       );
+  //     } catch (error) {
+  //       console.error("[budgetRepository] Error deleting budget:", error);
+  //       throw error;
+  //     }
+  //   },
+
+  /**
+   * Complete budget (update status to COMPLETED)
+   */
+  //   async completeBudget(budgetId: number): Promise<BaseResponseModel> {
+  //     try {
+  //       return await apiService.executeWorkflow(
+  //         WORKFLOWCODE.WF_EVENT_UPDATE,
+  //         {
+  //           budget_id: budgetId,
+  //           status: "COMPLETED",
+  //         },
+  //         false
+  //       );
+  //     } catch (error) {
+  //       console.error("[budgetRepository] Error completing budget:", error);
+  //       throw error;
+  //     }
+  //   },
+
+  /**
+   * Reactivate budget (update status to ACTIVE)
+   */
+  //   async reactivateBudget(budgetId: number): Promise<BaseResponseModel> {
+  //     try {
+  //       return await apiService.executeWorkflow(
+  //         WORKFLOWCODE.WF_EVENT_UPDATE,
+  //         {
+  //           budget_id: budgetId,
+  //           status: "ACTIVE",
+  //         },
+  //         false
+  //       );
+  //     } catch (error) {
+  //       console.error("[budgetRepository] Error reactivating budget:", error);
+  //       throw error;
+  //     }
+  //   },
+};

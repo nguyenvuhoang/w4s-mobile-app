@@ -9,12 +9,13 @@ interface CreateWalletTrackerParams {
   color: string;
   icon: string;
   isIncludeReport: boolean;
-  amount : number;
+  amount: number;
   walletType: string;
 }
 
 export const useWalletTracker = () => {
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const createWalletTracker = async (params: CreateWalletTrackerParams) => {
@@ -53,9 +54,41 @@ export const useWalletTracker = () => {
     }
   };
 
+  const deleteWalletTracker = async (walletId: number): Promise<boolean> => {
+    setDeleting(true);
+    setError(null);
+
+    try {
+      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      if (!userCode) {
+        throw new Error('Missing user code');
+      }
+
+      const response = await walletTrackerRepository.deleteWalletTracker(
+        String(userCode),
+        walletId
+      );
+
+      if (!response.isSuccess()) {
+        throw new Error(response.getError() || response.message || 'Delete wallet failed');
+      }
+
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Delete wallet failed';
+      setError(message);
+      console.error('[useWalletTracker] deleteWalletTracker failed', err);
+      return false;
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return {
     loading,
+    deleting,
     error,
     createWalletTracker,
+    deleteWalletTracker,
   };
 };

@@ -4,8 +4,10 @@ import BottomActionModal, {
   ActionItem,
 } from "@/components/modals/BottomActionModal";
 import STORAGE_KEY from "@/constants/StorageKey";
+import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
+import { useWalletTracker } from "@/features/wallet/hooks/useWalletTracker";
 import StorageService from "@/services/StorageService";
 import { WalletSummary } from "@/types/wallet";
 import { hp, normalize, wp } from "@/utils/layout";
@@ -15,7 +17,6 @@ import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -41,6 +42,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
     null
   );
   const [showActionModal, setShowActionModal] = useState(false);
+  const { showNotification } = useNotification();
 
   // ✅ GLOBAL WALLET
   const {
@@ -51,6 +53,9 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
     defaultWalletId,
     setDefaultWalletId,
   } = useWallet();
+
+  // ✅ WALLET TRACKER (create / delete)
+  const { deleteWalletTracker, deleting } = useWalletTracker();
 
   const handleSelectWallet = async (wallet: WalletSummary) => {
     if (mode === "viewOnly") return;
@@ -68,7 +73,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
         router.back();
       } catch (error) {
         console.error('[WalletList] Failed to save wallet:', error);
-        Alert.alert(t("common.error"), t("wallet.error_save"));
+        showNotification(t("wallet.error_save"), "error");
       }
     } else {
       // Mode manage: mở modal options
@@ -84,24 +89,23 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
     setShowActionModal(false);
 
     setTimeout(() => {
-      Alert.alert(
-        t("wallet.confirm_delete_title"),
+      showNotification(
         t("wallet.confirm_delete_message", { name: selectedWallet.name }),
-        [
-          { text: t("common.cancel"), style: "cancel" },
-          {
-            text: t("wallet.delete_wallet"),
-            style: "destructive",
-            onPress: async () => {
-              try {
-                // TODO: call delete API with selectedWallet.walletId
-                await refresh();
-              } catch {
-                Alert.alert(t("common.error"), "Cannot delete wallet");
-              }
-            },
-          },
-        ]
+        "warning",
+        undefined,
+        undefined,
+        async () => {
+          const success = await deleteWalletTracker(selectedWallet.walletId);
+          if (success) {
+            await refresh(); // Cập nhật lại danh sách ví
+            showNotification("Đã xóa ví thành công!", "success");
+            if (defaultWalletId === selectedWallet.walletId) {
+              setDefaultWalletId(null);
+            }
+          } else {
+            showNotification("Không thể xóa ví. Vui lòng thử lại.", "error");
+          }
+        }
       );
     }, 300);
   };
@@ -110,7 +114,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
     setShowActionModal(false);
     // TODO: Navigate to edit screen with selectedWallet
     setTimeout(() => {
-      Alert.alert("Thông báo", "Chức năng chỉnh sửa đang được phát triển");
+      showNotification("Chức năng chỉnh sửa đang được phát triển", "warning");
     }, 300);
   };
 
@@ -118,7 +122,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
     setShowActionModal(false);
     // TODO: Navigate to transfer screen with selectedWallet
     setTimeout(() => {
-      Alert.alert("Thông báo", "Chức năng chuyển tiền đang được phát triển");
+      showNotification("Chức năng chuyển tiền đang được phát triển", "warning");
     }, 300);
   };
 
@@ -167,7 +171,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
 
   /* -------------------- UI STATES -------------------- */
 
-  if (loading) {
+  if (loading || deleting) {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}

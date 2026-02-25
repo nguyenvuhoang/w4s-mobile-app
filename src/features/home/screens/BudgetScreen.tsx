@@ -1,13 +1,12 @@
 import CustomText from '@/components/base/CustomText';
-import STORAGE_KEY from '@/constants/StorageKey';
+import WalletPickerModal, { WalletPickerId } from '@/components/modals/WalletPickerModal';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
-import StorageService from '@/services/StorageService';
 import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6, Ionicons } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import { router } from 'expo-router';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ScrollView,
@@ -26,7 +25,10 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
   const { wallets, defaultWallet } = useWallet();
-  const [selectedWallet, setSelectedWallet] = useState<WalletSummary | null>(null);
+
+  // 'all' = tất cả các ví, number = walletId cụ thể
+  const [selectedWalletId, setSelectedWalletId] = useState<WalletPickerId>('all');
+  const [showWalletModal, setShowWalletModal] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('this_week');
 
   const periods = [
@@ -81,46 +83,20 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
   const circumference = Math.PI * radius;
   const strokeDashoffset = circumference - (circumference * percentage) / 100;
 
+  // Resolved wallet object (null khi chọn 'all')
+  const selectedWallet = useMemo<WalletSummary | null>(() => {
+    if (selectedWalletId === 'all') return null;
+    return wallets.find((w) => w.walletId === selectedWalletId) ?? null;
+  }, [selectedWalletId, wallets]);
+
   const handleCreateBudget = () => {
-    router.push('/(protected)/budget/create-budget')
+    router.push('/(protected)/budget/create-budget');
   };
 
-  const handleWalletLocalPress = () => {
-    router.push('/(protected)/wallet/wallet-list?mode=select');
+  const handleWalletSelect = (walletId: WalletPickerId) => {
+    setSelectedWalletId(walletId);
+    setShowWalletModal(false);
   };
-
-  // Initialize selected wallet
-  useEffect(() => {
-    if (!selectedWallet && wallets.length > 0) {
-      setSelectedWallet(defaultWallet || wallets[0]);
-    }
-  }, [wallets, defaultWallet, selectedWallet]);
-
-  // Handle wallet selection from WalletListScreen
-  useFocusEffect(
-    useCallback(() => {
-      const loadSelectedWallet = async () => {
-        try {
-          const storedWallet = await StorageService.getAsyncItem(
-            STORAGE_KEY.TEMP_WALLET_STORAGE,
-          );
-          if (storedWallet) {
-            const { walletId } = JSON.parse(storedWallet);
-            const wallet = wallets.find((w) => w.walletId === walletId);
-            if (wallet) {
-              setSelectedWallet(wallet);
-            }
-            await StorageService.removeAsyncItem(
-              STORAGE_KEY.TEMP_WALLET_STORAGE,
-            );
-          }
-        } catch (error) {
-          console.error('[BudgetScreen] Failed to load selected wallet:', error);
-        }
-      };
-      loadSelectedWallet();
-    }, [wallets]),
-  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -136,21 +112,33 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 
           <TouchableOpacity
             style={[styles.headerRightWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}
-            onPress={handleWalletLocalPress}
+            onPress={() => setShowWalletModal(true)}
           >
             <View style={styles.cashBadge}>
               <FontAwesome6
-                name={selectedWallet?.icon ? selectedWallet.icon as any : 'wallet'}
+                name={selectedWalletId === 'all' ? 'layer-group' : (selectedWallet?.icon as any ?? 'wallet')}
                 size={normalize(16)}
-                color={selectedWallet?.color || colors.tint}
+                color={selectedWalletId === 'all' ? colors.tint : (selectedWallet?.color || colors.tint)}
               />
-              <CustomText style={styles.cashText}>{selectedWallet?.name || t("wallet.select_wallet")}</CustomText>
+              <CustomText style={styles.cashText}>
+                {selectedWalletId === 'all' ? 'Tất cả các ví' : (selectedWallet?.name || t('wallet.select_wallet'))}
+              </CustomText>
             </View>
             <View style={[styles.dividerVertical, { backgroundColor: colors.border }]} />
             <View style={styles.dropdownButton}>
               <FontAwesome6 name="chevron-down" size={normalize(14)} color={colors.tint} />
             </View>
           </TouchableOpacity>
+
+          {/* Wallet Picker Modal */}
+          <WalletPickerModal
+            visible={showWalletModal}
+            wallets={wallets}
+            selectedId={selectedWalletId}
+            onSelect={handleWalletSelect}
+            showAllOption={true}
+            onClose={() => setShowWalletModal(false)}
+          />
         </View>
 
         {/* Period Selector Card */}

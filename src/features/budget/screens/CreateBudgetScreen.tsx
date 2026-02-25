@@ -7,6 +7,7 @@ import BottomDateRangeModal, {
 } from "@/components/modals/BottomDateRangeModal";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import { useBudget } from "@/features/budget/hooks/useBudget";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
@@ -14,6 +15,7 @@ import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -83,6 +85,7 @@ const CreateBudgetScreen = () => {
     const { colors } = useAppTheme();
     const params = useLocalSearchParams();
     const { wallets, defaultWallet } = useWallet();
+    const { createBudget, creating } = useBudget({ autoFetch: false });
 
     const [selectedType, setSelectedType] = useState<BudgetType>("expense");
     const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
@@ -357,23 +360,61 @@ const CreateBudgetScreen = () => {
         }
     };
 
-    const handleCreate = () => {
-        if (!isValid) return;
+    const handleCreate = useCallback(async () => {
+        if (!isValid || !selectedCategoryData || !sourceWalletId) return;
 
-        console.log("Create budget", {
-            type: selectedType,
-            sourceWalletId,
-            category: selectedCategoryData,
-            amount,
-            startDate,
-            endDate,
-            periodType,
-            note,
-            includeInReport,
-            autoRepeat,
-        });
-        router.back();
-    };
+        const formatToISO = (date: Date) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, "0");
+            const d = String(date.getDate()).padStart(2, "0");
+            return `${y}-${m}-${d}`;
+        };
+
+        const typeToSourceGudget = {
+            income: "INCOME",
+            expense: "EXPENSE",
+            inout: "LOAN",
+        } as const;
+
+        const payload = {
+            amount: parseFloat(amount.replace(/,/g, "")),
+            category_id: parseInt(selectedCategoryData.category_id, 10),
+            end_date: formatToISO(endDate),
+            period_type: periodType,
+            source_gudget: typeToSourceGudget[selectedType],
+            source_tracker: sourceWalletId,
+            start_date: formatToISO(startDate),
+            wallet_id: sourceWalletId,
+            note: note.trim() || undefined,
+            include_in_report: includeInReport,
+            is_auto_repeat: autoRepeat,
+        };
+
+        console.log("[CreateBudget] Submitting payload:", payload);
+
+        const success = await createBudget(payload);
+
+        if (success) {
+            Alert.alert("Thành công", "Ngân sách đã được tạo thành công!", [
+                { text: "OK", onPress: () => router.back() },
+            ]);
+        } else {
+            Alert.alert("Lỗi", "Không thể tạo ngân sách. Vui lòng thử lại.");
+        }
+    }, [
+        isValid,
+        selectedCategoryData,
+        sourceWalletId,
+        amount,
+        endDate,
+        periodType,
+        selectedType,
+        startDate,
+        note,
+        includeInReport,
+        autoRepeat,
+        createBudget,
+    ]);
 
     const parseCategoryName = (nameJson: string) => {
         try {
@@ -653,12 +694,14 @@ const CreateBudgetScreen = () => {
                     <TouchableOpacity
                         style={[
                             styles.createBtn,
-                            { backgroundColor: isValid ? colors.tint : colors.border },
+                            { backgroundColor: isValid && !creating ? colors.tint : colors.border },
                         ]}
                         onPress={handleCreate}
-                        disabled={!isValid}
+                        disabled={!isValid || creating}
                     >
-                        <CustomText style={styles.createText}>Tạo</CustomText>
+                        <CustomText style={styles.createText}>
+                            {creating ? "Đang tạo..." : "Tạo"}
+                        </CustomText>
                     </TouchableOpacity>
                 </View>
 
