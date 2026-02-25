@@ -3,84 +3,36 @@ import SectionHeader from "@/components/base/SectionHeader";
 import LineChartCard from "@/components/chart/LineChartCard";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useAppTheme } from "@/core/theme/ThemeContext";
-import { useFinanceSummary, useWalletOpeningClosingBalance } from "@/features/home/hooks/Usefinancesummary";
+import { useFinanceSummary, useMonthlyChartData, useWalletOpeningClosingBalance } from "@/features/home/hooks/Usefinancesummary";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
+import { useTopSpendingCategories } from "@/hooks/useCategory";
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
+/* ================= HELPERS ================= */
+
+/** Parse category_name từ JSON string {"vi":"...","en":"..."} hoặc plain string */
+const parseCategoryName = (raw: string, lang: string): string => {
+  if (!raw) return "";
+  try {
+    if (!raw.startsWith("{")) return raw;
+    const parsed = JSON.parse(raw);
+    return parsed[lang] || parsed.vi || parsed.en || raw;
+  } catch {
+    return raw;
+  }
+};
+
 /* ================= MOCK DATA ================= */
 
-const MOCK_CATEGORIES = [
-  {
-    id: "1",
-    name: "Mua sắm",
-    icon: "bag-shopping",
-    color: "#FF6B35",
-    amount: 1248000,
-    percentage: 38,
-  },
-  {
-    id: "2",
-    name: "Thực phẩm",
-    icon: "utensils",
-    color: "#4CAF50",
-    amount: 842000,
-    percentage: 26,
-  },
-  {
-    id: "3",
-    name: "Giải trí",
-    icon: "film",
-    color: "#9C27B0",
-    amount: 425000,
-    percentage: 42,
-  },
-  {
-    id: "4",
-    name: "Di chuyển",
-    icon: "car",
-    color: "#00BCD4",
-    amount: 385000,
-    percentage: 10,
-  },
-  {
-    id: "5",
-    name: "Tiện ích",
-    icon: "bolt",
-    color: "#FF9800",
-    amount: 356000,
-    percentage: 13,
-  },
-];
-
-// const MOCK_MONTHLY_EXPENSES = [
-//   { value: 450000, label: '1' },
-//   { value: 380000, label: '2' },
-//   { value: 520000, label: '3' },
-// ];
-
-const MOCK_MONTHLY_EXPENSES = Array.from({ length: 31 }, (_, i) => ({
-  value: Math.floor(Math.random() * 100000000) + 200000,
-  label: `${i + 1}`,
-}));
-
-// const MOCK_MONTHLY_INCOME = [
-//   { value: 50000, label: '1' },
-//   { value: 120000, label: '5' },
-// ];
-
-const MOCK_MONTHLY_INCOME = Array.from({ length: 31 }, (_, i) => ({
-  value: Math.floor(Math.random() * 50000) + 50000,
-  label: `${i + 1}`,
-}));
 
 const MOCK_FREQUENT_EXPENSES = [
   {
@@ -105,15 +57,29 @@ const MOCK_FREQUENT_EXPENSES = [
 
 const StatisticsScreen = () => {
   const { colors } = useAppTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { wallets, loading: walletsLoading } = useWallet();
   const { data: financeSummary, loading: summaryLoading } = useFinanceSummary();
+  const {
+    data: topCategories,
+    loading: categoriesLoading,
+    fetchTopCategories,
+  } = useTopSpendingCategories();
 
   const { fetchBalance, data: openingBalanceData } = useWalletOpeningClosingBalance();
+
+  useEffect(() => {
+    fetchTopCategories('M', 0);
+  }, [fetchTopCategories]);
+
+  const {
+    expenses: monthlyExpenses,
+    incomes: monthlyIncomes,
+    loading: chartLoading,
+  } = useMonthlyChartData();
   const [openingBalance, setOpeningBalance] = useState<number | null>(null);
 
   useEffect(() => {
-    // Current date as anchor_date (YYYY-MM-DD)
     const today = new Date().toISOString().split('T')[0];
 
     fetchBalance({
@@ -268,69 +234,93 @@ const StatisticsScreen = () => {
           onPressAction={() => router.push("../report")}
         />
 
-        <LineChartCard
-          label={t("home.expense")}
-          color="#F44336"
-          data={MOCK_MONTHLY_EXPENSES}
-          formatYLabel={formatYLabel}
-        />
+        {chartLoading ? (
+          <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+            <ActivityIndicator color={colors.tint} />
+          </View>
+        ) : (
+          <>
+            <LineChartCard
+              label={t("home.expense")}
+              color="#F44336"
+              data={monthlyExpenses}
+              formatYLabel={formatYLabel}
+            />
 
-        <LineChartCard
-          label={t("home.income")}
-          color="#2196F3"
-          data={MOCK_MONTHLY_INCOME}
-          formatYLabel={formatYLabel}
-        />
+            <LineChartCard
+              label={t("home.income")}
+              color="#2196F3"
+              data={monthlyIncomes}
+              formatYLabel={formatYLabel}
+            />
+          </>
+        )}
 
         {/* ===== CATEGORY ===== */}
         <SectionHeader title={t("statistics.category_analysis")} />
 
-        <View style={styles.categoryList}>
-          {MOCK_CATEGORIES.map((c) => (
-            <View
-              key={c.id}
-              style={[styles.categoryItem, { backgroundColor: colors.card }]}
-            >
-              <View style={styles.categoryRow}>
+        {categoriesLoading ? (
+          <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+            <ActivityIndicator color={colors.tint} />
+          </View>
+        ) : topCategories.length === 0 ? (
+          <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+            <CustomText size={14} style={{ color: colors.icon }}>
+              {t("statistics.no_category_data") || "Không có dữ liệu danh mục"}
+            </CustomText>
+          </View>
+        ) : (
+          <View style={styles.categoryList}>
+            {topCategories.map((c) => {
+              const displayName = parseCategoryName(c.category_name, i18n.language);
+              const pct = Math.round(c.percentage * 100);
+              return (
                 <View
-                  style={[styles.categoryIcon, { backgroundColor: c.color }]}
+                  key={c.id}
+                  style={[styles.categoryItem, { backgroundColor: colors.card }]}
                 >
-                  <FontAwesome6
-                    name={c.icon as any}
-                    size={normalize(18)}
-                    color="#fff"
-                  />
+                  <View style={styles.categoryRow}>
+                    <View
+                      style={[styles.categoryIcon, { backgroundColor: c.color || colors.tint }]}
+                    >
+                      <FontAwesome6
+                        name={(c.icon || "tag") as any}
+                        size={normalize(18)}
+                        color="#fff"
+                      />
+                    </View>
+                    <CustomText type="medium" size={15}>
+                      {displayName}
+                    </CustomText>
+                  </View>
+
+                  <View style={styles.categoryRight}>
+                    <CustomText type="medium" size={13}>
+                      {pct}%
+                    </CustomText>
+                    <CustomText type="bold" size={15}>
+                      {formatCurrency(c.total_amount)}
+                    </CustomText>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.progressBg,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.progressFill,
+                        { width: `${Math.min(pct, 100)}%`, backgroundColor: c.color || colors.tint },
+                      ]}
+                    />
+                  </View>
                 </View>
-                <CustomText type="medium" size={15}>
-                  {c.name}
-                </CustomText>
-              </View>
-
-              <View style={styles.categoryRight}>
-                <CustomText type="medium" size={13}>
-                  {c.percentage}%
-                </CustomText>
-                <CustomText type="bold" size={15}>
-                  {formatCurrency(c.amount)}
-                </CustomText>
-              </View>
-
-              <View
-                style={[
-                  styles.progressBg,
-                  { backgroundColor: colors.background },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${c.percentage}%`, backgroundColor: c.color },
-                  ]}
-                />
-              </View>
-            </View>
-          ))}
-        </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* ===== FREQUENT ===== */}
         <SectionHeader title={t("statistics.daily_expenses")} />

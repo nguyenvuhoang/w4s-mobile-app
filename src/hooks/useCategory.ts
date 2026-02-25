@@ -2,7 +2,7 @@ import { AppConfig } from '@/config/AppConfig';
 import StorageKey from '@/constants/StorageKey';
 import { AnalyzeCategoryPayload, Category, categoryRepository, CreateCategoryPayload } from '@/services/repositories/category.repository';
 import StorageService from '@/services/StorageService';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface UseCategoryOptions {
   autoFetch?: boolean;
@@ -27,6 +27,70 @@ export interface CategoryAnalyzeItem {
   total_amount: number;
   percentage: number;
 }
+
+export interface TopSpendingCategoryItem {
+  id: number;
+  category_code: string;
+  wallet_id: number;
+  parent_category_id: number;
+  category_group: 'EXPENSE' | 'INCOME' | 'LOAN';
+  category_type: string;
+  category_name: string;
+  icon: string;
+  color: string;
+  total_amount: number;
+  percentage: number;
+  transaction_count: number;
+}
+
+/**
+ * Hook lấy top danh mục chi tiêu tổng hợp tất cả ví (không cần wallet_id)
+ * Dùng cho màn hình tổng quan (StatisticsScreen)
+ */
+export const useTopSpendingCategories = () => {
+  const [data, setData] = useState<TopSpendingCategoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchTopCategories = useCallback(async (
+    period_type: string = 'M',
+    take: number = 5
+  ) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+
+      const response = await categoryRepository.getTopSpendingCategories({
+        usercode: userCode?.toString() || '',
+        period_type,
+        take,
+      });
+
+      if (response.isSuccess() && response.data) {
+        // API có thể trả về dưới dạng mảng trực tiếp hoặc lồng trong key
+        const list: TopSpendingCategoryItem[] =
+          Array.isArray(response.data)
+            ? response.data
+            : response.data.data || response.data.categories || response.data.category_analyze || [];
+        setData(list);
+        return list;
+      } else {
+        throw new Error(response.message || 'Failed to fetch top spending categories');
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to fetch top spending categories';
+      setError(msg);
+      console.error('[useTopSpendingCategories] Error:', err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { data, loading, error, fetchTopCategories };
+};
 
 let sessionCache: {
   categories: Category[];

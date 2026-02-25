@@ -100,4 +100,59 @@ export const financeSummaryRepository = {
       throw error;
     }
   },
+
+  /**
+   * Lấy chi tiêu theo từng ngày trong tháng
+   * Params: usercode, month (1-12), year (YYYY), wallet_id? (tùy chọn)
+   */
+  async getMonthlyExpense(params: {
+    usercode: string;
+    anchor_date: string;
+    wallet_id?: number;
+  }): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_WALLET_MONTHLY_EXPENSE,
+        {
+          usercode: params.usercode,
+          anchor_date: params.anchor_date,
+          wallet_id: params.wallet_id,
+        },
+        false,
+        true,
+      );
+    } catch (error) {
+      console.error(
+        "[financeSummaryRepository] Error fetching monthly expense:",
+        error,
+      );
+      throw error;
+    }
+  },
+
+  async getMonthlyIncome(params: {
+    usercode: string;
+    anchor_date: string;
+    wallet_id?: number;
+  }): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_WALLET_MONTHLY_INCOME,
+        {
+          usercode: params.usercode,
+          anchor_date: params.anchor_date,
+          wallet_id: params.wallet_id,
+        },
+        false,
+        true,
+      );
+    } catch (error) {
+      console.error(
+        "[financeSummaryRepository] Error fetching monthly income:",
+        error,
+      );
+      throw error;
+    }
+  },
 };
+

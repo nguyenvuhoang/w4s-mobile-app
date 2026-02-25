@@ -205,3 +205,94 @@ export const useWalletOpeningClosingBalance = () => {
     fetchBalance,
   };
 };
+
+export interface ChartDataPoint {
+  value: number;
+  label: string;
+}
+
+export interface MonthlyChartData {
+  expenses: ChartDataPoint[];
+  incomes: ChartDataPoint[];
+  month: number;
+  year: number;
+}
+
+export const useMonthlyChartData = (params?: {
+  anchor_date?: string;
+  walletId?: number;
+}) => {
+  const now = new Date();
+  const defaultAnchor = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const anchorDate = params?.anchor_date ?? defaultAnchor;
+  const walletId   = params?.walletId;
+
+  const [expenses, setExpenses] = useState<ChartDataPoint[]>([]);
+  const [incomes,  setIncomes]  = useState<ChartDataPoint[]>([]);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState<string | null>(null);
+
+  const fetchChartData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      if (!userCode) throw new Error("Missing user code");
+
+      const [expenseRes, incomeRes] = await Promise.all([
+        financeSummaryRepository.getMonthlyExpense({
+          usercode: userCode,
+          anchor_date: anchorDate,
+          wallet_id: walletId,
+        }),
+        financeSummaryRepository.getMonthlyIncome({
+          usercode: userCode,
+          anchor_date: anchorDate,
+          wallet_id: walletId,
+        }),
+      ]);
+
+      const mapItems = (res: any): ChartDataPoint[] => {
+        const items: any[] = res?.data?.items ?? res?.data ?? [];
+        if (!Array.isArray(items)) return [];
+        return items.map((item: any) => ({
+          value: Number(item.amount ?? item.total ?? item.value ?? 0),
+          label: String(item.day ?? item.date ?? item.label ?? ""),
+        }));
+      };
+
+      if (expenseRes.isSuccess()) {
+        setExpenses(mapItems(expenseRes));
+      } else {
+        console.warn("[useMonthlyChartData] expense API error:", expenseRes.message);
+      }
+
+      if (incomeRes.isSuccess()) {
+        setIncomes(mapItems(incomeRes));
+      } else {
+        console.warn("[useMonthlyChartData] income API error:", incomeRes.message);
+      }
+    } catch (err: any) {
+      const msg = err?.message ?? "Error fetching monthly chart data";
+      setError(msg);
+      console.error("[useMonthlyChartData]", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [anchorDate, walletId]);
+
+  useEffect(() => {
+    fetchChartData();
+  }, [fetchChartData]);
+
+  return {
+    expenses,
+    incomes,
+    loading,
+    error,
+    anchorDate,
+    refresh: fetchChartData,
+  };
+};
+
