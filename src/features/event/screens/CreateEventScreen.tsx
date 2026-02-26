@@ -57,7 +57,11 @@ const CreateEventScreen: React.FC = () => {
   const [currency, setCurrency] = useState("VND");
   const [currencySymbol, setCurrencySymbol] = useState("đ");
   const [currencyName, setCurrencyName] = useState("Vietnamese Dong");
-  const [endDate, setEndDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(() => {
+    const nextDay = new Date();
+    nextDay.setDate(nextDay.getDate() + 1);
+    return nextDay;
+  });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [creating, setCreating] = useState(false);
 
@@ -228,16 +232,12 @@ const CreateEventScreen: React.FC = () => {
       console.log("[CreateEvent] Creating event:", eventData);
 
       await eventRepository.createEvent(eventData);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      await refetch();
+      refetch();
       router.back();
       Alert.alert("Thành công", "Đã tạo sự kiện mới");
     } catch (error) {
       console.error("[CreateEvent] Create failed:", error);
-      Alert.alert("Lỗi", "Không thể tạo sự kiện. Vui lòng thử lại.");
+      Alert.alert("Lỗi", "Không thể tạo sự kiện. Vui lòng thử lại." + error);
     } finally {
       setCreating(false);
     }

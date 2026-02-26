@@ -146,9 +146,39 @@ export const useTransaction = () => {
     }
   };
 
+  const deleteTransaction = async (transactionId: string) => {
+    if (!appInfo?.user_code) {
+      throw new Error("User not authenticated");
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await transactionRepository.deleteTransaction(
+        transactionId,
+      );
+
+      if (response.isSuccess()) {
+        TransactionEventEmitter.emitTransactionChanged();
+        return response;
+      } else {
+        throw new Error(response.getError() || "Không thể xóa giao dịch");
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Đã xảy ra lỗi";
+      console.error("[useTransaction] Error:", err);
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     loading,
     error,
     createTransaction,
+    deleteTransaction,
   };
 };

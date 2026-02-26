@@ -137,4 +137,28 @@ export const transactionRepository = {
       throw error;
     }
   },
+  /**
+   * Delete transaction
+   * @param transactionid Transaction id
+   * @returns API response
+   */
+  async deleteTransaction(
+    transactionid: string,
+  ): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_DELETE_WALLET_TRANSACTION,
+        {
+          transaction_id: transactionid,
+        },
+        false,
+      );
+    } catch (error) {
+      console.error(
+        "[transactionRepository] Error deleting transaction:",
+        error,
+      );
+      throw error;
+    }
+  },
 };

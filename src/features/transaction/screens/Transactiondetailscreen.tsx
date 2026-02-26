@@ -18,6 +18,7 @@ import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import { hp, normalize, wp } from '@/utils/layout';
+import { useTransaction } from '../hooks/useTransaction';
 import { useTransactionDetail } from '../hooks/useTransactionDetail';
 
 // --- Types ---
@@ -221,6 +222,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
     }, [propTransactionId, params.transactionId, params.transaction]);
 
     const { transaction, loading, error, refetch } = useTransactionDetail(transactionId);
+    const { deleteTransaction } = useTransaction();
 
     // --- Formatters ---
     const formatDate = (dateString: string) => {
@@ -334,7 +336,18 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                 {
                     text: t('Delete') || 'Delete',
                     style: 'destructive',
-                    onPress: () => console.log('Delete transaction:', transactionId)
+                    onPress: async () => {
+                        if (transactionId) {
+                            try {
+                                await deleteTransaction(transactionId);
+                                Alert.alert(t('Success') || 'Thành công', t('Transaction deleted successfully') || 'Đã xóa giao dịch');
+                                router.back();
+                            } catch (err) {
+                                console.error('Delete transaction failed:', err);
+                                Alert.alert(t('Error') || 'Lỗi', t('Could not delete transaction') || 'Không thể xóa giao dịch');
+                            }
+                        }
+                    }
                 },
             ]
         );
