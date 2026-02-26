@@ -223,7 +223,7 @@ export const useMonthlyChartData = (params?: {
   walletId?: number;
 }) => {
   const now = new Date();
-  const defaultAnchor = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const defaultAnchor = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const anchorDate = params?.anchor_date ?? defaultAnchor;
   const walletId   = params?.walletId;
 
@@ -253,23 +253,30 @@ export const useMonthlyChartData = (params?: {
         }),
       ]);
 
-      const mapItems = (res: any): ChartDataPoint[] => {
-        const items: any[] = res?.data?.items ?? res?.data ?? [];
+      const mapItems = (items: any[]): ChartDataPoint[] => {
         if (!Array.isArray(items)) return [];
-        return items.map((item: any) => ({
-          value: Number(item.amount ?? item.total ?? item.value ?? 0),
-          label: String(item.day ?? item.date ?? item.label ?? ""),
+        const points = items.map((item: any) => ({
+          value: Number(item.value ?? item.amount ?? item.total ?? 0),
+          label: String(item.label ?? item.day ?? item.date ?? ""),
         }));
+        // Tính lũy tiến: ngày N = tổng từ ngày 1 đến ngày N
+        let cumulative = 0;
+        return points.map((p) => {
+          cumulative += p.value;
+          return { ...p, value: cumulative };
+        });
       };
 
       if (expenseRes.isSuccess()) {
-        setExpenses(mapItems(expenseRes));
+        const raw = expenseRes?.data?.monthly_expense?.data ?? [];
+        setExpenses(mapItems(raw));
       } else {
         console.warn("[useMonthlyChartData] expense API error:", expenseRes.message);
       }
 
       if (incomeRes.isSuccess()) {
-        setIncomes(mapItems(incomeRes));
+        const raw = incomeRes?.data?.monthly_income?.data ?? [];
+        setIncomes(mapItems(raw));
       } else {
         console.warn("[useMonthlyChartData] income API error:", incomeRes.message);
       }

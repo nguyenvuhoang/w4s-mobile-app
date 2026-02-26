@@ -32,6 +32,12 @@ interface ParentCategory {
 
 type CategoryType = 'INCOME' | 'EXPENSE';
 
+const getBaseType = (categoryType: string): CategoryType => {
+    if (categoryType.startsWith('INCOME')) return 'INCOME';
+    if (categoryType.startsWith('EXPENSE')) return 'EXPENSE';
+    return 'EXPENSE';
+};
+
 const CreateCategoryScreen: React.FC = () => {
     const { colors } = useAppTheme();
     const params = useLocalSearchParams();
@@ -137,9 +143,8 @@ const CreateCategoryScreen: React.FC = () => {
                             // 🔥 Set parent category
                             setParentCategory(selectedParent);
 
-                            // 🔥 Sync type với parent category (giống AddTransactionScreen)
                             if (selectedParent.category_type) {
-                                setSelectedType(selectedParent.category_type as CategoryType);
+                                setSelectedType(getBaseType(selectedParent.category_type));
                             }
 
                             await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
@@ -179,10 +184,15 @@ const CreateCategoryScreen: React.FC = () => {
         try {
             setLoading(true);
 
-            // Gọi API tạo category thông qua hook
+
+            const categoryGroup = parentCategory
+                ? parentCategory.category_type as 'EXPENSE' | 'INCOME' | 'LOAN'
+                : selectedType;
+            const categoryType = selectedType;
+
             const result = await createCategory({
-                category_group: selectedType,
-                category_type: selectedType,
+                category_group: categoryType,
+                category_type: categoryType,
                 category_name: categoryNameJson,
                 icon: icon,
                 color: iconColor,

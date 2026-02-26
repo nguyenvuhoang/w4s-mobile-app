@@ -1,8 +1,9 @@
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  Alert,
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -13,10 +14,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
+import STORAGE_KEY from "@/constants/StorageKey";
+import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
+import { useEditCategory } from "@/features/category/hooks/useEditCategory";
+import { useCategory } from "@/hooks/useCategory";
 import { Category } from "@/services/repositories/category.repository";
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
+import { translateText } from "@/utils/translation";
 
 /* =====================
    Helpers
@@ -50,10 +56,18 @@ const getCategoryGroupLabel = (group: string) => {
 ===================== */
 const EditCategoryScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { updating, deleting, updateCategory, deleteCategory } = useEditCategory();
+  const { clearCache } = useCategory({ autoFetch: false });
+  const { showNotification, hideNotification } = useNotification();
+  const { i18n } = useTranslation();
   const params = useLocalSearchParams<{
     category?: string;
     allCategories?: string;
   }>();
+
+  // Ngôn ngữ hiện tại
+  const currentLang = i18n.language as 'vi' | 'en';
+  const otherLang = currentLang === 'vi' ? 'en' : 'vi';
 
   /* =====================
      Parse category param
@@ -83,59 +97,113 @@ const EditCategoryScreen: React.FC = () => {
 
   const parsedName = parseCategoryName(category.category_name);
 
-  /* =====================
-     Local state
-  ===================== */
-  const [nameVi, setNameVi] = useState(parsedName.vi);
-  const [nameEn, setNameEn] = useState(parsedName.en);
+  const [primaryName, setPrimaryName] = useState(
+    currentLang === 'vi' ? parsedName.vi : parsedName.en
+  );
+  const [translatedName, setTranslatedName] = useState(
+    currentLang === 'vi' ? parsedName.en : parsedName.vi
+  );
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(
+    !!(currentLang === 'vi' ? parsedName.en : parsedName.vi)
+  );
+  const [isEditingTranslation, setIsEditingTranslation] = useState(false);
+  const translateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const [icon, setIcon] = useState(category.icon);
   const [color, setColor] = useState(category.color);
 
-  // ✅ Lưu toàn bộ parent category object
   const [parentCategory, setParentCategory] = useState<Category | null>(() => {
     if (!category.parent_category_id || !allCategories.length) return null;
-    return (
-      allCategories.find((c) => c.id === category.parent_category_id) ||
-      null
-    );
+    return allCategories.find((c) => c.id == category.parent_category_id) || null;
   });
 
-  const parentParsedName = useMemo(() => {
-    return parentCategory
-      ? parseCategoryName(parentCategory.category_name)
-      : null;
-  }, [parentCategory]);
+  const getLocalizedName = (nameJson: string) => {
+    try {
+      const parsed = JSON.parse(nameJson);
+      return parsed[currentLang] || parsed.vi || parsed.en || '';
+    } catch {
+      return nameJson;
+    }
+  };
 
-  /* =====================
-     Load selected icon/color/parent from storage
-  ===================== */
+  useEffect(() => {
+    if (translateTimeoutRef.current) {
+      clearTimeout(translateTimeoutRef.current);
+    }
+
+    if (primaryName.trim() && !isEditingTranslation) {
+      setIsTranslating(true);
+      translateTimeoutRef.current = setTimeout(async () => {
+        try {
+          const result = await translateText(primaryName.trim(), currentLang, otherLang);
+          if (result.success) {
+            setTranslatedName(result.translatedText);
+            setShowTranslation(true);
+          }
+        } catch (err) {
+          console.error('[EditCategory] Translation failed:', err);
+        } finally {
+          setIsTranslating(false);
+        }
+      }, 800);
+    } else {
+      setIsTranslating(false);
+      if (!primaryName.trim()) {
+        setTranslatedName('');
+        setShowTranslation(false);
+      }
+    }
+
+    return () => {
+      if (translateTimeoutRef.current) clearTimeout(translateTimeoutRef.current);
+    };
+  }, [primaryName, currentLang, otherLang, isEditingTranslation]);
+
+  const handleRetryTranslation = async () => {
+    if (!primaryName.trim()) return;
+    setIsTranslating(true);
+    try {
+      const result = await translateText(primaryName.trim(), currentLang, otherLang);
+      if (result.success) {
+        setTranslatedName(result.translatedText);
+        setShowTranslation(true);
+      }
+    } catch (err) {
+      console.error('[EditCategory] Retry translation failed:', err);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       const loadSelectedData = async () => {
-        // ✅ Load icon - dùng getAsyncItem
-        const selectedIcon = await StorageService.getAsyncItem("temp_selected_icon");
-        if (selectedIcon) {
-          setIcon(selectedIcon);
-          await StorageService.removeAsyncItem("temp_selected_icon");
-        }
-
-        // ✅ Load color - dùng getAsyncItem
-        const selectedColor = await StorageService.getAsyncItem("temp_selected_color");
-        if (selectedColor) {
-          setColor(selectedColor);
-          await StorageService.removeAsyncItem("temp_selected_color");
-        }
-
-        // ✅ Load parent category - dùng getAsyncItem
-        const selectedCategoryJson = await StorageService.getAsyncItem("temp_selected_category");
-        if (selectedCategoryJson) {
-          try {
-            const selectedCategory = JSON.parse(selectedCategoryJson) as Category;
-            setParentCategory(selectedCategory);
-          } catch (err) {
-            console.error("Parse parent category error:", err);
+        try {
+          const selectedIcon = await StorageService.getItem(STORAGE_KEY.TEMP_ICON_STORAGE);
+          if (selectedIcon) {
+            setIcon(selectedIcon);
+            await StorageService.removeItem(STORAGE_KEY.TEMP_ICON_STORAGE);
           }
-          await StorageService.removeAsyncItem("temp_selected_category");
+
+          const selectedColor = await StorageService.getItem(STORAGE_KEY.TEMP_COLOR_STORAGE);
+          if (selectedColor) {
+            setColor(selectedColor);
+            await StorageService.removeItem(STORAGE_KEY.TEMP_COLOR_STORAGE);
+          }
+
+          const selectedCategoryJson = await StorageService.getAsyncItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
+          if (selectedCategoryJson) {
+            try {
+              const selectedCategory = JSON.parse(selectedCategoryJson) as Category;
+              setParentCategory(selectedCategory);
+            } catch (err) {
+              console.error('[EditCategory] Failed to parse parent category:', err);
+            }
+            await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
+          }
+        } catch (error) {
+          console.error('[EditCategory] Failed to load selected data:', error);
         }
       };
 
@@ -164,7 +232,7 @@ const EditCategoryScreen: React.FC = () => {
     router.push({
       pathname: "/(protected)/select-category",
       params: {
-        selectedType: category.category_type,
+        selectedType: category.category_group,
         isSelectParent: "true",
       },
     });
@@ -173,60 +241,80 @@ const EditCategoryScreen: React.FC = () => {
   const handleClearParent = () => {
     if (!parentCategory) return;
 
-    Alert.alert(
+    showNotification(
       "Xóa loại",
+      "warning",
+      "",
       "Bạn có muốn xóa danh mục cha (loại) hiện tại không?",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xóa",
-          style: "destructive",
-          onPress: () => setParentCategory(null),
-        },
-      ]
+      () => {
+        setParentCategory(null);
+        hideNotification();
+      }
     );
   };
 
   const handleSave = async () => {
-    if (!nameVi.trim()) {
-      Alert.alert("Lỗi", "Tên nhóm (VI) không được để trống");
+    if (!primaryName.trim()) {
+      showNotification("Tên nhóm không được để trống", "warning");
       return;
     }
 
-    const payload = {
-      ...category,
-      category_name: stringifyCategoryName(nameVi, nameEn),
+    const viName = currentLang === 'vi' ? primaryName.trim() : translatedName.trim() || primaryName.trim();
+    const enName = currentLang === 'en' ? primaryName.trim() : translatedName.trim() || primaryName.trim();
+
+    const success = await updateCategory({
+      id: category.id,
+      parent_category_id: parentCategory?.id ?? 0,
+      category_group: category.category_group,
+      category_type: category.category_type,
+      category_name: stringifyCategoryName(viName, enName),
       icon,
       color,
-      parent_category_id: parentCategory?.id || null, // ✅ lấy ID từ object
-    };
+      contract_number: category.category_code ?? '',
+    });
 
-    console.log("UPDATE CATEGORY:", payload);
-
-    // TODO: call API update category
-    // await updateCategory(payload)
-
-    Alert.alert("Thành công", "Đã cập nhật nhóm", [
-      { text: "OK", onPress: () => router.back() },
-    ]);
+    if (success) {
+      clearCache();
+      showNotification(
+        "Đã cập nhật nhóm thành công",
+        "success",
+        "",
+        "",
+        undefined,
+        () => router.back()
+      );
+    } else {
+      showNotification("Không thể cập nhật nhóm. Vui lòng thử lại.", "error");
+    }
   };
 
   const handleDelete = () => {
-    Alert.alert("Xóa nhóm", "Bạn có chắc chắn muốn xóa nhóm này không?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Xóa",
-        style: "destructive",
-        onPress: async () => {
-          console.log("DELETE CATEGORY:", category.id);
-
-          // TODO: call API delete
-          // await deleteCategory(category.category_id)
-
-          router.back();
-        },
+    showNotification(
+      "Xóa nhóm",
+      "warning",
+      "",
+      "Bạn có chắc chắn muốn xóa nhóm này không?",
+      async () => {
+        hideNotification();
+        const success = await deleteCategory(category.id);
+        if (success) {
+          clearCache();
+          showNotification(
+            "Đã xóa nhóm thành công",
+            "success",
+            "",
+            "",
+            undefined,
+            () => router.back()
+          );
+        } else {
+          showNotification("Không thể xóa nhóm. Vui lòng thử lại.", "error");
+        }
       },
-    ]);
+      undefined,
+      undefined,
+      () => hideNotification()
+    );
   };
 
   /* =====================
@@ -253,19 +341,17 @@ const EditCategoryScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* INFO CARD: Nhóm (readonly) + Loại (parent category) */}
+        {/* INFO CARD: Nhóm (readonly) */}
         <View
           style={[
             styles.infoCard,
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
         >
-          {/* NHÓM - READONLY */}
           <View style={styles.infoRow}>
             <CustomText style={[styles.infoLabel, { color: colors.icon }]}>
               Nhóm
             </CustomText>
-
             <View style={styles.readonlyValue}>
               <CustomText style={[styles.infoValue, { color: colors.text }]}>
                 {getCategoryGroupLabel(category.category_group)}
@@ -277,75 +363,6 @@ const EditCategoryScreen: React.FC = () => {
               />
             </View>
           </View>
-
-          <View
-            style={[styles.infoDivider, { backgroundColor: colors.border }]}
-          />
-
-          {/* LOẠI - PARENT CATEGORY (EDITABLE) */}
-          <TouchableOpacity
-            style={styles.infoRow}
-            activeOpacity={0.7}
-            onPress={handleSelectParentCategory}
-          >
-            <CustomText style={[styles.infoLabel, { color: colors.icon }]}>
-              Loại
-            </CustomText>
-
-            <View style={styles.parentValue}>
-              {parentCategory ? (
-                <>
-                  <View
-                    style={[
-                      styles.parentIconSmall,
-                      { backgroundColor: parentCategory.color },
-                    ]}
-                  >
-                    <FontAwesome6
-                      name={parentCategory.icon as any}
-                      size={normalize(14)}
-                      color="#fff"
-                    />
-                  </View>
-                  <CustomText
-                    style={[styles.infoValue, { color: colors.text }]}
-                    numberOfLines={1}
-                  >
-                    {parentParsedName?.vi || "N/A"}
-                  </CustomText>
-                </>
-              ) : (
-                <CustomText
-                  style={[styles.placeholderText, { color: colors.icon }]}
-                >
-                  Chọn loại
-                </CustomText>
-              )}
-
-              <TouchableOpacity
-                onPress={(e) => {
-                  // tránh trigger onPress của row
-                  e.stopPropagation?.();
-                  handleClearParent();
-                }}
-                disabled={!parentCategory}
-                hitSlop={10}
-                style={{ opacity: parentCategory ? 1 : 0.35 }}
-              >
-                <Ionicons
-                  name="close-circle"
-                  size={normalize(18)}
-                  color={colors.error}
-                />
-              </TouchableOpacity>
-
-              <FontAwesome6
-                name="chevron-right"
-                size={normalize(12)}
-                color={colors.icon}
-              />
-            </View>
-          </TouchableOpacity>
         </View>
 
         {/* ICON & COLOR SELECTORS */}
@@ -395,11 +412,77 @@ const EditCategoryScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* NAME VI */}
-        <View style={styles.field}>
+        {/* Parent Category Selector - Optional */}
+        <View style={styles.parentSection}>
           <CustomText style={[styles.label, { color: colors.text }]}>
-            Tên nhóm (VI)
+            Danh mục cha
           </CustomText>
+          <TouchableOpacity
+            style={[
+              styles.parentField,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+            onPress={handleSelectParentCategory}
+          >
+            <View style={styles.parentFieldLeft}>
+              {parentCategory ? (
+                <>
+                  <View
+                    style={[
+                      styles.parentCategoryIcon,
+                      { backgroundColor: parentCategory.color },
+                    ]}
+                  >
+                    <FontAwesome6
+                      name={parentCategory.icon as any}
+                      size={normalize(18)}
+                      color="#fff"
+                    />
+                  </View>
+                  <CustomText style={[styles.parentFieldText, { color: colors.text }]}>
+                    {getLocalizedName(parentCategory.category_name)}
+                  </CustomText>
+                </>
+              ) : (
+                <>
+                  <View
+                    style={[
+                      styles.parentCategoryIcon,
+                      { backgroundColor: colors.border },
+                    ]}
+                  />
+                  <CustomText style={[styles.parentFieldText, { color: colors.icon }]}>
+                    Chọn danh mục cha (tùy chọn)
+                  </CustomText>
+                </>
+              )}
+            </View>
+            {parentCategory && (
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation?.();
+                  handleClearParent();
+                }}
+                hitSlop={10}
+              >
+                <Ionicons name="close-circle" size={normalize(20)} color={colors.error} />
+              </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* PRIMARY NAME (ngôn ngữ hiện tại) */}
+        <View style={styles.field}>
+          <View style={styles.labelRow}>
+            <CustomText style={[styles.label, { color: colors.text }]}>
+              {currentLang === 'vi' ? 'Tên nhóm (VI)' : 'Category name (EN)'}
+            </CustomText>
+            <View style={styles.langBadge}>
+              <CustomText style={styles.langBadgeText}>
+                {currentLang.toUpperCase()}
+              </CustomText>
+            </View>
+          </View>
           <View
             style={[
               styles.inputContainer,
@@ -407,53 +490,98 @@ const EditCategoryScreen: React.FC = () => {
             ]}
           >
             <TextInput
-              value={nameVi}
-              onChangeText={setNameVi}
-              placeholder="Nhập tên nhóm"
+              value={primaryName}
+              onChangeText={(text) => {
+                setPrimaryName(text);
+                setIsEditingTranslation(false);
+              }}
+              placeholder={currentLang === 'vi' ? 'Nhập tên nhóm...' : 'Enter category name...'}
               placeholderTextColor={colors.icon}
               style={[styles.input, { color: colors.text }]}
             />
+            {isTranslating && (
+              <ActivityIndicator size="small" color={colors.tint} />
+            )}
           </View>
         </View>
 
-        {/* NAME EN */}
-        <View style={styles.field}>
-          <CustomText style={[styles.label, { color: colors.text }]}>
-            Tên nhóm (EN)
-          </CustomText>
-          <View
-            style={[
-              styles.inputContainer,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-          >
-            <TextInput
-              value={nameEn}
-              onChangeText={setNameEn}
-              placeholder="Enter category name"
-              placeholderTextColor={colors.icon}
-              style={[styles.input, { color: colors.text }]}
-            />
+        {/* TRANSLATED NAME (ngôn ngữ còn lại - auto) */}
+        {showTranslation && primaryName.trim() && (
+          <View style={styles.field}>
+            <View style={styles.labelRow}>
+              <CustomText style={[styles.label, { color: colors.text }]}>
+                {otherLang === 'vi' ? 'Tên nhóm (VI)' : 'Category name (EN)'}
+              </CustomText>
+              <View style={[styles.langBadge, { backgroundColor: colors.border }]}>
+                <CustomText style={[styles.langBadgeText, { color: colors.text }]}>
+                  {otherLang.toUpperCase()}
+                </CustomText>
+              </View>
+              <TouchableOpacity
+                style={styles.autoTranslateTag}
+                onPress={handleRetryTranslation}
+              >
+                <Ionicons name="language" size={normalize(14)} color={colors.tint} />
+                <CustomText style={[styles.autoTranslateText, { color: colors.tint }]}>
+                  Tự động dịch
+                </CustomText>
+              </TouchableOpacity>
+            </View>
+            <View
+              style={[
+                styles.inputContainer,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <TextInput
+                value={translatedName}
+                onChangeText={(text) => {
+                  setTranslatedName(text);
+                  setIsEditingTranslation(true);
+                }}
+                placeholder={otherLang === 'vi' ? 'Tên tiếng Việt...' : 'English name...'}
+                placeholderTextColor={colors.icon}
+                style={[styles.input, { color: colors.text }]}
+              />
+              {isEditingTranslation && (
+                <TouchableOpacity onPress={handleRetryTranslation} style={styles.refreshButton}>
+                  <Ionicons name="refresh" size={normalize(18)} color={colors.tint} />
+                </TouchableOpacity>
+              )}
+            </View>
+            <CustomText style={[styles.hintText, { color: colors.icon }]}>
+              Có thể chỉnh sửa thủ công nếu cần
+            </CustomText>
           </View>
-        </View>
+        )}
 
         {/* SAVE */}
         <TouchableOpacity
-          style={[styles.saveButton, { backgroundColor: colors.tint }]}
+          style={[
+            styles.saveButton,
+            { backgroundColor: updating ? colors.icon : colors.tint },
+          ]}
           onPress={handleSave}
+          disabled={updating || deleting}
         >
-          <CustomText style={styles.saveButtonText}>Lưu thay đổi</CustomText>
+          <CustomText style={styles.saveButtonText}>
+            {updating ? "Đang lưu..." : "Lưu thay đổi"}
+          </CustomText>
         </TouchableOpacity>
 
         {/* DELETE */}
-        <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+        <TouchableOpacity
+          style={[styles.deleteButton, { opacity: deleting ? 0.5 : 1 }]}
+          onPress={handleDelete}
+          disabled={updating || deleting}
+        >
           <Ionicons
             name="trash-outline"
             size={normalize(18)}
             color={colors.error}
           />
           <CustomText style={[styles.deleteText, { color: colors.error }]}>
-            Xóa nhóm
+            {deleting ? "Đang xóa..." : "Xóa nhóm"}
           </CustomText>
         </TouchableOpacity>
 
@@ -577,10 +705,43 @@ const styles = StyleSheet.create({
   field: {
     marginBottom: hp(2),
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: normalize(8),
+    gap: normalize(8),
+  },
   label: {
     fontSize: normalize(14),
     fontWeight: "500",
-    marginBottom: normalize(8),
+  },
+  langBadge: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: normalize(8),
+    paddingVertical: normalize(2),
+    borderRadius: normalize(4),
+  },
+  langBadgeText: {
+    fontSize: normalize(11),
+    fontWeight: '600',
+    color: '#fff',
+  },
+  autoTranslateTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: normalize(4),
+    marginLeft: 'auto',
+  },
+  autoTranslateText: {
+    fontSize: normalize(12),
+  },
+  refreshButton: {
+    padding: normalize(4),
+  },
+  hintText: {
+    fontSize: normalize(12),
+    marginTop: normalize(6),
+    fontStyle: 'italic',
   },
   inputContainer: {
     flexDirection: "row",
@@ -589,6 +750,7 @@ const styles = StyleSheet.create({
     paddingVertical: normalize(14),
     borderRadius: normalize(12),
     borderWidth: 1,
+    gap: normalize(8),
   },
   input: {
     flex: 1,
@@ -618,5 +780,36 @@ const styles = StyleSheet.create({
   deleteText: {
     fontSize: normalize(15),
     fontWeight: "500",
+  },
+
+  // Parent Category Selector (giống CreateCategoryScreen)
+  parentSection: {
+    marginBottom: hp(2),
+  },
+  parentField: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: normalize(16),
+    paddingVertical: normalize(14),
+    borderRadius: normalize(12),
+    borderWidth: 1,
+    marginTop: normalize(8),
+  },
+  parentFieldLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: normalize(12),
+    flex: 1,
+  },
+  parentCategoryIcon: {
+    width: normalize(36),
+    height: normalize(36),
+    borderRadius: normalize(10),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  parentFieldText: {
+    fontSize: normalize(15),
   },
 });

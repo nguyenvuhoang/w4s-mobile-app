@@ -9,7 +9,7 @@ const { width: screenWidth } = Dimensions.get('window');
 
 type ChartPoint = {
   value: number;
-  label: string;  
+  label: string;
   fullLabel?: string;
 };
 
@@ -65,7 +65,7 @@ const LineChartCard: React.FC<LineChartCardProps> = ({
     const n = withZero.length;
     if (n <= 2) return withZero;
 
-    const visibleWidth = chartWidthNoScroll; 
+    const visibleWidth = chartWidthNoScroll;
     const maxLabels = Math.max(2, Math.floor(visibleWidth / Math.max(1, minLabelPx))); // tối thiểu 2 (đầu/cuối)
     const interval = Math.max(1, Math.ceil((n - 1) / maxLabels));
 
@@ -88,7 +88,6 @@ const LineChartCard: React.FC<LineChartCardProps> = ({
       spacing={spacing}
       color={color}
       thickness={scrollable ? 2 : 1.6}
-      curved
       areaChart
       startFillColor={color}
       endFillColor={color}

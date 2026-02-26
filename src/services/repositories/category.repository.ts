@@ -35,6 +35,17 @@ export interface CreateCategoryPayload {
   usercode: string;
 }
 
+export interface UpdateCategoryPayload {
+  id: number;
+  parent_category_id: number;
+  category_group: string;
+  category_type: string;
+  category_name: string;
+  icon: string;
+  color: string;
+  contract_number: string;
+}
+
 export interface AnalyzeCategoryPayload {
   usercode: string;
   wallet_id: number;
@@ -131,33 +142,32 @@ export const categoryRepository = {
     }
   },
 
-  // TODO: Add more method
-  // async createCategory(data: any): Promise<BaseResponseModel> {
-  //   return await apiService.executeWorkflowNew(
-  //     WORKFLOWCODE.MB_CREATE_CATEGORY,
-  //     data,
-  //     false
-  //   );
-  // },
+  async updateCategory(
+    payload: UpdateCategoryPayload
+  ): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_UPDATE_WALLET_CATEGORY,
+        {
+          ...payload
+        },
+        false,
+        true
+      );
+    } catch (error) {
+      console.error('[categoryRepository] Error updating category:', error);
+      throw error;
+    }
+  },
 
-  // async updateCategory(categoryId: string, data: any): Promise<BaseResponseModel> {
-  //   return await apiService.executeWorkflowNew(
-  //     WORKFLOWCODE.MB_UPDATE_CATEGORY,
-  //     {
-  //       category_id: categoryId,
-  //       ...data,
-  //     },
-  //     false
-  //   );
-  // },
-
-  // async deleteCategory(categoryId: string): Promise<BaseResponseModel> {
-  //   return await apiService.executeWorkflowNew(
-  //     WORKFLOWCODE.MB_DELETE_CATEGORY,
-  //     {
-  //       category_id: categoryId,
-  //     },
-  //     false
-  //   );
-  // },
+  async deleteCategory(categoryId: number): Promise<BaseResponseModel> {
+    return await apiService.executeWorkflow(
+      WORKFLOWCODE.WF_MB_DELETE_WALLET_CATEGORY,
+      {
+        category_id: categoryId,
+      },
+      false,
+      true
+    );
+  },
 };

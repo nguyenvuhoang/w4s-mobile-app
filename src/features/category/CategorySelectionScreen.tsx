@@ -1,6 +1,6 @@
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -98,6 +98,15 @@ const CategorySelectionScreen: React.FC = () => {
     setSelectedTab(initialTab);
   }, [initialTab]);
 
+  // Khi quay lại từ EditCategoryScreen → refetch để lấy data mới nhất
+  useFocusEffect(
+    useCallback(() => {
+      if (isEdit) {
+        refetch();
+      }
+    }, [isEdit])
+  );
+
   /* =====================
      Helpers
   ===================== */
@@ -177,6 +186,7 @@ const CategorySelectionScreen: React.FC = () => {
         pathname: "/(protected)/edit-category",
         params: {
           category: encodeURIComponent(JSON.stringify(category)),
+          allCategories: encodeURIComponent(JSON.stringify(categories)),
         },
       });
       return;
