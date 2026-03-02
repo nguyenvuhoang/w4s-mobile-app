@@ -262,6 +262,42 @@ class ApiClient {
     return data;
   }
 
+  public async voiceTranscribe(transcript: string): Promise<any> {
+    if (!transcript?.trim()) {
+      throw new Error("Transcript is empty");
+    }
+
+    const url = this.axiosInstance.defaults.baseURL + "/w4s/api/transaction/voice";
+
+    const customHeaders = await this.getHeaders();
+    const stringHeaders: Record<string, string> = {};
+    for (const key in customHeaders) {
+      stringHeaders[key] = String((customHeaders as Record<string, any>)[key]);
+    }
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        ...stringHeaders,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ transcript, lang: "vi" }),
+    });
+
+    let data: any;
+    try {
+      data = await res.json();
+      console.log("=== Voice Transcribe response:", data);
+    } catch {
+      data = null;
+    }
+
+    if (!res.ok) {
+      throw new Error(`Voice transcribe failed (${res.status}): ${JSON.stringify(data)}`);
+    }
+    return data;
+  }
+
   public async post1(
     data?: any,
     config?: AxiosRequestConfig,

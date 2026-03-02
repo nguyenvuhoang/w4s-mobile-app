@@ -92,7 +92,7 @@ const CustomTabBarButton = ({ children }: any) => {
           style={[styles.arcOptionInner, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => {
             toggleMenu();
-            // TODO: Route for mic
+            router.push("/(protected)/transaction/voice-transaction");
           }}
           activeOpacity={0.7}
         >
