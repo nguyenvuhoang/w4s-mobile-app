@@ -35,6 +35,14 @@ export default function invoiceLayout() {
         }}
       />
       <Stack.Screen
+        name="scan"
+        options={{
+          title: "Scan hóa đơn",
+          presentation: "fullScreenModal",
+          animation: "slide_from_bottom",
+        }}
+      />
+      <Stack.Screen
         name="[id]"
         options={{
           title: "Chi tiết hóa đơn",

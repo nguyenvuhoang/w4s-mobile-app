@@ -377,7 +377,26 @@ const CreateRecurringInvoiceScreen = () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.flex}
       >
-        <AppHeader title={screenTitle} />
+        <AppHeader
+          title={screenTitle}
+          rightComponent={
+            // Ẩn nút Scan đi nếu màn hình đang load dữ liệu autofill từ màn Scan
+            params.autofillData ? null : (
+              <TouchableOpacity
+                onPress={() => router.push("/(protected)/invoice/scan")}
+                style={styles.scanBtn}
+                activeOpacity={0.7}
+              >
+                <FontAwesome6
+                  name="expand"
+                  size={normalize(18)}
+                  color={colors.tint}
+                  solid
+                />
+              </TouchableOpacity>
+            )
+          }
+        />
 
         <ScrollView
           style={styles.flex}
@@ -829,6 +848,12 @@ const createStyles = (colors: any) =>
       fontSize: normalize(16),
       color: "#EF4444",
       fontFamily: Fonts.semiBold,
+    },
+    scanBtn: {
+      width: normalize(40),
+      height: normalize(40),
+      alignItems: "center",
+      justifyContent: "center",
     },
   });
 

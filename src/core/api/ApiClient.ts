@@ -208,6 +208,60 @@ class ApiClient {
     return data;
   }
 
+  public async scanInvoice(uri: string): Promise<any> {
+    if (!uri) {
+      throw new Error("No file uri provided");
+    }
+
+    const fileName = uri.split("/").pop() || `invoice_${Date.now()}.jpg`;
+
+    const fileType = fileName.endsWith(".png")
+      ? "image/png"
+      : fileName.endsWith(".jpeg") || fileName.endsWith(".jpg")
+        ? "image/jpeg"
+        : "application/octet-stream";
+
+    const formData = new FormData();
+    formData.append("file", {
+      uri,
+      name: fileName,
+      type: fileType,
+    } as any);
+
+    formData.append("language", "vie");
+    formData.append("collect_words", "true");
+    formData.append("document_type", "Invoice");
+    formData.append("clean_text", "true");
+
+    const url = this.axiosInstance.defaults.baseURL + "/w4s/api/invoice/scan";
+
+    const customHeaders = await this.getHeaders();
+    const headers: Record<string, string> = {};
+    for (const key in customHeaders) {
+      const value = (customHeaders as Record<string, any>)[key];
+      headers[key] = String(value);
+    }
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    let data: any;
+    try {
+      data = await res.json();
+      console.log("=== Scan Invoice response data:", data);
+    } catch {
+      data = null;
+    }
+
+    if (!res.ok) {
+      throw new Error(`Scan Invoice failed (${res.status}): ${JSON.stringify(data)}`);
+    }
+    return data;
+  }
+
   public async post1(
     data?: any,
     config?: AxiosRequestConfig,
