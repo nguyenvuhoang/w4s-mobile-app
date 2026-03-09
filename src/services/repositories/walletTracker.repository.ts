@@ -77,12 +77,13 @@ export const walletTrackerRepository = {
   //   );
   // },
 
-  async deleteWalletTracker(userCode: string, walletId: number): Promise<BaseResponseModel> {
+  async deleteWalletTracker(userCode: string, walletId: number, confirm: boolean = false): Promise<BaseResponseModel> {
     return await apiService.executeWorkflowNew(
       WORKFLOWCODE.WF_MB_DELETE_WALLET,
       {
         usercode: userCode,
         wallet_id: walletId,
+        is_confirmed: confirm,
       },
       false
     );

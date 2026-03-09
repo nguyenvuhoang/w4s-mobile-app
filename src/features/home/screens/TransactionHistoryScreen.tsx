@@ -5,6 +5,7 @@ import { useInfiniteTransactions } from "@/features/home/hooks/useInfiniteTransa
 import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
 import { styles as homeStyles } from "@/features/home/styles/HomeScreen.Style";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
+import { getValidIconName } from "@/utils/iconMapper";
 import { normalize, wp } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -94,10 +95,13 @@ const TransactionHistoryScreen: React.FC = () => {
 
     // Get category icon
     const getCategoryIcon = (transaction: RecentTransaction): string => {
-        if (transaction.icon) return transaction.icon;
-        if (transaction.type === "INCOME") return "cash";
-        if (transaction.type === "EXPENSE") return "cart";
-        return "swap-horizontal";
+        let iconName = transaction.icon;
+        if (!iconName) {
+            if (transaction.type === "INCOME") iconName = "cash";
+            else if (transaction.type === "EXPENSE") iconName = "cart";
+            else iconName = "swap-horizontal";
+        }
+        return getValidIconName(iconName);
     };
 
     // Get category color
@@ -271,8 +275,8 @@ const TransactionHistoryScreen: React.FC = () => {
                 renderItem={({ item: group }) => (
                     <View>
                         {renderSectionHeader(group.title)}
-                        {group.data.map((transaction) => (
-                            <View key={transaction.transaction_id} style={localStyles.itemWrapper}>
+                        {group.data.map((transaction, index) => (
+                            <View key={`${transaction.transaction_id}-${index}`} style={localStyles.itemWrapper}>
                                 {renderTransactionItem({ item: transaction })}
                             </View>
                         ))}

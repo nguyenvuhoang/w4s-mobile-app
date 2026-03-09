@@ -13,6 +13,7 @@ import {
 } from "@/features/home/hooks/useTopSpendingCategories";
 import { styles } from "@/features/home/styles/HomeScreen.Style";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
+import { getValidIconName } from "@/utils/iconMapper";
 import { hp, normalize } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -105,13 +106,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   // Get category icon based on icon or fallback
   const getCategoryIcon = useCallback((transaction: RecentTransaction): string => {
-    if (transaction.icon) {
-      return transaction.icon;
+    let iconName = transaction.icon;
+    if (!iconName) {
+      if (transaction.type === "INCOME") iconName = "cash";
+      else if (transaction.type === "EXPENSE") iconName = "cart";
+      else iconName = "swap-horizontal";
     }
-    // Fallback icons based on transaction type
-    if (transaction.type === "INCOME") return "cash";
-    if (transaction.type === "EXPENSE") return "cart";
-    return "swap-horizontal";
+    return getValidIconName(iconName);
   }, []);
 
   // Get category color based on color or fallback
@@ -162,7 +163,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         category: JSON.stringify({
           category_id: category.category_id,
           name: category.name,
-          icon: category.icon || 'pricetag-outline',
+          icon: getValidIconName(category.icon || 'pricetag-outline'),
           color: category.color || '#9E9E9E',
           transaction_count: category.transaction_count,
           total_amount: category.total_amount,
@@ -557,10 +558,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 </CustomText>
               </View>
             ) : (
-              topCategories.map((category) => (
+              topCategories.map((category, index) => (
                 <CategoryItem
-                  key={category.category_id}
-                  icon={category.icon || "pricetag-outline"}
+                  key={`${category.category_id}-${index}`}
+                  icon={getValidIconName(category.icon || "pricetag-outline")}
                   iconColor={category.color || "#9E9E9E"}
                   name={parseName(category.name) || t("home.uncategorized")}
                   transactions={`${category.transaction_count} ${t("home.transactions_count")}`}
@@ -624,9 +625,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 </CustomText>
               </View>
             ) : (
-              recentTransactions.map((transaction) => (
+              recentTransactions.map((transaction, index) => (
                 <TransactionItem
-                  key={transaction.transaction_id}
+                  key={`${transaction.transaction_id}-${index}`}
                   icon={getCategoryIcon(transaction)}
                   iconColor={getCategoryColor(transaction)}
                   name={parseName(transaction.title) || t("home.transaction_default_name")}

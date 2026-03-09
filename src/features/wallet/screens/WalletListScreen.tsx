@@ -17,6 +17,7 @@ import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
+  Modal,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -42,6 +43,8 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
     null
   );
   const [showActionModal, setShowActionModal] = useState(false);
+  const [transactionsToDelete, setTransactionsToDelete] = useState<any[] | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const { showNotification } = useNotification();
 
   // ✅ GLOBAL WALLET
@@ -83,31 +86,48 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
     }
   };
 
-  const handleDeleteWallet = () => {
+  const handleDeleteWallet = async () => {
     if (!selectedWallet) return;
-
     setShowActionModal(false);
 
-    setTimeout(() => {
-      showNotification(
-        t("wallet.confirm_delete_message", { name: selectedWallet.name }),
-        "warning",
-        undefined,
-        undefined,
-        async () => {
-          const success = await deleteWalletTracker(selectedWallet.walletId);
-          if (success) {
-            await refresh(); // Cập nhật lại danh sách ví
-            showNotification("Đã xóa ví thành công!", "success");
-            if (defaultWalletId === selectedWallet.walletId) {
-              setDefaultWalletId(null);
-            }
-          } else {
-            showNotification("Không thể xóa ví. Vui lòng thử lại.", "error");
-          }
-        }
-      );
-    }, 300);
+    const response = await deleteWalletTracker(selectedWallet.walletId, false);
+
+    if (response) {
+      const data = response.data || (typeof response.getData === 'function' ? response.getData() : {}) || {};
+      const transactions = Array.isArray(data) ? data : (data.wallet_transactions || data.transactions || data.list || data.transactions_list);
+
+      if (transactions && Array.isArray(transactions) && transactions.length > 0) {
+        setTransactionsToDelete(transactions);
+        setShowConfirmModal(true);
+      } else if (response.isSuccess && !response.isSuccess()) {
+        showNotification(response.getError?.() || "Không thể xóa ví. Vui lòng thử lại.", "error");
+      } else {
+        handleDeleteSuccess();
+      }
+    } else {
+      showNotification("Không thể xóa ví. Vui lòng thử lại.", "error");
+    }
+  };
+
+  const confirmDeleteWallet = async () => {
+    if (!selectedWallet) return;
+    setShowConfirmModal(false);
+
+    const response = await deleteWalletTracker(selectedWallet.walletId, true);
+    if (response && response.isSuccess && response.isSuccess()) {
+      handleDeleteSuccess();
+    } else {
+      showNotification(response?.getError?.() || "Không thể xóa ví. Vui lòng thử lại.", "error");
+    }
+  };
+
+  const handleDeleteSuccess = async () => {
+    await refresh();
+    showNotification("Đã xóa ví thành công!", "success");
+    if (selectedWallet && defaultWalletId === selectedWallet.walletId) {
+      setDefaultWalletId(null);
+    }
+    setTransactionsToDelete(null);
   };
 
   const handleEditWallet = () => {
@@ -287,6 +307,40 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
         colors={colors}
         cancelText={t("common.cancel")}
       />
+
+      <Modal visible={showConfirmModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <CustomText type="semiBold" style={[styles.modalTitle, { color: colors.text }]}>
+              Xác nhận xóa ví
+            </CustomText>
+            <CustomText style={[styles.modalDesc, { color: colors.text }]}>
+              Ví này đang có {transactionsToDelete?.length} giao dịch. Xóa ví sẽ xóa luôn các giao dịch này. Bạn có chắc chắn muốn xóa?
+            </CustomText>
+            <ScrollView style={styles.transactionsScrollView}>
+              {transactionsToDelete?.map((tx, idx) => {
+                const title = tx.transactionname || tx.trandesc || tx.title || tx.transaction_name || tx.description || 'Giao dịch';
+                const amount = tx.nu_m01 || tx.amount || 0;
+                return (
+                  <View key={idx} style={[styles.transactionItemPreview, { borderBottomColor: colors.border }]}>
+                    <CustomText style={{ color: colors.text }} numberOfLines={1}>
+                      {title} • {amount.toLocaleString('vi-VN')}
+                    </CustomText>
+                  </View>
+                );
+              })}
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity onPress={() => setShowConfirmModal(false)} style={styles.modalCancelBtn}>
+                <CustomText style={{ color: colors.icon }}>Hủy</CustomText>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={confirmDeleteWallet} style={[styles.modalConfirmBtn, { backgroundColor: '#FF3B30' }]}>
+                <CustomText style={{ color: '#fff' }} type="semiBold">Xóa ví</CustomText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -468,6 +522,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: normalize(24),
     paddingVertical: normalize(12),
     borderRadius: normalize(12),
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: wp(5),
+  },
+  modalContent: {
+    borderRadius: normalize(16),
+    padding: normalize(20),
+    maxHeight: hp(70),
+  },
+  modalTitle: {
+    fontSize: normalize(18),
+    marginBottom: normalize(10),
+  },
+  modalDesc: {
+    fontSize: normalize(14),
+    marginBottom: normalize(16),
+  },
+  transactionsScrollView: {
+    maxHeight: hp(40),
+    marginBottom: normalize(20),
+  },
+  transactionItemPreview: {
+    paddingVertical: normalize(10),
+    borderBottomWidth: 1,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: normalize(12),
+  },
+  modalCancelBtn: {
+    padding: normalize(12),
+  },
+  modalConfirmBtn: {
+    paddingVertical: normalize(12),
+    paddingHorizontal: normalize(16),
+    borderRadius: normalize(8),
   },
 });
 

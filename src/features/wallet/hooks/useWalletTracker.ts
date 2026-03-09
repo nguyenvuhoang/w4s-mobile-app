@@ -54,7 +54,7 @@ export const useWalletTracker = () => {
     }
   };
 
-  const deleteWalletTracker = async (walletId: number): Promise<boolean> => {
+  const deleteWalletTracker = async (walletId: number, confirm: boolean = false): Promise<any> => {
     setDeleting(true);
     setError(null);
 
@@ -66,19 +66,16 @@ export const useWalletTracker = () => {
 
       const response = await walletTrackerRepository.deleteWalletTracker(
         String(userCode),
-        walletId
+        walletId,
+        confirm
       );
 
-      if (!response.isSuccess()) {
-        throw new Error(response.getError() || response.message || 'Delete wallet failed');
-      }
-
-      return true;
+      return response;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Delete wallet failed';
       setError(message);
       console.error('[useWalletTracker] deleteWalletTracker failed', err);
-      return false;
+      return null;
     } finally {
       setDeleting(false);
     }
