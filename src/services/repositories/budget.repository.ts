@@ -19,6 +19,11 @@ export interface BudgetSearchParams {
   page_size: number;
 }
 
+export interface BudgetSummaryParams {
+  wallet_budget_id: number;
+  period_type: string;
+}
+
 export interface CreateBudgetPayload {
   amount: number;
   category_id: number;
@@ -66,6 +71,26 @@ export const budgetRepository = {
       );
     } catch (error) {
       console.error("[budgetRepository] Error fetching budgets:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get budget summary
+   */
+  async getBudgetSummary(params: BudgetSummaryParams): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_GET_BUDGET_SUMMARY,
+        {
+          wallet_budget_id: params.wallet_budget_id,
+          period_type: params.period_type,
+        },
+        false,
+        true
+      );
+    } catch (error) {
+      console.error("[budgetRepository] Error fetching budget summary:", error);
       throw error;
     }
   },

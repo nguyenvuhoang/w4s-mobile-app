@@ -36,6 +36,14 @@ export interface Budget {
   spent?: number;
 }
 
+export interface BudgetSummary {
+  currency: string;
+  total_budget: number;
+  total_spent: number;
+  remaining: number;
+  days_left: number;
+}
+
 // Session cache - chỉ tồn tại trong runtime, mất khi tắt app
 let sessionCache: {
   budgets: Budget[];
@@ -46,7 +54,9 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
   const { autoFetch = true, forceRefresh = false } = options;
 
   const [allBudgets, setAllBudgets] = useState<Budget[]>([]);
+  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
   const [loading, setLoading] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,6 +170,41 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
   );
 
   /**
+   * Fetch budget summary
+   */
+  const fetchBudgetSummary = useCallback(
+    async (walletId: number | null, periodType: string) => {
+      try {
+        setSummaryLoading(true);
+        setError(null);
+
+        // Map period string (e.g. 'this_year') to API format ('YEAR')
+        // const apiPeriodType = periodType.replace('this_', '').toUpperCase();
+
+        const params = {
+          wallet_budget_id: walletId || 0,
+          period_type: periodType,
+        };
+
+        console.log("[useBudget] Fetching budget summary:", params);
+        const response = await budgetRepository.getBudgetSummary(params);
+
+        if (response.isSuccess() && response.data) {
+          const summaryData = response.data.summary || response.data;
+          setBudgetSummary(summaryData);
+        } else {
+          throw new Error(response.message || "Không thể tải tóm tắt ngân sách");
+        }
+      } catch (err) {
+        console.error("[useBudget] Fetch summary failed:", err);
+      } finally {
+        setSummaryLoading(false);
+      }
+    },
+    []
+  );
+
+  /**
    * Force refresh - bỏ qua cache
    */
   const refetch = useCallback(() => {
@@ -215,11 +260,14 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
     allBudgets,
     activeBudgets,
     completedBudgets,
+    budgetSummary,
     loading,
+    summaryLoading,
     creating,
     error,
     createBudget,
     fetchAllBudgets, // Deprecated - dùng refetch thay thế
+    fetchBudgetSummary,
     refetch,
     clearCache,
     getBudgetsByStatus,

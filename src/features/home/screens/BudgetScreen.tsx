@@ -1,14 +1,16 @@
 import CustomText from '@/components/base/CustomText';
 import WalletPickerModal, { WalletPickerId } from '@/components/modals/WalletPickerModal';
 import { useAppTheme } from '@/core/theme/ThemeContext';
+import { useBudget } from '@/features/budget/hooks/useBudget';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -71,19 +73,27 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
     },
   ];
 
-  const totalBudget = 40000000;
-  const totalSpent = 15600000;
-  const remaining = 24400000;
-  const daysLeft = 3;
+  const { fetchBudgetSummary, budgetSummary, summaryLoading } = useBudget();
+
+  useEffect(() => {
+    const apiPeriodType = selectedPeriod.replace('this_', '').toUpperCase();
+    const walletId = selectedWalletId === 'all' ? null : Number(selectedWalletId);
+    fetchBudgetSummary(walletId, apiPeriodType);
+  }, [selectedWalletId, selectedPeriod, fetchBudgetSummary]);
+
+  const totalBudget = budgetSummary?.total_budget ?? 0;
+  const totalSpent = budgetSummary?.total_spent ?? 0;
+  const remaining = budgetSummary?.remaining ?? 0;
+  const daysLeft = budgetSummary?.days_left ?? 0;
 
   // Calculate semi-circle progress
-  const percentage = (totalSpent / totalBudget) * 100;
+  const percentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
   const radius = wp(35);
   const strokeWidth = normalize(18);
   const circumference = Math.PI * radius;
   const strokeDashoffset = circumference - (circumference * percentage) / 100;
 
-  // Resolved wallet object (null khi chọn 'all')
+
   const selectedWallet = useMemo<WalletSummary | null>(() => {
     if (selectedWalletId === 'all') return null;
     return wallets.find((w) => w.walletId === selectedWalletId) ?? null;
@@ -174,85 +184,93 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 
         {/* Circular Progress Card */}
         <View style={[styles.circleCard, { backgroundColor: colors.card }]}>
-          <View style={styles.circleContainer}>
-            <Svg
-              width={(radius + strokeWidth) * 2}
-              height={radius + strokeWidth + normalize(20)}
-              style={{ overflow: 'visible' }}
-            >
-              {/* Background arc with rounded caps */}
-              <Circle
-                cx={radius + strokeWidth}
-                cy={radius + strokeWidth}
-                r={radius}
-                stroke="#E8EAED"
-                strokeWidth={strokeWidth}
-                fill="none"
-                strokeDasharray={`${circumference} ${circumference * 2}`}
-                strokeLinecap="round"
-                rotation="-180"
-                origin={`${radius + strokeWidth}, ${radius + strokeWidth}`}
-              />
-              {/* Progress arc with rounded caps */}
-              <Circle
-                cx={radius + strokeWidth}
-                cy={radius + strokeWidth}
-                r={radius}
-                stroke={colors.tint}
-                strokeWidth={strokeWidth}
-                fill="none"
-                strokeDasharray={`${circumference} ${circumference * 2}`}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                rotation="-180"
-                origin={`${radius + strokeWidth}, ${radius + strokeWidth}`}
-              />
-            </Svg>
-
-            {/* Center text */}
-            <View style={styles.circleCenter}>
-              <CustomText style={[styles.circleLabelSmall, { color: colors.icon }]}>
-                {t("budget.remaining_budget")}
-              </CustomText>
-              <CustomText style={[styles.circleAmount, { color: colors.text }]}>
-                {remaining.toLocaleString('vi-VN')} đ
-              </CustomText>
+          {summaryLoading ? (
+            <View style={{ paddingVertical: normalize(40) }}>
+              <ActivityIndicator size="large" color={colors.tint} />
             </View>
-          </View>
+          ) : (
+            <>
+              <View style={styles.circleContainer}>
+                <Svg
+                  width={(radius + strokeWidth) * 2}
+                  height={radius + strokeWidth + normalize(20)}
+                  style={{ overflow: 'visible' }}
+                >
+                  {/* Background arc with rounded caps */}
+                  <Circle
+                    cx={radius + strokeWidth}
+                    cy={radius + strokeWidth}
+                    r={radius}
+                    stroke="#E8EAED"
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                    strokeDasharray={`${circumference} ${circumference * 2}`}
+                    strokeLinecap="round"
+                    rotation="-180"
+                    origin={`${radius + strokeWidth}, ${radius + strokeWidth}`}
+                  />
+                  {/* Progress arc with rounded caps */}
+                  <Circle
+                    cx={radius + strokeWidth}
+                    cy={radius + strokeWidth}
+                    r={radius}
+                    stroke={colors.tint}
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                    strokeDasharray={`${circumference} ${circumference * 2}`}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    rotation="-180"
+                    origin={`${radius + strokeWidth}, ${radius + strokeWidth}`}
+                  />
+                </Svg>
 
-          {/* Stats Row */}
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <CustomText style={[styles.statLabel, { color: colors.icon }]}>
-                {t("budget.total_budget")}
-              </CustomText>
-              <CustomText style={[styles.statValue, { color: colors.text }]}>
-                {totalBudget.toLocaleString('vi-VN')} đ
-              </CustomText>
-            </View>
+                {/* Center text */}
+                <View style={styles.circleCenter}>
+                  <CustomText style={[styles.circleLabelSmall, { color: colors.icon }]}>
+                    {t("budget.remaining_budget")}
+                  </CustomText>
+                  <CustomText style={[styles.circleAmount, { color: colors.text }]}>
+                    {remaining.toLocaleString('vi-VN')} {budgetSummary?.currency || "đ"}
+                  </CustomText>
+                </View>
+              </View>
 
-            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+              {/* Stats Row */}
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <CustomText style={[styles.statLabel, { color: colors.icon }]}>
+                    {t("budget.total_budget")}
+                  </CustomText>
+                  <CustomText style={[styles.statValue, { color: colors.text }]}>
+                    {totalBudget.toLocaleString('vi-VN')} {budgetSummary?.currency || "đ"}
+                  </CustomText>
+                </View>
 
-            <View style={styles.statItem}>
-              <CustomText style={[styles.statLabel, { color: colors.icon }]}>
-                {t("budget.total_spent")}
-              </CustomText>
-              <CustomText style={[styles.statValue, { color: colors.text }]}>
-                {totalSpent.toLocaleString('vi-VN')} đ
-              </CustomText>
-            </View>
+                <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
 
-            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+                <View style={styles.statItem}>
+                  <CustomText style={[styles.statLabel, { color: colors.icon }]}>
+                    {t("budget.total_spent")}
+                  </CustomText>
+                  <CustomText style={[styles.statValue, { color: colors.text }]}>
+                    {totalSpent.toLocaleString('vi-VN')} {budgetSummary?.currency || "đ"}
+                  </CustomText>
+                </View>
 
-            <View style={styles.statItem}>
-              <CustomText style={[styles.statLabel, { color: colors.icon }]}>
-                {t("budget.days_left")}
-              </CustomText>
-              <CustomText style={[styles.statValue, { color: colors.text }]}>
-                {daysLeft} {t("budget.days")}
-              </CustomText>
-            </View>
-          </View>
+                <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+
+                <View style={styles.statItem}>
+                  <CustomText style={[styles.statLabel, { color: colors.icon }]}>
+                    {t("budget.days_left")}
+                  </CustomText>
+                  <CustomText style={[styles.statValue, { color: colors.text }]}>
+                    {daysLeft} {t("budget.days")}
+                  </CustomText>
+                </View>
+              </View>
+            </>
+          )}
         </View>
 
         {/* Budget List - Separated Cards */}

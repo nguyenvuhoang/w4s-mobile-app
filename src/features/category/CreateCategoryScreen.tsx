@@ -1,6 +1,7 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import STORAGE_KEY from '@/constants/StorageKey';
+import { useNotification } from '@/contexts/NotificationContext';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useCategory } from '@/hooks/useCategory';
 import StorageService from '@/services/StorageService';
@@ -43,6 +44,7 @@ const CreateCategoryScreen: React.FC = () => {
     const params = useLocalSearchParams();
     const { t, i18n } = useTranslation();
     const { createCategory, creating } = useCategory({ autoFetch: false });
+    const { showNotification } = useNotification();
 
     // Ngôn ngữ hiện tại của app
     const currentLang = i18n.language as 'vi' | 'en';
@@ -163,7 +165,7 @@ const CreateCategoryScreen: React.FC = () => {
 
     const handleCreate = async () => {
         if (!primaryName.trim()) {
-            alert(t('category.please_enter_name'));
+            showNotification(t('category.please_enter_name'), 'warning');
             return;
         }
 
@@ -201,14 +203,15 @@ const CreateCategoryScreen: React.FC = () => {
 
             if (result.success) {
                 console.log('[CreateCategory] Category created successfully');
+                showNotification(t('category.create_success') || 'Tạo danh mục thành công', 'success');
                 router.back();
             } else {
                 console.error('[CreateCategory] API returned error:', result.message);
-                alert(result.message || t('category.create_failed'));
+                showNotification(result.message || t('category.create_failed'), 'error');
             }
         } catch (error) {
             console.error('[CreateCategory] Create category failed:', error);
-            alert(t('category.create_failed'));
+            showNotification(t('category.create_failed'), 'error');
         } finally {
             setLoading(false);
         }

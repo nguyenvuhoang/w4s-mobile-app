@@ -39,6 +39,18 @@ export interface GetRecentTransactionsPayload {
   page_size: number;
 }
 
+export interface AdvancedSearchTransactionPayload {
+  transaction_id?: string;
+  wallet_id?: number;
+  category_id?: number;
+  event_id?: number;
+  from_transaction_date?: string;
+  to_transaction_date?: string;
+  page_index: number;
+  page_size: number;
+}
+
+
 export const transactionRepository = {
   /**
    * Create new transaction (one-time)
@@ -156,6 +168,37 @@ export const transactionRepository = {
     } catch (error) {
       console.error(
         "[transactionRepository] Error deleting transaction:",
+        error,
+      );
+      throw error;
+    }
+  },
+  /**
+   * Advanced search transaction
+   * @param data Payload
+   * @returns API response
+   */
+  async advancedSearchTransactions(
+    data: AdvancedSearchTransactionPayload,
+  ): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_ADVANCED_SEARCH_WALLET_TRANSACTION,
+        {
+          transaction_id: data.transaction_id || "",
+          wallet_id: data.wallet_id || 0,
+          category_id: data.category_id || 0,
+          event_id: data.event_id || 0,
+          from_transaction_date: data.from_transaction_date || "",
+          to_transaction_date: data.to_transaction_date || "",
+          page_index: data.page_index || 1,
+          page_size: data.page_size || 10,
+        },
+        false,
+      );
+    } catch (error) {
+      console.error(
+        "[transactionRepository] Error advanced searching transactions:",
         error,
       );
       throw error;

@@ -5,6 +5,7 @@ import BottomDateRangeModal, {
     DateRangeResult,
     PeriodType,
 } from "@/components/modals/BottomDateRangeModal";
+import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
 import { useBudget } from "@/features/budget/hooks/useBudget";
@@ -15,7 +16,6 @@ import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -28,7 +28,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface SelectedCategoryData {
-    category_id: string;
+    id?: number;
+    category_id?: string | number;
     category_name: string;
     category_type: "EXPENSE" | "INCOME" | "LOAN";
     icon: string;
@@ -49,7 +50,8 @@ interface AutofillData {
     type?: BudgetType;
     walletId?: number;
     category?: {
-        category_id: string;
+        id?: number;
+        category_id?: string | number;
         category_name: string;
         category_type: "EXPENSE" | "INCOME" | "LOAN";
         icon: string;
@@ -86,6 +88,7 @@ const CreateBudgetScreen = () => {
     const params = useLocalSearchParams();
     const { wallets, defaultWallet } = useWallet();
     const { createBudget, creating } = useBudget({ autoFetch: false });
+    const { showNotification } = useNotification();
 
     const [selectedType, setSelectedType] = useState<BudgetType>("expense");
     const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
@@ -376,9 +379,13 @@ const CreateBudgetScreen = () => {
             inout: "LOAN",
         } as const;
 
+        const finalCategoryId = selectedCategoryData.id !== undefined
+            ? Number(selectedCategoryData.id)
+            : Number(selectedCategoryData.category_id);
+
         const payload = {
             amount: parseFloat(amount.replace(/,/g, "")),
-            category_id: parseInt(selectedCategoryData.category_id, 10),
+            category_id: finalCategoryId,
             end_date: formatToISO(endDate),
             period_type: periodType,
             source_gudget: typeToSourceGudget[selectedType],
@@ -395,11 +402,10 @@ const CreateBudgetScreen = () => {
         const success = await createBudget(payload);
 
         if (success) {
-            Alert.alert("Thành công", "Ngân sách đã được tạo thành công!", [
-                { text: "OK", onPress: () => router.back() },
-            ]);
+            showNotification("Ngân sách đã được tạo thành công!", "success");
+            router.back();
         } else {
-            Alert.alert("Lỗi", "Không thể tạo ngân sách. Vui lòng thử lại.");
+            showNotification("Không thể tạo ngân sách. Vui lòng thử lại.", "error");
         }
     }, [
         isValid,
