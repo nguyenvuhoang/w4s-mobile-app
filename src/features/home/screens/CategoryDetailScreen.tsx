@@ -1,7 +1,6 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -36,50 +35,18 @@ interface CategoryTransaction {
     amount: number;
 }
 
-// Generate mock transactions based on category data
-const generateMockTransactions = (category: CategoryDetailData): CategoryTransaction[] => {
-    const mockData: CategoryTransaction[] = [
-        {
-            id: '1',
-            name: 'Quần áo',
-            icon: 'shirt',
-            iconColor: '#4CAF50',
-            date: new Date().toISOString(),
-            amount: 89000,
-        },
-        {
-            id: '2',
-            name: 'Mỹ phẩm',
-            icon: 'spray-can-sparkles',
-            iconColor: '#FF6B6B',
-            date: new Date(Date.now() - 86400000).toISOString(),
-            amount: 800000,
-        },
-        {
-            id: '3',
-            name: 'Shopee',
-            icon: 'bag-shopping',
-            iconColor: '#FF9800',
-            date: new Date(Date.now() - 86400000).toISOString(),
-            amount: 26000,
-        },
-        {
-            id: '4',
-            name: 'Nội Thất',
-            icon: 'couch',
-            iconColor: '#2196F3',
-            date: '2025-01-06T14:30:00',
-            amount: 333000,
-        },
-    ];
-    return mockData;
-};
+import { useTransaction } from '@/features/transaction/hooks/useTransaction';
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
+import { useEffect, useState } from 'react';
 
 const CategoryDetailScreen: React.FC = () => {
     const { colors } = useAppTheme();
     const { t, i18n } = useTranslation();
     const params = useLocalSearchParams();
     const { defaultCurrency } = useDefaultCurrency();
+    const { advancedSearchTransactions } = useTransaction();
+    const [transactions, setTransactions] = useState<any[]>([]);
+    const [loadingTransactions, setLoadingTransactions] = useState(false);
 
     // Parse category data from params
     const category = useMemo((): CategoryDetailData | null => {
@@ -106,8 +73,8 @@ const CategoryDetailScreen: React.FC = () => {
     };
 
     // Format currency
-    const formatCurrency = (amount: number) => {
-        return `${amount.toLocaleString()} ${defaultCurrency.symbol}`;
+    const formatCurrency = (amount: number, currencyCode?: string) => {
+        return `${amount.toLocaleString()} ${currencyCode || defaultCurrency?.symbol || ''}`;
     };
 
     // Format transaction time
@@ -135,11 +102,72 @@ const CategoryDetailScreen: React.FC = () => {
         }
     };
 
-    // Mock transactions
-    const transactions = useMemo(() => {
-        if (!category) return [];
-        return generateMockTransactions(category);
-    }, [category]);
+    useEffect(() => {
+        if (!category) return;
+
+        const parseTransactionName = (name: string | null): string => {
+            if (!name) return t('home.transaction_default_name');
+            try {
+                if (!name.startsWith('{')) return name;
+                const parsed = JSON.parse(name);
+                return parsed[i18n.language] || parsed.vi || parsed.en || name;
+            } catch {
+                return name;
+            }
+        };
+
+        const fetchTransactions = async () => {
+            setLoadingTransactions(true);
+            try {
+                const currentDate = new Date();
+                const currentMonthStartDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`;
+                const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+                const currentMonthEndDate = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`;
+
+                const data = await advancedSearchTransactions({
+                    category_id: category.category_id,
+                    from_transaction_date: currentMonthStartDate,
+                    to_transaction_date: currentMonthEndDate,
+                    page_index: 0,
+                    page_size: 100
+                });
+
+                console.log("data ===========", JSON.stringify(data));
+
+                let txArray: any[] = [];
+                const anyData = data as any;
+
+                if (anyData) {
+                    if (Array.isArray(anyData)) {
+                        txArray = anyData;
+                    } else if (anyData.items && Array.isArray(anyData.items)) {
+                        txArray = anyData.items;
+                    } else if (anyData.data && Array.isArray(anyData.data)) {
+                        txArray = anyData.data;
+                    }
+                }
+
+                if (Array.isArray(txArray)) {
+                    const mappedTransactions = txArray.map((tx: any) => ({
+                        id: tx.transaction_id || tx.id,
+                        name: parseTransactionName(tx.title || tx.description || tx.transaction_description || tx.name),
+                        icon: tx.icon || category.icon || 'tag',
+                        iconColor: tx.color || category.color || '#9E9E9E',
+                        date: tx.occurred_at || tx.recorded_at || tx.transaction_date,
+                        amount: tx.amount,
+                        currency: tx.currency,
+                    }));
+                    setTransactions(mappedTransactions);
+                }
+            } catch (error) {
+                console.error('Failed to fetch category transactions:', error);
+            } finally {
+                setLoadingTransactions(false);
+            }
+        };
+
+        fetchTransactions();
+    }, [category, i18n.language]);
 
     // Calculate total budget (mock: use total_amount / percentage)
     const totalBudget = useMemo(() => {
@@ -232,60 +260,69 @@ const CategoryDetailScreen: React.FC = () => {
                     </CustomText>
 
                     <View style={styles.transactionList}>
-                        {transactions.map((transaction) => (
-                            <TouchableOpacity
-                                key={transaction.id}
-                                style={[styles.transactionItem, { backgroundColor: colors.card }]}
-                                activeOpacity={0.7}
-                                onPress={() => {
-                                    const detailData = {
-                                        transactionid: transaction.id,
-                                        transactiondate: transaction.date,
-                                        transactionname: transaction.name,
-                                        transactioncode: '02', // Expense
-                                        nu_m01: transaction.amount,
-                                        nu_m02: 0,
-                                        ccyid: defaultCurrency.currencyId,
-                                        cha_r01: '',
-                                        cha_r02: '',
-                                        sourcetranref: '',
-                                        sourceid: '',
-                                        trandesc: transaction.name,
-                                        status: 'Completed',
-                                        icon: transaction.icon,
-                                        color: transaction.iconColor,
-                                    };
-                                    router.push({
-                                        pathname: '/(protected)/transaction-detail',
-                                        params: { transaction: JSON.stringify(detailData) },
-                                    });
-                                }}
-                            >
-                                <View
-                                    style={[
-                                        styles.transactionIcon,
-                                        { backgroundColor: transaction.iconColor + '1A' },
-                                    ]}
+                        {loadingTransactions ? (
+                            <View style={{ padding: 20, alignItems: 'center' }}>
+                                <CustomText style={{ color: colors.icon }}>{t('home.loading_transactions') || 'Đang tải giao dịch...'}</CustomText>
+                            </View>
+                        ) : transactions.length === 0 ? (
+                            <View style={{ padding: 20, alignItems: 'center' }}>
+                                <CustomText style={{ color: colors.icon }}>{t('home.no_transactions') || 'Không có giao dịch nào'}</CustomText>
+                            </View>
+                        ) : (
+                            transactions.map((transaction) => (
+                                <TouchableOpacity
+                                    key={transaction.id}
+                                    style={[styles.transactionItem, { backgroundColor: colors.card }]}
+                                    activeOpacity={0.7}
+                                    onPress={() => {
+                                        const detailData = {
+                                            transactionid: transaction.id,
+                                            transactiondate: transaction.date,
+                                            transactionname: transaction.name,
+                                            transactioncode: '02', // Expense
+                                            nu_m01: transaction.amount,
+                                            nu_m02: 0,
+                                            ccyid: defaultCurrency.currencyId,
+                                            cha_r01: '',
+                                            cha_r02: '',
+                                            sourcetranref: '',
+                                            sourceid: '',
+                                            trandesc: transaction.name,
+                                            status: 'Completed',
+                                            icon: transaction.icon,
+                                            color: transaction.iconColor,
+                                        };
+                                        router.push({
+                                            pathname: '/(protected)/transaction-detail',
+                                            params: { transaction: JSON.stringify(detailData) },
+                                        });
+                                    }}
                                 >
-                                    <FontAwesome6
-                                        name={transaction.icon}
-                                        size={normalize(20)}
-                                        color={transaction.iconColor}
-                                    />
-                                </View>
-                                <View style={styles.transactionInfo}>
-                                    <CustomText style={[styles.transactionName, { color: colors.text }]}>
-                                        {transaction.name}
+                                    <View
+                                        style={[
+                                            styles.transactionIcon,
+                                            { backgroundColor: transaction.iconColor + '1A' },
+                                        ]}
+                                    >
+                                        <FontAwesome6
+                                            name={transaction.icon}
+                                            size={normalize(20)}
+                                            color={transaction.iconColor}
+                                        />
+                                    </View>
+                                    <View style={styles.transactionInfo}>
+                                        <CustomText style={[styles.transactionName, { color: colors.text }]}>
+                                            {transaction.name}
+                                        </CustomText>
+                                        <CustomText style={[styles.transactionTime, { color: colors.icon }]}>
+                                            {formatTransactionTime(transaction.date)}
+                                        </CustomText>
+                                    </View>
+                                    <CustomText style={styles.transactionAmount}>
+                                        -{formatCurrency(transaction.amount, transaction.currency)}
                                     </CustomText>
-                                    <CustomText style={[styles.transactionTime, { color: colors.icon }]}>
-                                        {formatTransactionTime(transaction.date)}
-                                    </CustomText>
-                                </View>
-                                <CustomText style={styles.transactionAmount}>
-                                    -{formatCurrency(transaction.amount)}
-                                </CustomText>
-                            </TouchableOpacity>
-                        ))}
+                                </TouchableOpacity>
+                            )))}
                     </View>
                 </View>
             </ScrollView>

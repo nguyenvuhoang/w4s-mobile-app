@@ -175,10 +175,68 @@ export const useTransaction = () => {
     }
   };
 
+  const advancedSearchTransactions = async (params: {
+    transaction_id?: string;
+    wallet_id?: number;
+    category_id?: number;
+    event_id?: number;
+    from_transaction_date?: string;
+    to_transaction_date?: string;
+    page_index: number;
+    page_size: number;
+  }) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await transactionRepository.advancedSearchTransactions(params);
+
+      if (response.isSuccess()) {
+        return response.data;
+      } else {
+        throw new Error(response.message || "Failed to search transactions");
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Đã xảy ra lỗi";
+      console.error("[useTransaction] Error advanced search:", err);
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refundTransaction = async (transactionId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await transactionRepository.refundTransaction({
+        transaction_id: transactionId,
+      });
+
+      if (response.isSuccess()) {
+        TransactionEventEmitter.emitTransactionChanged();
+        return response;
+      } else {
+        throw new Error(response.message || "Failed to refund transaction");
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Đã xảy ra lỗi";
+      console.error("[useTransaction] Error refunding transaction:", err);
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     loading,
     error,
     createTransaction,
     deleteTransaction,
+    refundTransaction,
+    advancedSearchTransactions,
   };
 };

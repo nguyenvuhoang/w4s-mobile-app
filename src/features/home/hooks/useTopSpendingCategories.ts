@@ -44,14 +44,19 @@ export const useTopSpendingCategories = (
                 throw new Error("Missing user code");
             }
 
+            const currentDate = new Date();
+            const formattedAnchorDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+
             const response = await categoryRepository.getTopSpendingCategories({
-                usercode: userCode,
+                anchor_date: formattedAnchorDate,
+                page_index: 0,
+                page_size: take,
                 period_type: periodType,
-                take,
+                usercode: userCode,
             });
+            console.log("response", JSON.stringify(response));
 
             if (response.isSuccess() && response.data) {
-                // API returns { data: [{ top_categories: [...] }] }
                 let categoryList: TopSpendingCategory[] = [];
                 if (response.data.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
                     categoryList = response.data.data[0].top_categories || [];

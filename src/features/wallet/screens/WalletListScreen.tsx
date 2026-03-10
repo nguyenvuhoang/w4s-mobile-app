@@ -8,6 +8,7 @@ import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useWalletTracker } from "@/features/wallet/hooks/useWalletTracker";
+import { useCategory } from "@/hooks/useCategory";
 import StorageService from "@/services/StorageService";
 import { WalletSummary } from "@/types/wallet";
 import { hp, normalize, wp } from "@/utils/layout";
@@ -33,7 +34,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
   onSelectWallet,
 }) => {
   const { colors } = useAppTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // ✅ Lấy mode từ route params
   const params = useLocalSearchParams();
@@ -59,6 +60,9 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
 
   // ✅ WALLET TRACKER (create / delete)
   const { deleteWalletTracker, deleting } = useWalletTracker();
+
+  // ✅ CATEGORY
+  const { categories } = useCategory();
 
   const handleSelectWallet = async (wallet: WalletSummary) => {
     if (mode === "viewOnly") return;
@@ -321,11 +325,51 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
               {transactionsToDelete?.map((tx, idx) => {
                 const title = tx.transactionname || tx.trandesc || tx.title || tx.transaction_name || tx.description || 'Giao dịch';
                 const amount = tx.nu_m01 || tx.amount || 0;
+
+                const category = categories.find((c) => c.id === tx.category_id);
+                let categoryName = '';
+
+                if (category?.category_name) {
+                  try {
+                    const parsedName = JSON.parse(category.category_name);
+                    const lang = i18n.language?.split('-')[0] || 'vi';
+                    categoryName = parsedName[lang] || parsedName['vi'] || parsedName['en'] || category.category_name;
+                  } catch (e) {
+                    categoryName = category.category_name;
+                  }
+                }
+
+                const primaryText = categoryName ? categoryName : title;
+                const secondaryText = categoryName ? title : '';
+
+                const isIncome = category?.category_group === 'INCOME' || tx.entry_type === 'CREDIT';
+                const isExpense = category?.category_group === 'EXPENSE' || tx.entry_type === 'DEBIT';
+                const amountColor = isIncome ? '#4CAF50' : (isExpense ? '#F44336' : colors.text);
+                const prefix = isIncome ? '+' : (isExpense ? '-' : '');
+                const currency = tx.currency_code || tx.currency || 'VND';
+
                 return (
                   <View key={idx} style={[styles.transactionItemPreview, { borderBottomColor: colors.border }]}>
-                    <CustomText style={{ color: colors.text }} numberOfLines={1}>
-                      {title} • {amount.toLocaleString('vi-VN')}
-                    </CustomText>
+                    <View style={[styles.transactionPreviewIcon, { backgroundColor: `${category?.color || colors.tint}15` }]}>
+                      <FontAwesome6 name={category?.icon as any || "file-invoice-dollar"} size={normalize(18)} color={category?.color || colors.tint} />
+                    </View>
+
+                    <View style={styles.transactionPreviewInfo}>
+                      <CustomText style={{ color: colors.text, fontSize: normalize(14) }} type="semiBold" numberOfLines={1}>
+                        {primaryText}
+                      </CustomText>
+                      {secondaryText ? (
+                        <CustomText style={{ color: colors.icon, fontSize: normalize(12), marginTop: normalize(2) }} numberOfLines={1}>
+                          {secondaryText}
+                        </CustomText>
+                      ) : null}
+                    </View>
+
+                    <View style={styles.transactionPreviewAmount}>
+                      <CustomText style={{ color: amountColor, fontSize: normalize(14) }} type="semiBold" numberOfLines={1}>
+                        {prefix}{amount.toLocaleString('vi-VN')} {currency}
+                      </CustomText>
+                    </View>
                   </View>
                 );
               })}
@@ -547,8 +591,26 @@ const styles = StyleSheet.create({
     marginBottom: normalize(20),
   },
   transactionItemPreview: {
-    paddingVertical: normalize(10),
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: normalize(12),
     borderBottomWidth: 1,
+    gap: normalize(12),
+  },
+  transactionPreviewIcon: {
+    width: normalize(40),
+    height: normalize(40),
+    borderRadius: normalize(20),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  transactionPreviewInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  transactionPreviewAmount: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   modalActions: {
     flexDirection: 'row',

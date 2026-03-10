@@ -19,9 +19,11 @@ export interface Category {
 }
 
 export interface GetTopSpendingCategoriesPayload {
-  usercode: string;
+  anchor_date: string;
+  page_index: number;
+  page_size: number;
   period_type: string;
-  take: number;
+  usercode: string;
 }
 
 
@@ -84,9 +86,11 @@ export const categoryRepository = {
       return await apiService.executeWorkflow(
         WORKFLOWCODE.WF_MB_TOP_SPENDING_CATEGORIES,
         {
-          usercode: data.usercode,
+          anchor_date: data.anchor_date,
+          page_index: data.page_index,
+          page_size: data.page_size,
           period_type: data.period_type,
-          take: data.take,
+          usercode: data.usercode,
         },
         false,
         true

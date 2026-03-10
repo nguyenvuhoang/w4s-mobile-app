@@ -50,6 +50,10 @@ export interface AdvancedSearchTransactionPayload {
   page_size: number;
 }
 
+export interface RefundTransactionPayload {
+  transaction_id: string;
+}
+
 
 export const transactionRepository = {
   /**
@@ -199,6 +203,30 @@ export const transactionRepository = {
     } catch (error) {
       console.error(
         "[transactionRepository] Error advanced searching transactions:",
+        error,
+      );
+      throw error;
+    }
+  },
+  /**
+   * Refund transaction
+   * @param data Payload
+   * @returns API response
+   */
+  async refundTransaction(
+    data: RefundTransactionPayload,
+  ): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_REFUND_WALLET_TRANSACTION,
+        {
+          transaction_id: data.transaction_id,
+        },
+        false,
+      );
+    } catch (error) {
+      console.error(
+        "[transactionRepository] Error refunding transaction:",
         error,
       );
       throw error;

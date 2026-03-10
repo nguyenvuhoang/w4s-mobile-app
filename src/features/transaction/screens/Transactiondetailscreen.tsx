@@ -4,17 +4,17 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
-    Alert,
     ScrollView,
     Share,
     StyleSheet,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
+import { useNotification } from '@/contexts/NotificationContext';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import { hp, normalize, wp } from '@/utils/layout';
@@ -53,6 +53,7 @@ const MenuDropdown = ({
     onShare,
     onEdit,
     onDelete,
+    onRefund,
     onDuplicate,
     colors,
     t
@@ -90,6 +91,17 @@ const MenuDropdown = ({
                 <FontAwesome6 name="copy" size={normalize(16)} color={colors.text} />
                 <CustomText style={[styles.menuItemText, { color: colors.text }]}>
                     {t('Duplicate') || 'Duplicate'}
+                </CustomText>
+            </TouchableOpacity>
+            <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+
+            <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => { onClose(); onRefund(); }}
+            >
+                <FontAwesome6 name="arrow-rotate-left" size={normalize(16)} color={colors.text} />
+                <CustomText style={[styles.menuItemText, { color: colors.text }]}>
+                    {t('Refund') || 'Refund'}
                 </CustomText>
             </TouchableOpacity>
             <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
@@ -204,6 +216,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
     const router = useRouter();
     const [showMenu, setShowMenu] = useState(false);
     const { defaultCurrency } = useDefaultCurrency();
+    const { showNotification } = useNotification();
 
     // --- ID Resolution ---
     const transactionId = useMemo(() => {
@@ -222,7 +235,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
     }, [propTransactionId, params.transactionId, params.transaction]);
 
     const { transaction, loading, error, refetch } = useTransactionDetail(transactionId);
-    const { deleteTransaction } = useTransaction();
+    const { deleteTransaction, refundTransaction } = useTransaction();
 
     // --- Formatters ---
     const formatDate = (dateString: string) => {
@@ -328,28 +341,44 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
     };
 
     const handleDelete = () => {
-        Alert.alert(
-            t('Delete Transaction') || 'Delete Transaction',
+        showNotification(
             t('Are you sure you want to delete this transaction? This action cannot be undone.') || 'Are you sure?',
-            [
-                { text: t('Cancel') || 'Cancel', style: 'cancel' },
-                {
-                    text: t('Delete') || 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        if (transactionId) {
-                            try {
-                                await deleteTransaction(transactionId);
-                                Alert.alert(t('Success') || 'Thành công', t('Transaction deleted successfully') || 'Đã xóa giao dịch');
-                                router.back();
-                            } catch (err) {
-                                console.error('Delete transaction failed:', err);
-                                Alert.alert(t('Error') || 'Lỗi', t('Could not delete transaction') || 'Không thể xóa giao dịch');
-                            }
-                        }
+            'warning',
+            undefined,
+            undefined,
+            async () => {
+                if (transactionId) {
+                    try {
+                        await deleteTransaction(transactionId);
+                        showNotification(t('Transaction deleted successfully') || 'Đã xóa giao dịch', 'success');
+                        router.back();
+                    } catch (err) {
+                        console.error('Delete transaction failed:', err);
+                        showNotification(t('Could not delete transaction') || 'Không thể xóa giao dịch', 'error');
                     }
-                },
-            ]
+                }
+            }
+        );
+    };
+
+    const handleRefund = () => {
+        showNotification(
+            t('Are you sure you want to refund this transaction?') || 'Are you sure?',
+            'warning',
+            undefined,
+            undefined,
+            async () => {
+                if (transactionId) {
+                    try {
+                        await refundTransaction(transactionId);
+                        showNotification(t('Transaction refunded successfully') || 'Đã hoàn tiền giao dịch', 'success');
+                        router.back();
+                    } catch (err) {
+                        console.error('Refund transaction failed:', err);
+                        showNotification(t('Could not refund transaction') || 'Không thể hoàn tiền giao dịch', 'error');
+                    }
+                }
+            }
         );
     };
 
@@ -427,6 +456,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                 onEdit={handleEdit}
                 onDuplicate={handleDuplicate}
                 onDelete={handleDelete}
+                onRefund={handleRefund}
                 colors={colors}
                 t={t}
             />

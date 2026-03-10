@@ -62,10 +62,15 @@ export const useTopSpendingCategories = () => {
     try {
       const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
 
+      const currentDate = new Date();
+      const formattedAnchorDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+
       const response = await categoryRepository.getTopSpendingCategories({
-        usercode: userCode?.toString() || '',
+        anchor_date: formattedAnchorDate,
+        page_index: 0,
+        page_size: take,
         period_type,
-        take,
+        usercode: userCode?.toString() || '',
       });
 
       if (response.isSuccess() && response.data) {
