@@ -43,6 +43,7 @@ const CategorySelectionScreen: React.FC = () => {
     selectedType?: string;
     isEdit?: string;
     isSelectParent?: string;
+    isBudget?: string;
   }>();
 
   /* =====================
@@ -53,18 +54,23 @@ const CategorySelectionScreen: React.FC = () => {
     () => params.isSelectParent === "true",
     [params.isSelectParent]
   );
+  const isBudget = useMemo(() => params.isBudget === "true", [params.isBudget]);
 
   /* =====================
      Available Tabs
   ===================== */
   const availableTabs = useMemo((): TabType[] => {
+    // 🔥 Nếu đang chọn cho ngân sách, chỉ cho chọn EXPENSE
+    if (isBudget) {
+      return ["EXPENSE"];
+    }
     // 🔥 Nếu đang select parent, chỉ cho chọn INCOME hoặc EXPENSE
     if (isSelectParent) {
       return ["INCOME", "EXPENSE"];
     }
     // Normal mode: cho chọn cả 3
     return ["INCOME", "EXPENSE", "LOAN"];
-  }, [isSelectParent]);
+  }, [isSelectParent, isBudget]);
 
   /* =====================
      Initial Tab
@@ -268,28 +274,30 @@ const CategorySelectionScreen: React.FC = () => {
       )}
 
       {/* TABS */}
-      <View style={styles.tabContainer}>
-        {availableTabs.map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[
-              styles.tab,
-              selectedTab === tab && { backgroundColor: colors.tint },
-            ]}
-            onPress={() => setSelectedTab(tab)}
-          >
-            <CustomText
-              style={{ color: selectedTab === tab ? "#fff" : "#666" }}
+      {availableTabs.length > 1 && (
+        <View style={styles.tabContainer}>
+          {availableTabs.map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              style={[
+                styles.tab,
+                selectedTab === tab && { backgroundColor: colors.tint },
+              ]}
+              onPress={() => setSelectedTab(tab)}
             >
-              {tab === "INCOME"
-                ? t("transaction.type_income")
-                : tab === "EXPENSE"
-                  ? t("transaction.type_expense")
-                  : t("transaction.type_debt_loan")}
-            </CustomText>
-          </TouchableOpacity>
-        ))}
-      </View>
+              <CustomText
+                style={{ color: selectedTab === tab ? "#fff" : "#666" }}
+              >
+                {tab === "INCOME"
+                  ? t("transaction.type_income")
+                  : tab === "EXPENSE"
+                    ? t("transaction.type_expense")
+                    : t("transaction.type_debt_loan")}
+              </CustomText>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {/* SEARCH */}
       <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>

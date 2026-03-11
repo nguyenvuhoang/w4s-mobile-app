@@ -3,11 +3,12 @@ import WalletPickerModal, { WalletPickerId } from '@/components/modals/WalletPic
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useBudget } from '@/features/budget/hooks/useBudget';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
+import { useCategory } from '@/hooks/useCategory';
 import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
-import { FontAwesome6, Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import { FontAwesome6 } from '@expo/vector-icons';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -25,7 +26,7 @@ interface BudgetScreenProps {
 
 const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
   const { colors } = useAppTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { wallets, defaultWallet } = useWallet();
 
   // 'all' = tất cả các ví, number = walletId cụ thể
@@ -40,46 +41,84 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
     { key: 'this_year', label: t('budget.this_year') },
   ];
 
-  const budgets = [
-    {
-      id: '1',
-      category: 'Mỹ phẩm',
-      subcategory: 'Mua sắm',
-      icon: 'sparkles-outline',
-      iconColor: '#FF6B6B',
-      spent: 890000,
-      total: 1000000,
-      todayProgress: 80,
-    },
-    {
-      id: '2',
-      category: 'Thực phẩm',
-      subcategory: '',
-      icon: 'restaurant-outline',
-      iconColor: '#51CF66',
-      spent: 300000,
-      total: 1500000,
-      todayProgress: 60,
-    },
-    {
-      id: '3',
-      category: 'Cắm trại',
-      subcategory: 'Giải trí',
-      icon: 'bonfire-outline',
-      iconColor: '#20C997',
-      spent: 2000000,
-      total: 2500000,
-      todayProgress: 75,
-    },
-  ];
-
-  const { fetchBudgetSummary, budgetSummary, summaryLoading } = useBudget();
+  const { categories, loading: categoryLoading, refetch: fetchCategories } = useCategory({ autoFetch: false });
+  const { fetchBudgetSummary, budgetSummary, summaryLoading, advancedSearchBudgets } = useBudget();
+  const [budgetList, setBudgetList] = useState<any[]>([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [firstLoaded, setFirstLoaded] = useState(false);
 
   useEffect(() => {
-    const apiPeriodType = selectedPeriod.replace('this_', '').toUpperCase();
-    const walletId = selectedWalletId === 'all' ? null : Number(selectedWalletId);
-    fetchBudgetSummary(walletId, apiPeriodType);
-  }, [selectedWalletId, selectedPeriod, fetchBudgetSummary]);
+    fetchCategories();
+  }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      const apiPeriodType = selectedPeriod.replace('this_', '').toUpperCase();
+      const walletId = selectedWalletId === 'all' ? 0 : Number(selectedWalletId);
+
+      const loadData = async () => {
+        setListLoading(true);
+        const summary = await fetchBudgetSummary(walletId, apiPeriodType);
+
+        if (!summary || summary.total_budget === 0) {
+          setBudgetList([]);
+          setListLoading(false);
+          setFirstLoaded(true);
+          return;
+        }
+
+        const res = await advancedSearchBudgets({
+          wallet_id: walletId,
+          period_type: apiPeriodType,
+          page_index: 1,
+          page_size: 99
+        });
+        setBudgetList(res || []);
+        setListLoading(false);
+        setFirstLoaded(true);
+      };
+
+      loadData();
+    }, [selectedWalletId, selectedPeriod, fetchBudgetSummary, advancedSearchBudgets])
+  );
+
+  const displayBudgets = useMemo(() => {
+    return budgetList.map(item => {
+      const cat = categories.find(c => c.id === item.category_id);
+
+      let todayProgress = 0;
+      if (item.start_date && item.end_date) {
+        const start = new Date(item.start_date).getTime();
+        const end = new Date(item.end_date).getTime();
+        const now = new Date().getTime();
+        if (now >= end) todayProgress = 100;
+        else if (now > start && end > start) {
+          todayProgress = ((now - start) / (end - start)) * 100;
+        }
+      }
+
+      let categoryName = cat?.category_name || t('budget.unknown_category') || 'Danh mục';
+      try {
+        if (cat?.category_name && cat.category_name.startsWith('{')) {
+          const nameObj = JSON.parse(cat.category_name);
+          categoryName = nameObj[i18n.language] || nameObj['en'] || nameObj['vi'] || cat.category_name;
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      return {
+        id: item.id?.toString() || Math.random().toString(),
+        categoryName,
+        note: item.note || '',
+        icon: cat?.icon || 'wallet',
+        iconColor: cat?.color || colors.tint,
+        spent: item.used_amount || 0,
+        total: item.amount || Math.max(item.used_amount || 0, 1),
+        todayProgress,
+      };
+    });
+  }, [budgetList, categories, colors.tint, t, i18n.language]);
 
   const totalBudget = budgetSummary?.total_budget ?? 0;
   const totalSpent = budgetSummary?.total_spent ?? 0;
@@ -182,14 +221,40 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
           </ScrollView>
         </View>
 
-        {/* Circular Progress Card */}
-        <View style={[styles.circleCard, { backgroundColor: colors.card }]}>
-          {summaryLoading ? (
-            <View style={{ paddingVertical: normalize(40) }}>
-              <ActivityIndicator size="large" color={colors.tint} />
+        {/* Content Area Rendering Logic */}
+        {(!firstLoaded || summaryLoading || listLoading || categoryLoading) ? (
+          <>
+            {/* Loading Skeletons */}
+            <View style={[styles.circleCard, { backgroundColor: colors.card }]}>
+              <View style={{ paddingVertical: normalize(40) }}>
+                <ActivityIndicator size="large" color={colors.tint} />
+              </View>
             </View>
-          ) : (
-            <>
+            <View style={styles.budgetList}>
+              <View style={{ paddingVertical: normalize(20) }}>
+                <ActivityIndicator size="small" color={colors.tint} />
+              </View>
+            </View>
+          </>
+        ) : budgetList.length === 0 ? (
+          <View style={[styles.emptyContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <CustomText style={[styles.emptyTitle, { color: colors.text }]}>
+              {t("budget.no_budget_created", "Chưa có Ngân sách nào được tạo")}
+            </CustomText>
+            <CustomText style={[styles.emptySubtitle, { color: colors.icon }]}>
+              {t("budget.create_budget_prompt", "Hãy tạo ngân sách ngay để quản lý chi tiêu hiệu quả hơn")}
+            </CustomText>
+            <TouchableOpacity
+              style={[styles.emptyCreateButton, { backgroundColor: colors.tint }]}
+              onPress={handleCreateBudget}
+            >
+              <CustomText style={styles.emptyCreateButtonText}>{t("budget.create_now", "Tạo ngân sách ngay")}</CustomText>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            {/* Circular Progress Card */}
+            <View style={[styles.circleCard, { backgroundColor: colors.card }]}>
               <View style={styles.circleContainer}>
                 <Svg
                   width={(radius + strokeWidth) * 2}
@@ -269,16 +334,16 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                   </CustomText>
                 </View>
               </View>
-            </>
-          )}
-        </View>
+            </View>
 
-        {/* Budget List - Separated Cards */}
-        <View style={styles.budgetList}>
-          {budgets.map((budget) => (
-            <BudgetItem key={budget.id} budget={budget} colors={colors} />
-          ))}
-        </View>
+            {/* Budget List - Separated Cards */}
+            <View style={styles.budgetList}>
+              {displayBudgets.map((budget) => (
+                <BudgetItem key={budget.id} budget={budget} colors={colors} />
+              ))}
+            </View>
+          </>
+        )}
 
         {/* Bottom spacing for tab bar */}
         <View style={{ height: hp(12) }} />
@@ -302,16 +367,16 @@ const BudgetItem = ({ budget, colors }: any) => {
               { backgroundColor: budget.iconColor },
             ]}
           >
-            <Ionicons name={budget.icon} size={normalize(24)} color="#fff" />
+            <FontAwesome6 name={budget.icon as any} size={normalize(20)} color="#fff" />
           </View>
 
           <View style={styles.budgetInfo}>
             <CustomText style={[styles.budgetCategory, { color: colors.text }]}>
-              {budget.category}
+              {budget.categoryName}
             </CustomText>
-            {budget.subcategory ? (
+            {budget.note ? (
               <CustomText style={[styles.budgetSubcategory, { color: colors.icon }]}>
-                {budget.subcategory}
+                {budget.note}
               </CustomText>
             ) : null}
           </View>
@@ -575,6 +640,47 @@ const styles = StyleSheet.create({
   percentageText: {
     fontSize: normalize(11),
     marginTop: normalize(4),
+  },
+  emptyContainer: {
+    marginHorizontal: wp(5),
+    padding: normalize(30),
+    borderRadius: normalize(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    marginTop: hp(2),
+  },
+  emptyIconWrapper: {
+    width: normalize(80),
+    height: normalize(80),
+    borderRadius: normalize(40),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: normalize(20),
+  },
+  emptyTitle: {
+    fontSize: normalize(18),
+    fontWeight: 'bold',
+    marginBottom: normalize(8),
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: normalize(14),
+    textAlign: 'center',
+    marginBottom: normalize(24),
+    lineHeight: normalize(20),
+  },
+  emptyCreateButton: {
+    paddingHorizontal: normalize(24),
+    paddingVertical: normalize(12),
+    borderRadius: normalize(24),
+    width: '100%',
+    alignItems: 'center',
+  },
+  emptyCreateButtonText: {
+    color: '#fff',
+    fontSize: normalize(16),
+    fontWeight: '600',
   },
 });
 

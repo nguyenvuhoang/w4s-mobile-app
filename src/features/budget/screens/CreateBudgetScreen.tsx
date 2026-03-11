@@ -107,10 +107,17 @@ const CreateBudgetScreen = () => {
     const [includeInReport, setIncludeInReport] = useState(true);
     const [autoRepeat, setAutoRepeat] = useState(true);
 
-    const selectedWallet = useMemo(
-        () => wallets.find((w) => w.walletId === sourceWalletId),
-        [wallets, sourceWalletId]
-    );
+    const selectedWallet = useMemo(() => {
+        if (sourceWalletId === 0) {
+            return {
+                walletId: 0,
+                name: "Tất cả các ví",
+                icon: "layer-group",
+                color: colors.tint,
+            };
+        }
+        return wallets.find((w) => w.walletId === sourceWalletId);
+    }, [wallets, sourceWalletId, colors.tint]);
 
     const isValid =
         selectedWallet && selectedCategoryData && amount.trim() !== "";
@@ -284,7 +291,7 @@ const CreateBudgetScreen = () => {
 
     // Init default wallet
     useEffect(() => {
-        if (!sourceWalletId && defaultWallet) {
+        if (sourceWalletId === null && defaultWallet) {
             setSourceWalletId(defaultWallet.walletId);
         }
     }, [defaultWallet, sourceWalletId]);
@@ -364,7 +371,7 @@ const CreateBudgetScreen = () => {
     };
 
     const handleCreate = useCallback(async () => {
-        if (!isValid || !selectedCategoryData || !sourceWalletId) return;
+        if (!isValid || !selectedCategoryData || sourceWalletId === null) return;
 
         const formatToISO = (date: Date) => {
             const y = date.getFullYear();
@@ -446,44 +453,6 @@ const CreateBudgetScreen = () => {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    {/* Type Selector */}
-                    <View style={styles.section}>
-                        <View style={styles.typeContainer}>
-                            {[
-                                { type: "income" as const, label: "Khoản thu" },
-                                { type: "expense" as const, label: "Khoản chi" },
-                                { type: "inout" as const, label: "Vay/Nợ" },
-                            ].map(({ type, label }) => (
-                                <TouchableOpacity
-                                    key={type}
-                                    style={[
-                                        styles.typeButton,
-                                        {
-                                            backgroundColor:
-                                                selectedType === type ? colors.tint : colors.card,
-                                            borderColor: colors.border,
-                                        },
-                                    ]}
-                                    onPress={() => handleTypeChange(type)}
-                                >
-                                    <CustomText
-                                        style={[
-                                            styles.typeText,
-                                            {
-                                                color: selectedType === type ? "#fff" : colors.text,
-                                                fontFamily:
-                                                    selectedType === type
-                                                        ? Fonts.semiBold
-                                                        : Fonts.regular,
-                                            },
-                                        ]}
-                                    >
-                                        {label}
-                                    </CustomText>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
 
                     {/* Source Wallet - REQUIRED */}
                     <View style={styles.section}>
@@ -496,7 +465,7 @@ const CreateBudgetScreen = () => {
                                 { backgroundColor: colors.card, borderColor: colors.border },
                             ]}
                             onPress={() =>
-                                router.push("/(protected)/wallet/wallet-list?mode=select")
+                                router.push("/(protected)/wallet/wallet-list?mode=select&allowAllWallets=true")
                             }
                         >
                             <View style={styles.fieldLeft}>
@@ -526,7 +495,7 @@ const CreateBudgetScreen = () => {
                             onPress={() =>
                                 router.push({
                                     pathname: "/(protected)/select-category",
-                                    params: { selectedType },
+                                    params: { selectedType, isBudget: "true" },
                                 })
                             }
                         >

@@ -20,8 +20,15 @@ export interface BudgetSearchParams {
 }
 
 export interface BudgetSummaryParams {
-  wallet_budget_id: number;
+  wallet_id: number;
   period_type: string;
+}
+
+export interface AdvancedSearchBudgetParams {
+  wallet_id: number;
+  period_type: string;
+  page_index: number;
+  page_size: number;
 }
 
 export interface CreateBudgetPayload {
@@ -83,7 +90,7 @@ export const budgetRepository = {
       return await apiService.executeWorkflow(
         WORKFLOWCODE.WF_MB_GET_BUDGET_SUMMARY,
         {
-          wallet_budget_id: params.wallet_budget_id,
+          wallet_id: params.wallet_id,
           period_type: params.period_type,
         },
         false,
@@ -91,6 +98,28 @@ export const budgetRepository = {
       );
     } catch (error) {
       console.error("[budgetRepository] Error fetching budget summary:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Advanced search budget
+   */
+  async advancedSearchBudget(params: AdvancedSearchBudgetParams): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_ADVANCED_SEARCH_WALLET_BUDGET,
+        {
+          wallet_id: params.wallet_id,
+          period_type: params.period_type,
+          page_index: params.page_index,
+          page_size: params.page_size,
+        },
+        false,
+        true
+      );
+    } catch (error) {
+      console.error("[budgetRepository] Error advanced searching budget:", error);
       throw error;
     }
   },

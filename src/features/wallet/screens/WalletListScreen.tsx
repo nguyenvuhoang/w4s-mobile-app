@@ -39,6 +39,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
   // ✅ Lấy mode từ route params
   const params = useLocalSearchParams();
   const mode = (params.mode as "select" | "manage" | "viewOnly") || "select";
+  const allowAllWallets = params.allowAllWallets === "true";
 
   const [selectedWallet, setSelectedWallet] = useState<WalletSummary | null>(
     null
@@ -271,6 +272,35 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
           </View>
         ) : (
           <View style={styles.walletList}>
+            {allowAllWallets && mode === "select" && (
+              <WalletItem
+                wallet={
+                  {
+                    walletId: 0,
+                    name: "Tất cả các ví",
+                    type: "all_wallets",
+                    balance: wallets.reduce((sum, w) => sum + w.balance, 0),
+                    currency: "VNĐ",
+                    icon: "layer-group",
+                    color: colors.tint,
+                  } as unknown as WalletSummary
+                }
+                isDefault={false}
+                colors={colors}
+                mode={mode}
+                onPress={() =>
+                  handleSelectWallet({
+                    walletId: 0,
+                    name: "Tất cả các ví",
+                    type: "all_wallets",
+                    balance: 0, // Not really used when selecting
+                    currency: "VNĐ",
+                    icon: "layer-group",
+                    color: colors.tint,
+                  } as unknown as WalletSummary)
+                }
+              />
+            )}
             {wallets.map((wallet) => (
               <WalletItem
                 key={wallet.walletId}
@@ -393,6 +423,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
 
 const getWalletTypeLabel = (type: string): string => {
   const typeMap: Record<string, string> = {
+    all_wallets: "Tổng hợp",
     cash: "Tiền mặt",
     bank: "Ngân hàng",
     credit_card: "Thẻ tín dụng",

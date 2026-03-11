@@ -1,9 +1,10 @@
 import { AppConfig } from "@/config/AppConfig";
 import StorageKey from "@/constants/StorageKey";
 import {
-    budgetRepository,
-    BudgetSearchParams,
-    CreateBudgetPayload,
+  budgetRepository,
+  BudgetSearchParams,
+  CreateBudgetPayload,
+  AdvancedSearchBudgetParams,
 } from "@/services/repositories/budget.repository";
 import StorageService from "@/services/StorageService";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -16,23 +17,28 @@ interface UseBudgetOptions {
 }
 
 export interface Budget {
-  budget_id: number;
+  id?: number;
+  budget_id?: number;
+  budget_code?: string;
   amount: number;
+  used_amount?: number;
   category_id: number;
   category_name?: string;
   category_icon?: string;
   category_color?: string;
   end_date: string;
   period_type: string;
-  source_gudget: string;
+  source_budget?: string;
+  source_gudget?: string;
   source_tracker: number;
   start_date: string;
   wallet_id: number;
+  wallet_contract_id?: number;
   wallet_name?: string;
   note?: string;
   include_in_report?: boolean;
   is_auto_repeat?: boolean;
-  status: "ACTIVE" | "COMPLETED" | "INACTIVE";
+  status?: "ACTIVE" | "COMPLETED" | "INACTIVE";
   spent?: number;
 }
 
@@ -182,7 +188,7 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
         // const apiPeriodType = periodType.replace('this_', '').toUpperCase();
 
         const params = {
-          wallet_budget_id: walletId || 0,
+          wallet_id: walletId || 0,
           period_type: periodType,
         };
 
@@ -190,15 +196,52 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
         const response = await budgetRepository.getBudgetSummary(params);
 
         if (response.isSuccess() && response.data) {
-          const summaryData = response.data.summary || response.data;
+          let summaryData;
+          if (Array.isArray(response.data.items) && response.data.items.length > 0) {
+            summaryData = response.data.items[0];
+          } else {
+            summaryData = response.data.summary || response.data;
+          }
           setBudgetSummary(summaryData);
+          return summaryData;
         } else {
           throw new Error(response.message || "Không thể tải tóm tắt ngân sách");
         }
       } catch (err) {
         console.error("[useBudget] Fetch summary failed:", err);
+        return null;
       } finally {
         setSummaryLoading(false);
+      }
+    },
+    []
+  );
+
+  /**
+   * Advanced search budgets
+   */
+  const advancedSearchBudgets = useCallback(
+    async (params: AdvancedSearchBudgetParams) => {
+      try {
+        setLoading(true);
+        setError(null);
+        console.log("[useBudget] Advanced search budgets:", params);
+        
+        const response = await budgetRepository.advancedSearchBudget(params);
+        
+        if (response.isSuccess() && response.data) {
+          return response.data.items || [];
+        } else {
+          throw new Error(response.message || "Lỗi tìm kiếm nâng cao ngân sách");
+        }
+      } catch (err) {
+        console.error("[useBudget] Advanced search failed:", err);
+        setError(
+          err instanceof Error ? err.message : "Lỗi tìm kiếm nâng cao ngân sách"
+        );
+        return [];
+      } finally {
+        setLoading(false);
       }
     },
     []
@@ -268,6 +311,7 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
     createBudget,
     fetchAllBudgets, // Deprecated - dùng refetch thay thế
     fetchBudgetSummary,
+    advancedSearchBudgets,
     refetch,
     clearCache,
     getBudgetsByStatus,
