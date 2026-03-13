@@ -45,6 +45,21 @@ export interface CreateBudgetPayload {
   is_auto_repeat?: boolean;
 }
 
+export interface UpdateBudgetPayload {
+  budget_id: number;
+  amount: number;
+  category_id: number;
+  end_date: string;
+  period_type: string;
+  source_gudget: string;
+  source_tracker: number;
+  start_date: string;
+  wallet_id: number;
+  note?: string;
+  include_in_report?: boolean;
+  is_auto_repeat?: boolean;
+}
+
 export interface UpdateBudgetParams {
   budget_id: number;
   title?: string;
@@ -174,30 +189,31 @@ export const budgetRepository = {
   /**
    * Update budget
    */
-  //   async updateBudget(params: UpdateBudgetParams): Promise<BaseResponseModel> {
-  //     try {
-  //       return await apiService.executeWorkflow(
-  //         WORKFLOWCODE.WF_EVENT_UPDATE,
-  //         {
-  //           budget_id: params.budget_id,
-  //           title: params.title,
-  //           description: params.description,
-  //           location: params.location,
-  //           color: params.color,
-  //           icon: params.icon,
-  //           start_on_utc: params.start_on_utc,
-  //           end_on_utc: params.end_on_utc,
-  //           is_all_day: params.is_all_day,
-  //           budget_type: params.budget_type,
-  //           status: params.status,
-  //         },
-  //         false
-  //       );
-  //     } catch (error) {
-  //       console.error("[budgetRepository] Error updating budget:", error);
-  //       throw error;
-  //     }
-  //   },
+  async updateBudget(data: UpdateBudgetPayload): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_UPDATE_WALLET_BUDGET,
+        {
+          budget_id: data.budget_id,
+          amount: data.amount,
+          category_id: data.category_id,
+          end_date: data.end_date,
+          period_type: data.period_type,
+          source_gudget: data.source_gudget,
+          source_tracker: data.source_tracker,
+          start_date: data.start_date,
+          wallet_id: data.wallet_id,
+          note: data.note,
+          include_in_report: data.include_in_report,
+          is_auto_repeat: data.is_auto_repeat,
+        },
+        false
+      );
+    } catch (error) {
+      console.error("[budgetRepository] Error updating budget:", error);
+      throw error;
+    }
+  },
 
   /**
    * Delete budget

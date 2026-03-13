@@ -44,6 +44,7 @@ export interface AdvancedSearchTransactionPayload {
   wallet_id?: number;
   category_id?: number;
   event_id?: number;
+  wallet_budget_id?: number;
   from_transaction_date?: string;
   to_transaction_date?: string;
   page_index: number;
@@ -193,6 +194,7 @@ export const transactionRepository = {
           wallet_id: data.wallet_id || 0,
           category_id: data.category_id || 0,
           event_id: data.event_id || 0,
+          wallet_budget_id: data.wallet_budget_id || 0,
           from_transaction_date: data.from_transaction_date || "",
           to_transaction_date: data.to_transaction_date || "",
           page_index: data.page_index || 1,

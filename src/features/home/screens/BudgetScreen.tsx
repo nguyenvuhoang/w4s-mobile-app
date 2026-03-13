@@ -116,6 +116,13 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         spent: item.used_amount || 0,
         total: item.amount || Math.max(item.used_amount || 0, 1),
         todayProgress,
+        // raw fields for detail screen
+        start_date: item.start_date,
+        end_date: item.end_date,
+        wallet_id: item.wallet_id,
+        wallet_name: item.wallet_name,
+        period_type: item.period_type,
+        source_tracker: item.source_tracker,
       };
     });
   }, [budgetList, categories, colors.tint, t, i18n.language]);
@@ -140,6 +147,13 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 
   const handleCreateBudget = () => {
     router.push('/(protected)/budget/create-budget');
+  };
+
+  const handleBudgetItemPress = (budget: any) => {
+    router.push({
+      pathname: '/(protected)/budget/budget-detail',
+      params: { budget: JSON.stringify(budget) },
+    });
   };
 
   const handleWalletSelect = (walletId: WalletPickerId) => {
@@ -339,7 +353,12 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
             {/* Budget List - Separated Cards */}
             <View style={styles.budgetList}>
               {displayBudgets.map((budget) => (
-                <BudgetItem key={budget.id} budget={budget} colors={colors} />
+                <BudgetItem
+                  key={budget.id}
+                  budget={budget}
+                  colors={colors}
+                  onPress={() => handleBudgetItemPress(budget)}
+                />
               ))}
             </View>
           </>
@@ -353,12 +372,16 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 };
 
 // Budget Item Component
-const BudgetItem = ({ budget, colors }: any) => {
+const BudgetItem = ({ budget, colors, onPress }: any) => {
   const { t } = useTranslation();
   const percentage = (budget.spent / budget.total) * 100;
 
   return (
-    <View style={[styles.budgetItem, { backgroundColor: colors.card }]}>
+    <TouchableOpacity
+      activeOpacity={0.75}
+      onPress={onPress}
+      style={[styles.budgetItem, { backgroundColor: colors.card }]}
+    >
       <View style={styles.budgetHeader}>
         <View style={styles.budgetLeft}>
           <View
@@ -431,7 +454,7 @@ const BudgetItem = ({ budget, colors }: any) => {
       <CustomText style={[styles.percentageText, { color: colors.icon }]}>
         {percentage.toFixed(0)}{t("budget.percent_used")}
       </CustomText>
-    </View>
+    </TouchableOpacity>
   );
 };
 

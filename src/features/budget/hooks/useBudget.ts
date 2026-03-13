@@ -4,6 +4,7 @@ import {
   budgetRepository,
   BudgetSearchParams,
   CreateBudgetPayload,
+  UpdateBudgetPayload,
   AdvancedSearchBudgetParams,
 } from "@/services/repositories/budget.repository";
 import StorageService from "@/services/StorageService";
@@ -176,6 +177,41 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
   );
 
   /**
+   * Update an existing budget
+   */
+  const updateBudget = useCallback(
+    async (payload: UpdateBudgetPayload): Promise<boolean> => {
+      try {
+        setError(null);
+        setCreating(true);
+        console.log("[useBudget] Updating budget payload:", payload);
+
+        const response = await budgetRepository.updateBudget(payload);
+
+        if (!response.isSuccess()) {
+          throw new Error(response.message || "Cập nhật ngân sách thất bại");
+        }
+
+        // Clear cache và refresh lại sau khi update
+        console.log("[useBudget] Budget updated, clearing cache and refreshing");
+        sessionCache = null;
+        await fetchAllBudgets(true);
+
+        return true;
+      } catch (err) {
+        console.error("[useBudget] Update budget failed:", err);
+        setError(
+          err instanceof Error ? err.message : "Không thể cập nhật ngân sách"
+        );
+        return false;
+      } finally {
+        setCreating(false);
+      }
+    },
+    [fetchAllBudgets]
+  );
+
+  /**
    * Fetch budget summary
    */
   const fetchBudgetSummary = useCallback(
@@ -309,6 +345,7 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
     creating,
     error,
     createBudget,
+    updateBudget,
     fetchAllBudgets, // Deprecated - dùng refetch thay thế
     fetchBudgetSummary,
     advancedSearchBudgets,
