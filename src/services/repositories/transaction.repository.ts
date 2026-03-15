@@ -14,6 +14,7 @@ export interface TransactionParticipant {
 export interface CreateTransactionPayload {
   userCode: string;
   username: string;
+  contract_number: string;
   account_number: string;
   wallet_id: number;
   type: string; // "01" = INCOME, "02" = EXPENSE, "03" = LOAN
@@ -71,6 +72,7 @@ export const transactionRepository = {
         {
           user_code: data.userCode,
           username: data.username,
+          contract_number: data.contract_number,
           account_number: data.account_number,
           wallet_id: data.wallet_id,
           type: data.type,

@@ -109,6 +109,7 @@ export const useTransaction = () => {
       const payload = {
         userCode: appInfo.user_code,
         username: appInfo.login_name,
+        contract_number: appInfo.contract_number,
         account_number: account.accountNumber,
         wallet_id: data.walletId,
         type: accountType,
