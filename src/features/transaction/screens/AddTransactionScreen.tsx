@@ -332,16 +332,17 @@ const AddTransactionScreen = () => {
     }
   }, [params.autofillData]);
 
-  // Fetch spending limits when screen is focused
+  const contractNumberRef = useRef(appInfo?.contract_number);
+  contractNumberRef.current = appInfo?.contract_number;
+
   useFocusEffect(
     useCallback(() => {
-      if (appInfo?.contract_number) {
-        fetchLimits(appInfo.contract_number);
+      if (contractNumberRef.current) {
+        fetchLimits(contractNumberRef.current);
       }
-    }, [appInfo?.contract_number, fetchLimits])
+    }, [])
   );
 
-  // Helper: run limit check với cross-currency convert
   const runLimitCheck = useCallback(
     (numAmount: number, currencyId: string) => {
       const exceeded = checkTransactionLimit(numAmount, currencyId, convert);
