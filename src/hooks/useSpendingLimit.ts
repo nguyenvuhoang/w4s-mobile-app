@@ -1,0 +1,181 @@
+import StorageKey from '@/constants/StorageKey';
+import { CreateSpendingLimitPayload, SpendingLimit, spendingLimitRepository } from '@/services/repositories/spendingLimit.repository';
+import StorageService from '@/services/StorageService';
+import { useCallback, useEffect, useState } from 'react';
+
+// Global shared state for spending limits
+let globalLimits: SpendingLimit[] = [];
+let isInitialized = false;
+const listeners: Array<(limits: SpendingLimit[]) => void> = [];
+
+const notifyListeners = (newLimits: SpendingLimit[]) => {
+  globalLimits = newLimits;
+  listeners.forEach(listener => listener(newLimits));
+};
+
+export const useSpendingLimit = () => {
+  const [limits, setLimits] = useState<SpendingLimit[]>(globalLimits);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Add listener to update local state when global state changes
+    const listener = (newLimits: SpendingLimit[]) => setLimits(newLimits);
+    listeners.push(listener);
+
+    // Initialize from Storage if not already done
+    if (!isInitialized) {
+      isInitialized = true;
+      StorageService.getItem(StorageKey.spendingWarningList).then((stored) => {
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            notifyListeners(parsed);
+          } catch (e) {
+            console.error('[useSpendingLimit] Cache parse error:', e);
+          }
+        }
+      });
+    }
+
+    return () => {
+      const index = listeners.indexOf(listener);
+      if (index > -1) listeners.splice(index, 1);
+    };
+  }, []);
+
+  const fetchLimits = useCallback(async (contractNumber: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await spendingLimitRepository.getSpendingLimits(contractNumber);
+      if (response.isSuccess()) {
+        const rawData = response.data?.items || response.data?.data || [];
+        const data = rawData.map((item: any) => ({
+          ...item,
+          spending_limit_id: item.spending_limit_id || (item.id ? Number(item.id) : undefined)
+        }));
+
+        notifyListeners(data);
+        await StorageService.setItem(StorageKey.spendingWarningList, JSON.stringify(data));
+
+        return data;
+      } else {
+        throw new Error(response.getError());
+      }
+    } catch (err: any) {
+      setError(err.message);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const createLimit = useCallback(async (payload: CreateSpendingLimitPayload) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await spendingLimitRepository.createSpendingLimit(payload);
+      if (response.isSuccess()) {
+        await fetchLimits(payload.contract_number);
+        return { success: true };
+      } else {
+        throw new Error(response.getError());
+      }
+    } catch (err: any) {
+      setError(err.message);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchLimits]);
+
+  const updateLimit = useCallback(async (payload: any, contractNumber: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await spendingLimitRepository.updateSpendingLimit(payload);
+      if (response.isSuccess()) {
+        await fetchLimits(contractNumber);
+        return { success: true };
+      } else {
+        throw new Error(response.getError());
+      }
+    } catch (err: any) {
+      setError(err.message);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchLimits]);
+
+  const deleteLimit = useCallback(async (spendingLimitId: number, contractNumber: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await spendingLimitRepository.deleteSpendingLimit(spendingLimitId);
+      if (response.isSuccess()) {
+        await fetchLimits(contractNumber);
+        return { success: true };
+      } else {
+        throw new Error(response.getError());
+      }
+    } catch (err: any) {
+      setError(err.message);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchLimits]);
+
+  /**
+   * Helper to check if a transaction of a certain amount exceeds a limit for a period
+   */
+  const getLimitsByPeriod = useCallback((period: string) => {
+    return limits.find(l => l.period.toLowerCase() === period.toLowerCase() && l.is_active !== false);
+  }, [limits]);
+
+  /**
+   * Helper to check if a transaction of a certain amount exceeds any active limits.
+   * Uses `limits` (React state) instead of `globalLimits` to avoid stale closure.
+   * Hỗ trợ cross-currency: nếu `convertFn` được truyền vào, sẽ convert amount
+   * sang currency của từng limit trước khi so sánh.
+   * Returns an array of limits that would be exceeded.
+   */
+  const checkTransactionLimit = useCallback(
+    (
+      amount: number,
+      currency: string,
+      convertFn?: (amount: number, from: string, to: string) => number | null
+    ) => {
+      return limits.filter(l => {
+        if (l.is_active === false) return false;
+
+        let comparableAmount = amount;
+
+        // Nếu currency khác với limit → cần convert
+        if (l.currency_code !== currency) {
+          if (!convertFn) return false; // Không có hàm convert thì bỏ qua
+          const converted = convertFn(amount, currency, l.currency_code);
+          if (converted === null) return false; // Không có tỷ giá thì bỏ qua
+          comparableAmount = converted;
+        }
+
+        return (comparableAmount + (l.used_amount || 0)) > l.limit_amount;
+      });
+    },
+    [limits]
+  );
+
+  return {
+    limits,
+    loading,
+    error,
+    fetchLimits,
+    createLimit,
+    updateLimit,
+    deleteLimit,
+    getLimitsByPeriod,
+    checkTransactionLimit,
+  };
+};

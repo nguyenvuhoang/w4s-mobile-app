@@ -246,6 +246,15 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               onPress={() => { }}
               colors={colors}
             />
+            <SettingItem
+              icon="alert-circle-outline"
+              title={t("settings.spending_warning")}
+              subtitle={t("settings.spending_warning_subtitle")}
+              onPress={() => {
+                router.push("/(protected)/spending-warning");
+              }}
+              colors={colors}
+            />
             <SettingItemWithSwitch
               icon="finger-print-outline"
               title={t("settings.biometrics")}

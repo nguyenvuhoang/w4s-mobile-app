@@ -3,17 +3,18 @@ import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
 import { normalize } from "@/utils/layout";
 import React, { useEffect, useState } from "react";
-import { StyleSheet, TextInput, TextStyle, View, ViewStyle } from "react-native";
+import { StyleSheet, TextInput, TextStyle, View, ViewStyle, StyleProp, TouchableOpacity } from "react-native";
 
 interface FormattedMoneyInputProps {
     value: number;
     onChange: (value: number) => void;
     currency?: string;
     placeholder?: string;
-    containerStyle?: ViewStyle;
+    containerStyle?: StyleProp<ViewStyle>;
     currencyStyle?: TextStyle;
     inputStyle?: TextStyle;
     editable?: boolean;
+    onCurrencyPress?: () => void;
 }
 
 const FormattedMoneyInput: React.FC<FormattedMoneyInputProps> = ({
@@ -25,6 +26,7 @@ const FormattedMoneyInput: React.FC<FormattedMoneyInputProps> = ({
     currencyStyle,
     inputStyle,
     editable = true,
+    onCurrencyPress,
 }) => {
     const { colors } = useAppTheme();
 
@@ -70,15 +72,21 @@ const FormattedMoneyInput: React.FC<FormattedMoneyInputProps> = ({
 
     return (
         <View style={[styles.container, containerStyle]}>
-            <ThemedText
-                style={[
-                    styles.currency,
-                    { color: colors.tint },
-                    currencyStyle,
-                ]}
+            <TouchableOpacity 
+                disabled={!onCurrencyPress} 
+                onPress={onCurrencyPress}
+                activeOpacity={0.7}
             >
-                {currency}
-            </ThemedText>
+                <ThemedText
+                    style={[
+                        styles.currency,
+                        { color: colors.tint },
+                        currencyStyle,
+                    ]}
+                >
+                    {currency}
+                </ThemedText>
+            </TouchableOpacity>
 
             <TextInput
                 value={inputValue}

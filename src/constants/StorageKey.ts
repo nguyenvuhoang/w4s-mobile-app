@@ -36,4 +36,5 @@ export default {
   SelectedThemeBackground: "SelectedThemeBackground",
   HeaderBackground: "HeaderBackground",
   FestivalOverlayEnabled: "FestivalOverlayEnabled",
+  spendingWarningList: "spendingWarningList",
 };

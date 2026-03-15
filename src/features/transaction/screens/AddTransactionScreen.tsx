@@ -1,6 +1,7 @@
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
+import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
@@ -9,6 +10,7 @@ import { styles } from "@/features/transaction/style/AddTransactionScreen.Styles
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
+import { useSpendingLimit } from "@/hooks/useSpendingLimit";
 import StorageService from "@/services/StorageService";
 import { hp, normalize } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
@@ -16,11 +18,10 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, {
-  useCallback,
-  useEffect,
+  useCallback, useContext, useEffect,
   useMemo,
   useRef,
-  useState,
+  useState
 } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -57,7 +58,6 @@ interface Participant {
   name: string;
   phoneNumber?: string | null;
   avatarColor?: string;
-  // Cho data từ server
   display_name?: string;
   phone?: string | null;
   avatar_url?: string;
@@ -75,7 +75,6 @@ interface SelectedEvent {
 
 type TransactionType = "income" | "expense" | "inout";
 
-// Interface for autofill data
 interface AutofillData {
   type?: TransactionType;
   walletId?: number;
@@ -115,15 +114,14 @@ const AddTransactionScreen = () => {
   const { createTransaction, loading: creatingTransaction } = useTransaction();
   const { showNotification } = useNotification();
   const { t } = useTranslation();
+  const { appInfo } = useContext(GlobalContext);
+  const { fetchLimits, checkTransactionLimit } = useSpendingLimit();
 
   const [selectedType, setSelectedType] = useState<TransactionType>("expense");
   const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<SelectedEvent | null>(
-    null,
-  );
+  const [selectedEvent, setSelectedEvent] = useState<SelectedEvent | null>(null);
   const [sourceEventId, setSourceEventId] = useState<number | null>(null);
-  const [selectedCategoryData, setSelectedCategoryData] =
-    useState<SelectedCategoryData | null>(null);
+  const [selectedCategoryData, setSelectedCategoryData] = useState<SelectedCategoryData | null>(null);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -132,6 +130,10 @@ const AddTransactionScreen = () => {
   const [borrowToPayExpense, setBorrowToPayExpense] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [location, setLocation] = useState("");
+
+  // Spending limit warning state
+  const [exceededLimits, setExceededLimits] = useState<any[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Reminder state
   const [reminderDate, setReminderDate] = useState<Date | null>(null);
@@ -151,6 +153,13 @@ const AddTransactionScreen = () => {
   });
 
   const hasManuallySelectedCurrencyRef = useRef(false);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const selectedWallet = useMemo(
     () => wallets.find((w) => w.walletId === sourceWalletId),
@@ -248,6 +257,26 @@ const AddTransactionScreen = () => {
   const isValid =
     selectedWallet && selectedCategoryData && amount.trim() !== "";
 
+  // Tính inline warning label từ exceeded limits
+  const exceededLabel = useMemo(() => {
+    if (exceededLimits.length === 0) return null;
+    const periodMap: Record<string, string> = {
+      Day: t("settings.daily"),
+      Week: t("settings.weekly"),
+      Month: t("settings.monthly"),
+      Quarter: t("settings.quarterly"),
+      Year: t("settings.yearly"),
+    };
+    const parts = exceededLimits.map(
+      (l) =>
+        `${periodMap[l.period] || l.period} (${l.limit_amount.toLocaleString("vi-VN")} ${l.currency_code})`
+    );
+    return t("transaction.limit_exceeded_warning", {
+      periods: parts.join(", "),
+      defaultValue: `Vượt hạn mức: ${parts.join(", ")}`,
+    });
+  }, [exceededLimits, t]);
+
   // Process autofill data from params
   useEffect(() => {
     if (params.autofillData) {
@@ -259,27 +288,11 @@ const AddTransactionScreen = () => {
 
         console.log("[AddTransaction] Autofill data:", autofillData);
 
-        // Autofill type
-        if (autofillData.type) {
-          setSelectedType(autofillData.type);
-        }
+        if (autofillData.type) setSelectedType(autofillData.type);
+        if (autofillData.walletId !== undefined) setSourceWalletId(autofillData.walletId);
+        if (autofillData.category) setSelectedCategoryData(autofillData.category);
+        if (autofillData.amount !== undefined) setAmount(String(autofillData.amount));
 
-        // Autofill wallet
-        if (autofillData.walletId !== undefined) {
-          setSourceWalletId(autofillData.walletId);
-        }
-
-        // Autofill category
-        if (autofillData.category) {
-          setSelectedCategoryData(autofillData.category);
-        }
-
-        // Autofill amount
-        if (autofillData.amount !== undefined) {
-          setAmount(String(autofillData.amount));
-        }
-
-        // Autofill date
         if (autofillData.date) {
           const date =
             typeof autofillData.date === "string"
@@ -290,29 +303,20 @@ const AddTransactionScreen = () => {
           }
         }
 
-        // Autofill note
-        if (autofillData.note) {
-          setNote(autofillData.note);
-        }
+        if (autofillData.note) setNote(autofillData.note);
 
-        // Autofill currency
         if (autofillData.currency) {
           setInputCurrency(autofillData.currency);
           hasManuallySelectedCurrencyRef.current = true;
         }
 
-        // Autofill event
         if (autofillData.event) {
           setSelectedEvent(autofillData.event);
           setSourceEventId(autofillData.event.eventId);
         }
 
-        // Autofill location
-        if (autofillData.location) {
-          setLocation(autofillData.location);
-        }
+        if (autofillData.location) setLocation(autofillData.location);
 
-        // Autofill reminder date
         if (autofillData.reminderDate) {
           const reminder =
             typeof autofillData.reminderDate === "string"
@@ -327,6 +331,58 @@ const AddTransactionScreen = () => {
       }
     }
   }, [params.autofillData]);
+
+  // Fetch spending limits when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      if (appInfo?.contract_number) {
+        fetchLimits(appInfo.contract_number);
+      }
+    }, [appInfo?.contract_number, fetchLimits])
+  );
+
+  // Helper: run limit check với cross-currency convert
+  const runLimitCheck = useCallback(
+    (numAmount: number, currencyId: string) => {
+      const exceeded = checkTransactionLimit(numAmount, currencyId, convert);
+      setExceededLimits(exceeded);
+    },
+    [checkTransactionLimit, convert]
+  );
+
+  // Handle amount change with debounced limit check (600ms)
+  const handleAmountChange = useCallback(
+    (text: string) => {
+      setAmount(text);
+
+      // Clear warning ngay khi xóa hết
+      if (!text || text === "0") {
+        setExceededLimits([]);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        return;
+      }
+
+      // Debounce 600ms để tránh check mỗi keystroke
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        const numAmount = parseFloat(text.replace(/,/g, ""));
+        if (isNaN(numAmount)) {
+          setExceededLimits([]);
+          return;
+        }
+        runLimitCheck(numAmount, inputCurrency.currencyId);
+      }, 600);
+    },
+    [runLimitCheck, inputCurrency.currencyId]
+  );
+
+  // Re-check khi đổi currency
+  useEffect(() => {
+    if (!amount || amount === "0") return;
+    const numAmount = parseFloat(amount.replace(/,/g, ""));
+    if (isNaN(numAmount)) return;
+    runLimitCheck(numAmount, inputCurrency.currencyId);
+  }, [inputCurrency.currencyId]);
 
   useEffect(() => {
     if (!sourceWalletId && defaultWallet) {
@@ -353,17 +409,14 @@ const AddTransactionScreen = () => {
             const { walletId } = JSON.parse(storedWallet);
             setSourceWalletId(walletId);
             hasManuallySelectedCurrencyRef.current = false;
-            await StorageService.removeAsyncItem(
-              STORAGE_KEY.TEMP_WALLET_STORAGE,
-            );
+            await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_WALLET_STORAGE);
           }
 
           const storedCategory = await StorageService.getAsyncItem(
             STORAGE_KEY.TEMP_CATEGORY_STORAGE,
           );
           if (storedCategory) {
-            const categoryData: SelectedCategoryData =
-              JSON.parse(storedCategory);
+            const categoryData: SelectedCategoryData = JSON.parse(storedCategory);
             setSelectedCategoryData(categoryData);
 
             const typeMap = {
@@ -372,15 +425,12 @@ const AddTransactionScreen = () => {
               LOAN: "inout",
             } as const;
 
-            // Use category_group preference over category_type for reliability
             const groupKey = categoryData.category_group || categoryData.category_type;
             if (groupKey && typeMap[groupKey as keyof typeof typeMap]) {
               setSelectedType(typeMap[groupKey as keyof typeof typeMap]);
             }
 
-            await StorageService.removeAsyncItem(
-              STORAGE_KEY.TEMP_CATEGORY_STORAGE,
-            );
+            await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
           }
 
           const storedCurrency = await StorageService.getItem(
@@ -393,7 +443,6 @@ const AddTransactionScreen = () => {
             await StorageService.removeItem(STORAGE_KEY.TEMP_CURRENCY_STORAGE);
           }
 
-          // Load participants với session ID
           const storedParticipants = await StorageService.getAsyncItem(
             STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE,
           );
@@ -402,40 +451,30 @@ const AddTransactionScreen = () => {
             if (data.sessionId === sessionIdRef.current) {
               setParticipants(data.participants);
             } else {
-              await StorageService.removeAsyncItem(
-                STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE,
-              );
+              await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE);
             }
           }
 
-          // Load location với session ID
           const storedLocation = await StorageService.getAsyncItem(
             STORAGE_KEY.TEMP_LOCATION_STORAGE,
           );
           if (storedLocation) {
             const data = JSON.parse(storedLocation);
             if (data.sessionId === sessionIdRef.current) {
-              setLocation(
-                data.locationData.address || data.locationData.name || "",
-              );
+              setLocation(data.locationData.address || data.locationData.name || "");
             } else {
-              await StorageService.removeAsyncItem(
-                STORAGE_KEY.TEMP_LOCATION_STORAGE,
-              );
+              await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_LOCATION_STORAGE);
             }
           }
 
           const storedEvent = await StorageService.getAsyncItem(
             STORAGE_KEY.TEMP_EVENT_STORAGE,
           );
-
           if (storedEvent) {
             const eventData: SelectedEvent = JSON.parse(storedEvent);
             setSelectedEvent(eventData);
             setSourceEventId(eventData.eventId);
-            await StorageService.removeAsyncItem(
-              STORAGE_KEY.TEMP_EVENT_STORAGE,
-            );
+            await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_EVENT_STORAGE);
           }
         } catch (error) {
           console.error("[AddTransaction] Load data failed:", error);
@@ -456,7 +495,6 @@ const AddTransactionScreen = () => {
       } as const;
 
       const categoryGroup = selectedCategoryData.category_group || selectedCategoryData.category_type;
-
       if (categoryGroup !== typeMap[newType]) {
         setSelectedCategoryData(null);
       }
@@ -477,7 +515,6 @@ const AddTransactionScreen = () => {
     if (!result.canceled) setImageUri(result.assets[0].uri);
   };
 
-  // Handle date picker change
   const onDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === "android") {
       setShowDatePicker(false);
@@ -487,17 +524,14 @@ const AddTransactionScreen = () => {
     }
   };
 
-  // Handle reminder picker change
   const onReminderChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === "android") {
       setShowReminderPicker(false);
       if (selectedDate && reminderMode === "date") {
-        // Sau khi chọn ngày, chuyển sang chọn giờ
         setReminderDate(selectedDate);
         setReminderMode("time");
         setTimeout(() => setShowReminderPicker(true), 100);
       } else if (selectedDate && reminderMode === "time") {
-        // Đã chọn xong cả ngày và giờ
         const finalDate = reminderDate || new Date();
         finalDate.setHours(selectedDate.getHours());
         finalDate.setMinutes(selectedDate.getMinutes());
@@ -505,7 +539,6 @@ const AddTransactionScreen = () => {
         setReminderMode("date");
       }
     } else {
-      // iOS - chọn cả ngày và giờ cùng lúc
       if (selectedDate) {
         setReminderDate(selectedDate);
       }
@@ -531,7 +564,6 @@ const AddTransactionScreen = () => {
         ? convertedAmount
         : parseFloat(amount.replace(/,/g, ""));
 
-      // Chuẩn bị data participants
       const participantsData = participants.map((p) => {
         const baseData = {
           display_name: p.name,
@@ -542,33 +574,12 @@ const AddTransactionScreen = () => {
         };
 
         if (p.isFromServer && p.id) {
-          return {
-            id: parseInt(p.id),
-            ...baseData,
-          };
+          return { id: parseInt(p.id), ...baseData };
         }
 
         return baseData;
       });
 
-      console.log("[AddTransaction] Creating transaction with data:", {
-        type: selectedType,
-        walletId: sourceWalletId,
-        amount: finalAmount,
-        currency: walletCurrency.currencyId,
-        categoryId: selectedCategoryData?.id || 0,
-        eventId: sourceEventId,
-        description: note,
-        location: location,
-        recordedAt: selectedDate,
-        reminderAt: reminderDate,
-        isCalculateReport: includeInReport,
-        images: imageUri ? [imageUri] : [],
-        participants: participantsData,
-        is_loan_for_fund: borrowToPayExpense,
-      });
-
-      // Gọi API tạo transaction
       await createTransaction({
         walletId: sourceWalletId ?? 0,
         type: selectedType,
@@ -644,10 +655,7 @@ const AddTransactionScreen = () => {
   };
 
   const formatConvertedAmount = (amount: number) => {
-    if (
-      walletCurrency.currencyId === "VND" ||
-      walletCurrency.currencyId === "VNĐ"
-    ) {
+    if (walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ") {
       return Math.round(amount).toLocaleString("vi-VN");
     }
     return amount.toLocaleString("en-US", {
@@ -657,10 +665,7 @@ const AddTransactionScreen = () => {
   };
 
   const formatExchangeRate = (rate: number) => {
-    if (
-      walletCurrency.currencyId === "VND" ||
-      walletCurrency.currencyId === "VNĐ"
-    ) {
+    if (walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ") {
       return Math.round(rate).toLocaleString("vi-VN");
     }
     return rate.toLocaleString("en-US", {
@@ -676,7 +681,7 @@ const AddTransactionScreen = () => {
   };
 
   const getAvatarColor = (index: number) => {
-    const colors = [
+    const avatarColors = [
       "#FF6B6B",
       "#4ECDC4",
       "#45B7D1",
@@ -684,7 +689,7 @@ const AddTransactionScreen = () => {
       "#98D8C8",
       "#F7DC6F",
     ];
-    return colors[index % colors.length];
+    return avatarColors[index % avatarColors.length];
   };
 
   const renderParticipants = () => {
@@ -708,8 +713,7 @@ const AddTransactionScreen = () => {
               style={[
                 styles.participantAvatar,
                 {
-                  backgroundColor:
-                    participant.avatarColor || getAvatarColor(index),
+                  backgroundColor: participant.avatarColor || getAvatarColor(index),
                   borderColor: colors.card,
                   zIndex: displayParticipants.length - index,
                 },
@@ -731,9 +735,7 @@ const AddTransactionScreen = () => {
                 },
               ]}
             >
-              <CustomText
-                style={[styles.participantInitials, { color: colors.text }]}
-              >
+              <CustomText style={[styles.participantInitials, { color: colors.text }]}>
                 +{remainingCount}
               </CustomText>
             </View>
@@ -747,9 +749,7 @@ const AddTransactionScreen = () => {
   };
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.flex}
@@ -774,8 +774,7 @@ const AddTransactionScreen = () => {
                   style={[
                     styles.typeButton,
                     {
-                      backgroundColor:
-                        selectedType === type ? colors.tint : colors.card,
+                      backgroundColor: selectedType === type ? colors.tint : colors.card,
                       borderColor: colors.border,
                     },
                   ]}
@@ -786,10 +785,7 @@ const AddTransactionScreen = () => {
                       styles.typeText,
                       {
                         color: selectedType === type ? "#fff" : colors.text,
-                        fontFamily:
-                          selectedType === type
-                            ? Fonts.semiBold
-                            : Fonts.regular,
+                        fontFamily: selectedType === type ? Fonts.semiBold : Fonts.regular,
                       },
                     ]}
                   >
@@ -810,9 +806,7 @@ const AddTransactionScreen = () => {
                 styles.field,
                 { backgroundColor: colors.card, borderColor: colors.border },
               ]}
-              onPress={() =>
-                router.push("/(protected)/wallet/wallet-list?mode=select")
-              }
+              onPress={() => router.push("/(protected)/wallet/wallet-list?mode=select")}
             >
               <View style={styles.fieldLeft}>
                 <FontAwesome6
@@ -860,25 +854,14 @@ const AddTransactionScreen = () => {
                         color="#fff"
                       />
                     </View>
-                    <CustomText
-                      style={[styles.fieldText, { color: colors.text }]}
-                    >
-                      {parseCategoryNameJSON(
-                        selectedCategoryData.category_name,
-                      )}
+                    <CustomText style={[styles.fieldText, { color: colors.text }]}>
+                      {parseCategoryNameJSON(selectedCategoryData.category_name)}
                     </CustomText>
                   </>
                 ) : (
                   <>
-                    <View
-                      style={[
-                        styles.categoryIcon,
-                        { backgroundColor: colors.border },
-                      ]}
-                    />
-                    <CustomText
-                      style={[styles.fieldText, { color: colors.icon }]}
-                    >
+                    <View style={[styles.categoryIcon, { backgroundColor: colors.border }]} />
+                    <CustomText style={[styles.fieldText, { color: colors.icon }]}>
                       {t("transaction.select_category")}
                     </CustomText>
                   </>
@@ -895,7 +878,11 @@ const AddTransactionScreen = () => {
             <View
               style={[
                 styles.amountContainer,
-                { backgroundColor: colors.card, borderColor: colors.border },
+                {
+                  backgroundColor: colors.card,
+                  // Viền đỏ khi vượt limit
+                  borderColor: exceededLimits.length > 0 ? "#FF4444" : colors.border,
+                },
               ]}
             >
               <TouchableOpacity
@@ -915,43 +902,61 @@ const AddTransactionScreen = () => {
                 placeholderTextColor={colors.icon}
                 keyboardType="numeric"
                 value={amount}
-                onChangeText={setAmount}
+                onChangeText={handleAmountChange}
               />
             </View>
 
+            {/* ⚠️ Inline limit warning — hiện ngay dưới input */}
+            {exceededLabel && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  marginTop: 6,
+                  gap: 6,
+                }}
+              >
+                <FontAwesome6
+                  name="triangle-exclamation"
+                  size={normalize(12)}
+                  color="#FF4444"
+                  style={{ marginTop: 2 }}
+                />
+                <CustomText
+                  style={{
+                    color: "#FF4444",
+                    fontSize: normalize(12),
+                    flex: 1,
+                    lineHeight: normalize(18),
+                  }}
+                >
+                  {exceededLabel}
+                </CustomText>
+              </View>
+            )}
+
             {/* Conversion Display */}
-            {needsConversion &&
-              convertedAmount !== null &&
-              exchangeRate !== null && (
-                <View style={styles.conversionContainer}>
-                  <FontAwesome6
-                    name="arrow-right-arrow-left"
-                    size={normalize(12)}
-                    color={colors.icon}
-                  />
-                  <View style={styles.conversionTextContainer}>
-                    <CustomText
-                      style={[styles.conversionText, { color: colors.icon }]}
-                    >
-                      ≈ {walletCurrency.symbol}{" "}
-                      {formatConvertedAmount(convertedAmount)}
-                      <CustomText
-                        style={{ fontSize: normalize(11), opacity: 0.7 }}
-                      >
-                        {" "}
-                        ({walletCurrency.currencyId})
-                      </CustomText>
+            {needsConversion && convertedAmount !== null && exchangeRate !== null && (
+              <View style={styles.conversionContainer}>
+                <FontAwesome6
+                  name="arrow-right-arrow-left"
+                  size={normalize(12)}
+                  color={colors.icon}
+                />
+                <View style={styles.conversionTextContainer}>
+                  <CustomText style={[styles.conversionText, { color: colors.icon }]}>
+                    ≈ {walletCurrency.symbol} {formatConvertedAmount(convertedAmount)}
+                    <CustomText style={{ fontSize: normalize(11), opacity: 0.7 }}>
+                      {" "}({walletCurrency.currencyId})
                     </CustomText>
-                    <CustomText
-                      style={[styles.exchangeRateText, { color: colors.icon }]}
-                    >
-                      1 {inputCurrency.currencyId} ={" "}
-                      {formatExchangeRate(exchangeRate)}{" "}
-                      {walletCurrency.currencyId}
-                    </CustomText>
-                  </View>
+                  </CustomText>
+                  <CustomText style={[styles.exchangeRateText, { color: colors.icon }]}>
+                    1 {inputCurrency.currencyId} = {formatExchangeRate(exchangeRate)}{" "}
+                    {walletCurrency.currencyId}
+                  </CustomText>
                 </View>
-              )}
+              </View>
+            )}
           </View>
 
           {/* Event - Optional */}
@@ -959,7 +964,6 @@ const AddTransactionScreen = () => {
             <CustomText style={[styles.label, { color: colors.text }]}>
               {t("settings.event")}
             </CustomText>
-
             <TouchableOpacity
               style={[
                 styles.field,
@@ -976,10 +980,7 @@ const AddTransactionScreen = () => {
                 {selectedEvent ? (
                   <>
                     <View
-                      style={[
-                        styles.categoryIcon,
-                        { backgroundColor: selectedEvent.color },
-                      ]}
+                      style={[styles.categoryIcon, { backgroundColor: selectedEvent.color }]}
                     >
                       <FontAwesome6
                         name={selectedEvent.icon as any}
@@ -987,23 +988,14 @@ const AddTransactionScreen = () => {
                         color="#fff"
                       />
                     </View>
-                    <CustomText
-                      style={[styles.fieldText, { color: colors.text }]}
-                    >
+                    <CustomText style={[styles.fieldText, { color: colors.text }]}>
                       {selectedEvent.eventName}
                     </CustomText>
                   </>
                 ) : (
                   <>
-                    <View
-                      style={[
-                        styles.categoryIcon,
-                        { backgroundColor: colors.border },
-                      ]}
-                    />
-                    <CustomText
-                      style={[styles.fieldText, { color: colors.icon }]}
-                    >
+                    <View style={[styles.categoryIcon, { backgroundColor: colors.border }]} />
+                    <CustomText style={[styles.fieldText, { color: colors.icon }]}>
                       {t("transaction.select_event_optional", { defaultValue: "Select Event (Optional)" })}
                     </CustomText>
                   </>
@@ -1064,10 +1056,7 @@ const AddTransactionScreen = () => {
               <TouchableOpacity
                 style={[
                   styles.mapButton,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                  },
+                  { backgroundColor: colors.card, borderColor: colors.border },
                 ]}
                 onPress={() =>
                   router.push({
@@ -1110,7 +1099,7 @@ const AddTransactionScreen = () => {
             />
           </View>
 
-          {/* Date Picker - WITH PICKER */}
+          {/* Date Picker */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               {t("transaction.date")}
@@ -1136,7 +1125,7 @@ const AddTransactionScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Reminder - NEW FIELD */}
+          {/* Reminder */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               {t("transaction.reminder")}
@@ -1168,11 +1157,7 @@ const AddTransactionScreen = () => {
               </View>
               {reminderDate && (
                 <TouchableOpacity onPress={clearReminder}>
-                  <FontAwesome6
-                    name="xmark"
-                    size={normalize(16)}
-                    color={colors.icon}
-                  />
+                  <FontAwesome6 name="xmark" size={normalize(16)} color={colors.icon} />
                 </TouchableOpacity>
               )}
             </TouchableOpacity>
@@ -1192,17 +1177,10 @@ const AddTransactionScreen = () => {
               >
                 <Image source={{ uri: imageUri }} style={styles.image} />
                 <TouchableOpacity
-                  style={[
-                    styles.removeBtn,
-                    { backgroundColor: colors.background },
-                  ]}
+                  style={[styles.removeBtn, { backgroundColor: colors.background }]}
                   onPress={() => setImageUri(null)}
                 >
-                  <FontAwesome6
-                    name="xmark"
-                    size={normalize(12)}
-                    color={colors.text}
-                  />
+                  <FontAwesome6 name="xmark" size={normalize(12)} color={colors.text} />
                 </TouchableOpacity>
               </View>
             ) : (
@@ -1213,11 +1191,7 @@ const AddTransactionScreen = () => {
                 ]}
                 onPress={handlePickImage}
               >
-                <FontAwesome6
-                  name="image"
-                  size={normalize(32)}
-                  color={colors.icon}
-                />
+                <FontAwesome6 name="image" size={normalize(32)} color={colors.icon} />
                 <CustomText style={[styles.uploadText, { color: colors.icon }]}>
                   {t("transaction.upload", { defaultValue: "Upload" })}
                 </CustomText>
@@ -1225,7 +1199,7 @@ const AddTransactionScreen = () => {
             )}
           </View>
 
-          {/* Include in Report Toggle */}
+          {/* Borrow to Pay Toggle */}
           <View style={[styles.toggle, { backgroundColor: colors.card }]}>
             <CustomText style={[styles.toggleLabel, { color: colors.text }]}>
               {t("transaction.borrow_to_pay")}
@@ -1282,10 +1256,7 @@ const AddTransactionScreen = () => {
           <View
             style={[
               styles.pickerToolbar,
-              {
-                backgroundColor: colors.card,
-                borderTopColor: colors.border,
-              },
+              { backgroundColor: colors.card, borderTopColor: colors.border },
             ]}
           >
             <TouchableOpacity
@@ -1295,9 +1266,7 @@ const AddTransactionScreen = () => {
               }}
               style={styles.pickerButton}
             >
-              <CustomText
-                style={[styles.pickerButtonText, { color: colors.tint }]}
-              >
+              <CustomText style={[styles.pickerButtonText, { color: colors.tint }]}>
                 {t("common.done", { defaultValue: "Done" })}
               </CustomText>
             </TouchableOpacity>
@@ -1308,10 +1277,7 @@ const AddTransactionScreen = () => {
         <View
           style={[
             styles.bottomBar,
-            {
-              backgroundColor: colors.background,
-              borderTopColor: colors.border,
-            },
+            { backgroundColor: colors.background, borderTopColor: colors.border },
           ]}
         >
           <TouchableOpacity

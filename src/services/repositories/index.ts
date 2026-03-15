@@ -6,4 +6,5 @@ export * from "./system.repository";
 export * from "./transaction.repository";
 export * from "./wallet.repository";
 export * from "./walletTracker.repository";
+export * from "./spendingLimit.repository";
 

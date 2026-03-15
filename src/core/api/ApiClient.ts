@@ -339,7 +339,7 @@ class ApiClient {
         this.handleApiError(error);
       }
 
-      console.log("Axios Network Error -> fallback sang fetch");
+      console.log("Axios Network Error -> fallback sang fetch:", error);
     }
 
     // Fallback sang fetch
