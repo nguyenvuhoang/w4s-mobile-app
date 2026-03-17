@@ -16,7 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface SelectedCurrency {
   currencyId: string;
@@ -26,6 +26,7 @@ interface SelectedCurrency {
 
 const CurrencyConverterScreen = () => {
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   const {
     rates,
@@ -164,7 +165,7 @@ const CurrencyConverterScreen = () => {
 
   if (ratesLoading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView edges={["top", "left", "right"]} style={[styles.container, { backgroundColor: colors.background }]}>
         <AppHeader title="Quy đổi tiền tệ" showBackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.tint} />
@@ -175,10 +176,10 @@ const CurrencyConverterScreen = () => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={["top", "left", "right"]} style={[styles.container, { backgroundColor: colors.background }]}>
       <AppHeader title="Quy đổi tiền tệ" showBackButton />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: hp(2) + insets.bottom }]}>
         <View style={styles.subtitleRow}>
           <ThemedText style={styles.subtitle}>
             Chuyển đổi tiền tệ theo tỷ giá hiện tại

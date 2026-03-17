@@ -7,10 +7,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ToolsScreen = () => {
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -20,9 +21,10 @@ const ToolsScreen = () => {
 
   return (
     <SafeAreaView
+      edges={["top", "left", "right"]}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + normalize(20) }}>
         {/* Header */}
         <AppHeader title="Công cụ" onBack={handleBack} />
 

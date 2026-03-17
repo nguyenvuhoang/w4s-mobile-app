@@ -6,10 +6,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Switch, TextInput, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ExportDataScreen = () => {
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [sourceFilter, setSourceFilter] = useState("");
   const [groupFilter, setGroupFilter] = useState("");
   const [startDate, setStartDate] = useState("08/01/2026");
@@ -30,13 +31,14 @@ const ExportDataScreen = () => {
 
   return (
     <SafeAreaView
+      edges={["top", "left", "right"]}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <AppHeader title="Xuất dữ liệu" onBack={handleBack} />
 
-        <View style={styles.content}>
+        <View style={[styles.content, { paddingBottom: normalize(20) + insets.bottom }]}>
           {/* Source Filter */}
           <View style={styles.inputGroup}>
             <CustomText style={[styles.label, { color: colors.text }]}>

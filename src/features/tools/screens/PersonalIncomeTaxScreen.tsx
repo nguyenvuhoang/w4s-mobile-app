@@ -23,7 +23,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 type IncomeType = "gross" | "net";
 
@@ -43,6 +43,7 @@ const DEPENDENT_OPTIONS: BottomSelectOption<number>[] = [
 
 const PersonalIncomeTaxScreen = () => {
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   const [incomeType, setIncomeType] = useState<IncomeType>("gross");
   const [monthlyIncome, setMonthlyIncome] = useState<number>(0);
@@ -129,13 +130,14 @@ const PersonalIncomeTaxScreen = () => {
 
   return (
     <SafeAreaView
+      edges={["top", "left", "right"]}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <AppHeader title="Tính thuế thu nhập" showBackButton />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: hp(2) + insets.bottom }]}
       >
         {/* Subtitle */}
         <ThemedText style={[styles.subtitle, { color: colors.icon }]}>

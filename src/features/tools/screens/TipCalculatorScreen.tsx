@@ -7,10 +7,11 @@ import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TipCalculatorScreen = () => {
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [billAmount, setBillAmount] = useState("0");
   const [tipPercent, setTipPercent] = useState(10);
   const [tipPercentInput, setTipPercentInput] = useState("10");
@@ -80,13 +81,14 @@ const TipCalculatorScreen = () => {
 
   return (
     <SafeAreaView
+      edges={["top", "left", "right"]}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <AppHeader title="Tính tiền típ" showBackButton />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: hp(2) + insets.bottom }]}
       >
         {/* Subtitle */}
         <ThemedText style={[styles.subtitle, { color: colors.text }]}>

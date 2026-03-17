@@ -19,7 +19,7 @@ import {
     View,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 // =====================
 // Google Places API
@@ -98,6 +98,7 @@ const haversineDistance = (
 // =====================
 const ATMFinderScreen = () => {
     const { colors, isDark } = useAppTheme();
+    const insets = useSafeAreaInsets();
     const mapRef = useRef<MapView>(null);
 
     // State
@@ -893,7 +894,7 @@ const ATMFinderScreen = () => {
     // =====================
     if (loading) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <SafeAreaView edges={["top", "left", "right"]} style={[styles.container, { backgroundColor: colors.background }]}>
                 <AppHeader title="Tìm ATM / Ngân hàng" showBackButton />
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={colors.tint} />
@@ -910,7 +911,7 @@ const ATMFinderScreen = () => {
     // =====================
     if (errorMsg && !userLocation) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <SafeAreaView edges={["top", "left", "right"]} style={[styles.container, { backgroundColor: colors.background }]}>
                 <AppHeader title="Tìm ATM / Ngân hàng" showBackButton />
                 <View style={styles.errorContainer}>
                     <Ionicons name="location-outline" size={normalize(64)} color={colors.border} />
@@ -951,7 +952,7 @@ const ATMFinderScreen = () => {
     }
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <SafeAreaView edges={["top", "left", "right"]} style={[styles.container, { backgroundColor: colors.background }]}>
             <AppHeader title="Tìm ATM / Ngân hàng" showBackButton />
 
             {/* Map Section */}
@@ -1131,7 +1132,7 @@ const ATMFinderScreen = () => {
                         data={filteredPlaces}
                         keyExtractor={(item) => item.id}
                         renderItem={renderLocationItem}
-                        contentContainerStyle={styles.listContent}
+                        contentContainerStyle={[styles.listContent, { paddingBottom: hp(3) + insets.bottom }]}
                         showsVerticalScrollIndicator={false}
                         ListEmptyComponent={
                             <View style={styles.emptyContainer}>

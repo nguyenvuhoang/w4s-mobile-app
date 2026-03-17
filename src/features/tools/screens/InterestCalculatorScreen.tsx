@@ -16,7 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 /* ---------------- OPTIONS ---------------- */
 
@@ -40,6 +40,7 @@ const CALCULATION_OPTIONS: BottomSelectOption<"simple" | "compound">[] = [
 
 const InterestCalculatorScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   /* ---------- STATE ---------- */
   const [principal, setPrincipal] = useState<number>(0);
@@ -94,13 +95,14 @@ const InterestCalculatorScreen: React.FC = () => {
   /* ---------- RENDER ---------- */
   return (
     <SafeAreaView
+      edges={["top", "left", "right"]}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <AppHeader title="Tính lãi suất" showBackButton />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: hp(2) + insets.bottom }]}
       >
         {/* Subtitle */}
         <ThemedText style={[styles.subtitle, { color: colors.text }]}>

@@ -12,6 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BudgetScreen from "../screens/BudgetScreen";
 import HomeScreen from "../screens/HomeScreen";
 import SettingsScreen from "../screens/SettingsScreen";
@@ -127,6 +128,7 @@ const CustomTabBarButton = ({ children }: any) => {
 export default function MainNavigator() {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -138,8 +140,8 @@ export default function MainNavigator() {
           {
             backgroundColor: colors.background,
             borderTopColor: colors.border,
-            height: Platform.OS === "ios" ? hp(11) : hp(9),
-            paddingBottom: Platform.OS === "ios" ? getBottomSpace() : hp(1.5),
+            height: Platform.OS === "ios" ? hp(11) : hp(9) + insets.bottom,
+            paddingBottom: Platform.OS === "ios" ? getBottomSpace() : hp(1.5) + insets.bottom,
           },
         ],
         tabBarActiveTintColor: colors.tint,
