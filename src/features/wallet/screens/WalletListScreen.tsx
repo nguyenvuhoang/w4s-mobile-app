@@ -136,10 +136,25 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
   };
 
   const handleEditWallet = () => {
+    if (!selectedWallet) return;
     setShowActionModal(false);
-    // TODO: Navigate to edit screen with selectedWallet
     setTimeout(() => {
-      showNotification("Chức năng chỉnh sửa đang được phát triển", "warning");
+      router.push({
+        pathname: '/(protected)/wallet/tracker/edit-basic',
+        params: {
+          wallet_id: String(selectedWallet.walletId),
+          wallet_name: selectedWallet.name,
+          wallet_type: selectedWallet.type,
+          default_currency: selectedWallet.currency,
+          wallet_balance: String(selectedWallet.balance),
+          is_primary: String(selectedWallet.walletId === defaultWalletId),
+          status: selectedWallet.status ?? 'A',
+          icon: selectedWallet.icon ?? 'wallet',
+          color: selectedWallet.color ?? '#3B82F6',
+          currency_symbol: selectedWallet.currency === 'VND' ? 'đ' : selectedWallet.currency,
+          currency_name: selectedWallet.currency,
+        },
+      });
     }, 300);
   };
 

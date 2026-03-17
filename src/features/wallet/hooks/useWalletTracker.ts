@@ -13,9 +13,22 @@ interface CreateWalletTrackerParams {
   walletType: string;
 }
 
+interface UpdateWalletProfileParams {
+  wallet_id: number;
+  wallet_balance: number;
+  wallet_name: string;
+  wallet_type: string;
+  default_currency: string;
+  is_primary: boolean;
+  status: string;
+  icon: string | null;
+  color: string | null;
+}
+
 export const useWalletTracker = () => {
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const createWalletTracker = async (params: CreateWalletTrackerParams) => {
@@ -81,11 +94,35 @@ export const useWalletTracker = () => {
     }
   };
 
+  const updateWalletProfile = async (params: UpdateWalletProfileParams): Promise<any> => {
+    setUpdating(true);
+    setError(null);
+
+    try {
+      const response = await walletTrackerRepository.updateWalletProfile(params);
+
+      if (!response.isSuccess()) {
+        throw new Error(response.getError() || response.message || 'Update wallet failed');
+      }
+
+      return response;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Update wallet failed';
+      setError(message);
+      console.error('[useWalletTracker] updateWalletProfile failed', err);
+      throw err;
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   return {
     loading,
     deleting,
+    updating,
     error,
     createWalletTracker,
     deleteWalletTracker,
+    updateWalletProfile,
   };
 };

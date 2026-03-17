@@ -57,25 +57,31 @@ export const walletTrackerRepository = {
     }
   },
 
-  // TODO: Add more method
-  // async createCategory(data: any): Promise<BaseResponseModel> {
-  //   return await apiService.executeWorkflowNew(
-  //     WORKFLOWCODE.MB_CREATE_CATEGORY,
-  //     data,
-  //     false
-  //   );
-  // },
-
-  // async updateCategory(categoryId: string, data: any): Promise<BaseResponseModel> {
-  //   return await apiService.executeWorkflowNew(
-  //     WORKFLOWCODE.MB_UPDATE_CATEGORY,
-  //     {
-  //       category_id: categoryId,
-  //       ...data,
-  //     },
-  //     false
-  //   );
-  // },
+  async updateWalletProfile(data: {
+    wallet_id: number;
+    wallet_balance: number;
+    wallet_name: string;
+    wallet_type: string;
+    default_currency: string;
+    is_primary: boolean;
+    status: string;
+    icon: string | null;
+    color: string | null;
+  }): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflowNew(
+        WORKFLOWCODE.WF_MB_UPDATE_WALLET_PROFILE,
+        data,
+        false
+      );
+    } catch (error) {
+      console.error(
+        "[walletTrackerRepository] Error updating wallet profile:",
+        error,
+      );
+      throw error;
+    }
+  },
 
   async deleteWalletTracker(userCode: string, walletId: number, confirm: boolean = false): Promise<BaseResponseModel> {
     return await apiService.executeWorkflowNew(

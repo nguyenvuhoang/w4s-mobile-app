@@ -1,5 +1,4 @@
 import CustomText from "@/components/base/CustomText";
-import { formatPercent } from "@/config/TaxConfig";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
@@ -60,6 +59,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     await Promise.all([refresh(), refreshTransactions(), refreshCategories()]);
     setRefreshing(false);
   }, [refresh, refreshTransactions, refreshCategories]);
+
+  // Handle server percentage without multiplying by 100
+  const formatPercent = useCallback((value: number | undefined) => {
+    if (value === undefined || value === 0) return "0%";
+    const sign = value > 0 ? "+" : "";
+    const formatted = Math.abs(value).toFixed(1).replace(/\.0$/, "");
+    return `${sign}${formatted}%`;
+  }, []);
 
   // Format currency for display (no conversion - server returns correct currency)
   const formatCurrency = useCallback((

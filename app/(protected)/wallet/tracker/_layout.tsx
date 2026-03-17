@@ -42,6 +42,15 @@ export default function TrackerLayout() {
           animationDuration: 300,
         }}
       />
+      {/* chỉnh sửa ví cơ bản */}
+      <Stack.Screen
+        name="edit-basic"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_right',
+          animationDuration: 300,
+        }}
+      />
     </Stack>
   );
 }
