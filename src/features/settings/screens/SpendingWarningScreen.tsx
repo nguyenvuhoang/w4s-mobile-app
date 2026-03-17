@@ -23,7 +23,7 @@ import { useNotification } from '@/contexts/NotificationContext';
 const SpendingWarningScreen = () => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
-  const { limits, loading, fetchLimits, updateLimit, deleteLimit } = useSpendingLimit();
+  const { limits, loading, fetchLimits, deleteLimit } = useSpendingLimit();
   const { showNotification } = useNotification();
   const { appInfo } = useContext(GlobalContext);
   const contractNumber = appInfo?.contract_number || "";
@@ -76,24 +76,6 @@ const SpendingWarningScreen = () => {
     });
   };
 
-  const handleToggleActive = async (item: SpendingLimit) => {
-    if (!item.spending_limit_id) {
-      showNotification(t('settings.error_no_id', 'Không tìm thấy ID hạn mức'), 'error');
-      return;
-    }
-    const result = await updateLimit({
-      spending_limit_id: item.spending_limit_id,
-      period: item.period,
-      limit_amount: item.limit_amount,
-      currency_code: item.currency_code,
-      is_active: !item.is_active,
-    }, contractNumber);
-
-    if (!result.success) {
-      showNotification(result.message || t('common.error'), 'error');
-    }
-  };
-
   const handleDelete = (item: SpendingLimit) => {
     if (!item.spending_limit_id) {
       showNotification(t('settings.error_no_id', 'Không tìm thấy ID hạn mức'), 'error');
@@ -127,14 +109,7 @@ const SpendingWarningScreen = () => {
             <Ionicons name="create-outline" size={normalize(22)} color={colors.tint} style={{ marginRight: normalize(12) }} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleDelete(item)}>
-            <Ionicons name="trash-outline" size={normalize(20)} color="#FF3B30" style={{ marginRight: normalize(12) }} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleToggleActive(item)}>
-            <Ionicons
-              name={item.is_active !== false ? "notifications" : "notifications-off"}
-              size={normalize(22)}
-              color={item.is_active !== false ? colors.tint : colors.icon}
-            />
+            <Ionicons name="trash-outline" size={normalize(20)} color="#FF3B30" />
           </TouchableOpacity>
         </View>
       </View>
