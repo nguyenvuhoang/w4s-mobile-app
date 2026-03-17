@@ -338,18 +338,18 @@
     "address": "Address"
   },
   "otpModal": {
-    "title": "OTP Verification",
-    "description": "Enter the OTP sent to your phone number",
-    "loginDescription": "Enter the OTP sent to phone number {{phone}}",
-    "enterValidOTP": "Please enter a valid OTP",
+    "title": "Zalo OTP Verification",
+    "description": "Enter the Zalo OTP sent to your phone number",
+    "loginDescription": "Enter the Zalo OTP sent to phone number {{phone}}",
+    "enterValidOTP": "Please enter a valid Zalo OTP",
     "continueButton": "Continue"
   },
   "otpNote": {
     "notreceiveotp": "Did not receive the code?",
     "resend": "Resend",
-    "resentSuccess": "OTP resent successfully",
-    "resentFailed": "Failed to resend OTP",
+    "resentSuccess": "Zalo OTP resent successfully",
+    "resentFailed": "Failed to resend Zalo OTP",
     "notransactionid": "Transaction ID not found",
-    "invalidOTP": "Invalid OTP code"
+    "invalidOTP": "Invalid Zalo OTP code"
   }
 }

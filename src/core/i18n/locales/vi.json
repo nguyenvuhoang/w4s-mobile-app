@@ -338,18 +338,18 @@
     "address": "Địa chỉ"
   },
   "otpModal": {
-    "title": "Xác thực OTP",
-    "description": "Nhập mã OTP được gửi đến số điện thoại của bạn",
-    "loginDescription": "Nhập mã OTP được gửi đến số điện thoại {{phone}}",
-    "enterValidOTP": "Vui lòng nhập mã OTP hợp lệ",
+    "title": "Xác thực Zalo OTP",
+    "description": "Nhập mã Zalo OTP được gửi đến số điện thoại của bạn",
+    "loginDescription": "Nhập mã Zalo OTP được gửi đến số điện thoại {{phone}}",
+    "enterValidOTP": "Vui lòng nhập mã Zalo OTP hợp lệ",
     "continueButton": "Tiếp tục"
   },
   "otpNote": {
     "notreceiveotp": "Bạn không nhận được mã?",
     "resend": "Gửi lại",
-    "resentSuccess": "Đã gửi lại mã OTP thành công",
-    "resentFailed": "Gửi lại mã OTP thất bại",
+    "resentSuccess": "Đã gửi lại mã Zalo OTP thành công",
+    "resentFailed": "Gửi lại mã Zalo OTP thất bại",
     "notransactionid": "Không tìm thấy mã giao dịch",
-    "invalidOTP": "Mã OTP không hợp lệ"
+    "invalidOTP": "Mã Zalo OTP không hợp lệ"
   }
 }
