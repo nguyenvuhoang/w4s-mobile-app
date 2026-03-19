@@ -13,15 +13,28 @@ const notifyListeners = (newLimits: SpendingLimit[]) => {
   listeners.forEach(listener => listener(newLimits));
 };
 
+let globalAdvancedLimits: SpendingLimit[] = [];
+let isAdvancedInitialized = false;
+const advancedListeners: Array<(limits: SpendingLimit[]) => void> = [];
+
+const notifyAdvancedListeners = (newLimits: SpendingLimit[]) => {
+  globalAdvancedLimits = newLimits;
+  advancedListeners.forEach(listener => listener(newLimits));
+};
+
 export const useSpendingLimit = () => {
   const [limits, setLimits] = useState<SpendingLimit[]>(globalLimits);
+  const [advancedLimits, setAdvancedLimits] = useState<SpendingLimit[]>(globalAdvancedLimits);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Add listener to update local state when global state changes
     const listener = (newLimits: SpendingLimit[]) => setLimits(newLimits);
+    const advListener = (newLimits: SpendingLimit[]) => setAdvancedLimits(newLimits);
+    
     listeners.push(listener);
+    advancedListeners.push(advListener);
 
     // Initialize from Storage if not already done
     if (!isInitialized) {
@@ -38,9 +51,26 @@ export const useSpendingLimit = () => {
       });
     }
 
+    if (!isAdvancedInitialized) {
+      isAdvancedInitialized = true;
+      StorageService.getItem(StorageKey.spendingWarningList + '_advanced').then((stored) => {
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            notifyAdvancedListeners(parsed);
+          } catch (e) {
+            console.error('[useSpendingLimit] Adv cache parse error:', e);
+          }
+        }
+      });
+    }
+
     return () => {
       const index = listeners.indexOf(listener);
       if (index > -1) listeners.splice(index, 1);
+      
+      const advIndex = advancedListeners.indexOf(advListener);
+      if (advIndex > -1) advancedListeners.splice(advIndex, 1);
     };
   }, []);
 
@@ -89,8 +119,8 @@ export const useSpendingLimit = () => {
           spending_limit_id: item.spending_limit_id || (item.id ? Number(item.id) : undefined)
         }));
 
-        notifyListeners(data);
-        await StorageService.setItem(StorageKey.spendingWarningList, JSON.stringify(data));
+        notifyAdvancedListeners(data);
+        await StorageService.setItem(StorageKey.spendingWarningList + '_advanced', JSON.stringify(data));
 
         return data;
       } else {
@@ -104,13 +134,17 @@ export const useSpendingLimit = () => {
     }
   }, []);
 
-  const createLimit = useCallback(async (payload: CreateSpendingLimitPayload) => {
+  const createLimit = useCallback(async (payload: CreateSpendingLimitPayload, useAdvancedRefresh?: boolean) => {
     setLoading(true);
     setError(null);
     try {
       const response = await spendingLimitRepository.createSpendingLimit(payload);
       if (response.isSuccess()) {
-        await fetchLimits(payload.contract_number);
+        if (useAdvancedRefresh) {
+          await fetchAdvancedLimits(payload.contract_number);
+        } else {
+          await fetchLimits(payload.contract_number);
+        }
         return { success: true };
       } else {
         throw new Error(response.getError());
@@ -121,15 +155,19 @@ export const useSpendingLimit = () => {
     } finally {
       setLoading(false);
     }
-  }, [fetchLimits]);
+  }, [fetchLimits, fetchAdvancedLimits]);
 
-  const updateLimit = useCallback(async (payload: any, contractNumber: string) => {
+  const updateLimit = useCallback(async (payload: any, contractNumber: string, useAdvancedRefresh?: boolean) => {
     setLoading(true);
     setError(null);
     try {
       const response = await spendingLimitRepository.updateSpendingLimit(payload);
       if (response.isSuccess()) {
-        await fetchLimits(contractNumber);
+        if (useAdvancedRefresh) {
+          await fetchAdvancedLimits(contractNumber);
+        } else {
+          await fetchLimits(contractNumber);
+        }
         return { success: true };
       } else {
         throw new Error(response.getError());
@@ -140,15 +178,19 @@ export const useSpendingLimit = () => {
     } finally {
       setLoading(false);
     }
-  }, [fetchLimits]);
+  }, [fetchLimits, fetchAdvancedLimits]);
 
-  const deleteLimit = useCallback(async (spendingLimitId: number, contractNumber: string) => {
+  const deleteLimit = useCallback(async (spendingLimitId: number, contractNumber: string, useAdvancedRefresh?: boolean) => {
     setLoading(true);
     setError(null);
     try {
       const response = await spendingLimitRepository.deleteSpendingLimit(spendingLimitId);
       if (response.isSuccess()) {
-        await fetchLimits(contractNumber);
+        if (useAdvancedRefresh) {
+          await fetchAdvancedLimits(contractNumber);
+        } else {
+          await fetchLimits(contractNumber);
+        }
         return { success: true };
       } else {
         throw new Error(response.getError());
@@ -159,7 +201,7 @@ export const useSpendingLimit = () => {
     } finally {
       setLoading(false);
     }
-  }, [fetchLimits]);
+  }, [fetchLimits, fetchAdvancedLimits]);
 
   /**
    * Helper to check if a transaction of a certain amount exceeds a limit for a period
@@ -202,6 +244,7 @@ export const useSpendingLimit = () => {
 
   return {
     limits,
+    advancedLimits,
     loading,
     error,
     fetchLimits,

@@ -23,7 +23,7 @@ import { useNotification } from '@/contexts/NotificationContext';
 const SpendingWarningScreen = () => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
-  const { limits, loading, fetchAdvancedLimits, deleteLimit } = useSpendingLimit();
+  const { advancedLimits: limits, loading, fetchAdvancedLimits, deleteLimit } = useSpendingLimit();
   const { showNotification } = useNotification();
   const { appInfo } = useContext(GlobalContext);
   const contractNumber = appInfo?.contract_number || "";
@@ -83,7 +83,7 @@ const SpendingWarningScreen = () => {
     }
     showNotification(t('settings.confirm_delete_warning'), "warning", undefined, undefined,
       async () => {
-        const result = await deleteLimit(item.spending_limit_id!, contractNumber);
+        const result = await deleteLimit(item.spending_limit_id!, contractNumber, true);
         if (result.success) {
           showNotification(t('common.success'), 'success');
         } else {
