@@ -11,12 +11,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -37,7 +37,7 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-    }, 1000); 
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -53,20 +53,30 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
     parseCurrencyName,
   } = useCurrency({
     autoFetch: true,
-    searchText: debouncedSearch,
-    pageSize: 40,
+    searchText: "",
+    pageSize: 500,
   });
+
+  const filteredCurrencies = React.useMemo(() => {
+    if (!debouncedSearch) return currencies;
+    const lower = debouncedSearch.toLowerCase();
+    return currencies.filter((c) => {
+      const codeMatch = c.currency_id?.toLowerCase().includes(lower);
+      const nameMatch = parseCurrencyName(c)?.toLowerCase().includes(lower);
+      return codeMatch || nameMatch;
+    });
+  }, [currencies, debouncedSearch, parseCurrencyName]);
 
   const handleSelectCurrency = async (currency: Currency) => {
     const displayName = parseCurrencyName(currency);
-    
+
     // Tạo object currency data
     const currencyData = {
       currencyId: currency.currency_id,
       symbol: currency.symbol || currency.currency_id,
       name: displayName,
     };
-    
+
     // Convert object => string => lưu storage
 
     await StorageService.setItem('temp_selected_currency', JSON.stringify(currencyData));
@@ -148,7 +158,7 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
   );
 
   const renderEmpty = () => {
-    if (loading && currencies.length === 0) return null;
+    if (loading && filteredCurrencies.length === 0) return null;
 
     return (
       <View style={styles.emptyContainer}>
@@ -171,7 +181,7 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
   };
 
   const renderFooter = () => {
-    if (!loading || currencies.length === 0) return null;
+    if (!loading || filteredCurrencies.length === 0) return null;
 
     return (
       <View style={styles.footerLoader}>
@@ -187,8 +197,8 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
   };
 
   const renderHeader = () => {
-    if (loading && currencies.length === 0) return null;
-    if (currencies.length === 0) return null;
+    if (loading && filteredCurrencies.length === 0) return null;
+    if (filteredCurrencies.length === 0) return null;
 
     return (
       <View style={styles.resultHeader}>
@@ -196,7 +206,7 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
           style={[styles.resultText, { color: colors.icon }]}
           type="regular"
         >
-          Hiển thị {currencies.length} / {totalCount} tiền tệ
+          Hiển thị {filteredCurrencies.length} / {debouncedSearch ? filteredCurrencies.length : totalCount} tiền tệ
         </CustomText>
       </View>
     );
@@ -277,7 +287,7 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
 
       {/* Currency List */}
       <FlatList
-        data={currencies}
+        data={filteredCurrencies}
         keyExtractor={(item, index) => `${item.currency_id}-${index}`}
         renderItem={renderCurrencyItem}
         contentContainerStyle={styles.listContent}
