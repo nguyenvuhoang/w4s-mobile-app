@@ -5,6 +5,7 @@ import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import TransactionAmountInput from "@/features/transaction/components/TransactionAmountInput";
 import { useTransaction } from "@/features/transaction/hooks/useTransaction";
 import { styles } from "@/features/transaction/style/AddTransactionScreen.Styles";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
@@ -655,25 +656,7 @@ const AddTransactionScreen = () => {
     });
   };
 
-  const formatConvertedAmount = (amount: number) => {
-    if (walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ") {
-      return Math.round(amount).toLocaleString("vi-VN");
-    }
-    return amount.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  };
 
-  const formatExchangeRate = (rate: number) => {
-    if (walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ") {
-      return Math.round(rate).toLocaleString("vi-VN");
-    }
-    return rate.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4,
-    });
-  };
 
   const getInitials = (name: string) => {
     const words = name.trim().split(" ");
@@ -871,94 +854,22 @@ const AddTransactionScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Amount - REQUIRED */}
-          <View style={styles.section}>
-            <CustomText style={[styles.label, { color: colors.text }]}>
-              {t("transaction.amount")} <CustomText style={{ color: "red" }}>*</CustomText>
-            </CustomText>
-            <View
-              style={[
-                styles.amountContainer,
-                {
-                  backgroundColor: colors.card,
-                  // Viền cam khi vượt limit
-                  borderColor: exceededLimits.length > 0 && selectedType === "expense" ? "#FF9800" : colors.border,
-                },
-              ]}
-            >
-              <TouchableOpacity
-                onPress={() => {
-                  hasManuallySelectedCurrencyRef.current = true;
-                  router.push("/(protected)/select-currency");
-                }}
-                style={styles.currencyButton}
-              >
-                <CustomText style={[styles.currency, { color: colors.tint }]}>
-                  {inputCurrency.symbol}
-                </CustomText>
-              </TouchableOpacity>
-              <TextInput
-                style={[styles.amountInput, { color: colors.text }]}
-                placeholder="0"
-                placeholderTextColor={colors.icon}
-                keyboardType="numeric"
-                value={amount}
-                onChangeText={handleAmountChange}
-              />
-            </View>
-
-            {/* ⚠️ Inline limit warning — hiện ngay dưới input */}
-            {exceededLabel && (
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "flex-start",
-                  marginTop: 6,
-                  gap: 6,
-                }}
-              >
-                <FontAwesome6
-                  name="triangle-exclamation"
-                  size={normalize(12)}
-                  color="#FF9800"
-                  style={{ marginTop: 2 }}
-                />
-                <CustomText
-                  style={{
-                    color: "#FF9800",
-                    fontSize: normalize(12),
-                    flex: 1,
-                    lineHeight: normalize(18),
-                  }}
-                >
-                  {exceededLabel}
-                </CustomText>
-              </View>
-            )}
-
-            {/* Conversion Display */}
-            {needsConversion && convertedAmount !== null && exchangeRate !== null && (
-              <View style={styles.conversionContainer}>
-                <FontAwesome6
-                  name="arrow-right-arrow-left"
-                  size={normalize(12)}
-                  color={colors.icon}
-                />
-                <View style={styles.conversionTextContainer}>
-                  <CustomText style={[styles.conversionText, { color: colors.icon }]}>
-                    ≈ {walletCurrency.symbol} {formatConvertedAmount(convertedAmount)}
-                    <CustomText style={{ fontSize: normalize(11), opacity: 0.7 }}>
-                      {" "}({walletCurrency.currencyId})
-                    </CustomText>
-                  </CustomText>
-                  <CustomText style={[styles.exchangeRateText, { color: colors.icon }]}>
-                    1 {inputCurrency.currencyId} = {formatExchangeRate(exchangeRate)}{" "}
-                    {walletCurrency.currencyId}
-                  </CustomText>
-                </View>
-              </View>
-            )}
-          </View>
+          <TransactionAmountInput
+            amount={amount}
+            onAmountChange={handleAmountChange}
+            inputCurrency={inputCurrency}
+            walletCurrency={walletCurrency}
+            onCurrencyPress={() => {
+              hasManuallySelectedCurrencyRef.current = true;
+              router.push("/(protected)/select-currency");
+            }}
+            hasExceededLimit={exceededLimits.length > 0}
+            exceededLabel={exceededLabel}
+            needsConversion={needsConversion}
+            convertedAmount={convertedAmount}
+            exchangeRate={exchangeRate}
+            selectedType={selectedType}
+          />
 
           {/* Event - Optional */}
           <View style={styles.section}>
@@ -1200,8 +1111,8 @@ const AddTransactionScreen = () => {
             )}
           </View>
 
-          {/* Borrow to Pay Toggle */}
-          <View style={[styles.toggle, { backgroundColor: colors.card }]}>
+          {/* Borrow to Pay Toggle - Temporarily Hidden */}
+          {/* <View style={[styles.toggle, { backgroundColor: colors.card }]}>
             <CustomText style={[styles.toggleLabel, { color: colors.text }]}>
               {t("transaction.borrow_to_pay")}
             </CustomText>
@@ -1211,7 +1122,7 @@ const AddTransactionScreen = () => {
               trackColor={{ false: colors.border, true: colors.tint }}
               thumbColor="#fff"
             />
-          </View>
+          </View> */}
 
           {/* Include in Report Toggle */}
           <View style={[styles.toggle, { backgroundColor: colors.card }]}>
