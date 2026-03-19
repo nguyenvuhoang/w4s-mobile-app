@@ -29,6 +29,14 @@ export interface UpdateSpendingLimitPayload {
   is_active: boolean;
 }
 
+export interface AdvancedSearchSpendingLimitPayload {
+  contract_number: string;
+  period: string | null;
+  is_active: boolean;
+  page_index: number;
+  page_size: number;
+}
+
 export const spendingLimitRepository = {
   /**
    * Get list of spending limits
@@ -109,6 +117,29 @@ export const spendingLimitRepository = {
       );
     } catch (error) {
       console.error("[spendingLimitRepository] Error deleting limit:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Advanced search for spending limits
+   */
+  async advancedSearchSpendingLimit(payload: AdvancedSearchSpendingLimitPayload): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_ADVANCED_SEARCH_SPENDING_LIMIT,
+        {
+          contract_number: payload.contract_number,
+          period: payload.period,
+          is_active: payload.is_active,
+          page_index: payload.page_index,
+          page_size: payload.page_size,
+        },
+        false,
+        true
+      );
+    } catch (error) {
+      console.error("[spendingLimitRepository] Error searching limits:", error);
       throw error;
     }
   },

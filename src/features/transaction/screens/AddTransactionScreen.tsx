@@ -259,7 +259,7 @@ const AddTransactionScreen = () => {
 
   // Tính inline warning label từ exceeded limits
   const exceededLabel = useMemo(() => {
-    if (exceededLimits.length === 0) return null;
+    if (exceededLimits.length === 0 || selectedType !== "expense") return null;
     const periodMap: Record<string, string> = {
       Day: t("settings.daily"),
       Week: t("settings.weekly"),
@@ -275,7 +275,7 @@ const AddTransactionScreen = () => {
       periods: parts.join(", "),
       defaultValue: `Vượt hạn mức: ${parts.join(", ")}`,
     });
-  }, [exceededLimits, t]);
+  }, [exceededLimits, t, selectedType]);
 
   // Process autofill data from params
   useEffect(() => {
@@ -881,8 +881,8 @@ const AddTransactionScreen = () => {
                 styles.amountContainer,
                 {
                   backgroundColor: colors.card,
-                  // Viền đỏ khi vượt limit
-                  borderColor: exceededLimits.length > 0 ? "#FF4444" : colors.border,
+                  // Viền cam khi vượt limit
+                  borderColor: exceededLimits.length > 0 && selectedType === "expense" ? "#FF9800" : colors.border,
                 },
               ]}
             >
@@ -920,12 +920,12 @@ const AddTransactionScreen = () => {
                 <FontAwesome6
                   name="triangle-exclamation"
                   size={normalize(12)}
-                  color="#FF4444"
+                  color="#FF9800"
                   style={{ marginTop: 2 }}
                 />
                 <CustomText
                   style={{
-                    color: "#FF4444",
+                    color: "#FF9800",
                     fontSize: normalize(12),
                     flex: 1,
                     lineHeight: normalize(18),

@@ -71,6 +71,39 @@ export const useSpendingLimit = () => {
     }
   }, []);
 
+  const fetchAdvancedLimits = useCallback(async (contractNumber: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await spendingLimitRepository.advancedSearchSpendingLimit({
+        contract_number: contractNumber,
+        period: null,
+        is_active: true,
+        page_index: 0,
+        page_size: 10,
+      });
+      if (response.isSuccess()) {
+        const rawData = response.data?.items || response.data?.data || [];
+        const data = rawData.map((item: any) => ({
+          ...item,
+          spending_limit_id: item.spending_limit_id || (item.id ? Number(item.id) : undefined)
+        }));
+
+        notifyListeners(data);
+        await StorageService.setItem(StorageKey.spendingWarningList, JSON.stringify(data));
+
+        return data;
+      } else {
+        throw new Error(response.getError());
+      }
+    } catch (err: any) {
+      setError(err.message);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const createLimit = useCallback(async (payload: CreateSpendingLimitPayload) => {
     setLoading(true);
     setError(null);
@@ -177,5 +210,6 @@ export const useSpendingLimit = () => {
     deleteLimit,
     getLimitsByPeriod,
     checkTransactionLimit,
+    fetchAdvancedLimits,
   };
 };

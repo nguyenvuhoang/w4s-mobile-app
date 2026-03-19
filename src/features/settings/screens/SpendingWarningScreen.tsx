@@ -23,7 +23,7 @@ import { useNotification } from '@/contexts/NotificationContext';
 const SpendingWarningScreen = () => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
-  const { limits, loading, fetchLimits, deleteLimit } = useSpendingLimit();
+  const { limits, loading, fetchAdvancedLimits, deleteLimit } = useSpendingLimit();
   const { showNotification } = useNotification();
   const { appInfo } = useContext(GlobalContext);
   const contractNumber = appInfo?.contract_number || "";
@@ -41,9 +41,9 @@ const SpendingWarningScreen = () => {
   useFocusEffect(
     useCallback(() => {
       if (contractNumber) {
-        fetchLimits(contractNumber);
+        fetchAdvancedLimits(contractNumber);
       }
-    }, [fetchLimits, contractNumber])
+    }, [fetchAdvancedLimits, contractNumber])
   );
 
   const getAvailablePeriods = () => {
@@ -162,7 +162,7 @@ const SpendingWarningScreen = () => {
               </CustomText>
             </View>
           }
-          onRefresh={() => contractNumber && fetchLimits(contractNumber)}
+          onRefresh={() => contractNumber && fetchAdvancedLimits(contractNumber)}
           refreshing={loading}
         />
       )}
