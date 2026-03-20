@@ -1,157 +1,147 @@
 /**
  * TAX CONFIGURATION - Thuế Thu Nhập Cá Nhân (TNCN)
- * 
+ *
  * File này chứa các thông số thuế TNCN theo từng năm
  * Cập nhật file này khi có thay đổi chính sách thuế
- * 
+ *
  * Nguồn tham khảo:
- * - Luật thuế TNCN số 04/2007/QH12 và các văn bản sửa đổi
- * - Nghị định 65/2013/NĐ-CP
+ * - Luật Thuế TNCN số 109/2025/QH15 (Quốc hội thông qua 10/12/2025)
+ * - Nghị quyết 110/2025/UBTVQH15 về mức giảm trừ gia cảnh
+ * - Áp dụng từ kỳ tính thuế năm 2026 (01/01/2026)
  */
 
 // ============================================
-// CẤU HÌNH THUẾ NĂM 2024
+// CẤU HÌNH THUẾ NĂM 2026
+// (Luật số 109/2025/QH15 - áp dụng từ 01/01/2026)
 // ============================================
 
 export const TaxConfig = {
   // Năm áp dụng
-  YEAR: 2024,
-  
+  YEAR: 2026,
+
   // ==========================================
   // 1. BẢO HIỂM BẮT BUỘC
   // ==========================================
   INSURANCE: {
-    // Tổng tỷ lệ bảo hiểm bắt buộc (%)
+    // Tổng tỷ lệ bảo hiểm bắt buộc phía người lao động (%)
     TOTAL_RATE: 0.105, // 10.5%
-    
+
     // Chi tiết từng loại bảo hiểm
     BREAKDOWN: {
       SOCIAL: {
         name: "Bảo hiểm xã hội (BHXH)",
-        rate: 0.08,      // 8%
+        rate: 0.08, // 8%
       },
       HEALTH: {
         name: "Bảo hiểm y tế (BHYT)",
-        rate: 0.015,     // 1.5%
+        rate: 0.015, // 1.5%
       },
       UNEMPLOYMENT: {
         name: "Bảo hiểm thất nghiệp (BHTN)",
-        rate: 0.01,      // 1%
+        rate: 0.01, // 1%
       },
     },
-    
-    // Trần đóng bảo hiểm (VND)
-    MAX_SALARY_BASE: 36_000_000, // 36 triệu/tháng
+
+    // Trần lương đóng bảo hiểm (VND/tháng)
+    // BHXH, BHTN: tối đa 20 lần lương cơ sở (lương cơ sở 2.34tr × 20 = 46.8tr)
+    // BHYT: không giới hạn trần theo quy định mới
+    MAX_SALARY_BASE: 46_800_000, // ~46.8 triệu/tháng (cập nhật theo lương cơ sở 2026)
   },
-  
+
   // ==========================================
   // 2. GIẢM TRỪ GIA CẢNH
+  // (Nghị quyết 110/2025/UBTVQH15)
   // ==========================================
   DEDUCTIONS: {
-    // Giảm trừ bản thân (VND/tháng)
-    PERSONAL: 11_000_000,    // 11 triệu đồng
-    
-    // Giảm trừ người phụ thuộc (VND/tháng/người)
-    DEPENDENT: 4_400_000,    // 4.4 triệu đồng
-    
-    // Điều kiện người phụ thuộc
+    // Giảm trừ bản thân (VND/tháng) - tăng từ 11tr → 15.5tr
+    PERSONAL: 15_500_000,
+
+    // Giảm trừ người phụ thuộc (VND/tháng/người) - tăng từ 4.4tr → 6.2tr
+    DEPENDENT: 6_200_000,
+
+    // Điều kiện người phụ thuộc (giữ nguyên)
     DEPENDENT_CRITERIA: {
-      maxAge: 18,              // Con dưới 18 tuổi
-      studentMaxAge: 25,       // Sinh viên dưới 25 tuổi
+      maxAge: 18,               // Con dưới 18 tuổi
+      studentMaxAge: 25,        // Sinh viên dưới 25 tuổi
       disabledNoAgeLimit: true, // Người khuyết tật không giới hạn tuổi
     },
   },
-  
+
   // ==========================================
-  // 3. BẬC THUẾ LŨY TIẾN TỪNG PHẦN
+  // 3. BIỂU THUẾ LŨY TIẾN TỪNG PHẦN - 5 BẬC
+  // (Điều 9 Luật Thuế TNCN 2025 - giảm từ 7 bậc xuống 5 bậc)
   // ==========================================
   BRACKETS: [
     {
       level: 1,
       from: 0,
-      to: 5_000_000,
-      limit: 5_000_000,
-      rate: 0.05,              // 5%
-      description: "Đến 5 triệu",
+      to: 10_000_000,
+      limit: 10_000_000,
+      rate: 0.05, // 5%
+      description: "Đến 10 triệu",
     },
     {
       level: 2,
-      from: 5_000_000,
-      to: 10_000_000,
-      limit: 10_000_000,
-      rate: 0.1,               // 10%
-      description: "Trên 5 triệu đến 10 triệu",
+      from: 10_000_000,
+      to: 30_000_000,
+      limit: 30_000_000,
+      rate: 0.10, // 10% (giảm từ 15%)
+      description: "Trên 10 triệu đến 30 triệu",
     },
     {
       level: 3,
-      from: 10_000_000,
-      to: 18_000_000,
-      limit: 18_000_000,
-      rate: 0.15,              // 15%
-      description: "Trên 10 triệu đến 18 triệu",
+      from: 30_000_000,
+      to: 60_000_000,
+      limit: 60_000_000,
+      rate: 0.20, // 20% (giảm từ 25%)
+      description: "Trên 30 triệu đến 60 triệu",
     },
     {
       level: 4,
-      from: 18_000_000,
-      to: 32_000_000,
-      limit: 32_000_000,
-      rate: 0.2,               // 20%
-      description: "Trên 18 triệu đến 32 triệu",
+      from: 60_000_000,
+      to: 100_000_000,
+      limit: 100_000_000,
+      rate: 0.30, // 30%
+      description: "Trên 60 triệu đến 100 triệu",
     },
     {
       level: 5,
-      from: 32_000_000,
-      to: 52_000_000,
-      limit: 52_000_000,
-      rate: 0.25,              // 25%
-      description: "Trên 32 triệu đến 52 triệu",
-    },
-    {
-      level: 6,
-      from: 52_000_000,
-      to: 80_000_000,
-      limit: 80_000_000,
-      rate: 0.3,               // 30%
-      description: "Trên 52 triệu đến 80 triệu",
-    },
-    {
-      level: 7,
-      from: 80_000_000,
+      from: 100_000_000,
       to: Infinity,
       limit: Infinity,
-      rate: 0.35,              // 35%
-      description: "Trên 80 triệu",
+      rate: 0.35, // 35%
+      description: "Trên 100 triệu",
     },
   ],
-  
+
   // ==========================================
   // 4. FORMAT HIỂN THỊ CHO UI
   // ==========================================
   DISPLAY: {
-    // Bậc thuế format ngắn gọn cho UI
+    // Bậc thuế format ngắn gọn cho UI (5 bậc mới)
     BRACKETS_FORMATTED: [
-      { label: "0-5 triệu", rate: "5%" },
-      { label: "5-10 triệu", rate: "10%" },
-      { label: "10-18 triệu", rate: "15%" },
-      { label: "18-32 triệu", rate: "20%" },
-      { label: "32-52 triệu", rate: "25%" },
-      { label: "52-80 triệu", rate: "30%" },
-      { label: "Trên 80 triệu", rate: "35%" },
+      { label: "0 - 10 triệu",      rate: "5%"  },
+      { label: "10 - 30 triệu",     rate: "10%" },
+      { label: "30 - 60 triệu",     rate: "20%" },
+      { label: "60 - 100 triệu",    rate: "30%" },
+      { label: "Trên 100 triệu",    rate: "35%" },
     ],
-    
+
     // Tên đầy đủ cho tooltip/help
-    INSURANCE_FULL_NAME: "Bảo hiểm bắt buộc (BHXH + BHYT + BHTN)",
+    INSURANCE_FULL_NAME: "Bảo hiểm bắt buộc (BHXH 8% + BHYT 1.5% + BHTN 1%)",
     PERSONAL_DEDUCTION_NAME: "Giảm trừ bản thân",
     DEPENDENT_DEDUCTION_NAME: "Giảm trừ người phụ thuộc",
   },
-  
+
   // ==========================================
   // 5. GHI CHÚ & CẢNH BÁO
   // ==========================================
   NOTES: {
-    WARNING: "Kết quả tính toán mang tính tham khảo. Vui lòng tham khảo cơ quan thuế để có kết quả chính xác.",
-    UPDATE_INFO: "Cấu hình thuế được cập nhật theo quy định năm 2024",
-    SOURCE: "Nguồn: Tổng cục Thuế - Bộ Tài chính",
+    WARNING:
+      "Kết quả tính toán mang tính tham khảo. Vui lòng tham khảo cơ quan thuế để có kết quả chính xác.",
+    UPDATE_INFO:
+      "Cấu hình thuế được cập nhật theo Luật Thuế TNCN số 109/2025/QH15, áp dụng từ kỳ tính thuế 2026 (01/01/2026)",
+    SOURCE: "Nguồn: Tổng cục Thuế - Bộ Tài chính / Luật số 109/2025/QH15",
   },
 };
 
@@ -162,12 +152,12 @@ export const TaxConfig = {
 export const TAX_YEAR = TaxConfig.YEAR;
 
 // Bảo hiểm
-export const INSURANCE_RATE = TaxConfig.INSURANCE.TOTAL_RATE;
-export const INSURANCE_MAX_BASE = TaxConfig.INSURANCE.MAX_SALARY_BASE;
+export const INSURANCE_RATE = TaxConfig.INSURANCE.TOTAL_RATE;         // 10.5%
+export const INSURANCE_MAX_BASE = TaxConfig.INSURANCE.MAX_SALARY_BASE; // ~46.8tr
 
 // Giảm trừ
-export const PERSONAL_DEDUCTION = TaxConfig.DEDUCTIONS.PERSONAL;
-export const DEPENDENT_DEDUCTION = TaxConfig.DEDUCTIONS.DEPENDENT;
+export const PERSONAL_DEDUCTION = TaxConfig.DEDUCTIONS.PERSONAL;   // 15.5tr
+export const DEPENDENT_DEDUCTION = TaxConfig.DEDUCTIONS.DEPENDENT; // 6.2tr
 
 // Bậc thuế
 export const TAX_BRACKETS = TaxConfig.BRACKETS;
@@ -181,31 +171,40 @@ export const TAX_DISPLAY = TaxConfig.DISPLAY;
 // ============================================
 
 /**
- * Tính thuế TNCN theo thu nhập chịu thuế
- * @param taxableIncome Thu nhập chịu thuế (sau khi trừ giảm trừ)
+ * Tính thuế TNCN theo thu nhập chịu thuế (biểu thuế 5 bậc 2026)
+ * @param taxableAmount Thu nhập chịu thuế (sau khi trừ tất cả giảm trừ)
  * @returns Số tiền thuế phải đóng
  */
-export const calculateProgressiveTax = (taxableIncome: number): number => {
-  if (taxableIncome <= 0) return 0;
-  
+export const calculateProgressiveTax = (taxableAmount: number): number => {
+  if (taxableAmount <= 0) return 0;
+
   let tax = 0;
-  let remaining = taxableIncome;
-  
-  for (let i = 0; i < TAX_BRACKETS.length; i++) {
-    const bracket = TAX_BRACKETS[i];
-    const previousLimit = i > 0 ? TAX_BRACKETS[i - 1].limit : 0;
-    const bracketRange = bracket.limit - previousLimit;
-    
-    if (remaining > 0) {
-      const taxableInBracket = Math.min(remaining, bracketRange);
-      tax += taxableInBracket * bracket.rate;
-      remaining -= taxableInBracket;
-    } else {
-      break;
-    }
+  let remaining = taxableAmount;
+  let prevLimit = 0;
+
+  for (const bracket of TAX_BRACKETS) {
+    const bracketSize =
+      bracket.limit === Infinity ? remaining : bracket.limit - prevLimit;
+    const taxableInBracket = Math.min(remaining, bracketSize);
+
+    tax += taxableInBracket * bracket.rate;
+    remaining -= taxableInBracket;
+    prevLimit = bracket.limit === Infinity ? prevLimit : bracket.limit;
+
+    if (remaining <= 0) break;
   }
-  
+
   return tax;
+};
+
+/**
+ * Tính bảo hiểm bắt buộc (có tính trần lương)
+ * @param grossIncome Thu nhập Gross
+ * @returns Số tiền bảo hiểm phải đóng
+ */
+export const calculateInsurance = (grossIncome: number): number => {
+  const baseForInsurance = Math.min(grossIncome, INSURANCE_MAX_BASE);
+  return baseForInsurance * INSURANCE_RATE;
 };
 
 /**
@@ -226,13 +225,86 @@ export const calculateTotalDeductions = (
 };
 
 /**
- * Tính bảo hiểm bắt buộc
+ * Tính toán đầy đủ thuế TNCN từ Gross
  * @param grossIncome Thu nhập Gross
- * @returns Số tiền bảo hiểm phải đóng
+ * @param dependentCount Số người phụ thuộc
+ * @param otherDeductions Khoản giảm trừ khác
+ * @param insuranceOverride Ghi đè bảo hiểm thủ công (optional)
+ * @returns Kết quả tính thuế đầy đủ
  */
-export const calculateInsurance = (grossIncome: number): number => {
-  const baseForInsurance = Math.min(grossIncome, INSURANCE_MAX_BASE);
-  return baseForInsurance * INSURANCE_RATE;
+export const calculateFromGross = (
+  grossIncome: number,
+  dependentCount: number,
+  otherDeductions: number = 0,
+  insuranceOverride?: number
+): TaxCalculationResult => {
+  const insurance =
+    insuranceOverride !== undefined
+      ? insuranceOverride
+      : calculateInsurance(grossIncome);
+
+  const taxableIncome = grossIncome - insurance;
+  const totalDeductions = calculateTotalDeductions(dependentCount, otherDeductions);
+  const taxableAmount = Math.max(0, taxableIncome - totalDeductions);
+  const tax = calculateProgressiveTax(taxableAmount);
+  const netIncome = grossIncome - insurance - tax;
+  const effectiveTaxRate = grossIncome > 0 ? (tax / grossIncome) * 100 : 0;
+
+  return {
+    grossIncome,
+    insurance,
+    taxableIncome,
+    totalDeductions,
+    taxableAmount,
+    tax,
+    netIncome,
+    effectiveTaxRate,
+  };
+};
+
+/**
+ * Tính ngược Gross từ Net (dùng binary search)
+ * @param netIncome Thu nhập Net mong muốn
+ * @param dependentCount Số người phụ thuộc
+ * @param otherDeductions Khoản giảm trừ khác
+ * @returns Kết quả tính thuế đầy đủ
+ */
+export const calculateFromNet = (
+  netIncome: number,
+  dependentCount: number,
+  otherDeductions: number = 0
+): TaxCalculationResult => {
+  if (netIncome <= 0) {
+    return {
+      grossIncome: 0,
+      insurance: 0,
+      taxableIncome: 0,
+      totalDeductions: 0,
+      taxableAmount: 0,
+      tax: 0,
+      netIncome: 0,
+      effectiveTaxRate: 0,
+    };
+  }
+
+  // Binary search để tìm Gross
+  let lo = netIncome;
+  let hi = netIncome * 3; // Gross tối đa ước lượng
+
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2;
+    const result = calculateFromGross(mid, dependentCount, otherDeductions);
+    if (Math.abs(result.netIncome - netIncome) < 1) {
+      return result;
+    }
+    if (result.netIncome < netIncome) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+
+  return calculateFromGross((lo + hi) / 2, dependentCount, otherDeductions);
 };
 
 /**
