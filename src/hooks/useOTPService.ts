@@ -207,7 +207,7 @@ export const useOTPService = (): UseOTPServiceReturn => {
         },
         onSuccess: () => {
           if (currentAppInfo?.is_first_login) {
-            router.replace({
+            router.navigate({
               pathname: '/(protected)/change-password',
               params: { oldPassword: password || '', isFirstLogin: 'true' }
             } as any);
