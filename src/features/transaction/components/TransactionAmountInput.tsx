@@ -17,13 +17,15 @@ interface TransactionAmountInputProps {
   onAmountChange: (value: string) => void;
   inputCurrency: CurrencyInfo;
   walletCurrency: CurrencyInfo;
-  onCurrencyPress: () => void;
+  onCurrencyPress?: () => void;
+  disableCurrencySelect?: boolean;
   hasExceededLimit?: boolean;
   exceededLabel?: string | null;
   needsConversion?: boolean;
   convertedAmount?: number | null;
   exchangeRate?: number | null;
   selectedType?: "income" | "expense" | "inout";
+  label?: string;
 }
 
 const TransactionAmountInput: React.FC<TransactionAmountInputProps> = ({
@@ -32,12 +34,14 @@ const TransactionAmountInput: React.FC<TransactionAmountInputProps> = ({
   inputCurrency,
   walletCurrency,
   onCurrencyPress,
+  disableCurrencySelect = false,
   hasExceededLimit = false,
   exceededLabel,
   needsConversion = false,
   convertedAmount = null,
   exchangeRate = null,
   selectedType = "expense",
+  label,
 }) => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
@@ -95,7 +99,7 @@ const TransactionAmountInput: React.FC<TransactionAmountInputProps> = ({
   return (
     <View style={styles.section}>
       <CustomText style={[styles.label, { color: colors.text }]}>
-        {t("transaction.amount")} <CustomText style={{ color: "red" }}>*</CustomText>
+        {label || t("transaction.amount")} <CustomText style={{ color: "red" }}>*</CustomText>
       </CustomText>
       <View
         style={[
@@ -106,7 +110,11 @@ const TransactionAmountInput: React.FC<TransactionAmountInputProps> = ({
           },
         ]}
       >
-        <TouchableOpacity onPress={onCurrencyPress} style={styles.currencyButton}>
+        <TouchableOpacity 
+          onPress={onCurrencyPress} 
+          style={styles.currencyButton}
+          disabled={disableCurrencySelect || !onCurrencyPress}
+        >
           <CustomText style={[styles.currency, { color: colors.tint }]}>
             {inputCurrency.symbol}
           </CustomText>
@@ -181,7 +189,9 @@ const styles = StyleSheet.create({
     gap: normalize(12),
   },
   currencyButton: {
-    paddingVertical: normalize(4),
+    paddingVertical: normalize(8),
+    paddingHorizontal: normalize(8),
+    marginRight: normalize(4),
   },
   currency: {
     fontSize: normalize(20),

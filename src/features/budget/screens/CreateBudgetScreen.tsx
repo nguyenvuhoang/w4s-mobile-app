@@ -9,12 +9,15 @@ import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
 import { useBudget } from "@/features/budget/hooks/useBudget";
+import TransactionAmountInput from "@/features/transaction/components/TransactionAmountInput";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
+import { useCurrency } from "@/hooks/useCurrency";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     KeyboardAvoidingView,
     Platform,
@@ -87,6 +90,8 @@ const CreateBudgetScreen = () => {
     const { colors } = useAppTheme();
     const params = useLocalSearchParams();
     const { wallets, defaultWallet } = useWallet();
+    const { currencies, parseCurrencyName } = useCurrency({ autoFetch: true });
+    const { convert } = useExchangeRate();
     const { createBudget, creating } = useBudget({ autoFetch: false });
     const { showNotification } = useNotification();
 
@@ -95,6 +100,17 @@ const CreateBudgetScreen = () => {
     const [selectedCategoryData, setSelectedCategoryData] =
         useState<SelectedCategoryData | null>(null);
     const [amount, setAmount] = useState("");
+
+    const [inputCurrency, setInputCurrency] = useState<{
+        currencyId: string;
+        symbol: string;
+        name: string;
+    }>({
+        currencyId: "VND",
+        symbol: "đ",
+        name: "Việt Nam Đồng",
+    });
+    const hasManuallySelectedCurrencyRef = useRef(false);
 
     // Date range states
     const [startDate, setStartDate] = useState<Date>(new Date());
@@ -118,6 +134,56 @@ const CreateBudgetScreen = () => {
         }
         return wallets.find((w) => w.walletId === sourceWalletId);
     }, [wallets, sourceWalletId, colors.tint]);
+
+    const walletCurrency = useMemo(() => {
+        if (!selectedWallet || selectedWallet.walletId === 0) {
+            return { currencyId: "VND", symbol: "đ", name: "Việt Nam Đồng" };
+        }
+        const currency = currencies.find(
+            (c) => c.currency_id === (selectedWallet as any).currency
+        );
+        if (currency) {
+            return {
+                currencyId: currency.currency_id,
+                symbol: currency.symbol,
+                name: parseCurrencyName(currency),
+            };
+        }
+        return {
+            currencyId: (selectedWallet as any).currency || "VND",
+            symbol: (selectedWallet as any).currency === "USD" ? "$" : "đ",
+            name: (selectedWallet as any).currency || "Việt Nam Đồng",
+        };
+    }, [selectedWallet, currencies, parseCurrencyName]);
+
+    const needsConversion = useMemo(
+        () => inputCurrency.currencyId !== walletCurrency.currencyId,
+        [inputCurrency.currencyId, walletCurrency.currencyId]
+    );
+
+    const exchangeRate = useMemo(() => {
+        if (!needsConversion) return null;
+        const rate = convert(1, inputCurrency.currencyId, walletCurrency.currencyId);
+        if (rate === null) return null;
+        return walletCurrency.currencyId === "VND"
+            ? Math.round(rate)
+            : Math.round(rate * 10000) / 10000;
+    }, [needsConversion, inputCurrency.currencyId, walletCurrency.currencyId, convert]);
+
+    const convertedAmount = useMemo(() => {
+        if (!needsConversion || !amount || amount === "0") return null;
+        const num = parseFloat(amount.replace(/,/g, ""));
+        if (isNaN(num)) return null;
+        const result = convert(num, inputCurrency.currencyId, walletCurrency.currencyId);
+        if (result === null) return null;
+        return walletCurrency.currencyId === "VND"
+            ? Math.round(result)
+            : Math.round(result * 100) / 100;
+    }, [amount, needsConversion, inputCurrency.currencyId, walletCurrency.currencyId, convert]);
+
+    const handleAmountChange = useCallback((text: string) => {
+        setAmount(text);
+    }, []);
 
     const isValid =
         selectedWallet && selectedCategoryData && amount.trim() !== "";
@@ -296,6 +362,14 @@ const CreateBudgetScreen = () => {
         }
     }, [defaultWallet, sourceWalletId]);
 
+    // Sync inputCurrency to wallet currency when wallet changes (if user hasn't manually overridden)
+    useEffect(() => {
+        if (selectedWallet && currencies.length > 0 && !hasManuallySelectedCurrencyRef.current) {
+            setInputCurrency(walletCurrency);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [(selectedWallet as any)?.walletId, walletCurrency.currencyId, currencies.length]);
+
     // Load selected data from storage
     useFocusEffect(
         useCallback(() => {
@@ -329,6 +403,15 @@ const CreateBudgetScreen = () => {
                         setSelectedType(typeMap[categoryData.category_type]);
 
                         await StorageService.removeAsyncItem(CATEGORY_STORAGE_KEY);
+                    }
+
+                    // Load currency (shared storage key with AddTransactionScreen)
+                    const storedCurrency = await StorageService.getItem("temp_selected_currency");
+                    if (storedCurrency) {
+                        const currency = JSON.parse(storedCurrency);
+                        setInputCurrency(currency);
+                        hasManuallySelectedCurrencyRef.current = true;
+                        await StorageService.removeItem("temp_selected_currency");
                     }
                 } catch (error) {
                     console.error("[CreateBudget] Load data failed:", error);
@@ -390,8 +473,12 @@ const CreateBudgetScreen = () => {
             ? Number(selectedCategoryData.id)
             : Number(selectedCategoryData.category_id);
 
+        const finalAmount = needsConversion
+            ? (convertedAmount ?? 0)
+            : parseFloat(amount.replace(/,/g, ""));
+
         const payload = {
-            amount: parseFloat(amount.replace(/,/g, "")),
+            amount: finalAmount,
             category_id: finalCategoryId,
             end_date: formatToISO(endDate),
             period_type: periodType,
@@ -540,29 +627,20 @@ const CreateBudgetScreen = () => {
                     </View>
 
                     {/* Amount - REQUIRED */}
-                    <View style={styles.section}>
-                        <CustomText style={[styles.label, { color: colors.text }]}>
-                            Số tiền <CustomText style={{ color: "red" }}>*</CustomText>
-                        </CustomText>
-                        <View
-                            style={[
-                                styles.amountContainer,
-                                { backgroundColor: colors.card, borderColor: colors.border },
-                            ]}
-                        >
-                            <CustomText style={[styles.currency, { color: colors.tint }]}>
-                                đ
-                            </CustomText>
-                            <TextInput
-                                style={[styles.amountInput, { color: colors.text }]}
-                                placeholder="0"
-                                placeholderTextColor={colors.icon}
-                                keyboardType="numeric"
-                                value={amount}
-                                onChangeText={setAmount}
-                            />
-                        </View>
-                    </View>
+                    <TransactionAmountInput
+                        amount={amount}
+                        onAmountChange={handleAmountChange}
+                        inputCurrency={inputCurrency}
+                        walletCurrency={walletCurrency}
+                        onCurrencyPress={() => {
+                            hasManuallySelectedCurrencyRef.current = true;
+                            router.push("/(protected)/select-currency");
+                        }}
+                        needsConversion={needsConversion}
+                        convertedAmount={convertedAmount}
+                        exchangeRate={exchangeRate}
+                        selectedType={selectedType}
+                    />
 
                     {/* Time Range */}
                     <View style={styles.section}>
@@ -747,25 +825,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
     },
-    amountContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: normalize(16),
-        paddingVertical: normalize(14),
-        borderRadius: normalize(12),
-        borderWidth: 1,
-        gap: normalize(12),
-    },
-    currency: {
-        fontSize: normalize(20),
-        fontFamily: Fonts.semiBold,
-    },
-    amountInput: {
-        flex: 1,
-        fontSize: normalize(18),
-        fontFamily: Fonts.regular,
-        padding: 0,
-    },
+
     noteInput: {
         paddingHorizontal: normalize(16),
         paddingVertical: normalize(12),

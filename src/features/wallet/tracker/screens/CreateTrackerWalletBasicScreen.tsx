@@ -3,6 +3,7 @@ import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { useWalletTracker } from '@/features/wallet/hooks/useWalletTracker';
+import TransactionAmountInput from '@/features/transaction/components/TransactionAmountInput';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
@@ -103,13 +104,15 @@ const CreateWalletDetailsScreen: React.FC = () => {
       return;
     }
 
+    const finalBalance = parseFloat(initialBalance.replace(/,/g, '')) || 0;
+
     const newWallet = {
       type: walletType,
       name: walletName,
       icon,
       iconColor,
       currency,
-      balance: parseFloat(initialBalance) || 0,
+      balance: finalBalance,
       includeInReport,
     };
 
@@ -122,7 +125,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
         color: iconColor,
         icon,
         isIncludeReport: includeInReport,
-        amount: parseFloat(initialBalance) || 0,
+        amount: finalBalance,
         walletType,
       });
       await refresh();
@@ -158,36 +161,6 @@ const CreateWalletDetailsScreen: React.FC = () => {
         selectedCurrencyId: currency,
       }
     });
-  };
-
-  // Format number with thousand separator
-  const formatNumber = (value: string): string => {
-    if (!value) return '';
-    const number = parseFloat(value.replace(/,/g, ''));
-    if (isNaN(number)) return '';
-    return number.toLocaleString('en-US');
-  };
-
-  // Handle balance input change
-  const handleBalanceChange = (text: string) => {
-    // Remove all non-numeric characters except decimal point
-    const cleaned = text.replace(/[^0-9.]/g, '');
-
-    // Prevent multiple decimal points
-    const parts = cleaned.split('.');
-    if (parts.length > 2) {
-      return;
-    }
-
-    setInitialBalance(cleaned);
-  };
-
-  // Get formatted balance display
-  const getBalanceDisplay = (): string => {
-    if (!initialBalance) return '';
-    const number = parseFloat(initialBalance);
-    if (isNaN(number)) return '';
-    return `${number.toLocaleString('en-US')} ${currencySymbol}`;
   };
 
   return (
@@ -279,25 +252,15 @@ const CreateWalletDetailsScreen: React.FC = () => {
           </View>
 
           {/* Initial Balance */}
-          <View style={styles.section}>
-            <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-              {t('wallet.initial_balance')}
-            </CustomText>
-            <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <TextInput
-                style={[styles.input, { color: colors.text }]}
-                placeholder={`0 ${currencySymbol}`}
-                placeholderTextColor={colors.icon}
-                value={initialBalance}
-                onChangeText={handleBalanceChange}
-                keyboardType="decimal-pad"
-              />
-              {initialBalance && !isNaN(parseFloat(initialBalance)) ? (
-                <CustomText style={[styles.balanceDisplay, { color: colors.text }]} type="semiBold">
-                  {getBalanceDisplay()}
-                </CustomText>
-              ) : null}
-            </View>
+          <TransactionAmountInput
+            amount={initialBalance}
+            onAmountChange={setInitialBalance}
+            inputCurrency={{ currencyId: currency, symbol: currencySymbol }}
+            walletCurrency={{ currencyId: currency, symbol: currencySymbol }}
+            disableCurrencySelect={true}
+            label={t('wallet.initial_balance')}
+          />
+          <View style={{ paddingHorizontal: wp(5) }}>
             <CustomText style={[styles.helperText, { color: colors.icon }]} type="regular">
               {t('wallet.initial_balance_helper')}
             </CustomText>

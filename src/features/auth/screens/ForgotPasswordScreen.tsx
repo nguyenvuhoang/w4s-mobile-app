@@ -23,7 +23,7 @@ const ForgotPasswordScreen = () => {
   const [idNumber, setIdNumber] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [agreed, setAgreed] = useState(false);
+  const [agreed, setAgreed] = useState(true);
 
   const handleCancel = () => {
     router.back();
@@ -147,7 +147,7 @@ const ForgotPasswordScreen = () => {
             </View>
 
             {/* Agreement Checkbox */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => setAgreed(!agreed)}
               style={styles.checkboxContainer}
               activeOpacity={0.7}
@@ -190,7 +190,7 @@ const ForgotPasswordScreen = () => {
                   {' '}của ứng dụng cho khách hàng cá nhân
                 </ThemedText>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </ScrollView>
 

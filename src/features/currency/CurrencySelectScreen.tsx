@@ -1,5 +1,3 @@
-// src/screens/currency/CurrencySelectScreen.tsx
-
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
@@ -53,19 +51,9 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
     parseCurrencyName,
   } = useCurrency({
     autoFetch: true,
-    searchText: "",
-    pageSize: 500,
+    searchText: debouncedSearch,
+    pageSize: 40,
   });
-
-  const filteredCurrencies = React.useMemo(() => {
-    if (!debouncedSearch) return currencies;
-    const lower = debouncedSearch.toLowerCase();
-    return currencies.filter((c) => {
-      const codeMatch = c.currency_id?.toLowerCase().includes(lower);
-      const nameMatch = parseCurrencyName(c)?.toLowerCase().includes(lower);
-      return codeMatch || nameMatch;
-    });
-  }, [currencies, debouncedSearch, parseCurrencyName]);
 
   const handleSelectCurrency = async (currency: Currency) => {
     const displayName = parseCurrencyName(currency);
@@ -158,7 +146,7 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
   );
 
   const renderEmpty = () => {
-    if (loading && filteredCurrencies.length === 0) return null;
+    if (loading && currencies.length === 0) return null;
 
     return (
       <View style={styles.emptyContainer}>
@@ -181,7 +169,7 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
   };
 
   const renderFooter = () => {
-    if (!loading || filteredCurrencies.length === 0) return null;
+    if (!loading || currencies.length === 0) return null;
 
     return (
       <View style={styles.footerLoader}>
@@ -197,8 +185,8 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
   };
 
   const renderHeader = () => {
-    if (loading && filteredCurrencies.length === 0) return null;
-    if (filteredCurrencies.length === 0) return null;
+    if (loading && currencies.length === 0) return null;
+    if (currencies.length === 0) return null;
 
     return (
       <View style={styles.resultHeader}>
@@ -206,7 +194,7 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
           style={[styles.resultText, { color: colors.icon }]}
           type="regular"
         >
-          Hiển thị {filteredCurrencies.length} / {debouncedSearch ? filteredCurrencies.length : totalCount} tiền tệ
+          Hiển thị {currencies.length} / {totalCount} tiền tệ
         </CustomText>
       </View>
     );
@@ -287,7 +275,7 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
 
       {/* Currency List */}
       <FlatList
-        data={filteredCurrencies}
+        data={currencies}
         keyExtractor={(item, index) => `${item.currency_id}-${index}`}
         renderItem={renderCurrencyItem}
         contentContainerStyle={styles.listContent}
