@@ -59,6 +59,7 @@ export const Tokens = {
     light: ["#c2d7f7", "#d8e9f0"] as const, // gradian_light
     lightest: ["#e6eefc", "#eff6f9"] as const, // gradian_lightest
     dark: ["#003f9e", "#417389"] as const, // gradian_dark
+    primary: ["#1776F2", "#1EB9E7"] as const, // gradient_primary
   },
 };
 
@@ -84,8 +85,14 @@ export const Colors = {
     gradianBase: Tokens.gradients.base,
     gradianLight: Tokens.gradients.light,
     gradianLightest: Tokens.gradients.lightest,
-    gradianDark: Tokens.gradients.dark
-
+    gradianDark: Tokens.gradients.dark,
+    gradientPrimary: Tokens.gradients.primary,
+    
+    // New Design Colors
+    brandBlue: "#0D63E6",
+    brandBg: "#E9EEF5",
+    brandTextPrimary: "#1F2430",
+    brandTextSecondary: "#5D6470",
   },
   dark: {
     text: Tokens.colors.main.white,
@@ -107,7 +114,14 @@ export const Colors = {
     gradianBase: Tokens.gradients.base,
     gradianLight: Tokens.gradients.light,
     gradianLightest: Tokens.gradients.lightest,
-    gradianDark: Tokens.gradients.dark
+    gradianDark: Tokens.gradients.dark,
+    gradientPrimary: Tokens.gradients.primary,
+
+    // Keep same for dark or adjust if needed
+    brandBlue: Tokens.colors.foundation.primary["primary-6"],
+    brandBg: Tokens.colors.main.bg_dark,
+    brandTextPrimary: Tokens.colors.main.white,
+    brandTextSecondary: Tokens.colors.main.textgray,
   },
 };
 

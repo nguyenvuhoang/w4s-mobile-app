@@ -1,5 +1,6 @@
 {
   "common": {
+    "welcomeTo": "Welcome to",
     "welcome": "Welcome",
     "home": "Home",
     "language": "Language",

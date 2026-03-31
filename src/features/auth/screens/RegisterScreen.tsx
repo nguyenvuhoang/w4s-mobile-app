@@ -11,6 +11,7 @@ import { Images } from '@/utils/images';
 import { hasNotch, normalize } from '@/utils/layout';
 import { FontAwesome6, Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -66,7 +67,7 @@ const RegisterScreen = () => {
       setCurrencySymbol(defaultCurrency.symbol);
       setCurrencyName(defaultCurrency.name);
     }
-  }, [loadingDefaultCurrency, defaultCurrency]);
+  }, [loadingDefaultCurrency, defaultCurrency, setCurrency]);
 
   useFocusEffect(
     useCallback(() => {
@@ -89,7 +90,7 @@ const RegisterScreen = () => {
         }
       };
       loadSelectedData();
-    }, [])
+    }, [setCurrency])
   );
 
   const handleSelectCurrency = () => {
@@ -97,7 +98,7 @@ const RegisterScreen = () => {
       pathname: '/(protected)/select-currency',
       params: {
         selectedCurrencyId: currency,
-      }
+      },
     });
   };
 
@@ -105,14 +106,14 @@ const RegisterScreen = () => {
   const [step, setStep] = useState(1);
   const slideAnim = useRef(new Animated.Value(0)).current;
 
-  // Animate when step changes
   useEffect(() => {
     Animated.timing(slideAnim, {
       toValue: step === 1 ? 0 : 1,
       duration: 300,
       useNativeDriver: true,
     }).start();
-  }, [step]);
+  }, [step, slideAnim]);
+
   const [errors, setErrors] = useState({
     fullName: '',
     phone: '',
@@ -120,6 +121,7 @@ const RegisterScreen = () => {
     address: '',
     birthday: '',
   });
+
   const [touched, setTouched] = useState({
     fullName: false,
     phone: false,
@@ -128,37 +130,36 @@ const RegisterScreen = () => {
     birthday: false,
   });
 
-  // Validation helpers inside component to use translation
-  const validateEmail = (email: string): string | null => {
-    if (!email.trim()) return t('validation.required_email');
+  const validateEmail = (value: string): string | null => {
+    if (!value.trim()) return t('validation.required_email');
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return t('validation.invalid_email');
+    if (!emailRegex.test(value)) return t('validation.invalid_email');
     return null;
   };
 
-  const validatePhone = (phone: string): string | null => {
-    if (!phone.trim()) return t('validation.required_phone');
+  const validatePhone = (value: string): string | null => {
+    if (!value.trim()) return t('validation.required_phone');
     const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
-    if (!phoneRegex.test(phone.trim())) {
+    if (!phoneRegex.test(value.trim())) {
       return t('validation.invalid_phone');
     }
     return null;
   };
 
-  const validateFullName = (name: string): string | null => {
-    if (!name.trim()) return t('validation.required_fullname');
-    if (name.trim().length < 2) return t('validation.invalid_fullname');
+  const validateFullName = (value: string): string | null => {
+    if (!value.trim()) return t('validation.required_fullname');
+    if (value.trim().length < 2) return t('validation.invalid_fullname');
     return null;
   };
 
-  const validateAddress = (address: string): string | null => {
-    if (!address.trim()) return t('validation.required_address');
-    if (address.trim().length < 5) return t('validation.invalid_address');
+  const validateAddress = (value: string): string | null => {
+    if (!value.trim()) return t('validation.required_address');
+    if (value.trim().length < 5) return t('validation.invalid_address');
     return null;
   };
 
-  const validateBirthday = (birthday: string): string | null => {
-    if (!birthday) return t('validation.required_birthday');
+  const validateBirthday = (value: string): string | null => {
+    if (!value) return t('validation.required_birthday');
     return null;
   };
 
@@ -166,7 +167,7 @@ const RegisterScreen = () => {
     router.back();
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
+  const handleDateChange = (_event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
       setBirthday(selectedDate.toISOString());
@@ -186,9 +187,7 @@ const RegisterScreen = () => {
   };
 
   const getDateValue = (): Date => {
-    if (birthday) {
-      return new Date(birthday);
-    }
+    if (birthday) return new Date(birthday);
     return new Date();
   };
 
@@ -201,11 +200,10 @@ const RegisterScreen = () => {
   };
 
   const handlePhoneChange = (text: string) => {
-    // Chỉ cho phép nhập số
     const numericText = text.replace(/[^0-9]/g, '');
-    // Giới hạn 10 số
     const limitedText = numericText.slice(0, 10);
     setPhone(limitedText);
+
     if (touched.phone) {
       const error = validatePhone(limitedText);
       setErrors(prev => ({ ...prev, phone: error || '' }));
@@ -231,48 +229,36 @@ const RegisterScreen = () => {
   const handleBlur = (field: keyof typeof touched) => {
     setTouched(prev => ({ ...prev, [field]: true }));
 
-    // Validate on blur
     switch (field) {
-      case 'fullName':
-        const nameError = validateFullName(fullName);
-        setErrors(prev => ({ ...prev, fullName: nameError || '' }));
+      case 'fullName': {
+        const fullNameError = validateFullName(fullName);
+        setErrors(prev => ({ ...prev, fullName: fullNameError || '' }));
         break;
-      case 'phone':
+      }
+      case 'phone': {
         const phoneError = validatePhone(phone);
         setErrors(prev => ({ ...prev, phone: phoneError || '' }));
         break;
-      case 'email':
+      }
+      case 'email': {
         const emailError = validateEmail(email);
         setErrors(prev => ({ ...prev, email: emailError || '' }));
         break;
-      case 'address':
+      }
+      case 'address': {
         const addressError = validateAddress(address);
         setErrors(prev => ({ ...prev, address: addressError || '' }));
         break;
-      case 'birthday':
+      }
+      case 'birthday': {
         const birthdayError = validateBirthday(birthday);
         setErrors(prev => ({ ...prev, birthday: birthdayError || '' }));
         break;
+      }
     }
   };
 
-  const handleBalanceChange = (text: string) => {
-    // Only allow numbers and decimal point
-    const cleaned = text.replace(/[^0-9.]/g, '');
-    const parts = cleaned.split('.');
-    if (parts.length > 2) return;
-    setInitialBalance(cleaned);
-  };
-
-  const getBalanceDisplay = (): string => {
-    if (!initialBalance) return '';
-    const number = parseFloat(initialBalance);
-    if (isNaN(number)) return '';
-    return `${number.toLocaleString('en-US')} ${currencySymbol}`;
-  };
-
   const handleContinue = () => {
-    // Validate Step 1 fields
     const nameError = validateFullName(fullName);
     const phoneError = validatePhone(phone);
     const emailError = validateEmail(email);
@@ -306,16 +292,22 @@ const RegisterScreen = () => {
     setStep(1);
   };
 
-
   const translateX = slideAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -width],
   });
 
+  const step1Invalid =
+    !!errors.fullName ||
+    !!errors.phone ||
+    !!errors.email ||
+    !!errors.address ||
+    !!errors.birthday;
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.sliderContainer}>
+    <View style={[styles.container, { backgroundColor: colors.brandBg }]}>
+      <SafeAreaView edges={['top']} style={[styles.safeArea, { backgroundColor: colors.brandBlue }]}>
+        <View style={[styles.sliderContainer, { backgroundColor: colors.brandBg }]}>
           <Animated.View
             style={[
               styles.slider,
@@ -326,306 +318,332 @@ const RegisterScreen = () => {
             ]}
           >
             {/* Step 1 */}
-            <View style={{ width: width }}>
+            <View style={{ width }}>
               <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
                 keyboardShouldPersistTaps="handled"
               >
-                {/* Logo */}
-                <View style={styles.logoContainer}>
-                  <View style={[styles.logoWrapper, { backgroundColor: colors.tint }]}>
+                <View style={[styles.header, { backgroundColor: colors.brandBlue }]}>
+                  <View style={styles.headerCircleLeft} />
+                  <View style={styles.headerCircleRight} />
+
+                  <View style={styles.logoWrap}>
                     <Image source={logoImg} style={styles.logo} resizeMode="contain" />
                   </View>
+
+                  <ThemedText style={styles.headerTitle}>
+                    {t('auth.register_title') || 'Đăng ký'}
+                  </ThemedText>
                 </View>
 
-                {/* Title */}
-                <ThemedText style={[styles.title, { color: colors.text }]}>
-                  {t("auth.register_title")}
-                </ThemedText>
-
-                {/* Form */}
-                <View style={styles.formContainer}>
-                  {/* Full Name Input */}
-                  <View style={styles.inputContainer}>
-                    <ThemedText style={[styles.label, { color: colors.text }]}>
-                      {t("auth.fullname")}
-                    </ThemedText>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          backgroundColor: colors.card,
-                          color: colors.text,
-                          borderColor: touched.fullName && errors.fullName ? colors.error : colors.border,
-                        },
-                      ]}
-                      placeholder={t("auth.fullname_placeholder")}
-                      placeholderTextColor={colors.icon}
-                      value={fullName}
-                      onChangeText={handleFullNameChange}
-                      onBlur={() => handleBlur('fullName')}
-                      autoCapitalize="words"
-                      editable={!isRegistering}
-                    />
-                    {touched.fullName && errors.fullName ? (
-                      <ThemedText style={[styles.errorText, { color: colors.error }]}>{errors.fullName}</ThemedText>
-                    ) : null}
-                  </View>
-
-                  {/* Phone Input */}
-                  <View style={styles.inputContainer}>
-                    <ThemedText style={[styles.label, { color: colors.text }]}>
-                      {t("auth.phone")}
-                    </ThemedText>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          backgroundColor: colors.card,
-                          color: colors.text,
-                          borderColor: touched.phone && errors.phone ? colors.error : colors.border,
-                        },
-                      ]}
-                      placeholder={t("auth.phone_placeholder")}
-                      placeholderTextColor={colors.icon}
-                      value={phone}
-                      onChangeText={handlePhoneChange}
-                      onBlur={() => handleBlur('phone')}
-                      keyboardType="phone-pad"
-                      maxLength={10}
-                      editable={!isRegistering}
-                    />
-                    {touched.phone && errors.phone ? (
-                      <ThemedText style={[styles.errorText, { color: colors.error }]}>{errors.phone}</ThemedText>
-                    ) : null}
-                  </View>
-
-                  {/* Email Input */}
-                  <View style={styles.inputContainer}>
-                    <ThemedText style={[styles.label, { color: colors.text }]}>
-                      {t("auth.email")}
-                    </ThemedText>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          backgroundColor: colors.card,
-                          color: colors.text,
-                          borderColor: touched.email && errors.email ? colors.error : colors.border,
-                        },
-                      ]}
-                      placeholder={t("auth.email_placeholder")}
-                      placeholderTextColor={colors.icon}
-                      value={email}
-                      onChangeText={handleEmailChange}
-                      onBlur={() => handleBlur('email')}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoComplete="email"
-                      editable={!isRegistering}
-                    />
-                    {touched.email && errors.email ? (
-                      <ThemedText style={[styles.errorText, { color: colors.error }]}>{errors.email}</ThemedText>
-                    ) : null}
-                  </View>
-
-                  {/* Address Input */}
-                  <View style={styles.inputContainer}>
-                    <ThemedText style={[styles.label, { color: colors.text }]}>
-                      {t("auth.address")}
-                    </ThemedText>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          backgroundColor: colors.card,
-                          color: colors.text,
-                          borderColor: touched.address && errors.address ? colors.error : colors.border,
-                        },
-                      ]}
-                      placeholder={t("auth.address_placeholder")}
-                      placeholderTextColor={colors.icon}
-                      value={address}
-                      onChangeText={handleAddressChange}
-                      onBlur={() => handleBlur('address')}
-                      autoCapitalize="words"
-                      editable={!isRegistering}
-                    />
-                    {touched.address && errors.address ? (
-                      <ThemedText style={[styles.errorText, { color: colors.error }]}>{errors.address}</ThemedText>
-                    ) : null}
-                  </View>
-
-                  {/* Birthday Input */}
-                  <View style={styles.inputContainer}>
-                    <ThemedText style={[styles.label, { color: colors.text }]}>
-                      {t("auth.birthday")}
-                    </ThemedText>
-                    <TouchableOpacity
-                      onPress={() => setShowDatePicker(true)}
-                      disabled={isRegistering}
-                    >
-                      <View
+                <View style={styles.body}>
+                  <View style={styles.formContainer}>
+                    <View style={styles.inputContainer}>
+                      <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
+                        {t('auth.fullname') || 'Họ và tên'}
+                      </ThemedText>
+                      <TextInput
                         style={[
                           styles.input,
-                          styles.dateInput,
-                          {
-                            backgroundColor: colors.card,
-                            borderColor: touched.birthday && errors.birthday ? colors.error : colors.border,
-                          },
+                          touched.fullName && errors.fullName ? styles.inputError : null,
+                          { color: colors.brandTextPrimary },
                         ]}
-                      >
-                        <ThemedText style={[styles.dateText, { color: birthday ? colors.text : colors.icon }]}>
-                          {birthday ? formatDate(birthday) : t("auth.select_birthday")}
-                        </ThemedText>
-                        <Ionicons
-                          name="calendar-outline"
-                          size={normalize(22)}
-                          color={colors.icon}
-                        />
-                      </View>
-                    </TouchableOpacity>
-                    {touched.birthday && errors.birthday ? (
-                      <ThemedText style={[styles.errorText, { color: colors.error }]}>{errors.birthday}</ThemedText>
-                    ) : null}
-                    {showDatePicker && (
-                      <DateTimePicker
-                        value={getDateValue()}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={handleDateChange}
-                        maximumDate={new Date()}
-                        minimumDate={new Date(1900, 0, 1)}
+                        placeholder={t('auth.fullname_placeholder') || 'Họ và tên của bạn'}
+                        placeholderTextColor="#A8ADB7"
+                        value={fullName}
+                        onChangeText={handleFullNameChange}
+                        onBlur={() => handleBlur('fullName')}
+                        autoCapitalize="words"
+                        editable={!isRegistering}
                       />
-                    )}
+                      {touched.fullName && errors.fullName ? (
+                        <ThemedText style={styles.errorText}>{errors.fullName}</ThemedText>
+                      ) : null}
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                      <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
+                        {t('auth.phone') || 'Số điện thoại'}
+                      </ThemedText>
+                      <TextInput
+                        style={[
+                          styles.input,
+                          touched.phone && errors.phone ? styles.inputError : null,
+                          { color: colors.brandTextPrimary },
+                        ]}
+                        placeholder={t('auth.phone_placeholder') || 'Số điện thoại của bạn'}
+                        placeholderTextColor="#A8ADB7"
+                        value={phone}
+                        onChangeText={handlePhoneChange}
+                        onBlur={() => handleBlur('phone')}
+                        keyboardType="phone-pad"
+                        maxLength={10}
+                        editable={!isRegistering}
+                      />
+                      {touched.phone && errors.phone ? (
+                        <ThemedText style={styles.errorText}>{errors.phone}</ThemedText>
+                      ) : null}
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                      <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
+                        {t('auth.email') || 'E-mail'}
+                      </ThemedText>
+                      <TextInput
+                        style={[
+                          styles.input,
+                          touched.email && errors.email ? styles.inputError : null,
+                          { color: colors.brandTextPrimary },
+                        ]}
+                        placeholder={t('auth.email_placeholder') || 'Email của bạn'}
+                        placeholderTextColor="#A8ADB7"
+                        value={email}
+                        onChangeText={handleEmailChange}
+                        onBlur={() => handleBlur('email')}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoComplete="email"
+                        editable={!isRegistering}
+                      />
+                      {touched.email && errors.email ? (
+                        <ThemedText style={styles.errorText}>{errors.email}</ThemedText>
+                      ) : null}
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                      <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
+                        {t('auth.address') || 'Địa chỉ'}
+                      </ThemedText>
+                      <TextInput
+                        style={[
+                          styles.input,
+                          touched.address && errors.address ? styles.inputError : null,
+                          { color: colors.brandTextPrimary },
+                        ]}
+                        placeholder={t('auth.address_placeholder') || 'Địa chỉ của bạn'}
+                        placeholderTextColor="#A8ADB7"
+                        value={address}
+                        onChangeText={handleAddressChange}
+                        onBlur={() => handleBlur('address')}
+                        autoCapitalize="words"
+                        editable={!isRegistering}
+                      />
+                      {touched.address && errors.address ? (
+                        <ThemedText style={styles.errorText}>{errors.address}</ThemedText>
+                      ) : null}
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                      <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
+                        {t('auth.birthday') || 'Ngày sinh'}
+                      </ThemedText>
+                      <TouchableOpacity
+                        onPress={() => setShowDatePicker(true)}
+                        disabled={isRegistering}
+                        activeOpacity={0.85}
+                      >
+                        <View
+                          style={[
+                            styles.input,
+                            styles.dateInput,
+                            touched.birthday && errors.birthday ? styles.inputError : null,
+                          ]}
+                        >
+                          <ThemedText
+                            style={[
+                              styles.dateText,
+                              { color: birthday ? colors.brandTextPrimary : '#A8ADB7' },
+                            ]}
+                          >
+                            {birthday
+                              ? formatDate(birthday)
+                              : t('auth.select_birthday') || 'Chọn ngày sinh'}
+                          </ThemedText>
+                          <Ionicons
+                            name="calendar-outline"
+                            size={normalize(20)}
+                            color="#98A2B3"
+                          />
+                        </View>
+                      </TouchableOpacity>
+
+                      {touched.birthday && errors.birthday ? (
+                        <ThemedText style={styles.errorText}>{errors.birthday}</ThemedText>
+                      ) : null}
+
+                      {showDatePicker && (
+                        <DateTimePicker
+                          value={getDateValue()}
+                          mode="date"
+                          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                          onChange={handleDateChange}
+                          maximumDate={new Date()}
+                          minimumDate={new Date(1900, 0, 1)}
+                        />
+                      )}
+                    </View>
                   </View>
-                </View>
 
-                {/* Continue Button */}
-                <TouchableOpacity
-                  onPress={handleContinue}
-                  style={[
-                    styles.registerButton,
-                    { backgroundColor: colors.tint },
-                  ]}
-                  activeOpacity={0.9}
-                >
-                  <ThemedText style={styles.registerButtonText}>{t("common.next") || "Next"}</ThemedText>
-                </TouchableOpacity>
-
-                {/* Login Link */}
-                <View style={styles.footer}>
-                  <ThemedText style={[styles.footerText, { color: colors.text }]}>
-                    {t("auth.have_account")}{' '}
-                  </ThemedText>
-                  <TouchableOpacity onPress={handleLogin} disabled={isRegistering}>
-                    <ThemedText style={[styles.loginLink, { color: colors.tint }]}>
-                      {t("auth.login")}
-                    </ThemedText>
+                  <TouchableOpacity
+                    onPress={handleContinue}
+                    activeOpacity={0.9}
+                    style={styles.buttonWrap}
+                    disabled={isRegistering || step1Invalid}
+                  >
+                    <LinearGradient
+                      colors={colors.gradientPrimary as any}
+                      start={{ x: 0, y: 0.5 }}
+                      end={{ x: 1, y: 0.5 }}
+                      style={[
+                        styles.primaryButton,
+                        (isRegistering || step1Invalid) && styles.primaryButtonDisabled,
+                      ]}
+                    >
+                      <ThemedText style={styles.primaryButtonText}>
+                        {t('common.next') || 'Tiếp tục'}
+                      </ThemedText>
+                    </LinearGradient>
                   </TouchableOpacity>
+
+                  <View style={styles.footer}>
+                    <ThemedText style={[styles.footerText, { color: colors.brandTextSecondary }]}>
+                      {t('auth.have_account') || 'Đã có tài khoản?'}{' '}
+                    </ThemedText>
+                    <TouchableOpacity onPress={handleLogin} disabled={isRegistering}>
+                      <ThemedText style={[styles.loginLink, { color: colors.brandBlue }]}>
+                        {t('auth.login') || 'Đăng nhập'}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </ScrollView>
             </View>
 
             {/* Step 2 */}
-            <View style={{ width: width }}>
+            <View style={{ width }}>
               <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
                 keyboardShouldPersistTaps="handled"
               >
-                {/* Header with Back Button */}
-                <View style={styles.header}>
-                  <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={normalize(24)} color={colors.text} />
-                  </TouchableOpacity>
-                </View>
+                <View style={[styles.header, { backgroundColor: colors.brandBlue }]}>
+                  <View style={styles.headerCircleLeft} />
+                  <View style={styles.headerCircleRight} />
 
-                <View style={styles.logoContainer}>
-                  <ThemedText style={[styles.title, { color: colors.text, marginTop: 0 }]}>
-                    {t("wallet.setup_wallet") || "Setup Wallet"}
+                  <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={normalize(22)} color="#FFFFFF" />
+                  </TouchableOpacity>
+
+                  <View style={styles.logoWrap}>
+                    <Image source={logoImg} style={styles.logo} resizeMode="contain" />
+                  </View>
+
+                  <ThemedText style={styles.headerTitle}>
+                    {t('wallet.setup_wallet') || 'Thiết lập ví'}
                   </ThemedText>
                 </View>
 
-                {/* Step 2 Form */}
-                <View style={styles.formContainer}>
-                  {/* Currency Selection */}
-                  <View style={styles.inputContainer}>
-                    <ThemedText style={[styles.label, { color: colors.text }]}>
-                      {t('wallet.currency')}
-                    </ThemedText>
+                <View style={styles.body}>
+                  <View style={styles.formContainer}>
+                    <View style={styles.inputContainer}>
+                      <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
+                        {t('wallet.currency') || 'Tiền tệ'}
+                      </ThemedText>
+
+                      <TouchableOpacity
+                        style={styles.currencySelector}
+                        onPress={handleSelectCurrency}
+                        activeOpacity={0.85}
+                      >
+                        <View style={styles.currencyLeft}>
+                          <View style={[styles.currencyIconWrapper, { backgroundColor: `rgba(${colors.brandBlue === '#0D63E6' ? '13,99,230' : '0,0,0'},0.08)` }]}>
+                            <CustomText style={[styles.currencySymbolText, { color: colors.brandBlue }]} type="bold">
+                              {currencySymbol}
+                            </CustomText>
+                          </View>
+
+                          <View style={styles.currencyInfo}>
+                            <CustomText
+                              style={styles.currencyNameText}
+                              type="regular"
+                              numberOfLines={1}
+                            >
+                              {currencyName}
+                            </CustomText>
+                            <CustomText style={[styles.currencyCode, { color: colors.brandTextPrimary }]} type="semiBold">
+                              {currency}
+                            </CustomText>
+                          </View>
+                        </View>
+
+                        <FontAwesome6
+                          name="chevron-right"
+                          size={normalize(14)}
+                          color="#98A2B3"
+                        />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                      <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
+                        {t('wallet.initial_balance') || 'Số dư ban đầu'}
+                      </ThemedText>
+
+                      <FormattedMoneyInput
+                        value={initialBalance ? parseFloat(initialBalance) : 0}
+                        onChange={(val) => setInitialBalance(val ? val.toString() : '')}
+                        currency={currencySymbol}
+                        placeholder={`0 ${currencySymbol}`}
+                        containerStyle={{
+                          backgroundColor: '#F4F4F5',
+                          borderColor: 'transparent',
+                          borderWidth: 1,
+                          height: normalize(54),
+                          paddingHorizontal: normalize(16),
+                          borderRadius: normalize(14),
+                        }}
+                        inputStyle={{
+                          color: colors.brandTextPrimary,
+                          fontSize: normalize(15),
+                          fontFamily: Fonts.regular,
+                          textAlign: 'left',
+                        }}
+                      />
+
+                      <ThemedText style={[styles.helperText, { color: colors.brandTextSecondary }]}>
+                        {t('wallet.initial_balance_helper')}
+                      </ThemedText>
+                    </View>
+
                     <TouchableOpacity
-                      style={[styles.currencySelector, { backgroundColor: colors.card, borderColor: colors.border }]}
-                      onPress={handleSelectCurrency}
+                      onPress={handleRegister}
+                      activeOpacity={0.9}
+                      disabled={isRegistering || !isFormValid}
+                      style={styles.buttonWrap}
                     >
-                      <View style={styles.currencyLeft}>
-                        <View style={styles.currencyIconWrapper}>
-                          <CustomText style={[styles.currencySymbolText, { color: colors.tint }]} type="bold">
-                            {currencySymbol}
-                          </CustomText>
-                        </View>
-                        <View style={styles.currencyInfo}>
-                          <CustomText style={[styles.currencyNameText, { color: colors.icon }]} type="regular" numberOfLines={1}>
-                            {currencyName}
-                          </CustomText>
-                          <CustomText style={[styles.currencyCode, { color: colors.text }]} type="semiBold">
-                            {currency}
-                          </CustomText>
-                        </View>
-                      </View>
-                      <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
+                      <LinearGradient
+                        colors={colors.gradientPrimary as any}
+                        start={{ x: 0, y: 0.5 }}
+                        end={{ x: 1, y: 0.5 }}
+                        style={[
+                          styles.primaryButton,
+                          (isRegistering || !isFormValid) && styles.primaryButtonDisabled,
+                        ]}
+                      >
+                        {isRegistering ? (
+                          <ActivityIndicator
+                            color={Tokens.colors.main.white}
+                            size="small"
+                          />
+                        ) : (
+                          <ThemedText style={styles.primaryButtonText}>
+                            {t('auth.register') || 'Đăng ký'}
+                          </ThemedText>
+                        )}
+                      </LinearGradient>
                     </TouchableOpacity>
                   </View>
-
-                  {/* Initial Balance */}
-                  <View style={styles.inputContainer}>
-                    <ThemedText style={[styles.label, { color: colors.text }]}>
-                      {t('wallet.initial_balance')}
-                    </ThemedText>
-
-                    <FormattedMoneyInput
-                      value={initialBalance ? parseFloat(initialBalance) : 0}
-                      onChange={(val) => setInitialBalance(val ? val.toString() : '')}
-                      currency={currencySymbol}
-                      placeholder={`0 ${currencySymbol}`}
-                      containerStyle={{
-                        backgroundColor: colors.card,
-                        borderColor: colors.border,
-                        borderWidth: 1,
-                        height: normalize(52),
-                        paddingHorizontal: normalize(16),
-                      }}
-                      inputStyle={{
-                        color: colors.text,
-                        fontSize: normalize(16),
-                        fontFamily: Fonts.regular,
-                        textAlign: 'left'
-                      }}
-                    />
-
-                    <ThemedText style={[styles.helperText, { color: colors.icon }]}>
-                      {t('wallet.initial_balance_helper')}
-                    </ThemedText>
-                  </View>
-
-                  {/* Register Button */}
-                  <TouchableOpacity
-                    onPress={handleRegister}
-                    style={[
-                      styles.registerButton,
-                      { backgroundColor: colors.tint },
-                      isRegistering && styles.registerButtonDisabled,
-                    ]}
-                    activeOpacity={0.9}
-                    disabled={isRegistering}
-                  >
-                    {isRegistering ? (
-                      <ActivityIndicator color={Tokens.colors.main.white} size="small" />
-                    ) : (
-                      <ThemedText style={styles.registerButtonText}>{t("auth.register")}</ThemedText>
-                    )}
-                  </TouchableOpacity>
                 </View>
               </ScrollView>
             </View>
@@ -640,185 +658,246 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+
   safeArea: {
     flex: 1,
   },
+
+  sliderContainer: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+
+  slider: {
+    flexDirection: 'row',
+    flex: 1,
+  },
+
   scrollContent: {
-    paddingHorizontal: normalize(24),
     paddingBottom: hasNotch() ? normalize(10) : normalize(30),
   },
-  logoContainer: {
+
+  header: {
+    height: normalize(255),
+    borderBottomLeftRadius: normalize(34),
+    borderBottomRightRadius: normalize(34),
     alignItems: 'center',
-    marginTop: normalize(40),
-    marginBottom: normalize(24),
-  },
-  logoWrapper: {
-    width: normalize(80),
-    height: normalize(80),
-    borderRadius: normalize(20),
     justifyContent: 'center',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+
+  headerCircleLeft: {
+    position: 'absolute',
+    left: normalize(-38),
+    bottom: normalize(32),
+    width: normalize(135),
+    height: normalize(135),
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+
+  headerCircleRight: {
+    position: 'absolute',
+    right: normalize(-32),
+    top: normalize(18),
+    width: normalize(128),
+    height: normalize(128),
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+
+  backButton: {
+    position: 'absolute',
+    top: normalize(16),
+    left: normalize(20),
+    zIndex: 5,
+    width: normalize(38),
+    height: normalize(38),
+    borderRadius: normalize(19),
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
   },
+
+  logoWrap: {
+    marginBottom: normalize(16),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   logo: {
-    width: normalize(50),
-    height: normalize(50),
+    width: normalize(100),
+    height: normalize(100),
   },
-  title: {
-    fontSize: normalize(28),
+
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: normalize(26),
     fontFamily: Fonts.bold,
-    textAlign: 'center',
-    marginBottom: normalize(32),
-    lineHeight: normalize(36),
+    lineHeight: normalize(32),
   },
+
+  body: {
+    flex: 1,
+    paddingHorizontal: normalize(28),
+    paddingTop: normalize(28),
+  },
+
   formContainer: {
-    marginBottom: normalize(24),
+    marginBottom: normalize(8),
   },
+
   inputContainer: {
     marginBottom: normalize(20),
   },
+
   label: {
     fontSize: normalize(15),
+    lineHeight: normalize(22),
     fontFamily: Fonts.medium,
-    marginBottom: normalize(8),
-    lineHeight: normalize(20),
+    marginBottom: normalize(10),
   },
+
   input: {
-    height: normalize(52),
-    borderRadius: normalize(12),
+    height: normalize(54),
+    borderRadius: normalize(14),
+    backgroundColor: '#F4F4F5',
     paddingHorizontal: normalize(16),
-    fontSize: normalize(16),
+    fontSize: normalize(15),
     fontFamily: Fonts.regular,
     borderWidth: 1,
-    lineHeight: normalize(22),
-    paddingTop: normalize(15),
-    paddingBottom: normalize(15),
+    borderColor: 'transparent',
   },
-  currencySelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: normalize(5),
-    borderRadius: normalize(12),
-    borderWidth: 1,
+
+  inputError: {
+    borderColor: '#EF4444',
   },
-  currencyLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  currencyIconWrapper: {
-    width: normalize(48),
-    height: normalize(48),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: normalize(12),
-  },
-  currencySymbolText: {
-    fontSize: normalize(24),
-  },
-  currencyInfo: {
-    flex: 1,
-  },
-  currencyCode: {
-    fontSize: normalize(14),
-    marginBottom: normalize(2),
-  },
-  currencyNameText: {
-    fontSize: normalize(13),
-  },
+
   dateInput: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+
   dateText: {
-    fontSize: normalize(16),
+    fontSize: normalize(15),
     fontFamily: Fonts.regular,
     lineHeight: normalize(22),
   },
+
   errorText: {
-    fontSize: normalize(13),
+    marginTop: normalize(6),
+    fontSize: normalize(12),
+    color: Tokens.colors.main.error,
     fontFamily: Fonts.regular,
-    marginTop: normalize(4),
-    lineHeight: normalize(18),
   },
-  registerButton: {
-    height: normalize(52),
-    borderRadius: normalize(100),
+
+  currencySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F4F4F5',
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(6),
+    borderRadius: normalize(14),
+    borderWidth: 1,
+    borderColor: 'transparent',
+    minHeight: normalize(54),
+  },
+
+  currencyLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+
+  currencyIconWrapper: {
+    width: normalize(42),
+    height: normalize(42),
+    borderRadius: normalize(21),
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: normalize(8),
-    shadowColor: Tokens.colors.main.black,
-    shadowOffset: { width: 0, height: normalize(4) },
-    shadowOpacity: 0.15,
-    shadowRadius: normalize(8),
-    elevation: 4,
+    marginRight: normalize(12),
+    backgroundColor: 'rgba(13,99,230,0.08)',
   },
-  registerButtonDisabled: {
-    opacity: 0.5,
+
+  currencySymbolText: {
+    fontSize: normalize(20),
+    color: Tokens.colors.main.primary,
   },
-  registerButtonText: {
+
+  currencyInfo: {
+    flex: 1,
+  },
+
+  currencyCode: {
+    fontSize: normalize(14),
+    color: Tokens.colors.main.neutral,
+  },
+
+  currencyNameText: {
+    fontSize: normalize(13),
+    color: '#707684',
+    marginBottom: normalize(2),
+  },
+
+  helperText: {
+    fontSize: normalize(12),
+    fontFamily: Fonts.regular,
+    marginTop: normalize(6),
+    color: '#8A93A3',
+  },
+
+  buttonWrap: {
+    marginTop: normalize(20),
+    marginBottom: normalize(14),
+  },
+
+  primaryButton: {
+    height: normalize(56),
+    borderRadius: normalize(28),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  primaryButtonDisabled: {
+    opacity: 0.55,
+  },
+
+  primaryButtonText: {
     fontSize: normalize(18),
     fontFamily: Fonts.bold,
     color: Tokens.colors.main.white,
     lineHeight: normalize(24),
   },
+
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: normalize(16),
+    marginTop: normalize(4),
+    paddingBottom: normalize(10),
   },
+
   footerText: {
-    fontSize: normalize(16),
+    fontSize: normalize(15),
     fontFamily: Fonts.regular,
     lineHeight: normalize(22),
+    color: '#444B59',
   },
+
   loginLink: {
-    fontSize: normalize(16),
-    fontFamily: Fonts.semiBold,
-    lineHeight: normalize(22),
-  },
-  balanceContainer: {
-    height: normalize(52),
-    borderRadius: normalize(12),
-    paddingHorizontal: normalize(16),
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  flexInput: {
-    flex: 1,
-    fontSize: normalize(16),
-    fontFamily: Fonts.regular,
-    height: '100%',
-  },
-  balanceDisplay: {
-    fontSize: normalize(14),
+    fontSize: normalize(15),
     fontFamily: Fonts.medium,
-    marginLeft: normalize(8),
-  },
-  helperText: {
-    fontSize: normalize(12),
-    fontFamily: Fonts.regular,
-    marginTop: normalize(6),
-  },
-  header: {
-    marginBottom: normalize(20),
-    alignItems: 'flex-start',
-  },
-  backButton: {
-    padding: normalize(8),
-    marginLeft: -normalize(8),
-  },
-  sliderContainer: {
-    flex: 1,
-    overflow: 'hidden',
-  },
-  slider: {
-    flexDirection: 'row',
-    flex: 1,
+    lineHeight: normalize(22),
+    color: Tokens.colors.main.primary,
   },
 });
 

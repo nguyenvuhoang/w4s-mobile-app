@@ -1,4 +1,3 @@
-import { Images } from '@/utils/images';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +12,7 @@ import {
   ViewToken,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
 import StorageKey from '@/constants/StorageKey';
@@ -20,13 +20,13 @@ import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
 import { Tokens } from '@/core/theme/theme';
 import StorageService from '@/services/StorageService';
+import { Images } from '@/utils/images';
 import { hasNotch, normalize } from '@/utils/layout';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const logoImg = Images.appLogoDark;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Create AnimatedFlatList
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<Slide>);
+const AnimatedView = Animated.createAnimatedComponent(View);
 
 interface Slide {
   id: number;
@@ -35,41 +35,68 @@ interface Slide {
   image?: any;
 }
 
+const TOTAL_SLIDES = 3;
+const BG_WIDTH = SCREEN_WIDTH * TOTAL_SLIDES;
+const LIGHT_AREA_HEIGHT = SCREEN_HEIGHT * 0.62;
 
+// background wave
+const SharedWaveBackground = () => {
+  const { colors } = useAppTheme();
+  const w = BG_WIDTH;
+  const h = LIGHT_AREA_HEIGHT;
+
+  // Path tạo 1 dải cong lớn chạy xuyên suốt 3 màn hình.
+  const d = `
+    M 0 40
+    C ${w * 0.12} 0, ${w * 0.22} 0, ${w * 0.36} 70
+    C ${w * 0.52} 150, ${w * 0.66} 170, ${w * 0.82} 120
+    C ${w * 0.92} 90, ${w * 0.97} 70, ${w} 55
+    L ${w} ${h}
+    C ${w * 0.88} ${h - 10}, ${w * 0.74} ${h - 30}, ${w * 0.58} ${h - 90}
+    C ${w * 0.43} ${h - 150}, ${w * 0.25} ${h - 125}, ${w * 0.08} ${h - 55}
+    C ${w * 0.03} ${h - 35}, ${w * 0.01} ${h - 25}, 0 ${h - 18}
+    Z
+  `;
+
+  return (
+    <Svg width={w} height={h} style={styles.sharedBgSvg}>
+      <Path d={d} fill={colors.brandBg} />
+    </Svg>
+  );
+};
 
 const IntroScreen = () => {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
+
   const flatListRef = useRef<FlatList<Slide>>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
-  const { t } = useTranslation();
 
-  // Use light background and dark text
-  const backgroundColor = colors.background;
-  const textColor = colors.text;
-  const tintColor = colors.tint;
-
-  const SLIDES: Slide[] = [
+  const slides: Slide[] = [
     {
       id: 1,
       title: t('intro.slide1_title'),
       description: t('intro.slide1_desc'),
+      image: Images.onboarding1,
     },
     {
       id: 2,
       title: t('intro.slide2_title'),
       description: t('intro.slide2_desc'),
+      image: Images.onboarding2,
     },
     {
       id: 3,
       title: t('intro.slide3_title'),
       description: t('intro.slide3_desc'),
+      image: Images.onboarding3,
     },
   ];
 
   const handleNext = () => {
-    if (currentIndex < SLIDES.length - 1) {
+    if (currentIndex < slides.length - 1) {
       flatListRef.current?.scrollToIndex({
         index: currentIndex + 1,
         animated: true,
@@ -77,10 +104,6 @@ const IntroScreen = () => {
     } else {
       goToLogin();
     }
-  };
-
-  const handleSkip = () => {
-    goToLogin();
   };
 
   const goToLogin = async () => {
@@ -94,7 +117,7 @@ const IntroScreen = () => {
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+      if (viewableItems.length > 0 && viewableItems[0].index != null) {
         setCurrentIndex(viewableItems[0].index);
       }
     }
@@ -104,58 +127,35 @@ const IntroScreen = () => {
     itemVisiblePercentThreshold: 50,
   }).current;
 
-  const renderSlide = ({ item, index }: { item: Slide; index: number }) => {
-    const inputRange = [
-      (index - 1) * SCREEN_WIDTH,
-      index * SCREEN_WIDTH,
-      (index + 1) * SCREEN_WIDTH,
-    ];
+  const dynamicTranslateY = scrollX.interpolate({
+    inputRange: [0, SCREEN_WIDTH, SCREEN_WIDTH * 2],
+    outputRange: [normalize(40), normalize(160), normalize(140)],
+    extrapolate: 'clamp',
+  });
 
-    const opacity = scrollX.interpolate({
-      inputRange,
-      outputRange: [0.3, 1, 0.3],
-      extrapolate: 'clamp',
-    });
-
-    const scale = scrollX.interpolate({
-      inputRange,
-      outputRange: [0.8, 1, 0.8],
-      extrapolate: 'clamp',
-    });
-
+  const renderSlide = ({ item }: { item: Slide }) => {
     return (
-      <View style={[styles.slideContainer, { width: SCREEN_WIDTH }]}>
-        <Animated.View
-          style={[
-            styles.slideContent,
-            {
-              opacity,
-              transform: [{ scale }],
-            },
-          ]}
-        >
-          {/* Logo */}
-          <View style={styles.logoWrapper}>
-            <Image source={logoImg} style={styles.logo} resizeMode="contain" />
-          </View>
+      <View style={styles.slideContainer}>
+        <View style={styles.imageWrap} pointerEvents="none">
+          <AnimatedView style={{ transform: [{ translateY: dynamicTranslateY }] }}>
+            {item.image ? (
+              <Image source={item.image} style={styles.image} resizeMode="contain" />
+            ) : (
+              <View style={styles.imagePlaceholder} />
+            )}
+          </AnimatedView>
+        </View>
 
-          {/* Content */}
-          <View style={styles.textContainer}>
-            <ThemedText style={[styles.title, { color: textColor }]}>
-              {item.title}
-            </ThemedText>
-            <ThemedText style={[styles.description, { color: textColor }]}>
-              {item.description}
-            </ThemedText>
-          </View>
-        </Animated.View>
+        <View style={styles.contentWrap}>
+          <ThemedText style={styles.title}>{item.title}</ThemedText>
+          <ThemedText style={styles.description}>{item.description}</ThemedText>
+        </View>
       </View>
     );
   };
 
-  // Render pagination dots separately without animation on width
-  const renderPaginationDots = () => {
-    return SLIDES.map((_, index) => {
+  const renderPaginationDots = () =>
+    slides.map((_, index) => {
       const inputRange = [
         (index - 1) * SCREEN_WIDTH,
         index * SCREEN_WIDTH,
@@ -164,79 +164,66 @@ const IntroScreen = () => {
 
       const opacity = scrollX.interpolate({
         inputRange,
-        outputRange: [0.3, 1, 0.3],
+        outputRange: [0.4, 1, 0.4],
         extrapolate: 'clamp',
       });
 
-      const scale = scrollX.interpolate({
-        inputRange,
-        outputRange: [1, 1.5, 1],
-        extrapolate: 'clamp',
-      });
-
-      return (
-        <Animated.View
-          key={index}
-          style={[
-            styles.dot,
-            {
-              opacity,
-              transform: [{ scale }],
-              backgroundColor: tintColor,
-            },
-          ]}
-        />
-      );
+      return <Animated.View key={index} style={[styles.dot, { opacity }]} />;
     });
-  };
 
   return (
-    <View style={[styles.container, { backgroundColor }]}>
-      <SafeAreaView style={styles.safeArea}>
-        {/* Slides */}
-        <View style={styles.slidesContainer}>
-          <AnimatedFlatList
-            ref={flatListRef}
-            data={SLIDES}
-            renderItem={renderSlide}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={Animated.event(
-              [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-              { useNativeDriver: true }
-            )}
-            onViewableItemsChanged={onViewableItemsChanged}
-            viewabilityConfig={viewabilityConfig}
-            keyExtractor={(item) => item.id.toString()}
-            bounces={false}
-            scrollEventThrottle={16}
-          />
-        </View>
+    <View style={[styles.container, { backgroundColor: colors.brandBlue }]}>
+      {/* background lớn chạy xuyên 3 slide */}
+      <AnimatedView
+        pointerEvents="none"
+        style={[
+          styles.sharedBackgroundContainer,
+          {
+            transform: [
+              {
+                translateX: Animated.multiply(scrollX, -1),
+              },
+            ],
+          },
+        ]}
+      >
+        <SharedWaveBackground />
+      </AnimatedView>
 
-        {/* Footer */}
-        <View style={styles.footerContainer}>
-          {/* Pagination Dots */}
-          <View style={styles.pagination}>{renderPaginationDots()}</View>
+      <AnimatedFlatList
+        ref={flatListRef}
+        data={slides}
+        renderItem={renderSlide}
+        keyExtractor={(item) => item.id.toString()}
+        horizontal
+        pagingEnabled
+        bounces={false}
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        style={styles.list}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: true }
+        )}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+      />
 
-          {/* Buttons */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              onPress={handleNext}
-              style={[styles.nextBtn, { backgroundColor: tintColor }]}
-              activeOpacity={0.9}
-            >
-              <ThemedText style={styles.nextText}>
-                {currentIndex === SLIDES.length - 1 ? t('common.start') : t('common.continue')}
-              </ThemedText>
-            </TouchableOpacity>
+      <SafeAreaView edges={['bottom']} style={styles.footer}>
+        <View style={styles.pagination}>{renderPaginationDots()}</View>
 
-            <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
-              <ThemedText style={[styles.skipText, { color: textColor }]}>
-                {t('common.skip')}
-              </ThemedText>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity onPress={goToLogin} style={styles.skipBtn} activeOpacity={0.7}>
+            <ThemedText style={styles.skipText}>{t('common.skip')}</ThemedText>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleNext} style={styles.nextBtn} activeOpacity={0.8}>
+            <ThemedText style={[styles.nextText, { color: colors.brandBlue }]}>
+              {currentIndex === slides.length - 1
+                ? t('common.start')
+                : t('common.continue')}
+            </ThemedText>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     </View>
@@ -247,103 +234,129 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  safeArea: {
+
+  list: {
     flex: 1,
+    zIndex: 2,
   },
-  slidesContainer: {
-    flex: 1,
+
+  sharedBackgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: BG_WIDTH,
+    height: LIGHT_AREA_HEIGHT,
+    zIndex: 0,
   },
+
+  sharedBgSvg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+
   slideContainer: {
+    width: SCREEN_WIDTH,
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  slideContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: normalize(32),
+    backgroundColor: 'transparent',
   },
 
-  // Logo
-  logoWrapper: {
-    marginBottom: normalize(60),
-  },
-  logo: {
-    width: normalize(120),
-    height: normalize(120),
+  imageWrap: {
+    height: LIGHT_AREA_HEIGHT,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
   },
 
-  // Text
-  textContainer: {
-    alignItems: 'center',
-    gap: normalize(16),
+  image: {
+    width: SCREEN_WIDTH,
+    // height: SCREEN_HEIGHT * 0.40,
   },
+
+  imagePlaceholder: {
+    width: SCREEN_WIDTH * 0.72,
+    height: SCREEN_WIDTH * 0.72,
+    borderRadius: normalize(24),
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+
+  contentWrap: {
+    marginTop: normalize(8),
+    paddingHorizontal: normalize(28),
+    alignItems: 'center',
+  },
+
   title: {
-    fontSize: normalize(28),
+    fontSize: normalize(22),
+    lineHeight: normalize(30),
     fontFamily: Fonts.bold,
+    color: Tokens.colors.main.white,
     textAlign: 'center',
-    lineHeight: normalize(36),
-  },
-  description: {
-    fontSize: normalize(16),
-    fontFamily: Fonts.regular,
-    textAlign: 'center',
-    lineHeight: normalize(24),
-    opacity: 0.8,
-    paddingHorizontal: normalize(16),
+    marginBottom: normalize(10),
   },
 
-  // Footer
-  footerContainer: {
-    paddingHorizontal: normalize(24),
-    paddingBottom: hasNotch() ? normalize(10) : normalize(30),
+  description: {
+    fontSize: normalize(15),
+    lineHeight: normalize(24),
+    fontFamily: Fonts.regular,
+    color: 'rgba(255,255,255,0.92)',
+    textAlign: 'center',
+  },
+
+  footer: {
+    paddingHorizontal: normalize(30),
+    paddingTop: normalize(12),
+    paddingBottom: hasNotch() ? normalize(8) : normalize(20),
+    backgroundColor: 'transparent',
     gap: normalize(24),
   },
 
-  // Pagination
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: normalize(8),
-    height: normalize(12),
-  },
-  dot: {
-    width: normalize(8),
-    height: normalize(8),
-    borderRadius: normalize(4),
+    gap: normalize(10),
   },
 
-  // Buttons
-  buttonContainer: {
-    gap: normalize(16),
+  dot: {
+    width: normalize(10),
+    height: normalize(10),
+    borderRadius: normalize(5),
+    borderWidth: 1,
+    borderColor: Tokens.colors.main.white,
+    backgroundColor: Tokens.colors.main.white,
   },
-  nextBtn: {
-    paddingVertical: normalize(16),
-    borderRadius: normalize(100),
+
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
-    shadowColor: Tokens.colors.main.black,
-    shadowOffset: { width: 0, height: normalize(4) },
-    shadowOpacity: 0.15,
-    shadowRadius: normalize(8),
-    elevation: 4,
   },
-  nextText: {
-    fontSize: normalize(18),
-    fontFamily: Fonts.bold,
-    lineHeight: normalize(24),
-    color: Tokens.colors.main.white,
-  },
+
   skipBtn: {
     paddingVertical: normalize(12),
-    alignItems: 'center',
+    paddingHorizontal: normalize(4),
   },
+
   skipText: {
     fontSize: normalize(16),
     fontFamily: Fonts.medium,
-    opacity: 0.7,
+    color: Tokens.colors.main.white,
+  },
+
+  nextBtn: {
+    minWidth: normalize(104),
+    paddingHorizontal: normalize(24),
+    paddingVertical: normalize(14),
+    borderRadius: normalize(999),
+    backgroundColor: Tokens.colors.main.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  nextText: {
+    fontSize: normalize(16),
+    lineHeight: normalize(22),
+    fontFamily: Fonts.bold,
   },
 });
 

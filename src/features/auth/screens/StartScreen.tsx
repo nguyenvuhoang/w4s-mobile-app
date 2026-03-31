@@ -23,7 +23,7 @@ const StartScreen = () => {
   const { t, i18n } = useTranslation();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
-  const backgroundColor = isDark ? colors.background : colors.tint;
+  const backgroundColor = isDark ? colors.background : colors.brandBlue;
   const onBackgroundColor = Tokens.colors.main.white;
   const buttonTextColor = backgroundColor;
 
@@ -85,12 +85,15 @@ const StartScreen = () => {
           </View>
 
           <View style={styles.textContainer}>
-            <ThemedText style={[styles.appName, { color: onBackgroundColor }]}>
-              W4S Mobile
-            </ThemedText>
             <ThemedText style={[styles.slogan, { color: onBackgroundColor }]}>
-              {t('common.slogan')}
+              {t('common.welcomeTo')}
             </ThemedText>
+            <ThemedText style={[styles.appName, { color: onBackgroundColor }]}>
+              W4S BUDGET WALLET
+            </ThemedText>
+            {/* <ThemedText style={[styles.slogan, { color: onBackgroundColor }]}>
+              {t('common.slogan')}
+            </ThemedText> */}
           </View>
         </View>
 
@@ -106,16 +109,15 @@ const StartScreen = () => {
             </ThemedText>
           </TouchableOpacity>
 
-          <View style={styles.loginRow}>
-            <ThemedText style={[styles.haveAccountText, { color: onBackgroundColor }]}>
-              {t('auth.have_account')}
+          <TouchableOpacity
+            onPress={handleLogin}
+            style={styles.loginOutlineBtn}
+            activeOpacity={0.7}
+          >
+            <ThemedText style={[styles.loginOutlineText, { color: onBackgroundColor }]}>
+              {t('auth.login')}
             </ThemedText>
-            <TouchableOpacity onPress={handleLogin} style={styles.loginBtn}>
-              <ThemedText style={[styles.loginText, { color: onBackgroundColor }]}>
-                {t('auth.login')}
-              </ThemedText>
-            </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         </View>
 
         <BottomActionModal
@@ -180,7 +182,7 @@ const styles = StyleSheet.create({
     gap: normalize(8),
   },
   appName: {
-    fontSize: normalize(32),
+    fontSize: normalize(24),
     fontFamily: Fonts.bold,
     letterSpacing: normalize(1),
     lineHeight: normalize(42),
@@ -215,29 +217,23 @@ const styles = StyleSheet.create({
   },
   startText: {
     fontSize: normalize(18),
-    fontFamily: Fonts.bold,
+    fontFamily: Fonts.medium,
     lineHeight: normalize(24),
   },
 
-  loginRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  loginOutlineBtn: {
+    paddingVertical: normalize(16),
+    borderRadius: normalize(100),
     alignItems: 'center',
-    gap: normalize(6),
-    paddingVertical: normalize(10),
+    width: '100%',
+    borderWidth: 1,
+    borderColor: Tokens.colors.main.white,
+    backgroundColor: 'transparent',
   },
-  haveAccountText: {
-    fontSize: normalize(15),
-    fontFamily: Fonts.regular,
-    opacity: 0.85,
-  },
-  loginBtn: {
-    padding: normalize(4),
-  },
-  loginText: {
-    fontSize: normalize(16),
-    fontFamily: Fonts.bold,
-    lineHeight: normalize(22),
+  loginOutlineText: {
+    fontSize: normalize(18),
+    fontFamily: Fonts.medium,
+    lineHeight: normalize(24),
   },
 });
 
