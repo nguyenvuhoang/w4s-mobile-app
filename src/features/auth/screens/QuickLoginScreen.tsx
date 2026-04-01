@@ -3,16 +3,16 @@ import StorageKey from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
-import { Tokens } from "@/core/theme/theme";
 import { useLoginService } from "@/features/auth/hooks/useLoginService";
 import StorageService from "@/services/StorageService";
 import { AppInfo } from "@/types/UserCommand";
 import { Images } from "@/utils/images";
 import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Image,
@@ -52,7 +52,7 @@ const QuickLoginScreen = () => {
     handleLogin,
     handleBiometricLogin,
     handleGetStatusLogin,
-    biometricType, // "none" | "fingerprint" | "facial"
+    biometricType,
   } = useLoginService();
 
   useEffect(() => {
@@ -63,19 +63,15 @@ const QuickLoginScreen = () => {
     checkLoginStatus();
   }, [appInfo]);
 
-  /* ========= BIOMETRIC HELPERS (KHÔNG ẢNH HƯỞNG UI) ========= */
-
   const getBiometricIconName = () => {
     if (biometricType === "facial") return "scan-outline";
-    return "finger-print-outline"; // fingerprint + none
+    return "finger-print-outline";
   };
 
   const getBiometricLabel = () => {
-    if (biometricType === "facial") return t('auth.face_id');
-    return t('auth.fingerprint');
+    if (biometricType === "facial") return t("auth.face_id");
+    return t("auth.fingerprint");
   };
-
-  /* ================= LOGIC ================= */
 
   const loadAppInfo = async () => {
     try {
@@ -86,9 +82,7 @@ const QuickLoginScreen = () => {
         return;
       }
 
-      const storedAppInfo = await StorageService.getAsyncItem(
-        StorageKey.appInfo,
-      );
+      const storedAppInfo = await StorageService.getAsyncItem(StorageKey.appInfo);
       if (storedAppInfo) {
         const parsedAppInfo: AppInfo = JSON.parse(storedAppInfo);
         setAppInfo(parsedAppInfo);
@@ -115,7 +109,7 @@ const QuickLoginScreen = () => {
 
         await StorageService.setAsyncItem(
           StorageKey.appInfo,
-          JSON.stringify(appInfoData),
+          JSON.stringify(appInfoData)
         );
         setAppInfo(appInfoData);
       } catch {
@@ -139,13 +133,12 @@ const QuickLoginScreen = () => {
     if (!appInfo?.is_biometric_supported) {
       showNotification(
         t("auth.biometric_not_enabled", { type: getBiometricLabel() }),
-        "warning",
+        "warning"
       );
       return;
     }
 
     if (isLoadingAny || isAuthenticating) return;
-
     await handleBiometricLogin();
   };
 
@@ -158,7 +151,7 @@ const QuickLoginScreen = () => {
       async () => {
         await clearDataUser();
         router.replace("/(auth)/login");
-      },
+      }
     );
   };
 
@@ -176,20 +169,17 @@ const QuickLoginScreen = () => {
     await StorageService.removeAsyncItem(StorageKey.isVerifyFirstLogin);
     await StorageService.removeAsyncItem(StorageKey.token);
     await StorageService.clearSession();
-    // await StorageService.removeAsyncItem(StorageKey.userSession);
   };
 
   const isFormValid = password.trim() !== "";
   const isLoadingAny = isLoggingIn || isFetchingAppInfo || isLoading;
 
-  /* ================= UI ================= */
-
   return (
     <>
       {isLoadingAny && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={colors.tint} />
-          <ThemedText style={[styles.loadingText, { color: "#fff" }]}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <ThemedText style={styles.loadingText}>
             {isLoggingIn ? t("auth.logging_in") : t("auth.loading_info")}
           </ThemedText>
         </View>
@@ -197,326 +187,386 @@ const QuickLoginScreen = () => {
 
       {isAuthenticating && <View style={styles.biometricOverlay} />}
 
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.background }]}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardView}
-        >
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
+      <View style={styles.screen}>
+        <SafeAreaView edges={["top"]} style={styles.safeArea}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={styles.keyboardView}
           >
-            {/* Top */}
-            <View style={styles.topHalf}>
-              <View style={styles.logoContainer}>
-                <View
-                  style={[styles.logoWrapper, { backgroundColor: colors.tint }]}
-                >
-                  <Image
-                    source={logoImg}
-                    style={styles.logo}
-                    resizeMode="contain"
-                  />
-                </View>
-              </View>
-              <ThemedText style={[styles.title, { color: colors.text }]}>
-                {t("auth.login")}
-              </ThemedText>
-            </View>
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.header}>
+                <View style={styles.headerCircleLeft} />
+                <View style={styles.headerCircleRight} />
 
-            {/* Bottom */}
-            <View style={styles.bottomHalf}>
-              <View style={styles.userInfoRow}>
-                <View style={styles.avatarContainer}>
+                <View style={styles.logoWrap}>
+                  <Image source={logoImg} style={styles.logo} resizeMode="contain" />
+                </View>
+
+                <ThemedText style={styles.headerTitle}>
+                  {t("auth.login")}
+                </ThemedText>
+              </View>
+
+              <View style={styles.body}>
+                <ThemedText style={styles.description}>
+                  Vui lòng đăng nhập để sử dụng ứng dụng quản lý tài chính W4S.
+                </ThemedText>
+
+                <View style={styles.userInfoRow}>
                   <Image
-                    source={
-                      appInfo?.avatar ? { uri: appInfo.avatar } : defaultAvatar
-                    }
+                    source={appInfo?.avatar ? { uri: appInfo.avatar } : defaultAvatar}
                     style={styles.avatar}
                   />
+                  <ThemedText style={styles.username}>
+                    Xin chào, {appInfo?.name || appInfo?.login_name || "Avatar"}
+                  </ThemedText>
                 </View>
-                <ThemedText style={[styles.username, { color: colors.text }]}>
-                  {t("common.hello")}, {appInfo?.name || appInfo?.login_name || "User"}
-                </ThemedText>
-              </View>
 
-              {/* Password */}
-              <View style={styles.inputContainer}>
-                <ThemedText style={[styles.label, { color: colors.text }]}>
-                  {t("auth.password")}
-                </ThemedText>
-                <View style={styles.passwordContainer}>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      styles.passwordInput,
-                      {
-                        backgroundColor: colors.card,
-                        color: colors.text,
-                        borderColor: colors.border,
-                      },
-                    ]}
-                    placeholder={t("auth.password_placeholder")}
-                    placeholderTextColor={colors.icon}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    editable={!isLoadingAny}
-                    onSubmitEditing={handlePasswordLogin}
-                  />
+                <View style={styles.inputGroup}>
+                  <ThemedText style={styles.label}>
+                    {t("auth.password")}
+                  </ThemedText>
 
-                  <TouchableOpacity
-                    style={styles.eyeIcon}
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    <Ionicons
-                      name={showPassword ? "eye-off-outline" : "eye-outline"}
-                      size={normalize(22)}
-                      color={colors.icon}
-                    />
-                  </TouchableOpacity>
+                  <View style={styles.passwordRow}>
+                    <View style={styles.passwordInputWrap}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder={t("auth.password_placeholder")}
+                        placeholderTextColor="#A8ADB7"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                        editable={!isLoadingAny}
+                        onSubmitEditing={handlePasswordLogin}
+                      />
 
-                  {/* 🔐 BIOMETRIC – LUÔN HIỂN THỊ */}
-                  <TouchableOpacity
-                    style={styles.biometricIcon}
-                    onPress={handleBiometricPress}
-                    disabled={isLoadingAny}
-                  >
-                    {isAuthenticating ? (
-                      <ActivityIndicator size="small" color={colors.tint} />
-                    ) : (
-                      <View
-                        style={[
-                          styles.biometricButton,
-                          {
-                            borderColor: colors.tint,
-                            opacity:
-                              !isBiometricSupported ||
-                                !appInfo?.is_biometric_supported
-                                ? 0.4
-                                : 1,
-                          },
-                        ]}
+                      <TouchableOpacity
+                        style={styles.eyeButton}
+                        onPress={() => setShowPassword(!showPassword)}
+                        disabled={isLoadingAny}
                       >
+                        <Ionicons
+                          name={showPassword ? "eye-off-outline" : "eye-outline"}
+                          size={normalize(20)}
+                          color="#98A2B3"
+                        />
+                      </TouchableOpacity>
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.biometricSideButton}
+                      onPress={handleBiometricPress}
+                      disabled={isLoadingAny}
+                    >
+                      {isAuthenticating ? (
+                        <ActivityIndicator size="small" color="#0D63E6" />
+                      ) : (
                         <Ionicons
                           name={getBiometricIconName()}
                           size={normalize(24)}
-                          color={colors.tint}
+                          color={
+                            !isBiometricSupported || !appInfo?.is_biometric_supported
+                              ? "#9DB7E8"
+                              : "#0D63E6"
+                          }
                         />
-                      </View>
-                    )}
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.linksRow}>
+                  <TouchableOpacity onPress={handleSwitchAccount} disabled={isLoadingAny}>
+                    <ThemedText style={styles.linkText}>
+                      {t("auth.switch_account")}
+                    </ThemedText>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={handleForgotPassword}
+                    disabled={isLoadingAny}
+                  >
+                    <ThemedText style={styles.linkText}>
+                      {t("auth.forgot_password")}
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  onPress={handlePasswordLogin}
+                  activeOpacity={0.9}
+                  disabled={!isFormValid || isLoadingAny}
+                  style={styles.loginButtonWrap}
+                >
+                  <LinearGradient
+                    colors={["#1776F2", "#1EB9E7"]}
+                    start={{ x: 0, y: 0.5 }}
+                    end={{ x: 1, y: 0.5 }}
+                    style={[
+                      styles.loginButton,
+                      (!isFormValid || isLoadingAny) && styles.loginButtonDisabled,
+                    ]}
+                  >
+                    <ThemedText style={styles.loginButtonText}>
+                      {t("auth.login")}
+                    </ThemedText>
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                <View style={styles.registerRow}>
+                  <ThemedText style={styles.registerText}>hoặc </ThemedText>
+                  <TouchableOpacity
+                    onPress={handleCreateAccount}
+                    disabled={isLoadingAny}
+                  >
+                    <ThemedText style={styles.registerLink}>
+                      {t("auth.create_account")}
+                    </ThemedText>
                   </TouchableOpacity>
                 </View>
               </View>
-
-              {/* Login */}
-              <TouchableOpacity
-                onPress={handlePasswordLogin}
-                style={[
-                  styles.loginButton,
-                  { backgroundColor: colors.tint },
-                  (!isFormValid || isLoadingAny) && styles.loginButtonDisabled,
-                ]}
-                disabled={!isFormValid || isLoadingAny}
-              >
-                <ThemedText style={styles.loginButtonText}>
-                  {t("auth.login")}
-                </ThemedText>
-              </TouchableOpacity>
-
-              <View style={styles.linksContainer}>
-                <TouchableOpacity onPress={handleSwitchAccount}>
-                  <ThemedText style={{ color: colors.tint }}>
-                    {t("auth.switch_account")}
-                  </ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleForgotPassword}>
-                  <ThemedText style={{ color: colors.tint }}>
-                    {t("auth.forgot_password")}
-                  </ThemedText>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.footer}>
-                <TouchableOpacity onPress={handleCreateAccount}>
-                  <ThemedText style={{ color: colors.text }}>
-                    {t("auth.create_account")}
-                  </ThemedText>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </View>
     </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
+    backgroundColor: "#E9EEF5",
   },
+
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#0D63E6",
+  },
+
   keyboardView: {
     flex: 1,
+    backgroundColor: "#E9EEF5",
   },
+
   scrollContent: {
     flexGrow: 1,
   },
-  topHalf: {
-    flex: 1,
+
+  header: {
+    height: normalize(255),
+    backgroundColor: "#0D63E6",
+    borderBottomLeftRadius: normalize(34),
+    borderBottomRightRadius: normalize(34),
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
-    minHeight: normalize(250),
+    overflow: "hidden",
+    position: "relative",
   },
-  logoContainer: {
-    alignItems: "center",
-    marginBottom: normalize(24),
+
+  headerCircleLeft: {
+    position: "absolute",
+    left: normalize(-38),
+    bottom: normalize(32),
+    width: normalize(135),
+    height: normalize(135),
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
   },
-  logoWrapper: {
-    width: normalize(80),
-    height: normalize(80),
-    borderRadius: normalize(20),
+
+  headerCircleRight: {
+    position: "absolute",
+    right: normalize(-32),
+    top: normalize(18),
+    width: normalize(128),
+    height: normalize(128),
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+
+  logoWrap: {
+    marginBottom: normalize(16),
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
   },
+
   logo: {
-    width: normalize(50),
-    height: normalize(50),
+    width: normalize(100),
+    height: normalize(100),
   },
-  title: {
-    fontSize: normalize(28),
+
+  headerTitle: {
+    color: "#FFFFFF",
+    fontSize: normalize(26),
     fontFamily: Fonts.bold,
-    textAlign: "center",
-    lineHeight: normalize(36),
+    lineHeight: normalize(32),
   },
-  bottomHalf: {
+
+  body: {
     flex: 1,
-    paddingHorizontal: normalize(24),
-    paddingTop: normalize(20),
-    paddingBottom: normalize(20),
-    justifyContent: "flex-start",
+    paddingHorizontal: normalize(28),
+    paddingTop: normalize(28),
+    paddingBottom: normalize(24),
   },
+
+  description: {
+    textAlign: "center",
+    color: "#5D6470",
+    fontSize: normalize(16),
+    lineHeight: normalize(25),
+    fontFamily: Fonts.regular,
+    marginBottom: normalize(46),
+  },
+
   userInfoRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: normalize(20),
-    gap: normalize(12),
+    marginBottom: normalize(24),
   },
-  avatarContainer: {},
+
   avatar: {
     width: normalize(48),
     height: normalize(48),
     borderRadius: normalize(24),
+    marginRight: normalize(14),
   },
+
   username: {
-    fontSize: normalize(16),
-    fontFamily: Fonts.medium,
-    lineHeight: normalize(22),
     flex: 1,
+    color: "#2B3040",
+    fontSize: normalize(16),
+    lineHeight: normalize(22),
+    fontFamily: Fonts.medium,
   },
-  inputContainer: {
-    marginBottom: normalize(20),
+
+  inputGroup: {
+    marginBottom: normalize(12),
   },
+
   label: {
     fontSize: normalize(15),
-    fontFamily: Fonts.medium,
-    marginBottom: normalize(8),
-    lineHeight: normalize(20),
-  },
-  input: {
-    height: normalize(52),
-    borderRadius: normalize(12),
-    paddingHorizontal: normalize(16),
-    fontSize: normalize(16),
-    fontFamily: Fonts.regular,
-    borderWidth: 1,
     lineHeight: normalize(22),
-    paddingTop: normalize(15),
-    paddingBottom: normalize(15),
+    color: "#303545",
+    fontFamily: Fonts.medium,
+    marginBottom: normalize(10),
   },
-  passwordContainer: {
+
+  passwordRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  passwordInputWrap: {
+    flex: 1,
     position: "relative",
   },
-  passwordInput: {
-    paddingRight: normalize(100),
+
+  input: {
+    height: normalize(54),
+    borderRadius: normalize(14),
+    backgroundColor: "#F4F4F5",
+    paddingHorizontal: normalize(16),
+    paddingRight: normalize(44),
+    fontSize: normalize(15),
+    fontFamily: Fonts.regular,
+    color: "#1F2430",
+    borderWidth: 1,
+    borderColor: "transparent",
   },
-  eyeIcon: {
+
+  eyeButton: {
     position: "absolute",
-    right: normalize(56),
-    top: normalize(15),
+    right: normalize(14),
+    top: normalize(16),
   },
-  biometricIcon: {
-    position: "absolute",
-    right: normalize(16),
-    top: normalize(12),
-  },
-  biometricButton: {
-    width: normalize(32),
-    height: normalize(32),
-    borderRadius: normalize(8),
-    borderWidth: 1.5,
-    justifyContent: "center",
+
+  biometricSideButton: {
+    width: normalize(34),
+    height: normalize(34),
+    marginLeft: normalize(12),
     alignItems: "center",
-  },
-  loginButton: {
-    height: normalize(52),
-    borderRadius: normalize(100),
     justifyContent: "center",
-    alignItems: "center",
-    marginBottom: normalize(16),
-    shadowColor: Tokens.colors.main.black,
-    shadowOffset: { width: 0, height: normalize(4) },
-    shadowOpacity: 0.15,
-    shadowRadius: normalize(8),
-    elevation: 4,
   },
-  loginButtonDisabled: {
-    opacity: 0.5,
-  },
-  loginButtonText: {
-    fontSize: normalize(18),
-    fontFamily: Fonts.bold,
-    color: Tokens.colors.main.white,
-    lineHeight: normalize(24),
-  },
-  linksContainer: {
+
+  linksRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: normalize(8),
-    marginBottom: normalize(16),
+    alignItems: "center",
+    marginBottom: normalize(58),
   },
+
   linkText: {
+    color: "#0D63E6",
+    fontSize: normalize(14),
+    fontFamily: Fonts.medium,
+  },
+
+  loginButtonWrap: {
+    marginBottom: normalize(18),
+  },
+
+  loginButton: {
+    height: normalize(56),
+    borderRadius: normalize(28),
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loginButtonDisabled: {
+    opacity: 0.55,
+  },
+
+  loginButtonText: {
+    color: "#FFFFFF",
+    fontSize: normalize(18),
+    fontFamily: Fonts.bold,
+    lineHeight: normalize(24),
+  },
+
+  registerRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  registerText: {
+    color: "#444B59",
+    fontSize: normalize(15),
+    fontFamily: Fonts.regular,
+  },
+
+  registerLink: {
+    color: "#0D63E6",
     fontSize: normalize(15),
     fontFamily: Fonts.medium,
-    lineHeight: normalize(20),
   },
-  footer: {
-    alignItems: "center",
-    paddingBottom: normalize(10),
-  },
-  createAccountText: {
-    fontSize: normalize(16),
-    fontFamily: Fonts.medium,
-    lineHeight: normalize(22),
-  },
+
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: "rgba(0,0,0,0.7)",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1000,
     gap: normalize(16),
   },
+
   loadingText: {
     fontSize: normalize(16),
     fontFamily: Fonts.medium,
+    color: "#FFFFFF",
   },
+
   biometricOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     zIndex: 999,
   },
 });

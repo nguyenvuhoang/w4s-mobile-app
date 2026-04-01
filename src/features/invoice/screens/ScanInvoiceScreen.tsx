@@ -1,3 +1,4 @@
+import CustomButton from "@/components/base/CustomButton";
 import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
@@ -208,12 +209,12 @@ const ScanInvoiceScreen = () => {
                 <CustomText style={styles.permissionDesc}>
                     Ứng dụng cần quyền camera để scan hóa đơn.
                 </CustomText>
-                <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: colors.tint }]}
+                <CustomButton
+                    title="Cấp quyền"
                     onPress={requestPermission}
-                >
-                    <CustomText style={styles.actionBtnText}>Cấp quyền</CustomText>
-                </TouchableOpacity>
+                    useGradient
+                    style={styles.actionBtn}
+                />
             </SafeAreaView>
         );
     }

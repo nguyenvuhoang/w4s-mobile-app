@@ -1,4 +1,5 @@
 import AppHeader from "@/components/base/AppHeader";
+import CustomButton from "@/components/base/CustomButton";
 import CustomText from "@/components/base/CustomText";
 import BottomActionModal, {
   ActionItem,
@@ -240,14 +241,12 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
           >
             {error}
           </CustomText>
-          <TouchableOpacity
-            style={[styles.retryButton, { backgroundColor: colors.tint }]}
+          <CustomButton
+            title={t("common.retry")}
             onPress={refresh}
-          >
-            <CustomText style={{ color: "#fff" }} type="semiBold">
-              {t("common.retry")}
-            </CustomText>
-          </TouchableOpacity>
+            useGradient
+            style={styles.retryButton}
+          />
         </View>
       </SafeAreaView>
     );
@@ -335,15 +334,14 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
       <View
         style={[styles.bottomButton, { backgroundColor: colors.background }]}
       >
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: colors.tint }]}
+        <CustomButton
+          title={t("wallet.add_new_wallet")}
           onPress={handleCreateWallet}
-        >
-          <Ionicons name="add" size={normalize(24)} color="#fff" />
-          <CustomText style={styles.addButtonText} type="semiBold">
-            {t("wallet.add_new_wallet")}
-          </CustomText>
-        </TouchableOpacity>
+          useGradient
+          showIcon
+          iconName="plus"
+          style={styles.addButton}
+        />
       </View>
 
       {/* -------------------- ACTION MODAL -------------------- */}

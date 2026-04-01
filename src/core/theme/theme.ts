@@ -8,7 +8,7 @@ export const Tokens = {
       neutral: "#a2aec1",
       onprimary: "#ffffff",
       bg_dark: "#0f172a",
-      bg_light: "#EAECF1",
+      bg_light: "#EDF5F9",
       textgray: "#9ca3af",
       error: "#FF6551",
     },

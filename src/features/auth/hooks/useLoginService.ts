@@ -641,7 +641,7 @@ export const useLoginService = () => {
   );
 
   const handleForgotPassword = useCallback(async () => {
-    router.push("/(auth)/forgot-password" as any);
+    router.push("/(auth)/forgotPassword" as any);
   }, [router]);
 
   return {
