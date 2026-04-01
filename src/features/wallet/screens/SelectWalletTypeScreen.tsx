@@ -38,7 +38,8 @@ const SelectWalletTypeScreen: React.FC = () => {
       name: t('wallet.type_tracking_name'),
       icon: 'wallet-outline',
       description: t('wallet.type_tracking_desc'),
-      nextRoute: '/(protected)/wallet/tracker/select-subtype',
+      // nextRoute: '/(protected)/wallet/tracker/select-subtype',
+      nextRoute: '/(protected)/wallet/tracker/create-basic',
     },
     {
       id: 'fiat',
