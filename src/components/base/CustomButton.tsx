@@ -23,9 +23,9 @@ interface CustomButtonProps {
   disabled?: boolean;
   isLoading?: boolean;
   showIcon?: boolean;
-  iconName?: string; 
-  textType?: "regular" | "medium" | "bold"; 
-  variant?: "contained" | "text" | "outline"; 
+  iconName?: string;
+  textType?: "regular" | "medium" | "bold";
+  variant?: "contained" | "text" | "outline";
   buttonContainerStyle?: StyleProp<ViewStyle>;
   useGradient?: boolean;
   rootWidth?: number;
@@ -41,26 +41,25 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   disabled = false,
   isLoading = false,
   showIcon = false,
-  iconName = "ellipsis", 
+  iconName = "ellipsis",
   variant = "contained",
   buttonContainerStyle,
   useGradient = false,
   rootWidth,
   maxWidth,
 }) => {
-  const { colors } = useAppTheme(); 
+  const { colors } = useAppTheme();
 
   // 1. Logic màu sắc
   const getButtonColor = () => {
-      if (variant === "text") return "transparent";
-      if (disabled) return colors.border; 
-      return colors.tint; 
+    if (variant === "text") return "transparent";
+    if (disabled) return colors.border;
+    return colors.tint;
   };
 
   const getTextColor = () => {
-      if (variant === "text") return colors.tint;
-      if (disabled) return colors.text; 
-      return colors.onprimary; 
+    if (variant === "text") return colors.tint;
+    return colors.onprimary;
   };
 
   const buttonContent = (
@@ -73,14 +72,14 @@ const CustomButton: React.FC<CustomButtonProps> = ({
           style={styles.icon}
         />
       )}
-      
+
       <CustomText
         type={textType}
         style={[
           styles.buttonText,
           { color: getTextColor() },
           textStyle,
-          isLoading && { opacity: 0 }, 
+          isLoading && { opacity: 0 },
         ]}
       >
         {title}
@@ -97,12 +96,12 @@ const CustomButton: React.FC<CustomButtonProps> = ({
     </View>
   );
 
-  const dynamicButtonStyle = { 
-      width: rootWidth, 
-      maxWidth: maxWidth,
-      backgroundColor: useGradient ? 'transparent' : getButtonColor(), 
-      borderWidth: variant === 'outline' ? 1 : 0,
-      borderColor: colors.border
+  const dynamicButtonStyle = {
+    width: rootWidth,
+    maxWidth: maxWidth,
+    backgroundColor: useGradient ? 'transparent' : getButtonColor(),
+    borderWidth: variant === 'outline' ? 1 : 0,
+    borderColor: colors.border
   };
 
   return (
@@ -120,13 +119,14 @@ const CustomButton: React.FC<CustomButtonProps> = ({
       >
         {useGradient && variant === 'contained' && (
           <LinearGradient
-            colors={Tokens.gradients.base} 
+            colors={Tokens.gradients.base}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={StyleSheet.absoluteFill} 
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
           />
         )}
-        
+
         {buttonContent}
       </TouchableOpacity>
     </View>
@@ -135,12 +135,13 @@ const CustomButton: React.FC<CustomButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: normalize(10),
-    overflow: "hidden", 
+    borderRadius: normalize(30),
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
-    height: normalize(40),
     paddingHorizontal: 16,
+    minHeight: normalize(50),
+    paddingVertical: normalize(14),
   },
   buttonText: {
     fontSize: normalize(16),
@@ -149,7 +150,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    width: '100%', 
   },
   icon: {
     marginRight: 8,

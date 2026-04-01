@@ -4,6 +4,8 @@ import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
+import { Tokens } from "@/core/theme/theme";
+import { LinearGradient } from "expo-linear-gradient";
 import { useExportData } from "@/features/tools/hooks/useExportData";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import StorageService from "@/services/StorageService";
@@ -269,10 +271,19 @@ const ExportDataScreen = () => {
               <TouchableOpacity
                 style={[
                   styles.inputContainer,
-                  { flex: 1, justifyContent: "center", backgroundColor: fileType === "excel" ? colors.tint : colors.card, borderColor: fileType === "excel" ? colors.tint : colors.border }
+                  { flex: 1, justifyContent: "center", backgroundColor: fileType === "excel" ? "transparent" : colors.card, borderColor: fileType === "excel" ? "transparent" : colors.border, overflow: "hidden" }
                 ]}
                 onPress={() => setFileType("excel")}
               >
+                {fileType === "excel" && (
+                  <LinearGradient
+                    colors={Tokens.gradients.base}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={StyleSheet.absoluteFill}
+                    pointerEvents="none"
+                  />
+                )}
                 <FontAwesome6 name="file-excel" size={normalize(20)} color={fileType === "excel" ? "#fff" : colors.text} solid />
                 <CustomText style={[styles.dateText, { color: fileType === "excel" ? "#fff" : colors.text, fontWeight: "500" }]}>
                   Excel
@@ -282,10 +293,19 @@ const ExportDataScreen = () => {
               <TouchableOpacity
                 style={[
                   styles.inputContainer,
-                  { flex: 1, justifyContent: "center", backgroundColor: fileType === "pdf" ? colors.tint : colors.card, borderColor: fileType === "pdf" ? colors.tint : colors.border }
+                  { flex: 1, justifyContent: "center", backgroundColor: fileType === "pdf" ? "transparent" : colors.card, borderColor: fileType === "pdf" ? "transparent" : colors.border, overflow: "hidden" }
                 ]}
                 onPress={() => setFileType("pdf")}
               >
+                {fileType === "pdf" && (
+                  <LinearGradient
+                    colors={Tokens.gradients.base}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={StyleSheet.absoluteFill}
+                    pointerEvents="none"
+                  />
+                )}
                 <FontAwesome6 name="file-pdf" size={normalize(20)} color={fileType === "pdf" ? "#fff" : colors.text} solid />
                 <CustomText style={[styles.dateText, { color: fileType === "pdf" ? "#fff" : colors.text, fontWeight: "500" }]}>
                   PDF
@@ -320,7 +340,7 @@ const ExportDataScreen = () => {
             onPress={handleExport}
             disabled={loading || !email.trim()}
             useGradient={true}
-            style={{ marginTop: normalize(16), height: normalize(56), borderRadius: normalize(12) }}
+            style={{ marginTop: normalize(16), height: normalize(56), borderRadius: normalize(30) }}
             textStyle={{ fontWeight: "600", fontSize: normalize(16) }}
           />
         </View>
