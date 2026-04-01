@@ -2,45 +2,133 @@ import AppHeader from "@/components/base/AppHeader";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import { useProfile } from "@/features/profile/hooks/useProfile";
 import { hp, normalize, wp } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
+import { requestMediaLibraryPermission } from "@/utils/permissionHelper";
 
 const ProfileScreen = () => {
     const { colors } = useAppTheme();
     const { t } = useTranslation();
 
-    // Mock user data - replace with actual user data from your auth/state management
-    const [userData] = useState({
-        name: "Nguyễn Văn A",
-        email: "nguyenvana@email.com",
-        phone: "+84 912 345 678",
-        dateOfBirth: "15/05/1995",
-        gender: "Nam",
-        address: "Quận 1, TP. Hồ Chí Minh",
-        avatar: null, // or URL string
-    });
+    const { profile, loading, getUserProfile } = useProfile();
+    const [localAvatar, setLocalAvatar] = useState<string | null>(null);
+
+    useFocusEffect(
+        useCallback(() => {
+            getUserProfile();
+        }, [getUserProfile])
+    );
+
+    const userData = useMemo(() => {
+        if (!profile) return {
+            name: "N/A",
+            email: "N/A",
+            phone: "N/A",
+            dateOfBirth: "N/A",
+            gender: "N/A",
+            address: "N/A",
+            nationality: "N/A",
+            place_of_origin: "N/A",
+            place_of_residence: "N/A",
+            identity_number: "N/A",
+            issued_date: "N/A",
+            issued_place: "N/A",
+            avatar: null,
+        };
+
+        const fullName = [profile.last_name, profile.middle_name, profile.first_name].filter(Boolean).join(" ");
+
+        let genderStr = "N/A";
+        if (profile.gender === 1 || profile.gender === "1" || profile.gender === "M") genderStr = t("profile.male", "Nam");
+        else if (profile.gender === 0 || profile.gender === "0" || profile.gender === "F") genderStr = t("profile.female", "Nữ");
+        else if (profile.gender) genderStr = String(profile.gender);
+
+        let dob = profile.date_of_birth || "N/A";
+        if (dob && dob.includes("T")) {
+            const datePart = dob.split("T")[0];
+            const [y, m, d] = datePart.split("-");
+            if (y && m && d) dob = `${d}/${m}/${y}`;
+        }
+
+        let issued = profile.issued_date || "N/A";
+        if (issued && issued.includes("T")) {
+            const datePart = issued.split("T")[0];
+            const [y, m, d] = datePart.split("-");
+            if (y && m && d) issued = `${d}/${m}/${y}`;
+        }
+
+        return {
+            name: fullName || "N/A",
+            email: profile.email || "N/A",
+            phone: profile.phone || "N/A",
+            dateOfBirth: dob,
+            gender: genderStr,
+            address: profile.address || "N/A",
+            nationality: profile.nationality || "N/A",
+            place_of_origin: profile.place_of_origin || "N/A",
+            place_of_residence: profile.place_of_residence || "N/A",
+            identity_number: profile.identity_number || "N/A",
+            issued_date: issued,
+            issued_place: profile.issued_place || "N/A",
+            avatar: localAvatar, // Map from local picked image
+        };
+    }, [profile, t, localAvatar]);
 
     const profileItems = [
-        { icon: "person-outline", label: t("profile.fullname"), value: userData.name },
-        { icon: "mail-outline", label: t("profile.email"), value: userData.email },
-        { icon: "call-outline", label: t("profile.phone"), value: userData.phone },
-        { icon: "calendar-outline", label: t("profile.birthday"), value: userData.dateOfBirth },
-        { icon: "male-female-outline", label: t("profile.gender"), value: userData.gender },
-        { icon: "location-outline", label: t("profile.address"), value: userData.address },
+        { icon: "person-outline", label: t("profile.fullname", "Họ và tên"), value: userData.name },
+        { icon: "mail-outline", label: t("profile.email", "Email"), value: userData.email },
+        { icon: "call-outline", label: t("profile.phone", "Số điện thoại"), value: userData.phone },
+        { icon: "calendar-outline", label: t("profile.birthday", "Ngày sinh"), value: userData.dateOfBirth },
+        { icon: "male-female-outline", label: t("profile.gender", "Giới tính"), value: userData.gender },
+        { icon: "location-outline", label: t("profile.address", "Địa chỉ liên hệ"), value: userData.address },
+        { icon: "flag-outline", label: t("profile.nationality", "Quốc tịch"), value: userData.nationality },
+        { icon: "home-outline", label: t("profile.place_of_origin", "Quê quán"), value: userData.place_of_origin },
+        { icon: "home", label: t("profile.place_of_residence", "Nơi thường trú"), value: userData.place_of_residence },
+        { icon: "card-outline", label: t("profile.identity_number", "Số CMND/CCCD"), value: userData.identity_number },
+        { icon: "calendar", label: t("profile.issued_date", "Ngày cấp"), value: userData.issued_date },
+        { icon: "business-outline", label: t("profile.issued_place", "Nơi cấp"), value: userData.issued_place },
     ];
 
-    const handleChangeAvatar = () => {
-        // Handle avatar change - open image picker
-        console.log("Change avatar");
+    const handleChangeAvatar = async () => {
+        try {
+            const hasPermission = await requestMediaLibraryPermission(
+                t("profile.permission_denied", "Thất bại"),
+                t("profile.need_permission_gallery", "Vui lòng cấp quyền truy cập thư viện ảnh để đổi Avatar!")
+            );
+
+            if (!hasPermission) {
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+            });
+
+            if (!result.canceled) {
+                const uri = result.assets[0].uri;
+                setLocalAvatar(uri);
+                
+                // --- TODO: Tự xử lý phần upload ảnh lên server ---
+                // api.uploadImage(uri).then(url => updateUserProfile({ avatar: url }))
+                console.log("Đã lưu tạm URI của avatar:", uri);
+            }
+        } catch (error) {
+            console.error("Lỗi khi mở thư viện ảnh:", error);
+        }
     };
 
     const handleEditProfile = () => {
-        // Navigate to edit profile screen
-        console.log("Edit profile");
+        router.push("/(protected)/edit-profile");
     };
 
     return (
@@ -53,81 +141,87 @@ const ProfileScreen = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                {/* Profile Header */}
-                <View style={[styles.headerCard, { backgroundColor: colors.card }]}>
-                    <View style={styles.avatarContainer}>
-                        {userData.avatar ? (
-                            <Image source={{ uri: userData.avatar }} style={styles.avatar} />
-                        ) : (
-                            <View style={[styles.avatarPlaceholder, { backgroundColor: colors.tint }]}>
-                                <Ionicons name="person" size={normalize(48)} color="#fff" />
-                            </View>
-                        )}
-                        <TouchableOpacity
-                            style={[styles.cameraButton, { backgroundColor: colors.tint }]}
-                            onPress={handleChangeAvatar}
-                            activeOpacity={0.7}
-                        >
-                            <Ionicons name="camera" size={normalize(18)} color="#fff" />
-                        </TouchableOpacity>
-                    </View>
-
-                    <ThemedText style={[styles.userName, { color: colors.text }]}>
-                        {userData.name}
-                    </ThemedText>
-                    <ThemedText style={[styles.userEmail, { color: colors.icon }]}>
-                        {userData.email}
-                    </ThemedText>
-
-                    <TouchableOpacity
-                        style={[styles.editButton, { backgroundColor: colors.tint }]}
-                        onPress={handleEditProfile}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="create-outline" size={normalize(18)} color="#fff" />
-                        <ThemedText style={styles.editButtonText}>{t("profile.edit_info")}</ThemedText>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Profile Information */}
-                <View style={[styles.card, { backgroundColor: colors.card }]}>
-                    {profileItems.map((item, itemIndex) => (
-                        <View key={itemIndex}>
-                            <View style={styles.infoItem}>
-                                <View style={styles.infoLeft}>
-                                    <View
-                                        style={[
-                                            styles.iconWrapper,
-                                            { backgroundColor: colors.background },
-                                        ]}
-                                    >
-                                        <Ionicons
-                                            name={item.icon as any}
-                                            size={normalize(20)}
-                                            color={colors.tint}
-                                        />
+                {loading && !profile ? (
+                    <ActivityIndicator size="large" color={colors.tint} style={{ marginTop: hp(5) }} />
+                ) : (
+                    <>
+                        {/* Profile Header */}
+                        <View style={[styles.headerCard, { backgroundColor: colors.card }]}>
+                            <View style={styles.avatarContainer}>
+                                {userData.avatar ? (
+                                    <Image source={{ uri: userData.avatar }} style={styles.avatar} />
+                                ) : (
+                                    <View style={[styles.avatarPlaceholder, { backgroundColor: colors.tint }]}>
+                                        <Ionicons name="person" size={normalize(48)} color="#fff" />
                                     </View>
-                                    <ThemedText
-                                        style={[styles.infoLabel, { color: colors.icon }]}
-                                    >
-                                        {item.label}
-                                    </ThemedText>
-                                </View>
-                                <ThemedText
-                                    style={[styles.infoValue, { color: colors.text }]}
-                                    numberOfLines={2}
+                                )}
+                                <TouchableOpacity
+                                    style={[styles.cameraButton, { backgroundColor: colors.tint }]}
+                                    onPress={handleChangeAvatar}
+                                    activeOpacity={0.7}
                                 >
-                                    {item.value}
-                                </ThemedText>
+                                    <Ionicons name="camera" size={normalize(18)} color="#fff" />
+                                </TouchableOpacity>
                             </View>
-                            {itemIndex < profileItems.length - 1 && (
-                                <View
-                                    style={[styles.divider, { backgroundColor: colors.border }]}
-                                />
-                            )}
+
+                            <ThemedText style={[styles.userName, { color: colors.text }]}>
+                                {userData.name}
+                            </ThemedText>
+                            <ThemedText style={[styles.userEmail, { color: colors.icon }]}>
+                                {userData.email}
+                            </ThemedText>
+
+                            <TouchableOpacity
+                                style={[styles.editButton, { backgroundColor: colors.tint }]}
+                                onPress={handleEditProfile}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons name="create-outline" size={normalize(18)} color="#fff" />
+                                <ThemedText style={styles.editButtonText}>{t("profile.edit_info")}</ThemedText>
+                            </TouchableOpacity>
                         </View>
-                    ))}
-                </View>
+
+                        {/* Profile Information */}
+                        <View style={[styles.card, { backgroundColor: colors.card }]}>
+                            {profileItems.map((item, itemIndex) => (
+                                <View key={itemIndex}>
+                                    <View style={styles.infoItem}>
+                                        <View style={styles.infoLeft}>
+                                            <View
+                                                style={[
+                                                    styles.iconWrapper,
+                                                    { backgroundColor: colors.background },
+                                                ]}
+                                            >
+                                                <Ionicons
+                                                    name={item.icon as any}
+                                                    size={normalize(20)}
+                                                    color={colors.tint}
+                                                />
+                                            </View>
+                                            <ThemedText
+                                                style={[styles.infoLabel, { color: colors.icon }]}
+                                            >
+                                                {item.label}
+                                            </ThemedText>
+                                        </View>
+                                        <ThemedText
+                                            style={[styles.infoValue, { color: colors.text }]}
+                                            numberOfLines={2}
+                                        >
+                                            {item.value}
+                                        </ThemedText>
+                                    </View>
+                                    {itemIndex < profileItems.length - 1 && (
+                                        <View
+                                            style={[styles.divider, { backgroundColor: colors.border }]}
+                                        />
+                                    )}
+                                </View>
+                            ))}
+                        </View>
+                    </>
+                )}
             </ScrollView>
         </SafeAreaView>
     );
