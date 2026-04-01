@@ -114,10 +114,11 @@ const CustomButton: React.FC<CustomButtonProps> = ({
         style={[
           styles.button,
           dynamicButtonStyle,
+          (disabled && useGradient) && { opacity: 0.5 },
           style,
         ]}
       >
-        {useGradient && !disabled && variant === 'contained' && (
+        {useGradient && variant === 'contained' && (
           <LinearGradient
             colors={Tokens.gradients.base} 
             start={{ x: 0, y: 0 }}
