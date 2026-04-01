@@ -12,8 +12,10 @@ import { useWalletTracker } from "@/features/wallet/hooks/useWalletTracker";
 import { useCategory } from "@/hooks/useCategory";
 import StorageService from "@/services/StorageService";
 import { WalletSummary } from "@/types/wallet";
+import { lightenColor } from "@/utils/colorsHepper";
 import { hp, normalize, wp } from "@/utils/layout";
-import { FontAwesome6, Ionicons } from "@expo/vector-icons";
+import { FontAwesome6 } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -436,18 +438,18 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
 
 const getWalletTypeLabel = (type: string): string => {
   const typeMap: Record<string, string> = {
-    all_wallets: "Tổng hợp",
-    cash: "Tiền mặt",
-    bank: "Ngân hàng",
-    credit_card: "Thẻ tín dụng",
-    e_wallet: "Ví điện tử",
-    investment: "Đầu tư",
-    other: "Khác",
+    TWCR: "Ví theo dõi",
   };
   return typeMap[type] || type;
 };
 
-/* -------------------- WALLET ITEM -------------------- */
+const getGradientColors = (wallet: WalletSummary): [string, string] => {
+  if (wallet.color) {
+    const lighter = lightenColor(wallet.color, 30);
+    return [wallet.color, lighter];
+  }
+  return ["#3B82F6", lightenColor("#3B82F6", 30)];
+};
 
 interface WalletItemProps {
   wallet: WalletSummary;
@@ -464,62 +466,56 @@ const WalletItem: React.FC<WalletItemProps> = ({
   mode,
   onPress,
 }) => {
-  const { t } = useTranslation();
   return (
     <TouchableOpacity
-      style={[styles.walletItem, { backgroundColor: colors.card }]}
       onPress={onPress}
-      activeOpacity={0.7}
-      disabled={mode === "viewOnly"}
+      activeOpacity={0.86}
+      style={styles.walletCardWrap}
     >
-      <View style={styles.walletLeft}>
-        <View style={[styles.walletIcon, { backgroundColor: wallet.color }]}>
-          <FontAwesome6
-            name={wallet.icon as any}
-            size={normalize(24)}
-            color="#fff"
-          />
+      <LinearGradient
+        colors={getGradientColors(wallet)}
+        start={{ x: 0, y: 1 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.walletCard}
+      >
+        {/* TOP ROW */}
+        <View style={styles.topRow}>
+          <View style={styles.leftTop}>
+            <FontAwesome6
+              name={(wallet.icon as any) || "wallet"}
+              size={normalize(14)}
+              color="#fff"
+            />
+
+            <CustomText style={styles.typeText} numberOfLines={1}>
+              {getWalletTypeLabel(wallet.type)}
+            </CustomText>
+          </View>
+
+          <CustomText style={styles.nameText} numberOfLines={1} type="bold">
+            {wallet.name}
+          </CustomText>
         </View>
 
-        <View style={styles.walletInfo}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <CustomText
-              style={[styles.walletName, { color: colors.text }]}
-              type="semiBold"
-            >
-              {wallet.name}
-            </CustomText>
-
+        {/* BOTTOM ROW */}
+        <View style={styles.bottomRow}>
+          <View>
             {isDefault && (
-              <View
-                style={[styles.defaultTag, { backgroundColor: colors.tint }]}
-              >
-                <CustomText style={styles.defaultTagText} type="semiBold">
-                  {t("wallet.default")}
+              <View style={styles.primaryBadge}>
+                <FontAwesome6 name="star" size={10} color="#E53935" solid />
+                <CustomText style={styles.primaryText}>
+                  Ví chính
                 </CustomText>
               </View>
             )}
           </View>
 
-          <CustomText
-            style={[styles.walletType, { color: colors.icon }]}
-            type="regular"
-          >
-            {getWalletTypeLabel(wallet.type)} •{" "}
-            {wallet.balance.toLocaleString("vi-VN")} {wallet.currency}
+          <CustomText style={styles.balanceText} type="bold">
+            {wallet.balance.toLocaleString("vi-VN")}{" "}
+            {wallet.currency === "VND" ? "đ" : wallet.currency}
           </CustomText>
         </View>
-      </View>
-
-      {mode === "manage" && (
-        <View style={styles.optionsButton}>
-          <Ionicons
-            name="chevron-forward"
-            size={normalize(20)}
-            color={colors.icon}
-          />
-        </View>
-      )}
+      </LinearGradient>
     </TouchableOpacity>
   );
 };
@@ -590,7 +586,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: normalize(16),
-    borderRadius: normalize(16),
+    borderRadius: normalize(30),
   },
   addButtonText: {
     fontSize: normalize(16),
@@ -668,6 +664,67 @@ const styles = StyleSheet.create({
     paddingVertical: normalize(12),
     paddingHorizontal: normalize(16),
     borderRadius: normalize(8),
+  },
+  walletCardWrap: {
+    width: "100%",
+  },
+
+  walletCard: {
+    borderRadius: normalize(18),
+    paddingHorizontal: normalize(18),
+    paddingVertical: normalize(18),
+    minHeight: normalize(110),
+    justifyContent: "space-between",
+  },
+
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  leftTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: normalize(6),
+  },
+
+  typeText: {
+    color: "#fff",
+    fontSize: normalize(14),
+  },
+
+  nameText: {
+    color: "#fff",
+    fontSize: normalize(15),
+    maxWidth: "45%",
+    textAlign: "right",
+  },
+
+  bottomRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+
+  balanceText: {
+    color: "#fff",
+    fontSize: normalize(18),
+  },
+
+  primaryBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF5F5",
+    paddingHorizontal: normalize(8),
+    paddingVertical: normalize(4),
+    borderRadius: normalize(6),
+    gap: normalize(4),
+  },
+
+  primaryText: {
+    color: "#E53935",
+    fontSize: normalize(12),
   },
 });
 

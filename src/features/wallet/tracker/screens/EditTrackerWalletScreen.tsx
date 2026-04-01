@@ -1,9 +1,11 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
+import WalletPreviewCard from '@/components/wallet/WalletPreviewCard';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { useWalletTracker } from '@/features/wallet/hooks/useWalletTracker';
+import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -19,7 +21,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import StorageService from '@/services/StorageService';
 
 const EditTrackerWalletScreen: React.FC = () => {
   const { colors } = useAppTheme();
@@ -42,7 +43,9 @@ const EditTrackerWalletScreen: React.FC = () => {
   const [walletName, setWalletName] = useState((params.wallet_name as string) || '');
   const [currency, setCurrency] = useState((params.default_currency as string) || 'VND');
   const [currencySymbol, setCurrencySymbol] = useState((params.currency_symbol as string) || 'đ');
-  const [currencyName, setCurrencyName] = useState((params.currency_name as string) || 'Vietnamese Dong');
+  const [currencyName, setCurrencyName] = useState(
+    (params.currency_name as string) || 'Vietnamese Dong'
+  );
 
   // Load icon/color/currency từ temp storage (picker screens)
   useFocusEffect(
@@ -144,12 +147,13 @@ const EditTrackerWalletScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Preview Icon */}
-          <View style={styles.iconPreview}>
-            <View style={[styles.iconCircle, { backgroundColor: iconColor }]}>
-              <FontAwesome6 name={icon as any} size={normalize(33)} color="#fff" />
-            </View>
-          </View>
+          {/* Preview Card giống màn Create */}
+          <WalletPreviewCard
+            icon={icon}
+            color={iconColor}
+            walletType="Ví theo dõi"
+            walletName={walletName.trim() || t('wallet.wallet_name_placeholder')}
+          />
 
           {/* Icon & Color pickers */}
           <View style={styles.selectorRow}>
@@ -168,7 +172,9 @@ const EditTrackerWalletScreen: React.FC = () => {
               style={[styles.selectorCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={handleSelectColor}
             >
-              <CustomText style={[styles.selectorLabel, { color: colors.text }]}>{t('wallet.color')}</CustomText>
+              <CustomText style={[styles.selectorLabel, { color: colors.text }]}>
+                {t('wallet.color')}
+              </CustomText>
               <View style={styles.selectorValue}>
                 <View style={[styles.colorDot, { backgroundColor: iconColor }]} />
                 <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
@@ -208,7 +214,11 @@ const EditTrackerWalletScreen: React.FC = () => {
                   </CustomText>
                 </View>
                 <View style={styles.currencyInfo}>
-                  <CustomText style={[styles.currencyNameText, { color: colors.icon }]} type="regular" numberOfLines={1}>
+                  <CustomText
+                    style={[styles.currencyNameText, { color: colors.icon }]}
+                    type="regular"
+                    numberOfLines={1}
+                  >
                     {currencyName}
                   </CustomText>
                   <CustomText style={[styles.currencyCode, { color: colors.text }]} type="semiBold">
@@ -260,22 +270,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   keyboardView: { flex: 1 },
   scrollView: { flex: 1 },
-  iconPreview: {
-    alignItems: 'center',
-    paddingVertical: hp(3),
-  },
-  iconCircle: {
-    width: normalize(80),
-    height: normalize(80),
-    borderRadius: normalize(20),
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
-  },
+
   selectorRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -354,6 +349,7 @@ const styles = StyleSheet.create({
     marginBottom: normalize(2),
   },
   currencyNameText: { fontSize: normalize(13) },
+
   bottomButtons: {
     flexDirection: 'row',
     paddingHorizontal: wp(5),

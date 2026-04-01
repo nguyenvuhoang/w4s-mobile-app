@@ -1,5 +1,6 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
+import WalletPreviewCard from '@/components/wallet/WalletPreviewCard';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
@@ -58,14 +59,12 @@ const SelectWalletColorScreen: React.FC = () => {
       {/* ===== MAIN CONTENT (NO SCROLL) ===== */}
       <View style={styles.content}>
         {/* Preview */}
-        <View style={styles.previewContainer}>
-          <View style={[styles.previewCircle, { backgroundColor: selectedColor }]}>
-            <FontAwesome6 name={icon as any} size={normalize(42)} color="#fff" />
-          </View>
-          <CustomText style={[styles.colorText, { color: colors.text }]}>
-            {selectedColor.toUpperCase()}
-          </CustomText>
-        </View>
+        <WalletPreviewCard
+          icon={icon}
+          color={selectedColor}
+          walletType="Ví theo dõi"
+          walletName="Tên ví"
+        />
 
         {/* Color Picker */}
         <View style={styles.pickerContainer}>

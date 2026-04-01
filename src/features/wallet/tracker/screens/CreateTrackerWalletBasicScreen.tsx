@@ -1,5 +1,6 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
+import WalletPreviewCard from '@/components/wallet/WalletPreviewCard';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import TransactionAmountInput from '@/features/transaction/components/TransactionAmountInput';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
@@ -177,23 +178,12 @@ const CreateWalletDetailsScreen: React.FC = () => {
           keyboardShouldPersistTaps="handled"
         >
           {/* Preview Card */}
-          <View style={styles.iconPreview}>
-            <View style={[styles.previewCard, { backgroundColor: iconColor }]}>
-              <View style={styles.previewLeft}>
-                <View style={styles.previewIconWrap}>
-                  <FontAwesome6 name={icon as any} size={normalize(16)} color="#fff" />
-                </View>
-
-                <CustomText style={styles.previewLeftText} type="semiBold" numberOfLines={1}>
-                  {'Ví theo dõi'}
-                </CustomText>
-              </View>
-
-              <CustomText style={styles.previewRightText} type="bold" numberOfLines={1}>
-                {walletName.trim() || t('wallet.wallet_name_placeholder')}
-              </CustomText>
-            </View>
-          </View>
+          <WalletPreviewCard
+            icon={icon}
+            color={iconColor}
+            walletType="Ví theo dõi"
+            walletName={walletName.trim() || t('wallet.wallet_name_placeholder')}
+          />
 
           <View style={styles.selectorRow}>
             <TouchableOpacity
@@ -341,45 +331,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  iconPreview: {
-    alignItems: 'center',
-    paddingVertical: hp(3),
-    paddingHorizontal: wp(5),
-  },
-  previewCard: {
-    width: '100%',
-    minHeight: normalize(64),
-    borderRadius: normalize(16),
-    paddingHorizontal: normalize(16),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  previewLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: normalize(12),
-  },
-  previewIconWrap: {
-    width: normalize(26),
-    height: normalize(26),
-    borderRadius: normalize(13),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: normalize(8),
-  },
-  previewLeftText: {
-    color: '#FFFFFF',
-    fontSize: normalize(15),
-    flexShrink: 1,
-  },
-  previewRightText: {
-    color: '#FFFFFF',
-    fontSize: normalize(16),
-    textAlign: 'right',
-    maxWidth: '45%',
   },
   selectorRow: {
     flexDirection: 'row',
