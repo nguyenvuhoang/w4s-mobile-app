@@ -1,9 +1,9 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
+import TransactionAmountInput from '@/features/transaction/components/TransactionAmountInput';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { useWalletTracker } from '@/features/wallet/hooks/useWalletTracker';
-import TransactionAmountInput from '@/features/transaction/components/TransactionAmountInput';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
@@ -176,10 +176,22 @@ const CreateWalletDetailsScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Preview Icon */}
+          {/* Preview Card */}
           <View style={styles.iconPreview}>
-            <View style={[styles.iconCircle, { backgroundColor: iconColor }]}>
-              <FontAwesome6 name={icon as any} size={normalize(33)} color="#fff" />
+            <View style={[styles.previewCard, { backgroundColor: iconColor }]}>
+              <View style={styles.previewLeft}>
+                <View style={styles.previewIconWrap}>
+                  <FontAwesome6 name={icon as any} size={normalize(16)} color="#fff" />
+                </View>
+
+                <CustomText style={styles.previewLeftText} type="semiBold" numberOfLines={1}>
+                  {'Ví theo dõi'}
+                </CustomText>
+              </View>
+
+              <CustomText style={styles.previewRightText} type="bold" numberOfLines={1}>
+                {walletName.trim() || t('wallet.wallet_name_placeholder')}
+              </CustomText>
             </View>
           </View>
 
@@ -284,7 +296,6 @@ const CreateWalletDetailsScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Bottom spacing */}
           <View style={{ height: hp(2) }} />
         </ScrollView>
 
@@ -334,18 +345,41 @@ const styles = StyleSheet.create({
   iconPreview: {
     alignItems: 'center',
     paddingVertical: hp(3),
+    paddingHorizontal: wp(5),
   },
-  iconCircle: {
-    width: normalize(80),
-    height: normalize(80),
-    borderRadius: normalize(20),
+  previewCard: {
+    width: '100%',
+    minHeight: normalize(64),
+    borderRadius: normalize(16),
+    paddingHorizontal: normalize(16),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  previewLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: normalize(12),
+  },
+  previewIconWrap: {
+    width: normalize(26),
+    height: normalize(26),
+    borderRadius: normalize(13),
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
+    marginRight: normalize(8),
+  },
+  previewLeftText: {
+    color: '#FFFFFF',
+    fontSize: normalize(15),
+    flexShrink: 1,
+  },
+  previewRightText: {
+    color: '#FFFFFF',
+    fontSize: normalize(16),
+    textAlign: 'right',
+    maxWidth: '45%',
   },
   selectorRow: {
     flexDirection: 'row',
