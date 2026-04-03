@@ -4,15 +4,18 @@ import BottomSelectModal, {
   BottomSelectOption,
 } from "@/components/modals/SelectModal";
 import { ThemedText } from "@/components/themed-text";
+import { useNotification } from "@/contexts/NotificationContext";
 import { Fonts } from "@/core/theme/font";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { hp, normalize, wp } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  Alert,
   Dimensions,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -72,10 +75,10 @@ const CALC_OPTIONS: BottomSelectOption<CalcType>[] = [
 ];
 
 const DEFAULT_FEES: Fee[] = [
-  { id: "f1", label: "Phí quản lý/dịch vụ", amount: 0, type: "monthly" },
-  { id: "f2", label: "Phí mở tài khoản", amount: 0, type: "onetime" },
-  { id: "f3", label: "Phí bảo hiểm khoản vay", amount: 0, type: "monthly" },
-  { id: "f4", label: "Phí trả nợ trước hạn", amount: 0, type: "prepayment" },
+  { id: "f1", label: "interest_calculator.fee_management", amount: 0, type: "monthly" },
+  { id: "f2", label: "interest_calculator.fee_opening", amount: 0, type: "onetime" },
+  { id: "f3", label: "interest_calculator.fee_insurance", amount: 0, type: "monthly" },
+  { id: "f4", label: "interest_calculator.fee_prepayment", amount: 0, type: "prepayment" },
 ];
 
 const FEE_TYPE_LABEL: Record<Fee["type"], string> = {
@@ -85,9 +88,9 @@ const FEE_TYPE_LABEL: Record<Fee["type"], string> = {
 };
 
 const FEE_TYPE_OPTIONS: BottomSelectOption<Fee["type"]>[] = [
-  { label: "Một lần", value: "onetime" },
-  { label: "Hàng tháng", value: "monthly" },
-  { label: "Trả nợ trước hạn", value: "prepayment" },
+  { label: "interest_calculator.fee_type_onetime", value: "onetime" },
+  { label: "interest_calculator.fee_type_monthly", value: "monthly" },
+  { label: "interest_calculator.fee_type_prepayment", value: "prepayment" },
 ];
 
 const { width: SCREEN_W } = Dimensions.get("window");
@@ -113,13 +116,17 @@ const clamp = (v: number, min: number, max: number) =>
 interface MiniChartProps {
   data: { label: string; interest: number; balance: number }[];
   colors: ReturnType<typeof useAppTheme>["colors"];
+  t: any;
 }
 
-const LineChart: React.FC<MiniChartProps> = ({ data, colors }) => {
+const LineChart: React.FC<MiniChartProps> = ({ data, colors, t }) => {
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+
   if (data.length < 2) return null;
 
   const maxInterest = Math.max(...data.map((d) => d.interest), 1);
-  const maxBalance = Math.max(...data.map((d) => d.balance), 1);
+  const minBalance = Math.min(...data.map((d) => d.balance));
+  const maxBalance = Math.max(...data.map((d) => d.balance), minBalance + 1);
   const totalW = CHART_W - normalize(24);
   const step = totalW / (data.length - 1);
 
@@ -166,7 +173,7 @@ const LineChart: React.FC<MiniChartProps> = ({ data, colors }) => {
   }));
   const balancePts = data.map((d, i) => ({
     x: toX(i),
-    y: toY(d.balance, maxBalance),
+    y: CHART_H - clamp(((d.balance - minBalance) / (maxBalance - minBalance)) * CHART_H, 2, CHART_H - 10),
   }));
 
   return (
@@ -193,6 +200,11 @@ const LineChart: React.FC<MiniChartProps> = ({ data, colors }) => {
           }}
         />
       ))}
+
+      {/* Y Axis Min/Max Labels */}
+      <ThemedText style={{ position: "absolute", top: -normalize(18), left: 0, fontSize: normalize(9), color: colors.icon }}>
+        Max: {fmt(maxBalance)} đ
+      </ThemedText>
 
       {/* Balance line (mờ) */}
       {renderLine(balancePts, colors.tint, 0.2, 2)}
@@ -239,11 +251,65 @@ const LineChart: React.FC<MiniChartProps> = ({ data, colors }) => {
                 fontFamily: Fonts.regular,
               }}
             >
-              T{d.label}
+              {t("interest_calculator.table_month").slice(0, 1)}{d.label}
             </ThemedText>
           );
         return null;
       })}
+
+      {/* Touch Tooltip overlay */}
+      <View style={{ ...StyleSheet.absoluteFillObject, flexDirection: "row", bottom: normalize(24) }}>
+        {data.map((d, i) => (
+          <TouchableOpacity
+            key={`touch-${i}`}
+            style={{ flex: 1, zIndex: 10 }}
+            onPress={() => setSelectedIdx(i)}
+            activeOpacity={1}
+          />
+        ))}
+      </View>
+
+      {/* Tooltip Content */}
+      {selectedIdx !== null && (
+        <>
+          <View
+            style={{
+              position: "absolute",
+              left: Math.max(0, Math.min(toX(selectedIdx) - normalize(65), CHART_W - normalize(130))),
+              top: -normalize(25),
+              backgroundColor: colors.text,
+              padding: normalize(6),
+              borderRadius: normalize(8),
+              minWidth: normalize(130),
+              alignItems: "center",
+              zIndex: 20,
+            }}
+            pointerEvents="none"
+          >
+            <ThemedText style={{ color: colors.background, fontSize: normalize(10), fontFamily: Fonts.bold }}>
+              {t("interest_calculator.table_month")} {data[selectedIdx].label}
+            </ThemedText>
+            <ThemedText style={{ color: colors.background, fontSize: normalize(9), fontFamily: Fonts.regular }}>
+              {t("interest_calculator.chart_balance")}: {fmt(data[selectedIdx].balance)} đ
+            </ThemedText>
+            <ThemedText style={{ color: colors.background, fontSize: normalize(9), fontFamily: Fonts.regular }}>
+              {t("interest_calculator.chart_interest")}: {fmt(data[selectedIdx].interest)} đ
+            </ThemedText>
+          </View>
+          <View
+            style={{
+              position: "absolute",
+              left: toX(selectedIdx),
+              top: 0,
+              bottom: normalize(24),
+              width: 1,
+              backgroundColor: colors.tint,
+              opacity: 0.5,
+              zIndex: 5,
+            }}
+          />
+        </>
+      )}
     </View>
   );
 };
@@ -254,7 +320,32 @@ const LineChart: React.FC<MiniChartProps> = ({ data, colors }) => {
 
 const InterestCalculatorScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { showNotification } = useNotification();
+
+  const FEE_TYPE_LABEL: Record<Fee["type"], string> = {
+    onetime: t("interest_calculator.fee_type_onetime"),
+    monthly: t("interest_calculator.fee_type_monthly"),
+    prepayment: t("interest_calculator.fee_type_prepayment"),
+  };
+
+  const PERIOD_OPTIONS_DISPLAY = useMemo(
+    () =>
+      PERIOD_OPTIONS.map((opt) => ({
+        ...opt,
+        label: t("interest_calculator.month_count", { count: opt.value }),
+      })),
+    [t]
+  );
+
+  const CALC_OPTIONS_DISPLAY = useMemo(
+    () => [
+      { label: t("interest_calculator.simple_interest"), value: "simple" as CalcType },
+      { label: t("interest_calculator.compound_interest"), value: "compound" as CalcType },
+    ],
+    [t]
+  );
 
   /* ── Basic inputs ── */
   const [principal, setPrincipal] = useState<number>(0);
@@ -302,11 +393,17 @@ const InterestCalculatorScreen: React.FC = () => {
   const addRatePeriod = () => {
     const start = parseInt(newRateStart) || 0;
     if (start < 1 || start > period.value) {
-      Alert.alert("Lỗi", `Tháng bắt đầu phải từ 1 đến ${period.value}`);
+      showNotification(
+        t("interest_calculator.err_invalid_month", { max: period.value }),
+        "error"
+      );
       return;
     }
     if (ratePeriods.find((p) => p.startMonth === start)) {
-      Alert.alert("Lỗi", `Đã có mức lãi suất từ tháng ${start}`);
+      showNotification(
+        t("interest_calculator.err_duplicate_month", { month: start }),
+        "error"
+      );
       return;
     }
     setRatePeriods((prev) =>
@@ -351,7 +448,7 @@ const InterestCalculatorScreen: React.FC = () => {
 
   const addCustomFee = () => {
     if (!newFeeLabel.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập tên phí");
+      showNotification(t("interest_calculator.err_empty_fee_name"), "error");
       return;
     }
     const fee: Fee = {
@@ -402,10 +499,7 @@ const InterestCalculatorScreen: React.FC = () => {
 
       const feesThisMonth = (m === 1 ? onetimeFees : 0) + monthlyFeeTotal;
 
-      const newBalance =
-        calcType.value === "compound"
-          ? balance + interestThisMonth
-          : balance;
+      const newBalance = balance + interestThisMonth;
 
       rows.push({
         month: m,
@@ -443,139 +537,217 @@ const InterestCalculatorScreen: React.FC = () => {
       edges={["top", "left", "right"]}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <AppHeader title="Tính lãi suất" showBackButton />
+      <AppHeader title={t("interest_calculator.title")} showBackButton />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: hp(4) + insets.bottom },
-        ]}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        <ThemedText style={[styles.subtitle, iconColor]}>
-          Ước tính lãi khi gửi tiết kiệm hoặc vay
-        </ThemedText>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: hp(4) + insets.bottom },
+          ]}
+        >
+          <ThemedText style={[styles.subtitle, iconColor]}>
+            {t("interest_calculator.subtitle")}
+          </ThemedText>
 
-        {/* ══════════ CARD 1: Thông tin cơ bản ══════════ */}
-        <SectionCard title="Thông tin khoản tiền" colors={colors}>
-          <View style={styles.fieldGroup}>
-            <ThemedText style={[styles.label, textColor]}>Số tiền gốc</ThemedText>
-            <MoneyInput
-              value={principal}
-              onChange={setPrincipal}
-              currency="đ"
-              placeholder="Nhập số tiền"
-            />
-          </View>
-
-          <Divider colors={colors} />
-
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <ThemedText style={[styles.label, textColor]}>Kỳ hạn</ThemedText>
-              <SelectButton
-                label={period.label}
-                onPress={() => setPeriodModal(true)}
-                colors={colors}
+          {/* ══════════ CARD 1: Thông tin cơ bản ══════════ */}
+          <SectionCard title={t("interest_calculator.card_basic_info")} colors={colors}>
+            <View style={styles.fieldGroup}>
+              <ThemedText style={[styles.label, textColor]}>{t("interest_calculator.principal")}</ThemedText>
+              <MoneyInput
+                value={principal}
+                onChange={setPrincipal}
+                currency="đ"
+                placeholder={t("interest_calculator.principal_placeholder")}
               />
             </View>
-            <View style={styles.half}>
-              <ThemedText style={[styles.label, textColor]}>Cách tính lãi</ThemedText>
-              <SelectButton
-                label={calcType.label}
-                onPress={() => setCalcModal(true)}
-                colors={colors}
-              />
-            </View>
-          </View>
-        </SectionCard>
 
-        {/* ══════════ CARD 2: Lãi suất ══════════ */}
-        <SectionCard title="Lãi suất" colors={colors}>
-          {/* Toggle fixed / floating */}
-          <View style={[styles.segmentRow, { backgroundColor: colors.background }]}>
-            {(["fixed", "floating"] as RateMode[]).map((mode) => (
-              <TouchableOpacity
-                key={mode}
-                style={[
-                  styles.segmentBtn,
-                  rateMode === mode && { backgroundColor: colors.tint },
-                ]}
-                onPress={() => setRateMode(mode)}
-                activeOpacity={0.8}
-              >
-                <ThemedText
+            <Divider colors={colors} />
+
+            <View style={styles.row}>
+              <View style={styles.half}>
+                <ThemedText style={[styles.label, textColor]}>{t("interest_calculator.period")}</ThemedText>
+                <SelectButton
+                  label={t("interest_calculator.month_count", { count: period.value })}
+                  onPress={() => setPeriodModal(true)}
+                  colors={colors}
+                />
+              </View>
+              <View style={styles.half}>
+                <ThemedText style={[styles.label, textColor]}>{t("interest_calculator.calc_type")}</ThemedText>
+                <SelectButton
+                  label={t(`interest_calculator.${calcType.value}_interest`)}
+                  onPress={() => setCalcModal(true)}
+                  colors={colors}
+                />
+              </View>
+            </View>
+          </SectionCard>
+
+          {/* ══════════ CARD 2: Lãi suất ══════════ */}
+          <SectionCard title={t("interest_calculator.rate")} colors={colors}>
+            {/* Toggle fixed / floating */}
+            <View style={[styles.segmentRow, { backgroundColor: colors.background }]}>
+              {(["fixed", "floating"] as RateMode[]).map((mode) => (
+                <TouchableOpacity
+                  key={mode}
                   style={[
-                    styles.segmentLabel,
-                    { color: rateMode === mode ? "#fff" : colors.icon },
+                    styles.segmentBtn,
+                    rateMode === mode && { backgroundColor: colors.tint },
                   ]}
+                  onPress={() => setRateMode(mode)}
+                  activeOpacity={0.8}
                 >
-                  {mode === "fixed" ? "🔒 Cố định" : "📈 Thả nổi"}
-                </ThemedText>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {rateMode === "fixed" ? (
-            <View style={[styles.rateWrapper, borderColor]}>
-              <TextInput
-                value={fixedRate}
-                onChangeText={(t) => {
-                  const c = t.replace(/[^\d.]/g, "");
-                  if (c.split(".").length > 2) return;
-                  setFixedRate(c);
-                }}
-                keyboardType="decimal-pad"
-                placeholder="0.00"
-                placeholderTextColor={colors.icon}
-                style={[styles.rateInput, textColor]}
-              />
-              <ThemedText style={[styles.rateSuffix, iconColor]}>%/năm</ThemedText>
+                  <ThemedText
+                    style={[
+                      styles.segmentLabel,
+                      { color: rateMode === mode ? "#fff" : colors.icon },
+                    ]}
+                  >
+                    {t(`interest_calculator.${mode}`)}
+                  </ThemedText>
+                </TouchableOpacity>
+              ))}
             </View>
-          ) : (
-            /* Floating: rate periods */
-            <View style={styles.floatingGrid}>
-              <ThemedText style={[styles.hintText, iconColor]}>
-                Mỗi mức lãi áp dụng từ tháng bắt đầu đến khi có mức mới.
-              </ThemedText>
 
-              {ratePeriods.map((rp, idx) => {
-                const nextStart = ratePeriods[idx + 1]?.startMonth;
-                const toMonth = nextStart ? nextStart - 1 : period.value;
-                const isFirst = rp.startMonth === 1 && ratePeriods.length > 1;
+            {rateMode === "fixed" ? (
+              <View style={[styles.rateWrapper, borderColor]}>
+                <TextInput
+                  value={fixedRate}
+                  onChangeText={(t) => {
+                    const c = t.replace(/[^\d.]/g, "");
+                    if (c.split(".").length > 2) return;
+                    setFixedRate(c);
+                  }}
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                  placeholderTextColor={colors.icon}
+                  style={[styles.rateInput, textColor]}
+                />
+                <ThemedText style={[styles.rateSuffix, iconColor]}>{t("interest_calculator.annual_rate")}</ThemedText>
+              </View>
+            ) : (
+              /* Floating: rate periods */
+              <View style={styles.floatingGrid}>
+                <ThemedText style={[styles.hintText, iconColor]}>
+                  {t("interest_calculator.floating_hint")}
+                </ThemedText>
 
-                return (
-                  <View key={rp.id} style={styles.feeRow}>
-                    <View style={styles.feeInfo}>
-                      <ThemedText style={[styles.feeLabel, textColor]}>
-                        Tháng {rp.startMonth}
-                        {toMonth !== rp.startMonth ? ` – ${toMonth}` : ""}
-                      </ThemedText>
-                      <ThemedText style={[styles.feeType, iconColor]}>
-                        {isFirst ? "Lãi suất ban đầu" : "Điều chỉnh lãi suất"}
-                      </ThemedText>
+                {ratePeriods.map((rp, idx) => {
+                  const nextStart = ratePeriods[idx + 1]?.startMonth;
+                  const toMonth = nextStart ? nextStart - 1 : period.value;
+                  const isFirst = rp.startMonth === 1;
+
+                  return (
+                    <View key={rp.id} style={styles.feeRow}>
+                      <View style={styles.feeInfo}>
+                        <ThemedText style={[styles.feeLabel, textColor]}>
+                          {t("interest_calculator.table_month")} {rp.startMonth}
+                          {toMonth !== rp.startMonth ? ` – ${toMonth}` : ""}
+                        </ThemedText>
+                        <ThemedText style={[styles.feeType, iconColor]}>
+                          {isFirst ? t("interest_calculator.initial_rate") : t("interest_calculator.adjust_rate")}
+                        </ThemedText>
+                      </View>
+                      <View
+                        style={[
+                          styles.monthRateInput,
+                          borderColor,
+                          { flex: 0, width: normalize(110) },
+                        ]}
+                      >
+                        <TextInput
+                          value={rp.rate}
+                          onChangeText={(t) => updateRatePeriodValue(rp.id, t)}
+                          keyboardType="decimal-pad"
+                          placeholder="0"
+                          placeholderTextColor={colors.icon}
+                          style={[styles.monthRateText, textColor]}
+                        />
+                        <ThemedText style={[styles.rateSuffix, iconColor]}>%</ThemedText>
+                      </View>
+                      {ratePeriods.length > 1 && (
+                        <TouchableOpacity
+                          onPress={() => removeRatePeriod(rp.id)}
+                          style={styles.removeBtn}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Ionicons
+                            name="close-circle"
+                            size={normalize(18)}
+                            color={colors.icon}
+                          />
+                        </TouchableOpacity>
+                      )}
                     </View>
-                    <View
-                      style={[
-                        styles.monthRateInput,
-                        borderColor,
-                        { flex: 0, width: normalize(110) },
-                      ]}
+                  );
+                })}
+
+                {/* Add rate period button */}
+                <TouchableOpacity
+                  style={[styles.addFeeBtn, { borderColor: colors.tint }]}
+                  onPress={() => {
+                    const usedMonths = new Set(ratePeriods.map((p) => p.startMonth));
+                    let suggested = 2;
+                    while (usedMonths.has(suggested) && suggested <= period.value)
+                      suggested++;
+                    setNewRateStart(
+                      suggested <= period.value ? String(suggested) : ""
+                    );
+                    setNewRateValue(
+                      ratePeriods[ratePeriods.length - 1]?.rate ?? "0"
+                    );
+                    setAddRateModal(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={normalize(18)}
+                    color={colors.tint}
+                  />
+                  <ThemedText style={[styles.addFeeLabel, { color: colors.tint }]}>
+                    {t("interest_calculator.add_rate")}
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
+            )}
+          </SectionCard>
+
+          {/* ══════════ CARD 3: Phí ══════════ */}
+          <SectionCard title={t("interest_calculator.fees")} colors={colors}>
+            {fees.map((fee, idx) => (
+              <View key={fee.id}>
+                {idx > 0 && <Divider colors={colors} />}
+                <View style={styles.feeRow}>
+                  <View style={styles.feeInfo}>
+                    <ThemedText
+                      style={[styles.feeLabel, textColor]}
+                      numberOfLines={1}
                     >
-                      <TextInput
-                        value={rp.rate}
-                        onChangeText={(t) => updateRatePeriodValue(rp.id, t)}
-                        keyboardType="decimal-pad"
-                        placeholder="0"
-                        placeholderTextColor={colors.icon}
-                        style={[styles.monthRateText, textColor]}
-                      />
-                      <ThemedText style={[styles.rateSuffix, iconColor]}>%</ThemedText>
-                    </View>
-                    {ratePeriods.length > 1 && (
+                      {t(fee.label)}
+                    </ThemedText>
+                    <ThemedText style={[styles.feeType, iconColor]}>
+                      {FEE_TYPE_LABEL[fee.type]}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.feeRight}>
+                    <MoneyInput
+                      containerStyle={{ flex: 1, height: normalize(40), paddingHorizontal: normalize(8) }}
+                      inputStyle={{ fontSize: normalize(14) }}
+                      value={fee.amount}
+                      onChange={(v) => updateFeeAmount(fee.id, v)}
+                      currency="đ"
+                      placeholder="0"
+                    />
+                    {fee.editable && (
                       <TouchableOpacity
-                        onPress={() => removeRatePeriod(rp.id)}
+                        onPress={() => removeFee(fee.id)}
                         style={styles.removeBtn}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
@@ -587,279 +759,213 @@ const InterestCalculatorScreen: React.FC = () => {
                       </TouchableOpacity>
                     )}
                   </View>
-                );
-              })}
-
-              {/* Add rate period button */}
-              <TouchableOpacity
-                style={[styles.addFeeBtn, { borderColor: colors.tint }]}
-                onPress={() => {
-                  const usedMonths = new Set(ratePeriods.map((p) => p.startMonth));
-                  let suggested = 2;
-                  while (usedMonths.has(suggested) && suggested <= period.value)
-                    suggested++;
-                  setNewRateStart(
-                    suggested <= period.value ? String(suggested) : ""
-                  );
-                  setNewRateValue(
-                    ratePeriods[ratePeriods.length - 1]?.rate ?? "0"
-                  );
-                  setAddRateModal(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name="add-circle-outline"
-                  size={normalize(18)}
-                  color={colors.tint}
-                />
-                <ThemedText style={[styles.addFeeLabel, { color: colors.tint }]}>
-                  Thêm mức lãi suất
-                </ThemedText>
-              </TouchableOpacity>
-            </View>
-          )}
-        </SectionCard>
-
-        {/* ══════════ CARD 3: Phí ══════════ */}
-        <SectionCard title="Phí & Chi phí" colors={colors}>
-          {fees.map((fee, idx) => (
-            <View key={fee.id}>
-              {idx > 0 && <Divider colors={colors} />}
-              <View style={styles.feeRow}>
-                <View style={styles.feeInfo}>
-                  <ThemedText
-                    style={[styles.feeLabel, textColor]}
-                    numberOfLines={1}
-                  >
-                    {fee.label}
-                  </ThemedText>
-                  <ThemedText style={[styles.feeType, iconColor]}>
-                    {FEE_TYPE_LABEL[fee.type]}
-                  </ThemedText>
-                </View>
-                <View style={styles.feeRight}>
-                  <MoneyInput
-                    value={fee.amount}
-                    onChange={(v) => updateFeeAmount(fee.id, v)}
-                    currency="đ"
-                    placeholder="0"
-                  />
-                  {fee.editable && (
-                    <TouchableOpacity
-                      onPress={() => removeFee(fee.id)}
-                      style={styles.removeBtn}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <Ionicons
-                        name="close-circle"
-                        size={normalize(18)}
-                        color={colors.icon}
-                      />
-                    </TouchableOpacity>
-                  )}
                 </View>
               </View>
-            </View>
-          ))}
+            ))}
 
-          <TouchableOpacity
-            style={[styles.addFeeBtn, { borderColor: colors.tint }]}
-            onPress={() => setAddFeeModal(true)}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="add-circle-outline"
-              size={normalize(18)}
-              color={colors.tint}
-            />
-            <ThemedText style={[styles.addFeeLabel, { color: colors.tint }]}>
-              Thêm phí khác
-            </ThemedText>
-          </TouchableOpacity>
-        </SectionCard>
+            <TouchableOpacity
+              style={[styles.addFeeBtn, { borderColor: colors.tint }]}
+              onPress={() => setAddFeeModal(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="add-circle-outline"
+                size={normalize(18)}
+                color={colors.tint}
+              />
+              <ThemedText style={[styles.addFeeLabel, { color: colors.tint }]}>
+                {t("interest_calculator.add_fee")}
+              </ThemedText>
+            </TouchableOpacity>
+          </SectionCard>
 
-        {/* ══════════ CARD 4: Kết quả ══════════ */}
-        <SectionCard title="Kết quả dự kiến" colors={colors}>
-          {principal <= 0 ? (
-            <ThemedText style={[styles.emptyHint, iconColor]}>
-              Nhập số tiền gốc để xem kết quả
-            </ThemedText>
-          ) : (
-            <>
-              <ResultRow
-                label="Tiền lãi tích lũy"
-                value={`${fmt(summary.totalInterest)} đ`}
-                colors={colors}
-              />
-              <Divider colors={colors} />
-              <ResultRow
-                label="Tổng phí"
-                value={`${fmt(summary.totalFees)} đ`}
-                colors={colors}
-                valueColor={colors.icon}
-              />
-              {summary.prepayFee > 0 && (
+          {/* ══════════ CARD 4: Kết quả ══════════ */}
+          <SectionCard title={t("interest_calculator.results")} colors={colors}>
+            {principal <= 0 ? (
+              <ThemedText style={[styles.emptyHint, iconColor]}>
+                {t("interest_calculator.input_principal_hint")}
+              </ThemedText>
+            ) : (
+              <>
                 <ResultRow
-                  label="Phí trả trước hạn"
-                  value={`${fmt(summary.prepayFee)} đ`}
+                  label={t("interest_calculator.total_interest")}
+                  value={`${fmt(summary.totalInterest)} đ`}
+                  colors={colors}
+                />
+                <Divider colors={colors} />
+                <ResultRow
+                  label={t("interest_calculator.total_fees")}
+                  value={`${fmt(summary.totalFees)} đ`}
                   colors={colors}
                   valueColor={colors.icon}
                 />
-              )}
-              <Divider colors={colors} />
-              <ResultRow
-                label="Tổng nhận cuối kỳ"
-                value={`${fmt(summary.finalBalance)} đ`}
-                colors={colors}
-                valueColor={colors.tint}
-                large
-              />
-              <ThemedText style={[styles.disclaimer, iconColor]}>
-                * Kết quả mang tính tham khảo, có thể khác so với thực tế
-              </ThemedText>
-            </>
-          )}
-        </SectionCard>
-
-        {/* ══════════ CARD 5: Lịch lãi suất ══════════ */}
-        {schedule.length > 0 && (
-          <SectionCard title="Lịch lãi suất theo tháng" colors={colors}>
-            <View
-              style={[styles.tabRow, { backgroundColor: colors.background }]}
-            >
-              {(["table", "chart"] as const).map((tab) => (
-                <TouchableOpacity
-                  key={tab}
-                  style={[
-                    styles.tabBtn,
-                    scheduleTab === tab && { backgroundColor: colors.tint },
-                  ]}
-                  onPress={() => setScheduleTab(tab)}
-                >
-                  <ThemedText
-                    style={[
-                      styles.tabLabel,
-                      { color: scheduleTab === tab ? "#fff" : colors.icon },
-                    ]}
-                  >
-                    {tab === "table" ? "📋 Bảng" : "📊 Biểu đồ"}
-                  </ThemedText>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {scheduleTab === "table" ? (
-              <View>
-                <View
-                  style={[
-                    styles.tableHeader,
-                    { backgroundColor: colors.background },
-                  ]}
-                >
-                  {["Tháng", "LS (%)", "Tiền lãi", "Phí", "Số dư"].map((h) => (
-                    <ThemedText key={h} style={[styles.thCell, iconColor]}>
-                      {h}
-                    </ThemedText>
-                  ))}
-                </View>
-                {schedule.map((row, idx) => (
-                  <View
-                    key={row.month}
-                    style={[
-                      styles.tableRow,
-                      idx % 2 === 0 && {
-                        backgroundColor: colors.background + "60",
-                      },
-                    ]}
-                  >
-                    <ThemedText style={[styles.tdCell, textColor]}>
-                      {row.month}
-                    </ThemedText>
-                    <ThemedText style={[styles.tdCell, textColor]}>
-                      {row.rate.toFixed(1)}
-                    </ThemedText>
-                    <ThemedText
-                      style={[styles.tdCell, { color: colors.tint }]}
-                      numberOfLines={1}
-                    >
-                      {fmt(row.interest)}
-                    </ThemedText>
-                    <ThemedText
-                      style={[styles.tdCell, iconColor]}
-                      numberOfLines={1}
-                    >
-                      {fmt(row.fees)}
-                    </ThemedText>
-                    <ThemedText
-                      style={[styles.tdCell, textColor]}
-                      numberOfLines={1}
-                    >
-                      {fmt(row.balance)}
-                    </ThemedText>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <View>
-                <View style={styles.legendRow}>
-                  <View
-                    style={[
-                      styles.legendDot,
-                      { backgroundColor: colors.tint },
-                    ]}
+                {summary.prepayFee > 0 && (
+                  <ResultRow
+                    label={t("interest_calculator.prepayment_fee")}
+                    value={`${fmt(summary.prepayFee)} đ`}
+                    colors={colors}
+                    valueColor={colors.icon}
                   />
-                  <ThemedText style={[styles.legendLabel, iconColor]}>
-                    Tiền lãi
-                  </ThemedText>
-                  <View
-                    style={[
-                      styles.legendDot,
-                      { backgroundColor: colors.tint, opacity: 0.25 },
-                    ]}
-                  />
-                  <ThemedText style={[styles.legendLabel, iconColor]}>
-                    Số dư
-                  </ThemedText>
-                </View>
-                <LineChart
-                  data={schedule.map((r) => ({
-                    label: String(r.month),
-                    interest: r.interest,
-                    balance: r.balance,
-                  }))}
+                )}
+                <Divider colors={colors} />
+                <ResultRow
+                  label={t("interest_calculator.final_balance")}
+                  value={`${fmt(summary.finalBalance)} đ`}
                   colors={colors}
+                  valueColor={colors.tint}
+                  large
                 />
-                <ThemedText style={[styles.chartHint, iconColor]}>
-                  Đường đậm = tiền lãi · Đường mờ = số dư tích lũy
+                <ThemedText style={[styles.disclaimer, iconColor]}>
+                  {t("interest_calculator.disclaimer")}
                 </ThemedText>
-              </View>
+              </>
             )}
           </SectionCard>
-        )}
-      </ScrollView>
+
+          {/* ══════════ CARD 5: Lịch lãi suất ══════════ */}
+          {schedule.length > 0 && (
+            <SectionCard title={t("interest_calculator.schedule")} colors={colors}>
+              <View
+                style={[styles.tabRow, { backgroundColor: colors.background }]}
+              >
+                {(["table", "chart"] as const).map((tab) => (
+                  <TouchableOpacity
+                    key={tab}
+                    style={[
+                      styles.tabBtn,
+                      scheduleTab === tab && { backgroundColor: colors.tint },
+                    ]}
+                    onPress={() => setScheduleTab(tab)}
+                  >
+                    <ThemedText
+                      style={[
+                        styles.tabLabel,
+                        { color: scheduleTab === tab ? "#fff" : colors.icon },
+                      ]}
+                    >
+                      {t(`interest_calculator.tab_${tab}`)}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {scheduleTab === "table" ? (
+                <View>
+                  <View
+                    style={[
+                      styles.tableHeader,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <ThemedText style={[styles.thCell, iconColor]}>{t("interest_calculator.table_month")}</ThemedText>
+                    <ThemedText style={[styles.thCell, iconColor]}>{t("interest_calculator.table_rate")}</ThemedText>
+                    <ThemedText style={[styles.thCell, iconColor]}>{t("interest_calculator.table_interest")}</ThemedText>
+                    <ThemedText style={[styles.thCell, iconColor]}>{t("interest_calculator.table_fees")}</ThemedText>
+                    <ThemedText style={[styles.thCell, iconColor]}>{t("interest_calculator.table_balance")}</ThemedText>
+                  </View>
+                  {schedule.map((row, idx) => (
+                    <View
+                      key={row.month}
+                      style={[
+                        styles.tableRow,
+                        idx % 2 === 0 && {
+                          backgroundColor: colors.background + "60",
+                        },
+                      ]}
+                    >
+                      <ThemedText style={[styles.tdCell, textColor]}>
+                        {row.month}
+                      </ThemedText>
+                      <ThemedText style={[styles.tdCell, textColor]}>
+                        {row.rate.toFixed(1)}
+                      </ThemedText>
+                      <ThemedText
+                        style={[styles.tdCell, { color: colors.tint }]}
+                        numberOfLines={1}
+                      >
+                        {fmt(row.interest)}
+                      </ThemedText>
+                      <ThemedText
+                        style={[styles.tdCell, iconColor]}
+                        numberOfLines={1}
+                      >
+                        {fmt(row.fees)}
+                      </ThemedText>
+                      <ThemedText
+                        style={[styles.tdCell, textColor]}
+                        numberOfLines={1}
+                      >
+                        {fmt(row.balance)}
+                      </ThemedText>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View>
+                  <View style={styles.legendRow}>
+                    <View
+                      style={[
+                        styles.legendDot,
+                        { backgroundColor: colors.tint },
+                      ]}
+                    />
+                    <ThemedText style={[styles.legendLabel, iconColor]}>
+                      {t("interest_calculator.chart_interest")}
+                    </ThemedText>
+                    <View
+                      style={[
+                        styles.legendDot,
+                        { backgroundColor: colors.tint, opacity: 0.25 },
+                      ]}
+                    />
+                    <ThemedText style={[styles.legendLabel, iconColor]}>
+                      {t("interest_calculator.chart_balance")}
+                    </ThemedText>
+                  </View>
+                  <LineChart
+                    data={schedule.reduce<{ label: string, interest: number, balance: number }[]>((acc, r, i) => {
+                      const prevInterest = i > 0 ? acc[i - 1].interest : 0;
+                      acc.push({
+                        label: String(r.month),
+                        interest: prevInterest + r.interest,
+                        balance: r.balance,
+                      });
+                      return acc;
+                    }, [])}
+                    colors={colors}
+                    t={t}
+                  />
+                  <ThemedText style={[styles.chartHint, iconColor]}>
+                    {t("interest_calculator.chart_hint")}
+                  </ThemedText>
+                </View>
+              )}
+            </SectionCard>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* ════════ MODALS ════════ */}
       <BottomSelectModal
         visible={periodModal}
-        title="Chọn kỳ hạn"
-        options={PERIOD_OPTIONS}
+        title={t("interest_calculator.period")}
+        options={PERIOD_OPTIONS_DISPLAY}
         selectedValue={period.value}
         onClose={() => setPeriodModal(false)}
         onSelect={handlePeriodChange}
       />
       <BottomSelectModal
         visible={calcModal}
-        title="Cách tính lãi"
-        options={CALC_OPTIONS}
+        title={t("interest_calculator.calc_type")}
+        options={CALC_OPTIONS_DISPLAY}
         selectedValue={calcType.value}
         onClose={() => setCalcModal(false)}
         onSelect={setCalcType}
       />
       <BottomSelectModal
         visible={feeTypeModal}
-        title="Loại phí"
-        options={FEE_TYPE_OPTIONS}
+        title={t("interest_calculator.fee_type")}
+        options={FEE_TYPE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }))}
         selectedValue={newFeeType}
         onClose={() => setFeeTypeModal(false)}
         onSelect={(opt) => setNewFeeType(opt.value)}
@@ -872,14 +978,17 @@ const InterestCalculatorScreen: React.FC = () => {
         animationType="slide"
         onRequestClose={() => setAddRateModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
           <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
             <ThemedText style={[styles.modalTitle, textColor]}>
-              Thêm mức lãi suất
+              {t("interest_calculator.modal_add_rate")}
             </ThemedText>
 
             <ThemedText style={[styles.label, textColor]}>
-              Áp dụng từ tháng (1 – {period.value})
+              {t("interest_calculator.start_month", { max: period.value })}
             </ThemedText>
             <TextInput
               value={newRateStart}
@@ -894,7 +1003,7 @@ const InterestCalculatorScreen: React.FC = () => {
             />
 
             <ThemedText style={[styles.label, textColor]}>
-              Lãi suất (%/năm)
+              {t("interest_calculator.rate")} ({t("interest_calculator.annual_rate")})
             </ThemedText>
             <View style={[styles.rateWrapper, { borderColor: colors.border }]}>
               <TextInput
@@ -910,7 +1019,7 @@ const InterestCalculatorScreen: React.FC = () => {
                 style={[styles.rateInput, textColor]}
               />
               <ThemedText style={[styles.rateSuffix, iconColor]}>
-                %/năm
+                {t("interest_calculator.annual_rate")}
               </ThemedText>
             </View>
 
@@ -923,7 +1032,7 @@ const InterestCalculatorScreen: React.FC = () => {
                 onPress={() => setAddRateModal(false)}
               >
                 <ThemedText style={[styles.modalBtnLabel, iconColor]}>
-                  Huỷ
+                  {t("common.cancel")}
                 </ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
@@ -931,12 +1040,12 @@ const InterestCalculatorScreen: React.FC = () => {
                 onPress={addRatePeriod}
               >
                 <ThemedText style={[styles.modalBtnLabel, { color: "#fff" }]}>
-                  Thêm
+                  {t("common.add")}
                 </ThemedText>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Add Fee Modal */}
@@ -946,17 +1055,20 @@ const InterestCalculatorScreen: React.FC = () => {
         animationType="slide"
         onRequestClose={() => setAddFeeModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
           <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
             <ThemedText style={[styles.modalTitle, textColor]}>
-              Thêm phí mới
+              {t("interest_calculator.modal_add_fee")}
             </ThemedText>
 
-            <ThemedText style={[styles.label, textColor]}>Tên phí</ThemedText>
+            <ThemedText style={[styles.label, textColor]}>{t("interest_calculator.fee_name")}</ThemedText>
             <TextInput
               value={newFeeLabel}
               onChangeText={setNewFeeLabel}
-              placeholder="VD: Phí công chứng"
+              placeholder={t("interest_calculator.placeholder_fee_name")}
               placeholderTextColor={colors.icon}
               style={[
                 styles.textField,
@@ -964,7 +1076,7 @@ const InterestCalculatorScreen: React.FC = () => {
               ]}
             />
 
-            <ThemedText style={[styles.label, textColor]}>Mức phí</ThemedText>
+            <ThemedText style={[styles.label, textColor]}>{t("interest_calculator.fee_amount")}</ThemedText>
             <MoneyInput
               value={newFeeAmount}
               onChange={setNewFeeAmount}
@@ -972,7 +1084,7 @@ const InterestCalculatorScreen: React.FC = () => {
               placeholder="0"
             />
 
-            <ThemedText style={[styles.label, textColor]}>Loại phí</ThemedText>
+            <ThemedText style={[styles.label, textColor]}>{t("interest_calculator.fee_type")}</ThemedText>
             <TouchableOpacity
               style={[
                 styles.selectButton,
@@ -1002,7 +1114,7 @@ const InterestCalculatorScreen: React.FC = () => {
                 onPress={() => setAddFeeModal(false)}
               >
                 <ThemedText style={[styles.modalBtnLabel, iconColor]}>
-                  Huỷ
+                  {t("common.cancel")}
                 </ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
@@ -1010,12 +1122,12 @@ const InterestCalculatorScreen: React.FC = () => {
                 onPress={addCustomFee}
               >
                 <ThemedText style={[styles.modalBtnLabel, { color: "#fff" }]}>
-                  Thêm
+                  {t("common.add")}
                 </ThemedText>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -1215,7 +1327,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: normalize(6),
-    width: normalize(130),
+    flex: 0.6,
   },
   removeBtn: {},
   addFeeBtn: {
