@@ -129,7 +129,7 @@ const InvoiceListScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <AppHeader
         title="Hóa đơn"
         rightComponent={

@@ -26,13 +26,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEvent } from "../hooks/useEvent";
 
 const EditEventScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const params = useLocalSearchParams();
   const eventId = params.id ? parseInt(params.id as string) : null;
+  const insets = useSafeAreaInsets();
 
   const { wallets } = useWallet();
   const {
@@ -197,6 +198,7 @@ const EditEventScreen: React.FC = () => {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
+        edges={["top", "bottom"]}
       >
         <AppHeader title="Sửa sự kiện" showBackButton />
         <View style={styles.centerContainer}>
@@ -215,6 +217,7 @@ const EditEventScreen: React.FC = () => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top", "bottom"]}
     >
       <AppHeader title="Sửa sự kiện" showBackButton />
 
@@ -471,6 +474,7 @@ const EditEventScreen: React.FC = () => {
             {
               backgroundColor: colors.background,
               borderTopColor: colors.border,
+              paddingBottom: insets.bottom > 0 ? insets.bottom + hp(1) : hp(2),
             },
           ]}
         >

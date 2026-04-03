@@ -20,7 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEvent } from "../hooks/useEvent";
 
 type TabType = "ACTIVE" | "COMPLETED";
@@ -53,6 +53,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
     fetchAllEvents,
     refetch,
   } = useEvent();
+  const insets = useSafeAreaInsets();
 
   // ✅ Computed events dựa vào activeTab (client-side filter)
   const events = useMemo(() => {
@@ -310,7 +311,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
-        edges={["top"]}
+        edges={["top", "bottom"]}
       >
         <AppHeader
           title={mode === "select" ? "Chọn sự kiện" : "Sự kiện"}
@@ -332,7 +333,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
-      edges={["top"]}
+      edges={["top", "bottom"]}
     >
       <AppHeader
         title={mode === "select" ? "Chọn sự kiện" : "Sự kiện"}
@@ -390,7 +391,13 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
 
       {/* Create Button */}
       <TouchableOpacity
-        style={[styles.createButton, { backgroundColor: colors.tint }]}
+        style={[
+          styles.createButton,
+          {
+            backgroundColor: colors.tint,
+            bottom: insets.bottom > 0 ? insets.bottom + hp(1) : hp(3),
+          },
+        ]}
         onPress={handleCreateEvent}
       >
         <CustomText style={styles.createButtonText} type="bold">

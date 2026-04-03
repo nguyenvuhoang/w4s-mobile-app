@@ -22,7 +22,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEvent } from "../hooks/useEvent";
 
 // Interface for autofill data
@@ -46,6 +46,7 @@ const CreateEventScreen: React.FC = () => {
   const { refetch } = useEvent();
   const { defaultCurrency, loading: loadingDefaultCurrency } =
     useDefaultCurrency();
+  const insets = useSafeAreaInsets();
 
   // Form state
   const [icon, setIcon] = useState("calendar");
@@ -291,6 +292,7 @@ const CreateEventScreen: React.FC = () => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top", "bottom"]}
     >
       <AppHeader title="Tạo sự kiện" showBackButton />
 
@@ -553,6 +555,7 @@ const CreateEventScreen: React.FC = () => {
             {
               backgroundColor: colors.background,
               borderTopColor: colors.border,
+              paddingBottom: insets.bottom > 0 ? insets.bottom + hp(1) : hp(2),
             },
           ]}
         >

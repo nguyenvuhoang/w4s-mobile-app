@@ -272,7 +272,7 @@ const RecurringTransactionListScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <AppHeader title="Giao dịch định kỳ" />
 
       <ScrollView

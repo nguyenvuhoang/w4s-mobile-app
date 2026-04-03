@@ -14,7 +14,7 @@ const CreatePaybookScreen = () => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
-      edges={["top"]}
+      edges={["top", "bottom"]}
     >
       <AppHeader title="Thêm sổ nợ" />
       <View style={styles.content}>

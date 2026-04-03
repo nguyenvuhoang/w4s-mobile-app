@@ -196,7 +196,7 @@ const ScanInvoiceScreen = () => {
     // ─── No permission ─────────────────────────────────────────────────────────
     if (!hasPermission) {
         return (
-            <SafeAreaView style={[styles.container, styles.center]}>
+            <SafeAreaView style={[styles.container, styles.center]} edges={["top", "bottom"]}>
                 <FontAwesome6
                     name="camera-slash"
                     size={normalize(48)}
@@ -222,7 +222,7 @@ const ScanInvoiceScreen = () => {
     // ─── No device ─────────────────────────────────────────────────────────────
     if (!device) {
         return (
-            <SafeAreaView style={[styles.container, styles.center]}>
+            <SafeAreaView style={[styles.container, styles.center]} edges={["top", "bottom"]}>
                 <CustomText style={styles.permissionDesc}>
                     Đang khởi động camera...
                 </CustomText>
@@ -258,7 +258,7 @@ const ScanInvoiceScreen = () => {
             )}
 
             {/* UI Overlay */}
-            <SafeAreaView style={styles.overlay}>
+            <SafeAreaView style={styles.overlay} edges={["top", "bottom"]}>
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity

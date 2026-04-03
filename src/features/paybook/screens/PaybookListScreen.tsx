@@ -265,7 +265,7 @@ const PaybookListScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <AppHeader title="Sổ nợ" />
 
       <ScrollView
