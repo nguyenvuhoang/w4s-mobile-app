@@ -15,6 +15,7 @@ import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { getValidIconName } from "@/utils/iconMapper";
 import { hp, normalize } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useCallback, useContext, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -375,29 +376,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <View
             style={[
               styles.balanceCard,
-              {
-                backgroundColor: colors.tint,
-                justifyContent: "center",
-                alignItems: "center",
-                minHeight: 200,
-              },
+              { backgroundColor: colors.tint, justifyContent: "center", minHeight: 200 },
             ]}
           >
             <ActivityIndicator size="large" color="#fff" />
-            <CustomText
-              style={[styles.balanceSubLabel, { color: "#fff", marginTop: 8 }]}
-            >
+            <CustomText style={[styles.balanceSubLabel, { marginTop: 8 }]}>
               {t("home.loading_data")}
             </CustomText>
           </View>
         ) : error ? (
           <View style={[styles.balanceCard, { backgroundColor: colors.tint }]}>
-            <CustomText style={[styles.balanceLabel, { color: "#fff" }]}>
+            <View style={styles.balanceDecorOuterTL} />
+            <View style={styles.balanceDecorInnerTL} />
+            <View style={styles.balanceDecorOuterBR} />
+            <View style={styles.balanceDecorInnerBR} />
+            <CustomText style={styles.balanceLabel}>
               {t("home.load_error")}
             </CustomText>
-            <CustomText
-              style={[styles.balanceSubLabel, { color: "#fff", marginTop: 8 }]}
-            >
+            <CustomText style={[styles.balanceSubLabel, { marginTop: 8 }]}>
               {error}
             </CustomText>
             <TouchableOpacity
@@ -417,7 +413,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           </View>
         ) : (
           <View style={[styles.balanceCard, { backgroundColor: colors.tint }]}>
-            <CustomText style={styles.balanceLabel}>{t("home.total_balance")}</CustomText>
+            <View style={styles.balanceDecorOuterTL} />
+            <View style={styles.balanceDecorInnerTL} />
+            <View style={styles.balanceDecorOuterBR} />
+            <View style={styles.balanceDecorInnerBR} />
+
+            <View style={styles.balanceLabelPill}>
+              <CustomText style={styles.balanceLabel}>{t("home.total_balance")}</CustomText>
+            </View>
+
             <CustomText style={styles.balanceAmount}>
               {financialSummary.balanceFormatted}
             </CustomText>
@@ -426,15 +430,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               <View style={styles.balanceItem}>
                 <CustomText style={styles.balanceSubLabel}>{t("home.income")}</CustomText>
                 <CustomText style={styles.incomeAmount}>
-                  +{financialSummary.incomeFormatted}
+                  {financialSummary.incomeFormatted}
                 </CustomText>
-                {financialSummary.incomePercent !== 0 && (
-                  <CustomText
-                    style={[styles.changePercent, { color: "#4CAF50" }]}
-                  >
-                    {formatPercent(financialSummary.incomePercent)}
-                  </CustomText>
-                )}
               </View>
               <View style={styles.divider} />
               <View style={styles.balanceItem}>
@@ -442,15 +439,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 <CustomText style={styles.expenseAmount}>
                   -{financialSummary.expenseFormatted}
                 </CustomText>
-                {financialSummary.expensePercent !== 0 && (
-                  <CustomText
-                    style={[styles.changePercent, { color: "#FF6B6B" }]}
-                  >
-                    {formatPercent(financialSummary.expensePercent)}
-                  </CustomText>
-                )}
               </View>
             </View>
+
+            <CustomText style={styles.month}>
+              {new Date().toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US', { month: 'long', year: 'numeric' })}
+            </CustomText>
           </View>
         )}
         {/* Quick Actions */}
@@ -459,9 +453,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             style={styles.actionButton}
             onPress={handleFeatureDeveloping}
           >
-            <View style={[styles.actionIcon, { backgroundColor: colors.tint }]}>
+            <LinearGradient
+              colors={colors.gradianBase}
+              locations={[0, 1]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.actionIcon}
+            >
               <Ionicons name="arrow-up" size={normalize(24)} color="#fff" />
-            </View>
+            </LinearGradient>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
               {t("home.send")}
             </CustomText>
@@ -475,7 +475,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               <Ionicons
                 name="arrow-down"
                 size={normalize(24)}
-                color={colors.text}
+                color={colors.tint}
               />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
@@ -491,7 +491,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               <Ionicons
                 name="card-outline"
                 size={normalize(24)}
-                color={colors.text}
+                color={colors.tint}
               />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
@@ -507,7 +507,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               <Ionicons
                 name="ellipsis-horizontal"
                 size={normalize(24)}
-                color={colors.text}
+                color={colors.tint}
               />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
