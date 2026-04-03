@@ -3,9 +3,11 @@ import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
+import { Tokens } from '@/core/theme/theme';
 import { useChangePassword } from '@/features/settings/hooks/useChangePassword';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -341,13 +343,22 @@ const ChangePasswordScreen = () => {
             style={[
               styles.createButton,
               {
-                backgroundColor: valid ? colors.tint : colors.border,
+                backgroundColor: valid ? 'transparent' : colors.border,
                 opacity: loading ? 0.6 : 1,
+                overflow: 'hidden',
               },
             ]}
             onPress={handleChangePassword}
             disabled={!valid || loading}
           >
+            {valid && (
+              <LinearGradient
+                colors={Tokens.gradients.base}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+            )}
             {loading ? (
               <CustomText style={styles.createButtonText}>{t('auth.processing')}</CustomText>
             ) : (

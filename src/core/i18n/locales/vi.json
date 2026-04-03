@@ -28,7 +28,8 @@
     "errorCode": "Mã lỗi",
     "confirm": "Xác nhận",
     "add": "Thêm",
-    "feature_developing": "Tính năng đang được phát triển"
+    "feature_developing": "Tính năng đang được phát triển",
+    "used": "Đang dùng"
   },
   "intro": {
     "slide1_title": "Ngân sách thông minh",
@@ -136,7 +137,26 @@
     "create_spending_warning": "Tạo cảnh báo chi tiêu",
     "confirm_delete_warning": "Bạn có chắc muốn xóa cảnh báo này?",
     "spending_limit_reached": "Đã đạt hạn mức chi tiêu",
-    "all_periods_set": "Tất cả chu kỳ đã được thiết lập hạn mức."
+    "all_periods_set": "Tất cả chu kỳ đã được thiết lập hạn mức.",
+    "device_count_one": "{{count}} thiết bị",
+    "device_count_other": "{{count}} thiết bị",
+    "active_device_count": " · {{count}} đang hoạt động",
+    "device_type": "Hệ điều hành",
+    "os_version": "Phiên bản OS",
+    "last_seen": "Lần cuối truy cập",
+    "no_device_info": "Chưa có thiết bị nào",
+    "no_device_desc": "Các thiết bị đã đăng nhập sẽ xuất hiện tại đây",
+    "device_default": "Thiết bị",
+    "version": "Phiên bản",
+    "system_info": "Thông số kỹ thuật",
+    "build_number": "Bản dựng",
+    "sdk_version": "Expo SDK",
+    "platform": "Nền tảng",
+    "developer": "Nhà phát triển",
+    "website": "Trang chủ",
+    "support": "Hỗ trợ khách hàng",
+    "rate_app": "Đánh giá ứng dụng",
+    "rate_app_desc": "Để lại phản hồi trên các chợ ứng dụng"
   },
   "validation": {
     "invalid_email": "Email không hợp lệ",

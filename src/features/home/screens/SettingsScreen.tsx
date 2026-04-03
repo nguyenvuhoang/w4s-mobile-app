@@ -10,6 +10,7 @@ import DefaultCurrencyService from "@/services/DefaultCurrencyService";
 import StorageService from "@/services/StorageService";
 import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -314,20 +315,26 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="document-text-outline"
               title={t("settings.privacy_policy")}
-              onPress={() => { }}
+              onPress={() => {
+                router.push("/(protected)/privacy-policy");
+              }}
               colors={colors}
             />
             <SettingItem
               icon="phone-portrait-outline"
               title={t("settings.login_info")}
-              onPress={() => { }}
+              onPress={() => {
+                router.push("/(protected)/login-info");
+              }}
               colors={colors}
             />
             <SettingItem
               icon="information-circle-outline"
               title={t("settings.app_info")}
-              value="v1.0.0"
-              onPress={() => { }}
+              value={`v${Constants.expoConfig?.version || "1.0.0"}`}
+              onPress={() => {
+                router.push("/(protected)/app-info");
+              }}
               colors={colors}
             />
           </View>

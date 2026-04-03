@@ -28,7 +28,8 @@
     "errorCode": "Error Code",
     "confirm": "Confirm",
     "add": "Add",
-    "feature_developing": "Feature under development"
+    "feature_developing": "Feature under development",
+    "used": "Active"
   },
   "intro": {
     "slide1_title": "Smart Budgeting",
@@ -136,7 +137,26 @@
     "create_spending_warning": "Create Spending Warning",
     "confirm_delete_warning": "Are you sure you want to delete this warning?",
     "spending_limit_reached": "Spending limit reached",
-    "all_periods_set": "All periods have already been set."
+    "all_periods_set": "All periods have already been set.",
+    "device_count_one": "{{count}} device",
+    "device_count_other": "{{count}} devices",
+    "active_device_count": " · {{count}} active",
+    "device_type": "OS",
+    "os_version": "OS Version",
+    "last_seen": "Last seen",
+    "no_device_info": "No device info yet",
+    "no_device_desc": "Logged in devices will appear here",
+    "device_default": "Device",
+    "version": "Version",
+    "system_info": "Technical Specifications",
+    "build_number": "Build Number",
+    "sdk_version": "Expo SDK",
+    "platform": "Platform",
+    "developer": "Developer",
+    "website": "Website",
+    "support": "Customer Support",
+    "rate_app": "Rate App",
+    "rate_app_desc": "Leave feedback on app stores"
   },
   "validation": {
     "invalid_email": "Invalid Email",
