@@ -26,6 +26,7 @@
     "reload": "Reload",
     "resend": "Resend",
     "errorCode": "Error Code",
+    "confirm": "Confirm",
     "feature_developing": "Feature under development"
   },
   "intro": {
@@ -45,6 +46,7 @@
     "password": "Password",
     "password_placeholder": "Your password",
     "forgot_password": "Forgot Password?",
+    "forgot_password_title": "Forgot Password",
     "create_account": "Create Account",
     "logging_in": "Logging in...",
     "loading_info": "Loading info...",
@@ -87,7 +89,11 @@
     "new_password_same_as_old": "New password cannot be the same as the old password",
     "password_not_secure": "Password does not meet security requirements",
     "current_password_incorrect": "Current password is incorrect",
-    "change_password_success": "Password changed successfully!"
+    "change_password_success": "Password changed successfully!",
+    "forgot_password_fill_all_fields": "Please fill in all information fields",
+    "user_not_found": "Valid account information not found",
+    "reset_password_success_email": "New password has been sent to your email.",
+    "reset_password_failed": "Password reset failed"
   },
   "settings": {
     "title": "Settings",
@@ -343,7 +349,8 @@
     "description": "Enter the Zalo OTP sent to your phone number",
     "loginDescription": "Enter the Zalo OTP sent to phone number {{phone}}",
     "enterValidOTP": "Please enter a valid Zalo OTP",
-    "continueButton": "Continue"
+    "continueButton": "Continue",
+    "resetPasswordDescription": "Enter the Zalo OTP sent to phone number {{phone}} to verify password reset"
   },
   "otpNote": {
     "notreceiveotp": "Did not receive the code?",

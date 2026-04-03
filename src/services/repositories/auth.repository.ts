@@ -86,19 +86,32 @@ export const authRepository = {
   },
 
   // ===== Password =====
-  async verifyForgotPassword(
-    username: string,
-    idCard: string,
+  async verifyResetInfo(
     phone: string,
-    email: string
+    email: string,
+    birthday: string
   ): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
-      WORKFLOWCODE.MB_VERIFY_OTP_RESET_PASSWORD,
+      WORKFLOWCODE.WF_MB_EXECUTE_SQL_FROM_CTH_WITHOUT_LOGIN,
       {
-        username,
-        idcard: idCard,
-        phone,
-        email,
+        commandname: COMMAND_NAME.VerifyResetPassword,
+        parameters: {
+          phonenumber: phone,
+          email: email,
+          dob: birthday,
+        },
+      },
+      false,
+      true
+    );
+  },
+
+  async resetPassword(userCode: string, email: string): Promise<BaseResponseModel> {
+    return await apiService.executeWorkflow(
+      WORKFLOWCODE.WF_MB_USER_RESET_PASSWORD,
+      {
+        usercode: userCode,
+        email: email,
       },
       false,
       true

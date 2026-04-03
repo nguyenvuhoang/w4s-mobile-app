@@ -70,23 +70,6 @@ export const getSecondsRemainingInMinute = () => {
   return secondsRemaining;
 };
 
-// export const isValidDate = (dateString: string) => {
-//   const regex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/(19|20)\d\d$/; // Định dạng DD/MM/YYYY
-//   return regex.test(dateString);
-// };
-
-export const isValidDate = (dateString: string): boolean => {
-  const regex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/(19|20)\d\d$/;
-  if (!regex.test(dateString)) {
-    return false; // Kiểm tra định dạng trước
-  }
-
-  const [day, month, year] = dateString.split('/').map(Number);
-
-  // Kiểm tra tính hợp lệ của ngày trong tháng
-  const date = new Date(year, month - 1, day);
-  return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year;
-};
 
 export const addUniqueMessage = (
   messages: string[] | undefined,

@@ -26,6 +26,7 @@
     "reload": "Tải lại",
     "resend": "Gửi lại",
     "errorCode": "Mã lỗi",
+    "confirm": "Xác nhận",
     "feature_developing": "Tính năng đang được phát triển"
   },
   "intro": {
@@ -45,6 +46,7 @@
     "password": "Mật khẩu",
     "password_placeholder": "Mật khẩu của bạn",
     "forgot_password": "Quên mật khẩu?",
+    "forgot_password_title": "Quên mật khẩu",
     "create_account": "Tạo tài khoản",
     "logging_in": "Đang đăng nhập...",
     "loading_info": "Đang tải thông tin...",
@@ -87,7 +89,11 @@
     "new_password_same_as_old": "Mật khẩu mới không được trùng với mật khẩu cũ",
     "password_not_secure": "Mật khẩu không đáp ứng yêu cầu bảo mật",
     "current_password_incorrect": "Mật khẩu hiện tại không đúng",
-    "change_password_success": "Đổi mật khẩu thành công!"
+    "change_password_success": "Đổi mật khẩu thành công!",
+    "forgot_password_fill_all_fields": "Vui lòng nhập đầy đủ các trường thông tin",
+    "user_not_found": "Không tìm thấy thông tin tài khoản hợp lệ",
+    "reset_password_success_email": "Mật khẩu mới đã được gửi về Email của bạn.",
+    "reset_password_failed": "Reset mật khẩu thất bại"
   },
   "settings": {
     "title": "Cài đặt",
@@ -343,7 +349,8 @@
     "description": "Nhập mã Zalo OTP được gửi đến số điện thoại của bạn",
     "loginDescription": "Nhập mã Zalo OTP được gửi đến số điện thoại {{phone}}",
     "enterValidOTP": "Vui lòng nhập mã Zalo OTP hợp lệ",
-    "continueButton": "Tiếp tục"
+    "continueButton": "Tiếp tục",
+    "resetPasswordDescription": "Nhập mã Zalo OTP được gửi đến số điện thoại {{phone}} để xác thực cấp lại mật khẩu"
   },
   "otpNote": {
     "notreceiveotp": "Bạn không nhận được mã?",

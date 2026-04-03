@@ -27,4 +27,5 @@ export const COMMAND_NAME = {
     SimpleSearchDistrictOption:"SimpleSearchDistrictOption",
     SimpleSearchVillageOption:"SimpleSearchVillageOption",
     getLicenseIdAndTypeByContract: "getLicenseIdAndTypeByContract",
+    VerifyResetPassword: "VerifyResetPassword",
 }

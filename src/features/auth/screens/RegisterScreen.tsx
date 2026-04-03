@@ -9,6 +9,7 @@ import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import StorageService from '@/services/StorageService';
 import { Images } from '@/utils/images';
 import { hasNotch, normalize } from '@/utils/layout';
+import { isValidEmail, isValidPhone } from '@/utils/validation';
 import { FontAwesome6, Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -132,15 +133,13 @@ const RegisterScreen = () => {
 
   const validateEmail = (value: string): string | null => {
     if (!value.trim()) return t('validation.required_email');
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) return t('validation.invalid_email');
+    if (!isValidEmail(value)) return t('validation.invalid_email');
     return null;
   };
 
   const validatePhone = (value: string): string | null => {
     if (!value.trim()) return t('validation.required_phone');
-    const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
-    if (!phoneRegex.test(value.trim())) {
+    if (!isValidPhone(value)) {
       return t('validation.invalid_phone');
     }
     return null;

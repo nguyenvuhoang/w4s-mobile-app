@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ScrollView,
   StyleSheet,
@@ -15,22 +16,53 @@ import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
 import { Tokens } from '@/core/theme/theme';
 import { hasNotch, normalize } from '@/utils/layout';
+import { useForgotPasswordService } from '@/features/auth/hooks/useForgotPasswordService';
+import { ActivityIndicator, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const ForgotPasswordScreen = () => {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const [username, setUsername] = useState('');
-  const [idNumber, setIdNumber] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [agreed, setAgreed] = useState(true);
+  const { t } = useTranslation();
+
+  const {
+    phone,
+    setPhone,
+    email,
+    setEmail,
+    birthday,
+    setBirthday,
+    isLoading,
+    handleCheckUserAndSendOTP,
+  } = useForgotPasswordService();
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleCancel = () => {
     router.back();
   };
 
   const handleConfirm = () => {
-    console.log('Confirm:', { username, idNumber, phone, email, agreed });
+    handleCheckUserAndSendOTP();
+  };
+
+  const handleDateChange = (_event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      // Format as yyyy-MM-dd for the server
+      const day = selectedDate.getDate().toString().padStart(2, '0');
+      const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
+      const year = selectedDate.getFullYear();
+      setBirthday(`${year}-${month}-${day}`);
+    }
+  };
+
+  const getDateValue = (): Date => {
+    if (birthday) {
+      const [year, month, day] = birthday.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    return new Date();
   };
 
   return (
@@ -46,7 +78,7 @@ const ForgotPasswordScreen = () => {
             />
           </TouchableOpacity>
           <ThemedText style={[styles.headerTitle, { color: colors.text }]}>
-            Quên mật khẩu
+            {t('auth.forgot_password_title')}
           </ThemedText>
           <View style={styles.placeholder} />
         </View>
@@ -57,54 +89,11 @@ const ForgotPasswordScreen = () => {
         >
           {/* Form */}
           <View style={styles.formContainer}>
-            {/* Username Input */}
-            <View style={styles.inputContainer}>
-              <ThemedText style={[styles.label, { color: colors.text }]}>
-                Tên đăng nhập
-              </ThemedText>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.card,
-                    color: colors.text,
-                    borderColor: colors.border,
-                  },
-                ]}
-                placeholder="Tên đăng nhập của bạn"
-                placeholderTextColor={colors.icon}
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-              />
-            </View>
-
-            {/* ID Number Input */}
-            <View style={styles.inputContainer}>
-              <ThemedText style={[styles.label, { color: colors.text }]}>
-                Số Căn cước
-              </ThemedText>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.card,
-                    color: colors.text,
-                    borderColor: colors.border,
-                  },
-                ]}
-                placeholder="Số căn cước của bạn"
-                placeholderTextColor={colors.icon}
-                value={idNumber}
-                onChangeText={setIdNumber}
-                keyboardType="number-pad"
-              />
-            </View>
 
             {/* Phone Input */}
             <View style={styles.inputContainer}>
               <ThemedText style={[styles.label, { color: colors.text }]}>
-                Số điện thoại
+                {t('auth.phone')}
               </ThemedText>
               <TextInput
                 style={[
@@ -115,7 +104,7 @@ const ForgotPasswordScreen = () => {
                     borderColor: colors.border,
                   },
                 ]}
-                placeholder="Số điện thoại đăng ký"
+                placeholder={t('auth.phone_placeholder')}
                 placeholderTextColor={colors.icon}
                 value={phone}
                 onChangeText={setPhone}
@@ -126,7 +115,7 @@ const ForgotPasswordScreen = () => {
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <ThemedText style={[styles.label, { color: colors.text }]}>
-                Email
+                {t('auth.email')}
               </ThemedText>
               <TextInput
                 style={[
@@ -137,13 +126,60 @@ const ForgotPasswordScreen = () => {
                     borderColor: colors.border,
                   },
                 ]}
-                placeholder="Email của bạn"
+                placeholder={t('auth.email_placeholder')}
                 placeholderTextColor={colors.icon}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
+            </View>
+
+            {/* Birthday Input */}
+            <View style={styles.inputContainer}>
+              <ThemedText style={[styles.label, { color: colors.text }]}>
+                {t('auth.birthday')}
+              </ThemedText>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.85}
+              >
+                <View
+                  style={[
+                    styles.input,
+                    styles.dateInput,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <ThemedText
+                    style={[
+                      styles.dateText,
+                      { color: birthday ? colors.text : colors.icon },
+                    ]}
+                  >
+                    {birthday ? birthday.split('-').reverse().join('/') : t('auth.select_birthday')}
+                  </ThemedText>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={normalize(20)}
+                    color={colors.icon}
+                  />
+                </View>
+              </TouchableOpacity>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={getDateValue()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                  minimumDate={new Date(1900, 0, 1)}
+                />
+              )}
             </View>
 
             {/* Agreement Checkbox */}
@@ -208,16 +244,25 @@ const ForgotPasswordScreen = () => {
             activeOpacity={0.9}
           >
             <ThemedText style={[styles.cancelButtonText, { color: colors.tint }]}>
-              Hủy
+              {t('common.cancel')}
             </ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={handleConfirm}
-            style={[styles.confirmButton, { backgroundColor: colors.tint }]}
+            style={[
+              styles.confirmButton,
+              { backgroundColor: colors.tint },
+              isLoading && styles.disabledButton,
+            ]}
             activeOpacity={0.9}
+            disabled={isLoading}
           >
-            <ThemedText style={styles.confirmButtonText}>Xác nhận</ThemedText>
+            {isLoading ? (
+              <ActivityIndicator color={Tokens.colors.main.white} />
+            ) : (
+              <ThemedText style={styles.confirmButtonText}>{t('common.confirm')}</ThemedText>
+            )}
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -277,6 +322,15 @@ const styles = StyleSheet.create({
     lineHeight: normalize(22),
     paddingTop: normalize(15),
     paddingBottom: normalize(15),
+  },
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dateText: {
+    fontSize: normalize(16),
+    fontFamily: Fonts.regular,
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -346,6 +400,9 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     color: Tokens.colors.main.white,
     lineHeight: normalize(24),
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });
 

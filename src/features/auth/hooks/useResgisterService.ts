@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useNotification } from '@/contexts/NotificationContext';
 import { authRepository } from '@/services/repositories';
+import { isValidEmail, isValidPhone, parseFullName } from '@/utils/validation';
 
 interface RegisterFormData {
   fullName: string;
@@ -45,43 +46,6 @@ export const useRegisterService = () => {
 
     setIsFormValid(isValid);
   }, [fullName, email, phone, address, birthday, currency]);
-
-  const parseFullName = useCallback((fullName: string): {
-    firstname: string;
-    middlename: string;
-    lastname: string;
-  } => {
-    const nameParts = fullName.trim().split(/\s+/).filter(part => part.length > 0);
-    
-    if (nameParts.length === 0) {
-      return { firstname: '', middlename: '', lastname: '' };
-    } else if (nameParts.length === 1) {
-      // Chỉ có 1 từ -> bỏ vào lastname
-      return { firstname: '', middlename: '', lastname: nameParts[0] };
-    } else if (nameParts.length === 2) {
-      // Có 2 từ -> bỏ vào firstname và lastname
-      return { firstname: nameParts[0], middlename: '', lastname: nameParts[1] };
-    } else {
-      // Có 3 từ trở lên -> firstname, middlename (các từ ở giữa), lastname
-      const firstname = nameParts[0];
-      const lastname = nameParts[nameParts.length - 1];
-      const middlename = nameParts.slice(1, -1).join(' ');
-      
-      return { firstname, middlename, lastname };
-    }
-  }, []);
-
-  // Email validation
-  const isValidEmail = useCallback((email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }, []);
-
-  // Phone validation
-  const isValidPhone = useCallback((phone: string): boolean => {
-    const phoneRegex = /^[0-9]{10,11}$/;
-    return phoneRegex.test(phone);
-  }, []);
 
   // Handle register
   const handleRegister = useCallback(async (): Promise<boolean> => {
@@ -156,11 +120,7 @@ export const useRegisterService = () => {
     address,
     gender,
     birthday,
-    isValidEmail,
-    isValidPhone,
-    parseFullName,
     showNotification,
-    t,
     t,
     router,
     currency,
@@ -203,8 +163,5 @@ export const useRegisterService = () => {
     // Methods
     handleRegister,
     resetForm,
-    isValidEmail,
-    isValidPhone,
-    parseFullName,
   };
 };
