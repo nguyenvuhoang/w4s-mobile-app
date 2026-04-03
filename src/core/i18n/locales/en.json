@@ -47,6 +47,8 @@
     "password_placeholder": "Your password",
     "forgot_password": "Forgot Password?",
     "forgot_password_title": "Forgot Password",
+    "login_description": "Please login to use W4S financial management application.",
+    "or": "or",
     "create_account": "Create Account",
     "logging_in": "Logging in...",
     "loading_info": "Loading info...",

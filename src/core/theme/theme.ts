@@ -55,7 +55,7 @@ export const Tokens = {
     },
   },
   gradients: {
-    base: ["#0059df", "#5ca2c1"] as const, // gradian_base
+    base: ["#0059df", "#12CCF1"] as const, // gradian_base
     light: ["#c2d7f7", "#d8e9f0"] as const, // gradian_light
     lightest: ["#e6eefc", "#eff6f9"] as const, // gradian_lightest
     dark: ["#003f9e", "#417389"] as const, // gradian_dark

@@ -332,7 +332,7 @@ const RegisterScreen = () => {
                   </View>
 
                   <ThemedText style={styles.headerTitle}>
-                    {t('auth.register_title') || 'Đăng ký'}
+                    {t('auth.register_title')}
                   </ThemedText>
                 </View>
 
@@ -340,7 +340,7 @@ const RegisterScreen = () => {
                   <View style={styles.formContainer}>
                     <View style={styles.inputContainer}>
                       <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
-                        {t('auth.fullname') || 'Họ và tên'}
+                        {t('auth.fullname')}
                       </ThemedText>
                       <TextInput
                         style={[
@@ -348,7 +348,7 @@ const RegisterScreen = () => {
                           touched.fullName && errors.fullName ? styles.inputError : null,
                           { color: colors.brandTextPrimary },
                         ]}
-                        placeholder={t('auth.fullname_placeholder') || 'Họ và tên của bạn'}
+                        placeholder={t('auth.fullname_placeholder')}
                         placeholderTextColor="#A8ADB7"
                         value={fullName}
                         onChangeText={handleFullNameChange}
@@ -363,7 +363,7 @@ const RegisterScreen = () => {
 
                     <View style={styles.inputContainer}>
                       <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
-                        {t('auth.phone') || 'Số điện thoại'}
+                        {t('auth.phone')}
                       </ThemedText>
                       <TextInput
                         style={[
@@ -371,7 +371,7 @@ const RegisterScreen = () => {
                           touched.phone && errors.phone ? styles.inputError : null,
                           { color: colors.brandTextPrimary },
                         ]}
-                        placeholder={t('auth.phone_placeholder') || 'Số điện thoại của bạn'}
+                        placeholder={t('auth.phone_placeholder')}
                         placeholderTextColor="#A8ADB7"
                         value={phone}
                         onChangeText={handlePhoneChange}
@@ -387,7 +387,7 @@ const RegisterScreen = () => {
 
                     <View style={styles.inputContainer}>
                       <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
-                        {t('auth.email') || 'E-mail'}
+                        {t('auth.email')}
                       </ThemedText>
                       <TextInput
                         style={[
@@ -395,7 +395,7 @@ const RegisterScreen = () => {
                           touched.email && errors.email ? styles.inputError : null,
                           { color: colors.brandTextPrimary },
                         ]}
-                        placeholder={t('auth.email_placeholder') || 'Email của bạn'}
+                        placeholder={t('auth.email_placeholder')}
                         placeholderTextColor="#A8ADB7"
                         value={email}
                         onChangeText={handleEmailChange}
@@ -412,7 +412,7 @@ const RegisterScreen = () => {
 
                     <View style={styles.inputContainer}>
                       <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
-                        {t('auth.address') || 'Địa chỉ'}
+                        {t('auth.address')}
                       </ThemedText>
                       <TextInput
                         style={[
@@ -420,7 +420,7 @@ const RegisterScreen = () => {
                           touched.address && errors.address ? styles.inputError : null,
                           { color: colors.brandTextPrimary },
                         ]}
-                        placeholder={t('auth.address_placeholder') || 'Địa chỉ của bạn'}
+                        placeholder={t('auth.address_placeholder')}
                         placeholderTextColor="#A8ADB7"
                         value={address}
                         onChangeText={handleAddressChange}
@@ -435,7 +435,7 @@ const RegisterScreen = () => {
 
                     <View style={styles.inputContainer}>
                       <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
-                        {t('auth.birthday') || 'Ngày sinh'}
+                        {t('auth.birthday')}
                       </ThemedText>
                       <TouchableOpacity
                         onPress={() => setShowDatePicker(true)}
@@ -457,7 +457,7 @@ const RegisterScreen = () => {
                           >
                             {birthday
                               ? formatDate(birthday)
-                              : t('auth.select_birthday') || 'Chọn ngày sinh'}
+                              : t('auth.select_birthday')}
                           </ThemedText>
                           <Ionicons
                             name="calendar-outline"
@@ -500,18 +500,18 @@ const RegisterScreen = () => {
                       ]}
                     >
                       <ThemedText style={styles.primaryButtonText}>
-                        {t('common.next') || 'Tiếp tục'}
+                        {t('common.next')}
                       </ThemedText>
                     </LinearGradient>
                   </TouchableOpacity>
 
                   <View style={styles.footer}>
-                    <ThemedText style={[styles.footerText, { color: colors.brandTextSecondary }]}>
-                      {t('auth.have_account') || 'Đã có tài khoản?'}{' '}
-                    </ThemedText>
+                      <ThemedText style={[styles.footerText, { color: colors.brandTextSecondary }]}>
+                        {t('auth.have_account')}{' '}
+                      </ThemedText>
                     <TouchableOpacity onPress={handleLogin} disabled={isRegistering}>
                       <ThemedText style={[styles.loginLink, { color: colors.brandBlue }]}>
-                        {t('auth.login') || 'Đăng nhập'}
+                        {t('auth.login')}
                       </ThemedText>
                     </TouchableOpacity>
                   </View>
@@ -539,7 +539,7 @@ const RegisterScreen = () => {
                   </View>
 
                   <ThemedText style={styles.headerTitle}>
-                    {t('wallet.setup_wallet') || 'Thiết lập ví'}
+                    {t('wallet.setup_wallet')}
                   </ThemedText>
                 </View>
 
@@ -547,7 +547,7 @@ const RegisterScreen = () => {
                   <View style={styles.formContainer}>
                     <View style={styles.inputContainer}>
                       <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
-                        {t('wallet.currency') || 'Tiền tệ'}
+                        {t('wallet.currency')}
                       </ThemedText>
 
                       <TouchableOpacity
@@ -586,7 +586,7 @@ const RegisterScreen = () => {
 
                     <View style={styles.inputContainer}>
                       <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
-                        {t('wallet.initial_balance') || 'Số dư ban đầu'}
+                        {t('wallet.initial_balance')}
                       </ThemedText>
 
                       <FormattedMoneyInput
@@ -637,7 +637,7 @@ const RegisterScreen = () => {
                           />
                         ) : (
                           <ThemedText style={styles.primaryButtonText}>
-                            {t('auth.register') || 'Đăng ký'}
+                            {t('auth.register')}
                           </ThemedText>
                         )}
                       </LinearGradient>

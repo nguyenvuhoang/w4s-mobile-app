@@ -109,9 +109,13 @@ const LoginScreen = () => {
     <View style={[styles.container, { backgroundColor: colors.brandBg }]}>
       <SafeAreaView edges={['top']} style={[styles.safeArea, { backgroundColor: colors.brandBlue }]}>
         <KeyboardAvoidingView
-          style={[styles.flex, { backgroundColor: colors.brandBg }]}
+          style={[styles.flex, { backgroundColor: 'transparent' }]}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
+          <LinearGradient
+            colors={colors.gradianLightest}
+            style={styles.flex}
+          >
           <View style={[styles.header, { backgroundColor: colors.brandBlue }]}>
             <View style={styles.headerCircleLeft} />
             <View style={styles.headerCircleRight} />
@@ -140,7 +144,7 @@ const LoginScreen = () => {
 
           <View style={styles.body}>
             <ThemedText style={[styles.description, { color: colors.brandTextSecondary }]}>
-              Vui lòng đăng nhập để sử dụng ứng dụng quản lý tài chính W4S.
+              {t('auth.login_description')}
             </ThemedText>
 
             <View style={styles.form}>
@@ -207,7 +211,7 @@ const LoginScreen = () => {
               <View style={styles.actionRow}>
                 <TouchableOpacity disabled={isLoggingIn}>
                   <ThemedText style={[styles.linkText, { color: colors.brandBlue }]}>
-                    Đổi tài khoản
+                    {t('auth.switch_account')}
                   </ThemedText>
                 </TouchableOpacity>
 
@@ -251,7 +255,7 @@ const LoginScreen = () => {
               </TouchableOpacity>
 
               <View style={styles.registerRow}>
-                <ThemedText style={[styles.registerText, { color: colors.brandTextSecondary }]}>hoặc </ThemedText>
+                <ThemedText style={[styles.registerText, { color: colors.brandTextSecondary }]}>{t('auth.or')} </ThemedText>
                 <TouchableOpacity
                   onPress={handleCreateAccount}
                   disabled={isLoggingIn}
@@ -261,8 +265,9 @@ const LoginScreen = () => {
                   </ThemedText>
                 </TouchableOpacity>
               </View>
+              </View>
             </View>
-          </View>
+          </LinearGradient>
         </KeyboardAvoidingView>
       </SafeAreaView>
 
@@ -270,7 +275,7 @@ const LoginScreen = () => {
         visible={showLanguageModal}
         onClose={() => setShowLanguageModal(false)}
         title={t('common.select_language')}
-        subtitle={t('settings.language_subtitle') || 'Chọn ngôn ngữ hiển thị'}
+        subtitle={t('settings.language_subtitle')}
         actions={languageActions}
         colors={colors}
         cancelText={t('common.cancel')}
@@ -353,7 +358,7 @@ const styles = StyleSheet.create({
   langText: {
     color: '#FFFFFF',
     fontSize: normalize(13),
-    fontFamily: Fonts.medium,
+    fontFamily: Fonts.semiBold,
   },
 
   logoWrap: {
@@ -446,7 +451,7 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#0D63E6',
     fontSize: normalize(14),
-    fontFamily: Fonts.medium,
+    fontFamily: Fonts.semiBold,
   },
 
   loginButtonWrap: {
@@ -486,7 +491,7 @@ const styles = StyleSheet.create({
   registerLink: {
     color: '#0D63E6',
     fontSize: normalize(15),
-    fontFamily: Fonts.medium,
+    fontFamily: Fonts.semiBold,
   },
 
   errorText: {

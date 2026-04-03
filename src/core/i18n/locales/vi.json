@@ -47,6 +47,8 @@
     "password_placeholder": "Mật khẩu của bạn",
     "forgot_password": "Quên mật khẩu?",
     "forgot_password_title": "Quên mật khẩu",
+    "login_description": "Vui lòng đăng nhập để sử dụng ứng dụng quản lý tài chính W4S.",
+    "or": "hoặc",
     "create_account": "Tạo tài khoản",
     "logging_in": "Đang đăng nhập...",
     "loading_info": "Đang tải thông tin...",

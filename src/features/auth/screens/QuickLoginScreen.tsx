@@ -340,7 +340,6 @@ const QuickLoginScreen = () => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#E9EEF5",
   },
 
   safeArea: {
@@ -444,7 +443,7 @@ const styles = StyleSheet.create({
     color: "#2B3040",
     fontSize: normalize(16),
     lineHeight: normalize(22),
-    fontFamily: Fonts.medium,
+    fontFamily: Fonts.bold,
   },
 
   inputGroup: {
@@ -506,7 +505,7 @@ const styles = StyleSheet.create({
   linkText: {
     color: "#0D63E6",
     fontSize: normalize(14),
-    fontFamily: Fonts.medium,
+    fontFamily: Fonts.semiBold,
   },
 
   loginButtonWrap: {
@@ -546,7 +545,7 @@ const styles = StyleSheet.create({
   registerLink: {
     color: "#0D63E6",
     fontSize: normalize(15),
-    fontFamily: Fonts.medium,
+    fontFamily: Fonts.semiBold,
   },
 
   loadingOverlay: {
