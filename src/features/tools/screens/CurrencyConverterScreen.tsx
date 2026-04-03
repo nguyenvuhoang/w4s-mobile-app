@@ -6,9 +6,12 @@ import { Fonts } from "@/core/theme/font";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
+import { Tokens } from "@/core/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   ScrollView,
@@ -26,6 +29,7 @@ interface SelectedCurrency {
 
 const CurrencyConverterScreen = () => {
   const { colors } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const {
@@ -40,13 +44,13 @@ const CurrencyConverterScreen = () => {
   const [fromCurrency, setFromCurrency] = useState<SelectedCurrency>({
     currencyId: "USD",
     symbol: "$",
-    name: "US Dollar",
+    name: t("currency_converter.usd_name"),
   });
 
   const [toCurrency, setToCurrency] = useState<SelectedCurrency>({
     currencyId: "VND",
     symbol: "đ",
-    name: "Việt Nam Đồng",
+    name: t("currency_converter.vnd_name"),
   });
 
   const [fromAmount, setFromAmount] = useState<number>(100);
@@ -113,7 +117,7 @@ const CurrencyConverterScreen = () => {
   // Smart exchange rate display
   // =========================
   const getSmartExchangeRate = () => {
-    if (!fromCurrency || !toCurrency) return "N/A";
+    if (!fromCurrency || !toCurrency) return t("currency_converter.not_available");
 
     const isFromVND =
       fromCurrency.currencyId === "VND" ||
@@ -125,26 +129,26 @@ const CurrencyConverterScreen = () => {
     // 👉 Ưu tiên hiển thị VND ở bên phải
     if (isToVND) {
       const rate = convert(1, fromCurrency.currencyId, toCurrency.currencyId);
-      if (rate === null) return "N/A";
+      if (rate === null) return t("currency_converter.not_available");
 
       return `1 ${fromCurrency.currencyId} = ${Math.round(rate).toLocaleString(
-        "vi-VN"
+        i18n.language === "vi" ? "vi-VN" : "en-US"
       )} ${toCurrency.currencyId}`;
     }
 
     // 👉 Nếu FROM là VND → đảo chiều
     if (isFromVND) {
       const rate = convert(1, toCurrency.currencyId, fromCurrency.currencyId);
-      if (rate === null || rate === 0) return "N/A";
+      if (rate === null || rate === 0) return t("currency_converter.not_available");
 
       return `${Math.round(rate).toLocaleString(
-        "vi-VN"
+        i18n.language === "vi" ? "vi-VN" : "en-US"
       )} ${fromCurrency.currencyId} = 1 ${toCurrency.currencyId}`;
     }
 
     // 👉 Các currency khác
     const rate = convert(1, fromCurrency.currencyId, toCurrency.currencyId);
-    if (rate === null) return "N/A";
+    if (rate === null) return t("currency_converter.not_available");
 
     return `1 ${fromCurrency.currencyId} = ${rate.toLocaleString("en-US", {
       minimumFractionDigits: 2,
@@ -154,7 +158,7 @@ const CurrencyConverterScreen = () => {
 
   const formatRateDate = () => {
     if (!rateDate) return "";
-    return new Date(rateDate).toLocaleString("vi-VN", {
+    return new Date(rateDate).toLocaleString(i18n.language === "vi" ? "vi-VN" : "en-US", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -166,10 +170,10 @@ const CurrencyConverterScreen = () => {
   if (ratesLoading) {
     return (
       <SafeAreaView edges={["top", "left", "right"]} style={[styles.container, { backgroundColor: colors.background }]}>
-        <AppHeader title="Quy đổi tiền tệ" showBackButton />
+        <AppHeader title={t("currency_converter.title")} showBackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.tint} />
-          <ThemedText style={styles.loadingText}>Đang tải dữ liệu...</ThemedText>
+          <ThemedText style={styles.loadingText}>{t("currency_converter.loading")}</ThemedText>
         </View>
       </SafeAreaView>
     );
@@ -177,16 +181,16 @@ const CurrencyConverterScreen = () => {
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader title="Quy đổi tiền tệ" showBackButton />
+      <AppHeader title={t("currency_converter.title")} showBackButton />
 
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: hp(2) + insets.bottom }]}>
         <View style={styles.subtitleRow}>
           <ThemedText style={styles.subtitle}>
-            Chuyển đổi tiền tệ theo tỷ giá hiện tại
+            {t("currency_converter.subtitle")}
           </ThemedText>
           {rateDate && (
             <ThemedText style={styles.updateTime}>
-              Cập nhật: {formatRateDate()}
+              {t("currency_converter.updated_at", { date: formatRateDate() })}
             </ThemedText>
           )}
         </View>
@@ -196,7 +200,7 @@ const CurrencyConverterScreen = () => {
           {/* FROM */}
           <View style={styles.section}>
             <View style={styles.labelRow}>
-              <ThemedText style={styles.label}>Từ</ThemedText>
+              <ThemedText style={styles.label}>{t("currency_converter.from")}</ThemedText>
               <TouchableOpacity
                 style={styles.currencyBadge}
                 onPress={() => {
@@ -225,13 +229,19 @@ const CurrencyConverterScreen = () => {
           {/* Swap */}
           <View style={styles.swapContainer}>
             <TouchableOpacity
-              style={[styles.swapButton, { backgroundColor: colors.tint }]}
+              style={[styles.swapButton, { backgroundColor: "transparent", overflow: "hidden" }]}
               onPress={() => {
                 setFromCurrency(toCurrency);
                 setToCurrency(fromCurrency);
                 setFromAmount(toAmount);
               }}
             >
+              <LinearGradient
+                colors={Tokens.gradients.base}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
               <Ionicons name="swap-vertical" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -239,7 +249,7 @@ const CurrencyConverterScreen = () => {
           {/* TO */}
           <View style={styles.section}>
             <View style={styles.labelRow}>
-              <ThemedText style={styles.label}>Đến</ThemedText>
+              <ThemedText style={styles.label}>{t("currency_converter.to")}</ThemedText>
               <TouchableOpacity
                 style={styles.currencyBadge}
                 onPress={() => {
@@ -272,7 +282,7 @@ const CurrencyConverterScreen = () => {
         <View style={[styles.rateCard, { backgroundColor: colors.card }]}>
           <Ionicons name="analytics-outline" size={24} color={colors.tint} />
           <View style={{ flex: 1 }}>
-            <ThemedText style={styles.rateLabel}>Tỷ giá chuyển đổi</ThemedText>
+            <ThemedText style={styles.rateLabel}>{t("currency_converter.exchange_rate")}</ThemedText>
             <ThemedText style={styles.rateValue}>
               {getSmartExchangeRate()}
             </ThemedText>
@@ -283,7 +293,7 @@ const CurrencyConverterScreen = () => {
         </View>
 
         <ThemedText style={styles.disclaimer}>
-          * Tỷ giá từ Vietcombank, mang tính tham khảo
+          {t("currency_converter.disclaimer")}
         </ThemedText>
       </ScrollView>
     </SafeAreaView>

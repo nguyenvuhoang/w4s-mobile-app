@@ -2,15 +2,19 @@ import AppHeader from "@/components/base/AppHeader";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import { Tokens } from "@/core/theme/theme";
 import { hp, normalize, wp } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import Slider from "@react-native-community/slider";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TipCalculatorScreen = () => {
   const { colors } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const [billAmount, setBillAmount] = useState("0");
   const [tipPercent, setTipPercent] = useState(10);
@@ -44,7 +48,7 @@ const TipCalculatorScreen = () => {
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("vi-VN").format(Math.round(value));
+    return new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : "en-US").format(Math.round(value));
   };
 
   const handleBillAmountChange = (text: string) => {
@@ -84,7 +88,7 @@ const TipCalculatorScreen = () => {
       edges={["top", "left", "right"]}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <AppHeader title="Tính tiền típ" showBackButton />
+      <AppHeader title={t("tip_calculator.title")} showBackButton />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -92,7 +96,7 @@ const TipCalculatorScreen = () => {
       >
         {/* Subtitle */}
         <ThemedText style={[styles.subtitle, { color: colors.text }]}>
-          Hỗ trợ chia tiền hóa đơn khi đi ăn, đi chơi
+          {t("tip_calculator.subtitle")}
         </ThemedText>
 
         {/* Input Card */}
@@ -100,7 +104,7 @@ const TipCalculatorScreen = () => {
           {/* Bill Amount */}
           <View style={styles.section}>
             <ThemedText style={[styles.label, { color: colors.text }]}>
-              Số tiền hóa đơn
+              {t("tip_calculator.bill_amount")}
             </ThemedText>
             <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
               <TextInput
@@ -112,7 +116,7 @@ const TipCalculatorScreen = () => {
                 placeholderTextColor={colors.icon}
               />
               <ThemedText style={[styles.currency, { color: colors.icon }]}>
-                đ
+                {t("tip_calculator.currency_symbol")}
               </ThemedText>
             </View>
           </View>
@@ -124,7 +128,7 @@ const TipCalculatorScreen = () => {
           <View style={styles.section}>
             <View style={styles.labelRow}>
               <ThemedText style={[styles.label, { color: colors.text }]}>
-                Phần trăm típ
+                {t("tip_calculator.tip_percent")}
               </ThemedText>
               <View style={[styles.percentInputWrapper, { borderColor: colors.border }]}>
                 <TextInput
@@ -161,8 +165,9 @@ const TipCalculatorScreen = () => {
                   style={[
                     styles.presetButton,
                     {
-                      backgroundColor: tipPercent === preset && !isManualInput ? colors.tint : colors.background,
+                      backgroundColor: tipPercent === preset && !isManualInput ? "transparent" : colors.background,
                       borderColor: colors.border,
+                      overflow: "hidden",
                     }
                   ]}
                   onPress={() => {
@@ -172,6 +177,14 @@ const TipCalculatorScreen = () => {
                   }}
                   activeOpacity={0.7}
                 >
+                  {tipPercent === preset && !isManualInput && (
+                    <LinearGradient
+                      colors={Tokens.gradients.base}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                  )}
                   <ThemedText
                     style={[
                       styles.presetText,
@@ -191,7 +204,7 @@ const TipCalculatorScreen = () => {
           {/* Number of People */}
           <View style={styles.section}>
             <ThemedText style={[styles.label, { color: colors.text }]}>
-              Số người chia
+              {t("tip_calculator.split_number")}
             </ThemedText>
 
             <View style={styles.peopleContainer}>
@@ -219,7 +232,7 @@ const TipCalculatorScreen = () => {
                   {numberOfPeople}
                 </ThemedText>
                 <ThemedText style={[styles.peopleLabel, { color: colors.icon }]}>
-                  người
+                  {t("tip_calculator.person_unit", { count: numberOfPeople })}
                 </ThemedText>
               </View>
 
@@ -243,12 +256,12 @@ const TipCalculatorScreen = () => {
         {/* Result Card */}
         <View style={[styles.card, styles.resultCard, { backgroundColor: colors.card }]}>
           <ThemedText style={[styles.resultTitle, { color: colors.text }]}>
-            Kết quả tính toán
+            {t("tip_calculator.results")}
           </ThemedText>
 
           <View style={styles.resultItem}>
             <ThemedText style={[styles.resultLabel, { color: colors.icon }]} numberOfLines={1}>
-              Tiền típ
+              {t("tip_calculator.tip_amount")}
             </ThemedText>
             <ThemedText
               style={[styles.resultValue, { color: colors.text }]}
@@ -256,13 +269,13 @@ const TipCalculatorScreen = () => {
               adjustsFontSizeToFit
               minimumFontScale={0.8}
             >
-              {formatCurrency(tipAmount)} đ
+              {formatCurrency(tipAmount)} {t("tip_calculator.currency_symbol")}
             </ThemedText>
           </View>
 
           <View style={styles.resultItem}>
             <ThemedText style={[styles.resultLabel, { color: colors.icon }]} numberOfLines={1}>
-              Tổng hóa đơn
+              {t("tip_calculator.total_bill")}
             </ThemedText>
             <ThemedText
               style={[styles.resultValue, { color: colors.text }]}
@@ -270,7 +283,7 @@ const TipCalculatorScreen = () => {
               adjustsFontSizeToFit
               minimumFontScale={0.8}
             >
-              {formatCurrency(totalAmount)} đ
+              {formatCurrency(totalAmount)} {t("tip_calculator.currency_symbol")}
             </ThemedText>
           </View>
 
@@ -278,7 +291,7 @@ const TipCalculatorScreen = () => {
 
           <View style={[styles.resultItem, styles.highlightResult]}>
             <ThemedText style={[styles.resultLabel, { color: colors.text }]} numberOfLines={1}>
-              Mỗi người trả
+              {t("tip_calculator.per_person")}
             </ThemedText>
             <ThemedText
               style={[styles.highlightValue, { color: colors.tint }]}
@@ -286,12 +299,12 @@ const TipCalculatorScreen = () => {
               adjustsFontSizeToFit
               minimumFontScale={0.7}
             >
-              {formatCurrency(perPerson)} đ
+              {formatCurrency(perPerson)} {t("tip_calculator.currency_symbol")}
             </ThemedText>
           </View>
 
           <ThemedText style={[styles.disclaimer, { color: colors.icon }]}>
-            * Số tiền đã được làm tròn
+            {t("tip_calculator.disclaimer")}
           </ThemedText>
         </View>
       </ScrollView>

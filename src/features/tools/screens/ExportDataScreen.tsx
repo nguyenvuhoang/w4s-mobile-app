@@ -3,14 +3,15 @@ import CustomButton from "@/components/base/CustomButton";
 import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
+import i18n from "@/core/i18n/i18n";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Tokens } from "@/core/theme/theme";
-import { LinearGradient } from "expo-linear-gradient";
 import { useExportData } from "@/features/tools/hooks/useExportData";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import StorageService from "@/services/StorageService";
 import { normalize } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -88,12 +89,12 @@ const ExportDataScreen = () => {
   );
 
   const parseCategoryNameJSON = (nameJson: string | undefined) => {
-    if (!nameJson) return "Tất cả";
+    if (!nameJson) return t("export_data.all");
     try {
       const parsed = JSON.parse(nameJson);
-      return parsed.vi || parsed.en || "Tất cả";
+      return parsed[i18n.language] || parsed.vi || parsed.en || t("export_data.all");
     } catch {
-      return nameJson || "Tất cả";
+      return nameJson || t("export_data.all");
     }
   };
 
@@ -105,7 +106,7 @@ const ExportDataScreen = () => {
 
   const handleExport = async () => {
     if (!email.trim() || !email.includes("@")) {
-      showNotification("Vui lòng nhập email hợp lệ để nhận báo cáo", "error");
+      showNotification(t("export_data.invalid_email_error"), "error");
       return;
     }
 
@@ -125,10 +126,10 @@ const ExportDataScreen = () => {
 
     const res = await exportData(payload);
     if (res.success) {
-      showNotification("Yêu cầu xuất dữ liệu đã được gửi thành công", "success");
+      showNotification(t("export_data.export_success"), "success");
       router.back();
     } else {
-      showNotification("Xuất dữ liệu thất bại", "error");
+      showNotification(t("export_data.export_failed"), "error");
     }
   };
 
@@ -139,18 +140,18 @@ const ExportDataScreen = () => {
     >
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <AppHeader title="Xuất dữ liệu" onBack={handleBack} />
+        <AppHeader title={t("export_data.title")} onBack={handleBack} />
 
         <View style={[styles.content, { paddingBottom: normalize(20) + insets.bottom }]}>
           {/* Wallet */}
           <View style={styles.inputGroup}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                Chọn Ví <CustomText style={{ color: "red" }}>*</CustomText>
+                {t("export_data.select_wallet")} <CustomText style={{ color: "red" }}>*</CustomText>
               </CustomText>
               {walletId !== "ALL" && (
                 <TouchableOpacity onPress={() => setWalletId("ALL")}>
-                  <CustomText style={{ color: "#FF3B30", fontSize: normalize(12), marginBottom: normalize(8) }}>Xóa</CustomText>
+                  <CustomText style={{ color: "#FF3B30", fontSize: normalize(12), marginBottom: normalize(8) }}>{t("export_data.clear")}</CustomText>
                 </TouchableOpacity>
               )}
             </View>
@@ -169,7 +170,7 @@ const ExportDataScreen = () => {
                 <>
                   <Ionicons name="wallet-outline" size={normalize(20)} color={colors.tint} />
                   <CustomText style={[styles.input, { color: colors.text }]}>
-                    Tất cả
+                    {t("export_data.all")}
                   </CustomText>
                 </>
               )}
@@ -181,11 +182,11 @@ const ExportDataScreen = () => {
           <View style={styles.inputGroup}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                Chọn Category <CustomText style={{ color: "red" }}>*</CustomText>
+                {t("export_data.select_category")} <CustomText style={{ color: "red" }}>*</CustomText>
               </CustomText>
               {categoryData !== "ALL" && (
                 <TouchableOpacity onPress={() => setCategoryData("ALL")}>
-                  <CustomText style={{ color: "#FF3B30", fontSize: normalize(12), marginBottom: normalize(8) }}>Xóa</CustomText>
+                  <CustomText style={{ color: "#FF3B30", fontSize: normalize(12), marginBottom: normalize(8) }}>{t("export_data.clear")}</CustomText>
                 </TouchableOpacity>
               )}
             </View>
@@ -206,7 +207,7 @@ const ExportDataScreen = () => {
                 <>
                   <Ionicons name="grid-outline" size={normalize(20)} color={colors.tint} />
                   <CustomText style={[styles.input, { color: colors.text }]}>
-                    Tất cả
+                    {t("export_data.all")}
                   </CustomText>
                 </>
               )}
@@ -233,7 +234,7 @@ const ExportDataScreen = () => {
           {/* Start Date */}
           <View style={styles.inputGroup}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Ngày bắt đầu <CustomText style={{ color: "red" }}>*</CustomText>
+              {t("export_data.start_date")} <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
               style={[styles.dateContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -249,7 +250,7 @@ const ExportDataScreen = () => {
           {/* End Date */}
           <View style={styles.inputGroup}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Ngày kết thúc <CustomText style={{ color: "red" }}>*</CustomText>
+              {t("export_data.end_date")} <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
               style={[styles.dateContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -265,7 +266,7 @@ const ExportDataScreen = () => {
           {/* File Type */}
           <View style={styles.inputGroup}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Định dạng file <CustomText style={{ color: "red" }}>*</CustomText>
+              {t("export_data.file_format")} <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <View style={{ flexDirection: "row", gap: normalize(12) }}>
               <TouchableOpacity
@@ -317,7 +318,7 @@ const ExportDataScreen = () => {
           {/* Email */}
           <View style={styles.inputGroup}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Email nhận báo cáo <CustomText style={{ color: "red" }}>*</CustomText>
+              {t("export_data.email_label")} <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <View
               style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -336,7 +337,7 @@ const ExportDataScreen = () => {
 
           {/* Export Button */}
           <CustomButton
-            title={loading ? "Đang xử lý..." : "Xuất File"}
+            title={loading ? t("export_data.processing") : t("export_data.export_button")}
             onPress={handleExport}
             disabled={loading || !email.trim()}
             useGradient={true}
@@ -354,9 +355,9 @@ const ExportDataScreen = () => {
         theme={mode === "dark" ? "dark" : "light"}
         minimumDate={minStartDate}
         maximumDate={maxDate}
-        title="Chọn ngày bắt đầu"
-        confirmText="Xác nhận"
-        cancelText="Hủy"
+        title={t("export_data.select_start_date")}
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
         onConfirm={(date) => {
           setShowStartPicker(false);
           setStartDate(date);
@@ -375,9 +376,9 @@ const ExportDataScreen = () => {
         theme={mode === "dark" ? "dark" : "light"}
         minimumDate={startDate}
         maximumDate={maxDate}
-        title="Chọn ngày kết thúc"
-        confirmText="Xác nhận"
-        cancelText="Hủy"
+        title={t("export_data.select_end_date")}
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
         onConfirm={(date) => {
           setShowEndPicker(false);
           setEndDate(date);

@@ -1,10 +1,10 @@
 import '@formatjs/intl-getcanonicallocales/polyfill';
 import '@formatjs/intl-locale/polyfill';
+import '@formatjs/intl-pluralrules/polyfill';
 import '@formatjs/intl-pluralrules/locale-data/en';
 import '@formatjs/intl-pluralrules/locale-data/lo';
 import '@formatjs/intl-pluralrules/locale-data/vi';
 import '@formatjs/intl-pluralrules/locale-data/zh';
-import '@formatjs/intl-pluralrules/polyfill';
 
 if (typeof Intl === 'object') {
   if (!Intl.PluralRules) {

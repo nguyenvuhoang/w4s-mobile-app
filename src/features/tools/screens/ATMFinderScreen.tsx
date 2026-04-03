@@ -1,11 +1,15 @@
 import AppHeader from "@/components/base/AppHeader";
 import { ThemedText } from "@/components/themed-text";
+import i18n from "@/core/i18n/i18n";
 import { useAppTheme } from "@/core/theme/ThemeContext";
+import { Tokens } from "@/core/theme/theme";
 import { Fonts } from "@/core/theme/font";
 import { hp, normalize, wp } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     ActivityIndicator,
     FlatList,
@@ -55,9 +59,9 @@ interface PlaceDetail {
 // Type Filters
 // =====================
 const TYPE_FILTERS = [
-    { label: "Tất cả", value: "all", icon: "apps-outline" as const },
-    { label: "ATM", value: "atm", icon: "card-outline" as const },
-    { label: "Ngân hàng", value: "bank", icon: "business-outline" as const },
+    { label: i18n.t("atm_finder.all"), value: "all", icon: "apps-outline" as const },
+    { label: i18n.t("atm_finder.atm"), value: "atm", icon: "card-outline" as const },
+    { label: i18n.t("atm_finder.bank"), value: "bank", icon: "business-outline" as const },
 ];
 
 // =====================
@@ -100,6 +104,7 @@ const ATMFinderScreen = () => {
     const { colors, isDark } = useAppTheme();
     const insets = useSafeAreaInsets();
     const mapRef = useRef<MapView>(null);
+    const { t } = useTranslation();
 
     // State
     const [loading, setLoading] = useState(true);
@@ -125,7 +130,7 @@ const ATMFinderScreen = () => {
             try {
                 const { status } = await Location.requestForegroundPermissionsAsync();
                 if (status !== "granted") {
-                    setErrorMsg("Vui lòng cấp quyền truy cập vị trí để sử dụng tính năng này.");
+                    setErrorMsg(t("atm_finder.permission_error"));
                     setLoading(false);
                     return;
                 }
@@ -142,7 +147,7 @@ const ATMFinderScreen = () => {
                 setLoading(false);
             } catch (error) {
                 console.error("Error getting location:", error);
-                setErrorMsg("Không thể lấy vị trí hiện tại. Vui lòng thử lại.");
+                setErrorMsg(t("atm_finder.location_error"));
                 setLoading(false);
             }
         })();
@@ -216,7 +221,7 @@ const ATMFinderScreen = () => {
                 }
                 return (data.places || []).map((place: any) => ({
                     id: place.id,
-                    name: place.displayName?.text || (type === "atm" ? "ATM" : "Ngân hàng"),
+                    name: place.displayName?.text || (type === "atm" ? t("atm_finder.atm") : t("atm_finder.bank")),
                     address: place.shortFormattedAddress || place.formattedAddress || "",
                     lat: place.location?.latitude,
                     lng: place.location?.longitude,
@@ -264,7 +269,7 @@ const ATMFinderScreen = () => {
             }
         } catch (error) {
             console.error("Error fetching places:", error);
-            setErrorMsg("Lỗi khi tải dữ liệu. Vui lòng thử lại.");
+            setErrorMsg(t("atm_finder.fetch_error"));
         } finally {
             setSearching(false);
         }
@@ -300,7 +305,7 @@ const ATMFinderScreen = () => {
                         "X-Goog-FieldMask": TEXT_FIELD_MASK,
                     },
                     body: JSON.stringify({
-                        textQuery: searchText.trim() + " ATM ngân hàng",
+                        textQuery: searchText.trim() + " ATM " + t("atm_finder.bank"),
                         locationBias: {
                             circle: {
                                 center: {
@@ -609,7 +614,7 @@ const ATMFinderScreen = () => {
                                         { color: item.isOpen ? "#00A651" : "#EF4444" },
                                     ]}
                                 >
-                                    {item.isOpen ? "Đang mở" : "Đã đóng"}
+                                    {item.isOpen ? t("atm_finder.open") : t("atm_finder.closed")}
                                 </ThemedText>
                             </View>
                         )}
@@ -631,8 +636,8 @@ const ATMFinderScreen = () => {
                             <Ionicons name="navigate-outline" size={normalize(14)} color={colors.tint} />
                             <ThemedText style={[styles.distanceText, { color: colors.tint }]}>
                                 {item.distance < 1
-                                    ? `${Math.round(item.distance * 1000)}m`
-                                    : `${item.distance.toFixed(1)}km`}
+                                    ? `${Math.round(item.distance * 1000)} ${t("atm_finder.unit_meter")}`
+                                    : `${item.distance.toFixed(1)} ${t("atm_finder.unit_km")}`}
                             </ThemedText>
                         </View>
                     )}
@@ -733,7 +738,7 @@ const ATMFinderScreen = () => {
                                                     { color: selectedPlace.isOpen ? "#00A651" : "#EF4444" },
                                                 ]}
                                             >
-                                                {selectedPlace.isOpen ? "Đang mở cửa" : "Đã đóng cửa"}
+                                                {selectedPlace.isOpen ? t("atm_finder.opening") : t("atm_finder.closing")}
                                             </ThemedText>
                                         </View>
                                     )}
@@ -762,7 +767,7 @@ const ATMFinderScreen = () => {
                                 <DetailInfoRow
                                     icon="location-outline"
                                     iconColor="#3B82F6"
-                                    label="Địa chỉ"
+                                    label={t("atm_finder.address")}
                                     value={placeDetail?.formattedAddress || selectedPlace.address}
                                     colors={colors}
                                     isDark={isDark}
@@ -773,11 +778,11 @@ const ATMFinderScreen = () => {
                                     <DetailInfoRow
                                         icon="navigate-outline"
                                         iconColor="#8B5CF6"
-                                        label="Khoảng cách"
+                                        label={t("atm_finder.distance")}
                                         value={
                                             selectedPlace.distance < 1
-                                                ? `${Math.round(selectedPlace.distance * 1000)} mét`
-                                                : `${selectedPlace.distance.toFixed(1)} km`
+                                                ? `${Math.round(selectedPlace.distance * 1000)} ${t("atm_finder.unit_meter")}`
+                                                : `${selectedPlace.distance.toFixed(1)} ${t("atm_finder.unit_km")}`
                                         }
                                         colors={colors}
                                         isDark={isDark}
@@ -789,7 +794,7 @@ const ATMFinderScreen = () => {
                                     <View style={styles.detailLoadingRow}>
                                         <ActivityIndicator size="small" color={colors.tint} />
                                         <ThemedText style={[styles.detailLoadingText, { color: colors.icon }]}>
-                                            Đang tải thông tin chi tiết...
+                                            {t("atm_finder.loading_detail")}
                                         </ThemedText>
                                     </View>
                                 ) : (
@@ -799,7 +804,7 @@ const ATMFinderScreen = () => {
                                             <DetailInfoRow
                                                 icon="call-outline"
                                                 iconColor="#00A651"
-                                                label="Số điện thoại"
+                                                label={t("atm_finder.phone")}
                                                 value={placeDetail.formattedPhone}
                                                 colors={colors}
                                                 isDark={isDark}
@@ -825,7 +830,7 @@ const ATMFinderScreen = () => {
                                                 </View>
                                                 <View style={styles.detailInfoContent}>
                                                     <ThemedText style={[styles.detailInfoLabel, { color: colors.icon }]}>
-                                                        Giờ làm việc
+                                                        {t("atm_finder.working_hours")}
                                                     </ThemedText>
                                                     {placeDetail.weekdayText.map((text, idx) => (
                                                         <ThemedText
@@ -844,7 +849,7 @@ const ATMFinderScreen = () => {
                                             <DetailInfoRow
                                                 icon="globe-outline"
                                                 iconColor="#EC4899"
-                                                label="Website"
+                                                label={t("atm_finder.website")}
                                                 value={placeDetail.website}
                                                 colors={colors}
                                                 isDark={isDark}
@@ -867,7 +872,7 @@ const ATMFinderScreen = () => {
                                     activeOpacity={0.8}
                                 >
                                     <Ionicons name="call" size={normalize(20)} color="#FFFFFF" />
-                                    <ThemedText style={styles.actionButtonText}>Gọi điện</ThemedText>
+                                    <ThemedText style={styles.actionButtonText}>{t("atm_finder.call")}</ThemedText>
                                 </TouchableOpacity>
                             )}
                             <TouchableOpacity
@@ -880,7 +885,7 @@ const ATMFinderScreen = () => {
                                 activeOpacity={0.8}
                             >
                                 <Ionicons name="navigate" size={normalize(20)} color="#FFFFFF" />
-                                <ThemedText style={styles.actionButtonText}>Chỉ đường</ThemedText>
+                                <ThemedText style={styles.actionButtonText}>{t("atm_finder.directions")}</ThemedText>
                             </TouchableOpacity>
                         </View>
                     </TouchableOpacity>
@@ -895,11 +900,11 @@ const ATMFinderScreen = () => {
     if (loading) {
         return (
             <SafeAreaView edges={["top", "left", "right"]} style={[styles.container, { backgroundColor: colors.background }]}>
-                <AppHeader title="Tìm ATM / Ngân hàng" showBackButton />
+                <AppHeader title={t("atm_finder.title")} showBackButton />
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={colors.tint} />
                     <ThemedText style={[styles.loadingText, { color: colors.icon }]}>
-                        Đang xác định vị trí của bạn...
+                        {t("atm_finder.determining_location")}
                     </ThemedText>
                 </View>
             </SafeAreaView>
@@ -912,17 +917,17 @@ const ATMFinderScreen = () => {
     if (errorMsg && !userLocation) {
         return (
             <SafeAreaView edges={["top", "left", "right"]} style={[styles.container, { backgroundColor: colors.background }]}>
-                <AppHeader title="Tìm ATM / Ngân hàng" showBackButton />
+                <AppHeader title={t("atm_finder.title")} showBackButton />
                 <View style={styles.errorContainer}>
                     <Ionicons name="location-outline" size={normalize(64)} color={colors.border} />
                     <ThemedText style={[styles.errorTitle, { color: colors.text }]}>
-                        Không thể truy cập vị trí
+                        {t("atm_finder.no_location_access")}
                     </ThemedText>
                     <ThemedText style={[styles.errorDesc, { color: colors.icon }]}>
                         {errorMsg}
                     </ThemedText>
                     <TouchableOpacity
-                        style={[styles.retryButton, { backgroundColor: colors.tint }]}
+                        style={[styles.retryButton, { backgroundColor: "transparent", overflow: "hidden" }]}
                         onPress={() => {
                             setErrorMsg(null);
                             setLoading(true);
@@ -938,13 +943,19 @@ const ATMFinderScreen = () => {
                                         setLoading(false);
                                     });
                                 } else {
-                                    setErrorMsg("Vui lòng cấp quyền truy cập vị trí.");
+                                    setErrorMsg(t("atm_finder.grant_permission_hint"));
                                     setLoading(false);
                                 }
                             });
                         }}
                     >
-                        <ThemedText style={styles.retryButtonText}>Thử lại</ThemedText>
+                        <LinearGradient
+                            colors={Tokens.gradients.base}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={StyleSheet.absoluteFill}
+                        />
+                        <ThemedText style={styles.retryButtonText}>{t("atm_finder.retry")}</ThemedText>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -953,7 +964,7 @@ const ATMFinderScreen = () => {
 
     return (
         <SafeAreaView edges={["top", "left", "right"]} style={[styles.container, { backgroundColor: colors.background }]}>
-            <AppHeader title="Tìm ATM / Ngân hàng" showBackButton />
+            <AppHeader title={t("atm_finder.title")} showBackButton />
 
             {/* Map Section */}
             {userLocation && (
@@ -1015,7 +1026,7 @@ const ATMFinderScreen = () => {
                         <Ionicons name="search-outline" size={normalize(20)} color={colors.icon} />
                         <TextInput
                             style={[styles.searchInput, { color: colors.text }]}
-                            placeholder="Tìm ngân hàng, ATM gần đây..."
+                            placeholder={t("atm_finder.search_placeholder")}
                             placeholderTextColor={colors.icon}
                             value={searchText}
                             onChangeText={setSearchText}
@@ -1041,14 +1052,23 @@ const ATMFinderScreen = () => {
                                     styles.typeFilterButton,
                                     {
                                         backgroundColor:
-                                            selectedType === filter.value ? colors.tint : colors.card,
+                                            selectedType === filter.value ? "transparent" : colors.card,
                                         borderColor:
-                                            selectedType === filter.value ? colors.tint : colors.border,
+                                            selectedType === filter.value ? "transparent" : colors.border,
+                                        overflow: "hidden",
                                     },
                                 ]}
                                 onPress={() => setSelectedType(filter.value)}
                                 activeOpacity={0.7}
                             >
+                                {selectedType === filter.value && (
+                                    <LinearGradient
+                                        colors={Tokens.gradients.base}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={StyleSheet.absoluteFill}
+                                    />
+                                )}
                                 <Ionicons
                                     name={filter.icon}
                                     size={normalize(14)}
@@ -1075,7 +1095,7 @@ const ATMFinderScreen = () => {
                         contentContainerStyle={styles.radiusContent}
                     >
                         <ThemedText style={[styles.radiusLabel, { color: colors.icon }]}>
-                            Bán kính:
+                            {t("atm_finder.radius")}
                         </ThemedText>
                         {RADIUS_OPTIONS.map((option) => (
                             <TouchableOpacity
@@ -1084,14 +1104,23 @@ const ATMFinderScreen = () => {
                                     styles.radiusChip,
                                     {
                                         backgroundColor:
-                                            searchRadius === option.value ? colors.tint : colors.card,
+                                            searchRadius === option.value ? "transparent" : colors.card,
                                         borderColor:
-                                            searchRadius === option.value ? colors.tint : colors.border,
+                                            searchRadius === option.value ? "transparent" : colors.border,
+                                        overflow: "hidden",
                                     },
                                 ]}
                                 onPress={() => setSearchRadius(option.value)}
                                 activeOpacity={0.7}
                             >
+                                {searchRadius === option.value && (
+                                    <LinearGradient
+                                        colors={Tokens.gradients.base}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={StyleSheet.absoluteFill}
+                                    />
+                                )}
                                 <ThemedText
                                     style={[
                                         styles.radiusChipText,
@@ -1109,14 +1138,10 @@ const ATMFinderScreen = () => {
                 <View style={styles.resultsCountSection}>
                     <ThemedText style={[styles.resultsCountText, { color: colors.icon }]}>
                         {searching ? (
-                            "Đang tìm kiếm..."
+                            t("atm_finder.searching")
                         ) : (
                             <>
-                                Tìm thấy{" "}
-                                <ThemedText style={[styles.resultsCountHighlight, { color: colors.tint }]}>
-                                    {filteredPlaces.length}
-                                </ThemedText>{" "}
-                                địa điểm gần bạn
+                                {t("atm_finder.results_found", { count: filteredPlaces.length })}
                             </>
                         )}
                     </ThemedText>
@@ -1138,10 +1163,10 @@ const ATMFinderScreen = () => {
                             <View style={styles.emptyContainer}>
                                 <Ionicons name="location-outline" size={normalize(48)} color={colors.border} />
                                 <ThemedText style={[styles.emptyTitle, { color: colors.text }]}>
-                                    Không tìm thấy kết quả
+                                    {t("atm_finder.no_results")}
                                 </ThemedText>
                                 <ThemedText style={[styles.emptyDesc, { color: colors.icon }]}>
-                                    Thử mở rộng bán kính tìm kiếm hoặc thay đổi bộ lọc
+                                    {t("atm_finder.no_results_hint")}
                                 </ThemedText>
                             </View>
                         }

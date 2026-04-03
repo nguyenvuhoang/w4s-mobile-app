@@ -79,6 +79,7 @@ export const TaxConfig = {
       limit: 10_000_000,
       rate: 0.05, // 5%
       description: "Đến 10 triệu",
+      i18nKey: "pit.bracket_1_label",
     },
     {
       level: 2,
@@ -87,6 +88,7 @@ export const TaxConfig = {
       limit: 30_000_000,
       rate: 0.10, // 10% (giảm từ 15%)
       description: "Trên 10 triệu đến 30 triệu",
+      i18nKey: "pit.bracket_2_label",
     },
     {
       level: 3,
@@ -95,6 +97,7 @@ export const TaxConfig = {
       limit: 60_000_000,
       rate: 0.20, // 20% (giảm từ 25%)
       description: "Trên 30 triệu đến 60 triệu",
+      i18nKey: "pit.bracket_3_label",
     },
     {
       level: 4,
@@ -103,6 +106,7 @@ export const TaxConfig = {
       limit: 100_000_000,
       rate: 0.30, // 30%
       description: "Trên 60 triệu đến 100 triệu",
+      i18nKey: "pit.bracket_4_label",
     },
     {
       level: 5,
@@ -111,6 +115,7 @@ export const TaxConfig = {
       limit: Infinity,
       rate: 0.35, // 35%
       description: "Trên 100 triệu",
+      i18nKey: "pit.bracket_5_label",
     },
   ],
 
@@ -120,17 +125,17 @@ export const TaxConfig = {
   DISPLAY: {
     // Bậc thuế format ngắn gọn cho UI (5 bậc mới)
     BRACKETS_FORMATTED: [
-      { label: "0 - 10 triệu",      rate: "5%"  },
-      { label: "10 - 30 triệu",     rate: "10%" },
-      { label: "30 - 60 triệu",     rate: "20%" },
-      { label: "60 - 100 triệu",    rate: "30%" },
-      { label: "Trên 100 triệu",    rate: "35%" },
+      { i18nKey: "pit.bracket_1_label", rate: "5%"  },
+      { i18nKey: "pit.bracket_2_label", rate: "10%" },
+      { i18nKey: "pit.bracket_3_label", rate: "20%" },
+      { i18nKey: "pit.bracket_4_label", rate: "30%" },
+      { i18nKey: "pit.bracket_5_label", rate: "35%" },
     ],
 
     // Tên đầy đủ cho tooltip/help
-    INSURANCE_FULL_NAME: "Bảo hiểm bắt buộc (BHXH 8% + BHYT 1.5% + BHTN 1%)",
-    PERSONAL_DEDUCTION_NAME: "Giảm trừ bản thân",
-    DEPENDENT_DEDUCTION_NAME: "Giảm trừ người phụ thuộc",
+    INSURANCE_I18N_KEY: "pit.insurance_full_name",
+    PERSONAL_I18N_KEY: "pit.personal_deduction_name",
+    DEPENDENT_I18N_KEY: "pit.dependent_deduction_name",
   },
 
   // ==========================================
@@ -336,6 +341,7 @@ export interface TaxBracket {
   limit: number;
   rate: number;
   description: string;
+  i18nKey: string;
 }
 
 export interface TaxCalculationResult {

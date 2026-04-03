@@ -7,8 +7,10 @@ import { ThemedText } from "@/components/themed-text";
 import { useNotification } from "@/contexts/NotificationContext";
 import { Fonts } from "@/core/theme/font";
 import { useAppTheme } from "@/core/theme/ThemeContext";
+import { Tokens } from "@/core/theme/theme";
 import { hp, normalize, wp } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -598,11 +600,19 @@ const InterestCalculatorScreen: React.FC = () => {
                   key={mode}
                   style={[
                     styles.segmentBtn,
-                    rateMode === mode && { backgroundColor: colors.tint },
+                    rateMode === mode && { backgroundColor: "transparent", overflow: "hidden" },
                   ]}
                   onPress={() => setRateMode(mode)}
                   activeOpacity={0.8}
                 >
+                  {rateMode === mode && (
+                    <LinearGradient
+                      colors={Tokens.gradients.base}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                  )}
                   <ThemedText
                     style={[
                       styles.segmentLabel,
@@ -833,10 +843,18 @@ const InterestCalculatorScreen: React.FC = () => {
                     key={tab}
                     style={[
                       styles.tabBtn,
-                      scheduleTab === tab && { backgroundColor: colors.tint },
+                      scheduleTab === tab && { backgroundColor: "transparent", overflow: "hidden" },
                     ]}
                     onPress={() => setScheduleTab(tab)}
                   >
+                    {scheduleTab === tab && (
+                      <LinearGradient
+                        colors={Tokens.gradients.base}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    )}
                     <ThemedText
                       style={[
                         styles.tabLabel,
@@ -1036,9 +1054,15 @@ const InterestCalculatorScreen: React.FC = () => {
                 </ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: colors.tint }]}
+                style={[styles.modalBtn, { backgroundColor: "transparent", overflow: "hidden" }]}
                 onPress={addRatePeriod}
               >
+                <LinearGradient
+                  colors={Tokens.gradients.base}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
                 <ThemedText style={[styles.modalBtnLabel, { color: "#fff" }]}>
                   {t("common.add")}
                 </ThemedText>
@@ -1118,9 +1142,15 @@ const InterestCalculatorScreen: React.FC = () => {
                 </ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: colors.tint }]}
+                style={[styles.modalBtn, { backgroundColor: "transparent", overflow: "hidden" }]}
                 onPress={addCustomFee}
               >
+                <LinearGradient
+                  colors={Tokens.gradients.base}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
                 <ThemedText style={[styles.modalBtnLabel, { color: "#fff" }]}>
                   {t("common.add")}
                 </ThemedText>

@@ -6,12 +6,14 @@ import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ToolsScreen = () => {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -26,55 +28,55 @@ const ToolsScreen = () => {
     >
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + normalize(20) }}>
         {/* Header */}
-        <AppHeader title="Công cụ" onBack={handleBack} />
+        <AppHeader title={t("tools.title")} onBack={handleBack} />
 
         {/* Tools List */}
         <View style={[styles.toolsList, { backgroundColor: colors.card }]}>
           <ToolItem
             icon="download-outline"
-            title="Xuất dữ liệu nội bộ"
+            title={t("tools.export_internal")}
             onPress={() => router.push("/(protected)/tools/export-data")}
             colors={colors}
           />
 
-          <ToolItem
+          {/* <ToolItem
             icon="logo-google"
-            title="Xuất dữ liệu Google Trang Tính"
+            title={t("tools.export_google_sheets")}
             onPress={() => router.push("/(protected)/tools/export-google-sheets")}
             colors={colors}
-          />
+          /> */}
 
           <ToolItem
             icon="location-outline"
-            title="Tìm vị trí ATM/Ngân hàng"
+            title={t("tools.atm_finder")}
             onPress={() => router.push("/(protected)/tools/atm-finder")}
             colors={colors}
           />
 
           <ToolItem
             icon="calculator-outline"
-            title="Tính thuế thu nhập cá nhân"
+            title={t("tools.personal_income_tax")}
             onPress={() => router.push("/(protected)/tools/personal-income-tax")}
             colors={colors}
           />
 
           <ToolItem
             icon="trending-up-outline"
-            title="Tính lãi suất"
+            title={t("tools.interest_calculator")}
             onPress={() => router.push("/(protected)/tools/interest-calculator")}
             colors={colors}
           />
 
           <ToolItem
             icon="restaurant-outline"
-            title="Tính tiền tip"
+            title={t("tools.tip_calculator")}
             onPress={() => router.push("/(protected)/tools/tip-calculator")}
             colors={colors}
           />
 
           <ToolItem
             icon="swap-horizontal-outline"
-            title="Quy đổi tiền tệ"
+            title={t("tools.currency_converter")}
             onPress={() => router.push("/(protected)/tools/currency-converter")}
             colors={colors}
           />
