@@ -2,11 +2,19 @@ import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import type {
+  Loan,
+  LoanFilterType,
+  LoanStatus,
+  LoanSummary,
+} from "@/features/paybook/types";
+import { paybookRepository } from "@/services/repositories/paybook.repository";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -14,246 +22,306 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type {
-  Paybook,
-  PaybookFilterType,
-  PaybookStatus,
-  PaybookSummary,
-} from "../types";
 
-// Mock Data với originalAmount và paidAmount
-const MOCK_PAYBOOKS: Paybook[] = [
-  {
-    id: "1",
-    name: "Nguyễn Văn A",
-    note: "Tiền ăn tối cuối tuần",
-    originalAmount: 500000,
-    paidAmount: 200000,
-    type: "receivable",
-    status: "pending",
-    dueDate: "15/02/2026",
-    createdAt: "01/01/2026",
-  },
-  {
-    id: "2",
-    name: "Cửa hàng điện tử B",
-    note: "Mua laptop trả góp",
-    originalAmount: 12000000,
-    paidAmount: 4000000,
-    type: "payable",
-    status: "pending",
-    dueDate: "01/03/2026",
-    createdAt: "15/12/2025",
-  },
-  {
-    id: "3",
-    name: "Trần Thị C",
-    note: "Cho mượn tiền mua xe",
-    originalAmount: 5000000,
-    paidAmount: 0,
-    type: "receivable",
-    status: "overdue",
-    dueDate: "10/01/2026",
-    createdAt: "10/11/2025",
-  },
-  {
-    id: "4",
-    name: "Lê Văn D",
-    note: "Tiền cafe",
-    originalAmount: 150000,
-    paidAmount: 150000,
-    type: "receivable",
-    status: "paid",
-    dueDate: "20/01/2026",
-    createdAt: "18/01/2026",
-  },
-  {
-    id: "5",
-    name: "Công ty TNHH E",
-    note: "Phí dịch vụ tháng 1",
-    originalAmount: 2300000,
-    paidAmount: 2300000,
-    type: "payable",
-    status: "paid",
-    dueDate: "31/01/2026",
-    createdAt: "01/01/2026",
-  },
-  {
-    id: "6",
-    name: "Phạm Văn F",
-    note: "Tiền đám cưới",
-    originalAmount: 1000000,
-    paidAmount: 500000,
-    type: "receivable",
-    status: "pending",
-    dueDate: "28/02/2026",
-    createdAt: "20/01/2026",
-  },
-];
-
-const MOCK_SUMMARY: PaybookSummary = {
-  totalReceivable: 6650000,
-  totalPayable: 14300000,
-};
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<
-  PaybookStatus,
+  LoanStatus,
   { label: string; color: string; bgColor: string; icon: string }
 > = {
-  pending: {
-    label: "Chưa trả",
+  ACTIVE: {
+    label: "Đang vay",
     color: "#B45309",
     bgColor: "#FEF3C7",
     icon: "clock",
   },
-  paid: {
-    label: "Đã trả",
+  COMPLETED: {
+    label: "Đã tất toán",
     color: "#15803D",
     bgColor: "#DCFCE7",
     icon: "check",
   },
-  overdue: {
+  OVERDUE: {
     label: "Quá hạn",
     color: "#DC2626",
     bgColor: "#FEE2E2",
     icon: "triangle-exclamation",
   },
+  CANCELLED: {
+    label: "Đã huỷ",
+    color: "#6B7280",
+    bgColor: "#F3F4F6",
+    icon: "ban",
+  },
 };
+
+const FILTER_TABS: { key: LoanFilterType; label: string; icon: string }[] = [
+  { key: "ALL", label: "Tất cả", icon: "list" },
+  { key: "LEND", label: "Cho vay", icon: "arrow-trend-up" },
+  { key: "BORROW", label: "Đi vay", icon: "arrow-trend-down" },
+];
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 const PaybookListScreen = () => {
   const { colors } = useAppTheme();
-  const [activeFilter, setActiveFilter] = useState<PaybookFilterType>("all");
+  const [activeFilter, setActiveFilter] = useState<LoanFilterType>("ALL");
+  const [loans, setLoans] = useState<Loan[]>([]);
+  const [summary, setSummary] = useState<LoanSummary>({
+    total_lend: 0,
+    total_borrow: 0,
+    net_balance: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const filteredPaybooks = useMemo(() => {
-    if (activeFilter === "all") return MOCK_PAYBOOKS;
-    return MOCK_PAYBOOKS.filter((p) => p.type === activeFilter);
-  }, [activeFilter]);
+  // ── Fetch data ─────────────────────────────────────────────────────────────
+  const fetchLoans = useCallback(async (silent = false) => {
+    try {
+      if (!silent) setLoading(true);
+      const res = await paybookRepository.getLoans();
 
-  // Tính số giao dịch cho mỗi loại filter
-  const transactionCounts = useMemo(() => {
-    const receivableCount = MOCK_PAYBOOKS.filter((p) => p.type === "receivable").length;
-    const payableCount = MOCK_PAYBOOKS.filter((p) => p.type === "payable").length;
-    return {
-      all: MOCK_PAYBOOKS.length,
-      receivable: receivableCount,
-      payable: payableCount,
-    };
+      // Server trả về data — adapt theo response thực tế
+      if (res?.data) {
+        const items: Loan[] = res.data.items ?? res.data ?? [];
+        setLoans(items);
+
+        const sum: LoanSummary = res.data.summary ?? {
+          total_lend: items
+            .filter((l) => l.loan_type === "LEND")
+            .reduce((acc, l) => acc + l.principal_amount, 0),
+          total_borrow: items
+            .filter((l) => l.loan_type === "BORROW")
+            .reduce((acc, l) => acc + l.principal_amount, 0),
+          net_balance: 0,
+        };
+        sum.net_balance = sum.total_lend - sum.total_borrow;
+        setSummary(sum);
+      }
+    } catch (error) {
+      console.error("[PaybookListScreen] fetchLoans error:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
-  // Tính chênh lệch
-  const balance = useMemo(() => {
-    return MOCK_SUMMARY.totalReceivable - MOCK_SUMMARY.totalPayable;
-  }, []);
-
-  // Filter tabs với số giao dịch
-  const FILTER_TABS: { key: PaybookFilterType; label: string; icon: string }[] = [
-    { key: "all", label: "Tất cả", icon: "list" },
-    { key: "receivable", label: "Phải thu", icon: "arrow-trend-up" },
-    { key: "payable", label: "Phải trả", icon: "arrow-trend-down" },
-  ];
+  useFocusEffect(
+    useCallback(() => {
+      fetchLoans();
+    }, [fetchLoans])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
-  }, []);
+    fetchLoans(true);
+  }, [fetchLoans]);
 
+  // ── Derived data ───────────────────────────────────────────────────────────
+  const filteredLoans = useMemo(() => {
+    if (activeFilter === "ALL") return loans;
+    return loans.filter((l) => l.loan_type === activeFilter);
+  }, [loans, activeFilter]);
+
+  const filterCounts = useMemo(() => ({
+    ALL: loans.length,
+    LEND: loans.filter((l) => l.loan_type === "LEND").length,
+    BORROW: loans.filter((l) => l.loan_type === "BORROW").length,
+  }), [loans]);
+
+  // ── Utils ──────────────────────────────────────────────────────────────────
   const formatCurrency = useCallback((amount: number) => {
+    if (amount >= 1_000_000_000)
+      return `${(amount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")} Tỷ`;
+    if (amount >= 1_000_000)
+      return `${(amount / 1_000_000).toFixed(1).replace(/\.0$/, "")} Tr`;
     return new Intl.NumberFormat("vi-VN").format(Math.abs(amount));
   }, []);
 
-  const handlePaybookPress = useCallback((paybookId: string) => {
-    router.push(`/(protected)/paybook/${paybookId}`);
-  }, []);
+  const formatDate = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch {
+      return iso;
+    }
+  };
 
-  const handleCreatePaybook = useCallback(() => {
-    router.push("/(protected)/paybook/create");
-  }, []);
+  const getDaysLeft = (maturityDate: string) => {
+    const delta = Math.ceil(
+      (new Date(maturityDate).getTime() - Date.now()) / 86_400_000
+    );
+    return delta;
+  };
 
-  const renderPaybookCard = useCallback(
-    (paybook: Paybook, index: number) => {
-      const isReceivable = paybook.type === "receivable";
-      const amountColor = isReceivable ? "#22C55E" : "#EF4444";
-      const amountPrefix = isReceivable ? "+" : "-";
-      const statusConfig = STATUS_CONFIG[paybook.status];
-      const currentAmount = paybook.originalAmount - paybook.paidAmount;
+  // ── Render card ────────────────────────────────────────────────────────────
+  const renderLoanCard = useCallback(
+    (loan: Loan, index: number) => {
+      const isLend = loan.loan_type === "LEND";
+      const amountColor = isLend ? "#22C55E" : "#EF4444";
+      const amountPrefix = isLend ? "+" : "-";
+      const statusConfig = STATUS_CONFIG[loan.status];
+      const daysLeft = getDaysLeft(loan.maturity_date);
+      const isDueSoon =
+        loan.status === "ACTIVE" && daysLeft >= 0 && daysLeft <= 14;
+      const progress =
+        loan.principal_amount > 0
+          ? Math.min(loan.paid_amount / loan.principal_amount, 1)
+          : 0;
 
       return (
         <TouchableOpacity
-          key={paybook.id}
-          style={[styles.payBookCard, index === 0 && { marginTop: 0 }]}
-          onPress={() => handlePaybookPress(paybook.id)}
+          key={loan.loan_id}
+          style={[styles.card, index === 0 && { marginTop: 0 }]}
+          onPress={() => router.push(`/(protected)/paybook/${loan.loan_id}`)}
           activeOpacity={0.7}
         >
-          {/* Left side with avatar and info */}
-          <View style={styles.cardLeft}>
+          {/* ── Header: avatar + tên + badge ── */}
+          <View style={styles.cardHeader}>
             <View
               style={[
                 styles.avatar,
-                { backgroundColor: isReceivable ? "#E8F5E9" : "#FFEBEE" },
+                { backgroundColor: isLend ? "#E8F5E9" : "#FFEBEE" },
               ]}
             >
               <FontAwesome6
-                name="user"
-                size={normalize(18)}
-                color={isReceivable ? "#22C55E" : "#EF4444"}
+                name={loan.counterparty_type === "MERCHANT" ? "building" : "user"}
+                size={normalize(17)}
+                color={amountColor}
                 solid
               />
             </View>
-            <View style={styles.cardInfo}>
-              <CustomText style={styles.cardName} numberOfLines={1}>
-                {paybook.name}
-              </CustomText>
-              {paybook.note && (
-                <CustomText style={styles.cardNote} numberOfLines={1}>
-                  {paybook.note}
+
+            <View style={styles.cardMeta}>
+              <View style={styles.nameRow}>
+                <CustomText style={[styles.cardName, { color: colors.text }]} numberOfLines={1}>
+                  {loan.counterparty_name}
                 </CustomText>
-              )}
-              <View style={styles.dueDateContainer}>
-                <FontAwesome6
-                  name="calendar"
-                  size={normalize(10)}
-                  color={colors.icon}
-                  style={{ marginRight: wp(1) }}
-                />
-                <CustomText style={styles.dueDateText}>
-                  {paybook.dueDate}
-                </CustomText>
+                <View style={[styles.typeBadge, { backgroundColor: isLend ? "#E8F5E9" : "#FFEBEE" }]}>
+                  <FontAwesome6
+                    name={isLend ? "arrow-trend-up" : "arrow-trend-down"}
+                    size={normalize(9)}
+                    color={amountColor}
+                    style={{ marginRight: wp(0.8) }}
+                  />
+                  <CustomText style={[styles.typeBadgeText, { color: amountColor }]}>
+                    {isLend ? "Cho vay" : "Đi vay"}
+                  </CustomText>
+                </View>
               </View>
+
+              {loan.loan_description ? (
+                <CustomText style={[styles.cardDesc, { color: colors.icon }]} numberOfLines={1}>
+                  {loan.loan_description}
+                </CustomText>
+              ) : null}
             </View>
           </View>
 
-          {/* Right side with amounts and status */}
-          <View style={styles.cardRight}>
-            {/* Số nợ hiện tại (còn lại) */}
-            <CustomText style={[styles.currentAmountText, { color: amountColor }]}>
-              {amountPrefix}
-              {formatCurrency(currentAmount)} đ
-            </CustomText>
-            {/* Số nợ ban đầu */}
-            <CustomText style={styles.originalAmountText}>
-              Gốc: {formatCurrency(paybook.originalAmount)} đ
-            </CustomText>
-            {/* Status badge */}
+          {/* ── Amounts ── */}
+          <View style={styles.amountRow}>
+            <View>
+              <CustomText style={[styles.amountLabel, { color: colors.icon }]}>
+                Còn lại
+              </CustomText>
+              <CustomText style={[styles.remainingAmount, { color: amountColor }]}>
+                {amountPrefix}{formatCurrency(loan.remaining_amount)} đ
+              </CustomText>
+            </View>
+            <View style={{ alignItems: "flex-end" }}>
+              <CustomText style={[styles.amountLabel, { color: colors.icon }]}>
+                Gốc
+              </CustomText>
+              <CustomText style={[styles.principalAmount, { color: colors.text }]}>
+                {formatCurrency(loan.principal_amount)} đ
+              </CustomText>
+            </View>
+          </View>
+
+          {/* ── Progress bar ── */}
+          <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
             <View
               style={[
-                styles.statusBadge,
-                { backgroundColor: statusConfig.bgColor },
+                styles.progressFill,
+                {
+                  width: `${Math.round(progress * 100)}%` as any,
+                  backgroundColor: amountColor,
+                },
               ]}
-            >
+            />
+          </View>
+          <CustomText style={[styles.progressLabel, { color: colors.icon }]}>
+            Đã trả {Math.round(progress * 100)}% •{" "}
+            {loan.payment_type === "INSTALLMENT" && loan.total_installments
+              ? `${loan.paid_installments ?? 0}/${loan.total_installments} kỳ`
+              : "Trả 1 lần"}
+          </CustomText>
+
+          {/* ── Footer: ngày đáo hạn + lãi suất + status ── */}
+          <View style={styles.cardFooter}>
+            <View style={styles.footerLeft}>
+              <View style={styles.footerItem}>
+                <FontAwesome6
+                  name="calendar-days"
+                  size={normalize(10)}
+                  color={
+                    isDueSoon
+                      ? "#EF4444"
+                      : loan.status === "OVERDUE"
+                      ? "#DC2626"
+                      : colors.icon
+                  }
+                  style={{ marginRight: wp(1) }}
+                />
+                <CustomText
+                  style={[
+                    styles.footerText,
+                    {
+                      color:
+                        isDueSoon || loan.status === "OVERDUE"
+                          ? "#EF4444"
+                          : colors.icon,
+                      fontFamily:
+                        isDueSoon || loan.status === "OVERDUE"
+                          ? Fonts.semiBold
+                          : Fonts.regular,
+                    },
+                  ]}
+                >
+                  {loan.status === "OVERDUE"
+                    ? `Quá hạn ${Math.abs(daysLeft)} ngày`
+                    : isDueSoon
+                    ? `Còn ${daysLeft} ngày`
+                    : formatDate(loan.maturity_date)}
+                </CustomText>
+              </View>
+
+              <View style={[styles.footerItem, { marginLeft: wp(3) }]}>
+                <FontAwesome6
+                  name="percent"
+                  size={normalize(9)}
+                  color={colors.icon}
+                  style={{ marginRight: wp(1) }}
+                />
+                <CustomText style={[styles.footerText, { color: colors.icon }]}>
+                  {loan.interest_rate}%/năm
+                </CustomText>
+              </View>
+            </View>
+
+            <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
               <FontAwesome6
-                name={statusConfig.icon}
+                name={statusConfig.icon as any}
                 size={normalize(9)}
                 color={statusConfig.color}
                 style={{ marginRight: wp(1) }}
               />
-              <CustomText
-                style={[styles.statusText, { color: statusConfig.color }]}
-              >
+              <CustomText style={[styles.statusText, { color: statusConfig.color }]}>
                 {statusConfig.label}
               </CustomText>
             </View>
@@ -261,9 +329,10 @@ const PaybookListScreen = () => {
         </TouchableOpacity>
       );
     },
-    [styles, formatCurrency, handlePaybookPress, colors],
+    [styles, colors, formatCurrency]
   );
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <AppHeader title="Sổ nợ" />
@@ -280,79 +349,135 @@ const PaybookListScreen = () => {
           />
         }
       >
-        {/* Summary Card */}
-        <View style={styles.summaryCard}>
+        {/* ── Summary Card ─────────────────────────────────────────────── */}
+        <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {/* Cho vay */}
           <View style={styles.summaryItem}>
-            <View style={styles.summaryIconWrapper}>
-              <FontAwesome6
-                name="arrow-trend-up"
-                size={normalize(16)}
-                color="#22C55E"
-              />
+            <View style={[styles.summaryIconWrapper, { backgroundColor: "#E8F5E9" }]}>
+              <FontAwesome6 name="arrow-trend-up" size={normalize(16)} color="#22C55E" />
             </View>
-            <View style={styles.summaryTextContainer}>
-              <CustomText style={styles.summaryLabel}>Phải thu</CustomText>
-              <CustomText style={[styles.summaryAmount, styles.receivableColor]}>
-                +{formatCurrency(MOCK_SUMMARY.totalReceivable)} đ
-              </CustomText>
-            </View>
+            <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>Cho vay</CustomText>
+            <CustomText style={[styles.summaryAmount, { color: "#22C55E" }]}>
+              +{formatCurrency(summary.total_lend)} đ
+            </CustomText>
           </View>
 
-          <View style={styles.summaryDivider} />
+          <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
 
+          {/* Đi vay */}
           <View style={styles.summaryItem}>
-            <View style={[styles.summaryIconWrapper, styles.payableIconWrapper]}>
+            <View style={[styles.summaryIconWrapper, { backgroundColor: "#FFEBEE" }]}>
+              <FontAwesome6 name="arrow-trend-down" size={normalize(16)} color="#EF4444" />
+            </View>
+            <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>Đi vay</CustomText>
+            <CustomText style={[styles.summaryAmount, { color: "#EF4444" }]}>
+              -{formatCurrency(summary.total_borrow)} đ
+            </CustomText>
+          </View>
+
+          <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
+
+          {/* Chênh lệch */}
+          <View style={styles.summaryItem}>
+            <View
+              style={[
+                styles.summaryIconWrapper,
+                {
+                  backgroundColor:
+                    summary.net_balance >= 0 ? "#EEF2FF" : "#FFF3F3",
+                },
+              ]}
+            >
               <FontAwesome6
-                name="arrow-trend-down"
-                size={normalize(16)}
-                color="#EF4444"
+                name="scale-balanced"
+                size={normalize(15)}
+                color={summary.net_balance >= 0 ? "#6366F1" : "#EF4444"}
               />
             </View>
-            <View style={styles.summaryTextContainer}>
-              <CustomText style={styles.summaryLabel}>Phải trả</CustomText>
-              <CustomText style={[styles.summaryAmount, styles.payableColor]}>
-                -{formatCurrency(MOCK_SUMMARY.totalPayable)} đ
-              </CustomText>
-            </View>
+            <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>Chênh lệch</CustomText>
+            <CustomText
+              style={[
+                styles.summaryAmount,
+                { color: summary.net_balance >= 0 ? "#6366F1" : "#EF4444" },
+              ]}
+            >
+              {summary.net_balance >= 0 ? "+" : ""}
+              {formatCurrency(summary.net_balance)} đ
+            </CustomText>
           </View>
         </View>
 
-        {/* Filter Tabs */}
+        {/* ── Filter Tabs ───────────────────────────────────────────────── */}
         <View style={styles.filterSection}>
-          <CustomText style={styles.filterSectionTitle}>Danh sách</CustomText>
+          <CustomText style={[styles.filterSectionTitle, { color: colors.text }]}>
+            Danh sách
+          </CustomText>
           <View style={styles.filterContainer}>
             {FILTER_TABS.map((tab) => {
               const isActive = activeFilter === tab.key;
+              const count = filterCounts[tab.key];
               return (
                 <TouchableOpacity
                   key={tab.key}
-                  style={[styles.filterTab, isActive && styles.filterTabActive]}
+                  style={[
+                    styles.filterTab,
+                    {
+                      backgroundColor: isActive ? colors.tint : colors.card,
+                      borderColor: isActive ? colors.tint : colors.border,
+                    },
+                  ]}
                   onPress={() => setActiveFilter(tab.key)}
                   activeOpacity={0.7}
                 >
                   <CustomText
                     style={[
                       styles.filterTabText,
-                      isActive && styles.filterTabTextActive,
+                      { color: isActive ? "#fff" : colors.text },
                     ]}
                   >
                     {tab.label}
                   </CustomText>
+                  {count > 0 && (
+                    <View
+                      style={[
+                        styles.filterBadge,
+                        {
+                          backgroundColor: isActive
+                            ? "rgba(255,255,255,0.3)"
+                            : colors.border,
+                        },
+                      ]}
+                    >
+                      <CustomText
+                        style={[
+                          styles.filterBadgeText,
+                          { color: isActive ? "#fff" : colors.text },
+                        ]}
+                      >
+                        {count}
+                      </CustomText>
+                    </View>
+                  )}
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
-        {/* List */}
+        {/* ── List ─────────────────────────────────────────────────────── */}
         <View style={styles.listContainer}>
-          {filteredPaybooks.length > 0 ? (
-            filteredPaybooks.map((paybook, index) =>
-              renderPaybookCard(paybook, index)
-            )
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.tint} />
+              <CustomText style={[styles.loadingText, { color: colors.icon }]}>
+                Đang tải...
+              </CustomText>
+            </View>
+          ) : filteredLoans.length > 0 ? (
+            filteredLoans.map((loan, index) => renderLoanCard(loan, index))
           ) : (
             <View style={styles.emptyContainer}>
-              <View style={styles.emptyIconBg}>
+              <View style={[styles.emptyIconBg, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <FontAwesome6
                   name="book-open"
                   size={normalize(40)}
@@ -360,10 +485,10 @@ const PaybookListScreen = () => {
                   style={{ opacity: 0.6 }}
                 />
               </View>
-              <CustomText style={styles.emptyTitle}>
+              <CustomText style={[styles.emptyTitle, { color: colors.text }]}>
                 Chưa có sổ nợ nào
               </CustomText>
-              <CustomText style={styles.emptySubtitle}>
+              <CustomText style={[styles.emptySubtitle, { color: colors.icon }]}>
                 Nhấn nút bên dưới để tạo sổ nợ mới
               </CustomText>
             </View>
@@ -373,16 +498,16 @@ const PaybookListScreen = () => {
         <View style={{ height: hp(12) }} />
       </ScrollView>
 
-      {/* Create Button */}
-      <View style={styles.bottomContainer}>
+      {/* ── Create Button ──────────────────────────────────────────────── */}
+      <View style={[styles.bottomContainer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          onPress={handleCreatePaybook}
+          onPress={() => router.push("/(protected)/paybook/create")}
           activeOpacity={0.8}
-          style={styles.createButton}
+          style={[styles.createButton, { backgroundColor: colors.tint, shadowColor: colors.tint }]}
         >
           <FontAwesome6
             name="plus"
-            size={normalize(16)}
+            size={normalize(15)}
             color="#fff"
             style={{ marginRight: wp(2) }}
           />
@@ -393,178 +518,133 @@ const PaybookListScreen = () => {
   );
 };
 
+// ─── Styles ──────────────────────────────────────────────────────────────────
+
 const createStyles = (colors: any) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    content: {
-      flex: 1,
-    },
+    container: { flex: 1, backgroundColor: colors.background },
+    content: { flex: 1 },
 
-    // Summary Card Styles
+    // Summary
     summaryCard: {
       marginHorizontal: wp(4),
       marginTop: hp(2),
-      backgroundColor: colors.card,
       borderRadius: normalize(16),
-      padding: normalize(16),
+      padding: normalize(14),
       flexDirection: "row",
       borderWidth: 1,
-      borderColor: colors.border,
     },
-    summaryItem: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-    },
+    summaryItem: { flex: 1, alignItems: "center" },
     summaryIconWrapper: {
-      width: normalize(40),
-      height: normalize(40),
-      borderRadius: normalize(12),
-      backgroundColor: "#E8F5E9",
+      width: normalize(38),
+      height: normalize(38),
+      borderRadius: normalize(11),
       alignItems: "center",
       justifyContent: "center",
-      marginBottom: hp(1),
+      marginBottom: hp(0.8),
     },
-    payableIconWrapper: {
-      backgroundColor: "#FFEBEE",
-    },
-    summaryTextContainer: {
-      alignItems: "center",
-    },
-    summaryDivider: {
-      width: 1,
-      backgroundColor: colors.border,
-      marginHorizontal: wp(2),
-    },
+    summaryDivider: { width: 1, marginHorizontal: wp(1) },
     summaryLabel: {
-      fontSize: normalize(12),
-      color: colors.icon,
+      fontSize: normalize(11),
       fontFamily: Fonts.regular,
       marginBottom: hp(0.3),
       textAlign: "center",
     },
-    summaryAmount: {
-      fontSize: normalize(15),
-      fontFamily: Fonts.bold,
-    },
-    receivableColor: {
-      color: "#22C55E",
-    },
-    payableColor: {
-      color: "#EF4444",
-    },
+    summaryAmount: { fontSize: normalize(13), fontFamily: Fonts.bold, textAlign: "center" },
 
-    // Filter Section
-    filterSection: {
-      paddingHorizontal: wp(4),
-      paddingTop: hp(2.5),
-    },
+    // Filter
+    filterSection: { paddingHorizontal: wp(4), paddingTop: hp(2.5) },
     filterSectionTitle: {
       fontSize: normalize(16),
       fontFamily: Fonts.semiBold,
-      color: colors.text,
       marginBottom: hp(1.5),
     },
-    filterContainer: {
-      flexDirection: "row",
-      gap: wp(2),
-    },
+    filterContainer: { flexDirection: "row", gap: wp(2) },
     filterTab: {
       flex: 1,
-      paddingVertical: hp(1.2),
-      borderRadius: normalize(12),
-      backgroundColor: colors.card,
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    filterTabActive: {
-      backgroundColor: colors.tint,
-      borderColor: colors.tint,
-    },
-    filterTabText: {
-      fontSize: normalize(14),
-      color: colors.text,
-      fontFamily: Fonts.medium,
-    },
-    filterTabTextActive: {
-      color: "#FFFFFF",
-      fontFamily: Fonts.semiBold,
-    },
-
-    // List Container
-    listContainer: {
-      paddingHorizontal: wp(4),
-      paddingTop: hp(2),
-    },
-
-    // Paybook Card Styles
-    payBookCard: {
-      backgroundColor: colors.card,
-      borderRadius: normalize(16),
-      padding: normalize(16),
       flexDirection: "row",
       alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: hp(1.2),
+      borderRadius: normalize(12),
+      borderWidth: 1,
+      gap: wp(1.5),
+    },
+    filterTabText: { fontSize: normalize(13), fontFamily: Fonts.medium },
+    filterBadge: {
+      paddingHorizontal: wp(1.5),
+      paddingVertical: hp(0.1),
+      borderRadius: normalize(20),
+    },
+    filterBadgeText: { fontSize: normalize(10), fontFamily: Fonts.semiBold },
+
+    // List
+    listContainer: { paddingHorizontal: wp(4), paddingTop: hp(2) },
+
+    // Card
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: normalize(16),
+      padding: normalize(14),
       marginTop: hp(1.5),
       borderWidth: 1,
       borderColor: colors.border,
     },
-    cardLeft: {
-      flexDirection: "row",
-      alignItems: "center",
-      flex: 1,
-    },
+    cardHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: hp(1.2) },
     avatar: {
-      width: normalize(44),
-      height: normalize(44),
-      borderRadius: normalize(22),
+      width: normalize(40),
+      height: normalize(40),
+      borderRadius: normalize(12),
       alignItems: "center",
       justifyContent: "center",
+      marginRight: wp(3),
     },
-    cardInfo: {
-      marginLeft: wp(3),
-      flex: 1,
-    },
-    cardName: {
-      fontSize: normalize(15),
-      color: colors.text,
-      fontFamily: Fonts.semiBold,
-      marginBottom: hp(0.2),
-    },
-    cardNote: {
-      fontSize: normalize(12),
-      color: colors.icon,
-      fontFamily: Fonts.regular,
-      marginBottom: hp(0.5),
-    },
-    dueDateContainer: {
+    cardMeta: { flex: 1 },
+    nameRow: { flexDirection: "row", alignItems: "center", gap: wp(2), marginBottom: hp(0.3) },
+    cardName: { fontSize: normalize(15), fontFamily: Fonts.semiBold, flex: 1 },
+    typeBadge: {
       flexDirection: "row",
       alignItems: "center",
+      paddingHorizontal: wp(2),
+      paddingVertical: hp(0.3),
+      borderRadius: normalize(6),
     },
-    dueDateText: {
-      fontSize: normalize(11),
-      color: colors.icon,
-      fontFamily: Fonts.regular,
-    },
-    cardRight: {
+    typeBadgeText: { fontSize: normalize(10), fontFamily: Fonts.semiBold },
+    cardDesc: { fontSize: normalize(12), fontFamily: Fonts.regular },
+
+    // Amounts
+    amountRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
       alignItems: "flex-end",
-      marginLeft: wp(2),
+      marginBottom: hp(1),
     },
-    currentAmountText: {
-      fontSize: normalize(15),
-      fontFamily: Fonts.bold,
-      marginBottom: hp(0.2),
-    },
-    originalAmountText: {
-      fontSize: normalize(11),
-      color: colors.icon,
-      fontFamily: Fonts.regular,
+    amountLabel: { fontSize: normalize(10), fontFamily: Fonts.regular, marginBottom: hp(0.2) },
+    remainingAmount: { fontSize: normalize(18), fontFamily: Fonts.bold },
+    principalAmount: { fontSize: normalize(13), fontFamily: Fonts.medium },
+
+    // Progress
+    progressTrack: {
+      height: normalize(4),
+      borderRadius: normalize(2),
+      overflow: "hidden",
       marginBottom: hp(0.5),
     },
+    progressFill: { height: "100%", borderRadius: normalize(2) },
+    progressLabel: { fontSize: normalize(11), fontFamily: Fonts.regular, marginBottom: hp(1) },
+
+    // Footer
+    cardFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: hp(1),
+    },
+    footerLeft: { flexDirection: "row", alignItems: "center" },
+    footerItem: { flexDirection: "row", alignItems: "center" },
+    footerText: { fontSize: normalize(11), fontFamily: Fonts.regular },
     statusBadge: {
       flexDirection: "row",
       alignItems: "center",
@@ -572,40 +652,17 @@ const createStyles = (colors: any) =>
       paddingVertical: hp(0.4),
       borderRadius: normalize(8),
     },
-    statusText: {
-      fontSize: normalize(10),
-      fontFamily: Fonts.semiBold,
-    },
+    statusText: { fontSize: normalize(10), fontFamily: Fonts.semiBold },
 
-    // Bottom Container & Create Button
-    bottomContainer: {
-      paddingHorizontal: wp(4),
-      paddingVertical: hp(2),
-      paddingBottom: hp(3),
-      backgroundColor: colors.background,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-    },
-    createButton: {
-      backgroundColor: colors.tint,
-      paddingVertical: hp(1.8),
-      borderRadius: normalize(16),
-      flexDirection: "row",
+    // Loading
+    loadingContainer: {
       alignItems: "center",
-      justifyContent: "center",
-      shadowColor: colors.tint,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 8,
+      paddingVertical: hp(8),
+      gap: hp(1.5),
     },
-    createButtonText: {
-      fontSize: normalize(16),
-      color: "#FFFFFF",
-      fontFamily: Fonts.semiBold,
-    },
+    loadingText: { fontSize: normalize(14), fontFamily: Fonts.regular },
 
-    // Empty State
+    // Empty
     emptyContainer: {
       alignItems: "center",
       justifyContent: "center",
@@ -615,24 +672,44 @@ const createStyles = (colors: any) =>
       width: normalize(100),
       height: normalize(100),
       borderRadius: normalize(30),
-      backgroundColor: colors.card,
       borderWidth: 1,
-      borderColor: colors.border,
       alignItems: "center",
       justifyContent: "center",
       marginBottom: hp(2),
     },
     emptyTitle: {
       fontSize: normalize(18),
-      color: colors.text,
       fontFamily: Fonts.semiBold,
       marginBottom: hp(0.5),
     },
     emptySubtitle: {
       fontSize: normalize(14),
-      color: colors.icon,
       fontFamily: Fonts.regular,
       textAlign: "center",
+    },
+
+    // Bottom
+    bottomContainer: {
+      paddingHorizontal: wp(4),
+      paddingVertical: hp(2),
+      paddingBottom: hp(3),
+      borderTopWidth: 1,
+    },
+    createButton: {
+      paddingVertical: hp(1.8),
+      borderRadius: normalize(16),
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    createButtonText: {
+      fontSize: normalize(16),
+      color: "#fff",
+      fontFamily: Fonts.semiBold,
     },
   });
 
