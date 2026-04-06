@@ -44,6 +44,7 @@ const CategorySelectionScreen: React.FC = () => {
     isEdit?: string;
     isSelectParent?: string;
     isBudget?: string;
+    isInvoice?: string;
   }>();
 
   /* =====================
@@ -55,13 +56,14 @@ const CategorySelectionScreen: React.FC = () => {
     [params.isSelectParent]
   );
   const isBudget = useMemo(() => params.isBudget === "true", [params.isBudget]);
+  const isInvoice = useMemo(() => params.isInvoice === "true", [params.isInvoice]);
 
   /* =====================
      Available Tabs
   ===================== */
   const availableTabs = useMemo((): TabType[] => {
-    // 🔥 Nếu đang chọn cho ngân sách, chỉ cho chọn EXPENSE
-    if (isBudget) {
+    // 🔥 Nếu đang chọn cho ngân sách hoặc hoá đơn, chỉ cho chọn EXPENSE
+    if (isBudget || isInvoice) {
       return ["EXPENSE"];
     }
     // 🔥 Nếu đang select parent, chỉ cho chọn INCOME hoặc EXPENSE

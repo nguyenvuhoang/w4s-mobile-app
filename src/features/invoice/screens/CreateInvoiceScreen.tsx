@@ -5,14 +5,19 @@ import BottomRecurringModal, {
   RecurringType,
 } from "@/components/modals/BottomRecurringModal";
 import STORAGE_KEY from "@/constants/StorageKey";
+import { GlobalContext } from "@/contexts/GlobalContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import TransactionAmountInput from "@/features/transaction/components/TransactionAmountInput";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
+import { useCurrency } from "@/hooks/useCurrency";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -24,25 +29,28 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useInvoice } from "../hooks/useInvoice";
 
 interface SelectedCategoryData {
+  id: number;
   category_id: string;
   category_name: string;
-  category_type: "EXPENSE" | "INCOME";
+  category_type: string;
+  category_group: "EXPENSE" | "INCOME" | "LOAN";
   icon: string;
   color: string;
+}
+
+interface SelectedCurrency {
+  currencyId: string;
+  symbol: string;
+  name: string;
 }
 
 // Interface for autofill data
 interface AutofillData {
   walletId?: number;
-  category?: {
-    category_id: string;
-    category_name: string;
-    category_type: "EXPENSE" | "INCOME";
-    icon: string;
-    color: string;
-  };
+  category?: SelectedCategoryData;
   amount?: string | number;
   date?: string | Date; // Can be ISO string or Date object
   note?: string;
@@ -58,6 +66,13 @@ const CreateRecurringInvoiceScreen = () => {
   const { colors } = useAppTheme();
   const params = useLocalSearchParams();
   const { wallets, defaultWallet } = useWallet();
+  const { appInfo } = React.useContext(GlobalContext);
+  const { createInvoice, loading: creating } = useInvoice();
+  const { t } = useTranslation();
+  const { parseCurrencyName, currencies } = useCurrency({ autoFetch: true });
+  const { convert } = useExchangeRate();
+
+  const selectedType = "expense";
 
   // Determine if we're in edit mode
   const isEditMode = (params.mode as string) === "edit";
@@ -75,6 +90,13 @@ const CreateRecurringInvoiceScreen = () => {
   const [amount, setAmount] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [note, setNote] = useState("");
+
+  const [inputCurrency, setInputCurrency] = useState<SelectedCurrency>({
+    currencyId: "VND",
+    symbol: "đ",
+    name: "Việt Nam Đồng",
+  });
+  const hasManuallySelectedCurrencyRef = React.useRef(false);
 
   // Recurring states
   const [showRecurringModal, setShowRecurringModal] = useState(false);
@@ -167,6 +189,13 @@ const CreateRecurringInvoiceScreen = () => {
     }
   }, [params.autofillData]);
 
+  // Update selectedType based on category if it changes
+  useEffect(() => {
+    if (selectedCategoryData) {
+      // Invoices are always expenses, but we keep this check if needed for logging/validation
+    }
+  }, [selectedCategoryData]);
+
   // Load edit data from params
   useEffect(() => {
     if (isEditMode) {
@@ -208,9 +237,11 @@ const CreateRecurringInvoiceScreen = () => {
       // Pre-fill category from params (icon, color, type)
       if (params.icon && params.color) {
         setSelectedCategoryData({
+          id: 0,
           category_id: params.categoryId as string || "",
           category_name: JSON.stringify({ vi: params.editTitle || params.title || "" }),
           category_type: (params.type as string) === "income" ? "INCOME" : "EXPENSE",
+          category_group: (params.type as string) === "income" ? "INCOME" : "EXPENSE",
           icon: params.icon as string,
           color: params.color as string,
         });
@@ -222,6 +253,94 @@ const CreateRecurringInvoiceScreen = () => {
     () => wallets.find((w) => w.walletId === sourceWalletId),
     [wallets, sourceWalletId],
   );
+
+  const walletCurrency = useMemo<SelectedCurrency>(() => {
+    if (!selectedWallet) {
+      return {
+        currencyId: "VND",
+        symbol: "đ",
+        name: "Việt Nam Đồng",
+      };
+    }
+
+    const currency = currencies.find(
+      (c) => c.currency_id === selectedWallet.currency,
+    );
+
+    if (currency) {
+      return {
+        currencyId: currency.currency_id,
+        symbol: currency.symbol,
+        name: parseCurrencyName(currency),
+      };
+    }
+
+    return {
+      currencyId: selectedWallet.currency || "VND",
+      symbol: selectedWallet.currency === "USD" ? "$" : "đ",
+      name: selectedWallet.currency || "Việt Nam Đồng",
+    };
+  }, [selectedWallet, currencies, parseCurrencyName]);
+
+  const needsConversion = useMemo(
+    () => inputCurrency.currencyId !== walletCurrency.currencyId,
+    [inputCurrency.currencyId, walletCurrency.currencyId],
+  );
+
+  const exchangeRate = useMemo(() => {
+    if (!needsConversion) return null;
+
+    const rate = convert(
+      1,
+      inputCurrency.currencyId,
+      walletCurrency.currencyId,
+    );
+    if (rate === null) return null;
+
+    if (
+      walletCurrency.currencyId === "VND" ||
+      walletCurrency.currencyId === "VNĐ"
+    ) {
+      return Math.round(rate);
+    } else {
+      return Math.round(rate * 10000) / 10000;
+    }
+  }, [
+    needsConversion,
+    inputCurrency.currencyId,
+    walletCurrency.currencyId,
+    convert,
+  ]);
+
+  const convertedAmount = useMemo(() => {
+    if (!needsConversion || !amount || amount === "0") return null;
+
+    const numAmount = parseFloat(amount.replace(/,/g, ""));
+    if (isNaN(numAmount)) return null;
+
+    const result = convert(
+      numAmount,
+      inputCurrency.currencyId,
+      walletCurrency.currencyId,
+    );
+
+    if (result === null) return null;
+
+    if (
+      walletCurrency.currencyId === "VND" ||
+      walletCurrency.currencyId === "VNĐ"
+    ) {
+      return Math.round(result);
+    } else {
+      return Math.round(result * 100) / 100;
+    }
+  }, [
+    amount,
+    needsConversion,
+    inputCurrency.currencyId,
+    walletCurrency.currencyId,
+    convert,
+  ]);
 
   const isValid = useMemo(
     () =>
@@ -239,6 +358,14 @@ const CreateRecurringInvoiceScreen = () => {
       setSourceWalletId(defaultWallet.walletId);
     }
   }, [defaultWallet, sourceWalletId]);
+
+  useEffect(() => {
+    if (selectedWallet && currencies.length > 0) {
+      if (!hasManuallySelectedCurrencyRef.current) {
+        setInputCurrency(walletCurrency);
+      }
+    }
+  }, [selectedWallet?.walletId, walletCurrency.currencyId, currencies.length]);
 
   // Load selected data from storage
   useFocusEffect(
@@ -265,7 +392,9 @@ const CreateRecurringInvoiceScreen = () => {
 
             // Only accept EXPENSE or INCOME for recurring invoices
             if (
+              categoryData.category_group === "EXPENSE" ||
               categoryData.category_type === "EXPENSE" ||
+              categoryData.category_group === "INCOME" ||
               categoryData.category_type === "INCOME"
             ) {
               setSelectedCategoryData(categoryData);
@@ -274,6 +403,16 @@ const CreateRecurringInvoiceScreen = () => {
             await StorageService.removeAsyncItem(
               STORAGE_KEY.TEMP_CATEGORY_STORAGE,
             );
+          }
+
+          const storedCurrency = await StorageService.getItem(
+            STORAGE_KEY.TEMP_CURRENCY_STORAGE,
+          );
+          if (storedCurrency) {
+            const currency: SelectedCurrency = JSON.parse(storedCurrency);
+            setInputCurrency(currency);
+            hasManuallySelectedCurrencyRef.current = true;
+            await StorageService.removeItem(STORAGE_KEY.TEMP_CURRENCY_STORAGE);
           }
         } catch (error) {
           console.error("[CreateRecurringInvoice] Load data failed:", error);
@@ -308,32 +447,49 @@ const CreateRecurringInvoiceScreen = () => {
     setRecurringLabel(result.label);
   }, []);
 
-  const handleCreate = useCallback(() => {
-    if (!isValid) return;
+  const handleCreate = useCallback(async () => {
+    if (!isValid || !selectedWallet || !selectedCategoryData || !appInfo) return;
 
-    const invoiceData = {
-      wallet: selectedWallet,
-      category: selectedCategoryData,
-      amount: parseFloat(amount.replace(/,/g, "")),
-      startDate: selectedDate,
-      note,
+    const primaryAccount = selectedWallet.accounts?.find(acc => acc.isPrimary) || selectedWallet.accounts?.[0];
+    const accountNumber = primaryAccount?.accountNumber || "";
+
+    const finalAmount = needsConversion
+      ? convertedAmount
+      : parseFloat(amount.replace(/,/g, ""));
+
+    const payload = {
+      wallet_id: selectedWallet.walletId,
+      account_number: accountNumber,
+      category_id: selectedCategoryData.id,
+      payment_transaction_type: selectedCategoryData.category_type === "INCOME" ? "01" : "02",
+      bill_name: parseCategoryName(selectedCategoryData.category_name),
+      business_type: parseCategoryName(selectedCategoryData.category_name),
       recurring: {
-        type: recurringType,
-        count: recurringCount,
-        isForever,
-        selectedDays: recurringType === "weekly" ? selectedDays : null,
+        type: (recurringType.charAt(0).toUpperCase() + recurringType.slice(1)) as any,
+        count: isForever ? null : recurringCount,
+        is_forever: isForever,
+        selected_days: recurringType === "weekly" ? selectedDays : null,
       },
+      amount: finalAmount || 0,
+      currency_code: walletCurrency.currencyId,
+      due_at_utc: selectedDate.toISOString(),
+      note,
+      contract_number: appInfo.contract_number || "",
     };
 
     if (isEditMode) {
-      console.log("Update recurring invoice", { id: editId, ...invoiceData });
+      console.log("Update recurring invoice", { id: editId, ...payload });
       // TODO: Call update API
     } else {
-      console.log("Create recurring invoice", invoiceData);
-      // TODO: Call create API
+      console.log("Create recurring invoice", payload);
+      const success = await createInvoice(payload);
+      if (success) {
+        Alert.alert("Thành công", "Đã tạo hóa đơn định kỳ thành công");
+        router.back();
+      } else {
+        Alert.alert("Lỗi", "Không thể tạo hóa đơn định kỳ. Vui lòng thử lại.");
+      }
     }
-
-    router.back();
   }, [
     isValid,
     isEditMode,
@@ -347,6 +503,12 @@ const CreateRecurringInvoiceScreen = () => {
     recurringCount,
     selectedDays,
     isForever,
+    appInfo,
+    createInvoice,
+    parseCategoryName,
+    needsConversion,
+    convertedAmount,
+    walletCurrency.currencyId,
   ]);
 
   // Delete handler (only in edit mode)
@@ -403,11 +565,12 @@ const CreateRecurringInvoiceScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+
+
           {/* Source Wallet - REQUIRED */}
           <View style={styles.section}>
             <CustomText style={styles.label}>
-              Nguồn tiền thanh toán{" "}
-              <CustomText style={{ color: "red" }}>*</CustomText>
+              {t("transaction.source_wallet")} <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
               style={styles.field}
@@ -423,7 +586,7 @@ const CreateRecurringInvoiceScreen = () => {
                   solid
                 />
                 <CustomText style={styles.fieldText}>
-                  {selectedWallet?.name || "Chọn ví"}
+                  {selectedWallet?.name || t("transaction.select_wallet")}
                 </CustomText>
               </View>
               <FontAwesome6
@@ -437,14 +600,14 @@ const CreateRecurringInvoiceScreen = () => {
           {/* Category - REQUIRED */}
           <View style={styles.section}>
             <CustomText style={styles.label}>
-              Nhóm <CustomText style={{ color: "red" }}>*</CustomText>
+              {t("transaction.category")} <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
               style={styles.field}
               onPress={() =>
                 router.push({
                   pathname: "/(protected)/select-category",
-                  params: { selectedType: "expense" }, // Default to expense for invoices
+                  params: { selectedType: selectedType, isInvoice: "true" },
                 })
               }
             >
@@ -478,7 +641,7 @@ const CreateRecurringInvoiceScreen = () => {
                     <CustomText
                       style={[styles.fieldText, { color: colors.icon }]}
                     >
-                      Chọn nhóm
+                      {t("transaction.select_category")}
                     </CustomText>
                   </>
                 )}
@@ -490,26 +653,22 @@ const CreateRecurringInvoiceScreen = () => {
               />
             </TouchableOpacity>
           </View>
-
           {/* Amount - REQUIRED */}
-          <View style={styles.section}>
-            <CustomText style={styles.label}>
-              Số tiền <CustomText style={{ color: "red" }}>*</CustomText>
-            </CustomText>
-            <View style={styles.amountContainer}>
-              <CustomText style={styles.currency}>
-                {selectedWallet?.currency === "USD" ? "$" : "₫"}
-              </CustomText>
-              <TextInput
-                style={styles.amountInput}
-                placeholder="0"
-                placeholderTextColor={colors.icon}
-                keyboardType="numeric"
-                value={amount}
-                onChangeText={setAmount}
-              />
-            </View>
-          </View>
+          <TransactionAmountInput
+            amount={amount}
+            onAmountChange={setAmount}
+            inputCurrency={inputCurrency}
+            walletCurrency={walletCurrency}
+            onCurrencyPress={() => {
+              hasManuallySelectedCurrencyRef.current = true;
+              router.push("/(protected)/select-currency");
+            }}
+            needsConversion={needsConversion}
+            convertedAmount={convertedAmount}
+            exchangeRate={exchangeRate}
+            selectedType={selectedType}
+            label={t("transaction.amount")}
+          />
 
           {/* Recurring Period - REQUIRED */}
           <View style={styles.section}>
@@ -657,13 +816,13 @@ const CreateRecurringInvoiceScreen = () => {
           <TouchableOpacity
             style={[
               styles.createBtn,
-              { backgroundColor: isValid ? colors.tint : colors.border },
+              { backgroundColor: (isValid && !creating) ? colors.tint : colors.border },
             ]}
             onPress={handleCreate}
-            disabled={!isValid}
+            disabled={!isValid || creating}
           >
             <CustomText style={styles.createText}>
-              {isEditMode ? "Lưu" : "Tạo"}
+              {creating ? "Đang xử lý..." : (isEditMode ? "Lưu" : "Tạo")}
             </CustomText>
           </TouchableOpacity>
         </View>
