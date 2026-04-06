@@ -593,5 +593,15 @@
     "loading_detail": "Đang tải thông tin chi tiết...",
     "unit_meter": "mét",
     "unit_km": "km"
+  },
+  "updateBanner": {
+    "updateDownloaded": "Đã tải xong bản cập nhật",
+    "updateReadySubtitle": "Phiên bản mới nhất đã được tải xuống thành công. Khởi động lại ngay để trải nghiệm các tính năng mới.",
+    "restartNow": "Khởi động lại ngay",
+    "downloadingTitle": "Đang tải bản cập nhật",
+    "downloadingSubtitle": "Vui lòng chờ trong giây lát trong khi chúng tôi tải về các bản cập nhật mới nhất cho bạn.",
+    "newUpdateAvailable": "Có bản cập nhật mới",
+    "updateSubtitle": "Phiên bản mới của ứng dụng đã sẵn sàng. Cập nhật ngay để nhận các tính năng và sửa lỗi mới nhất.",
+    "updateNow": "Cập nhật ngay"
   }
 }

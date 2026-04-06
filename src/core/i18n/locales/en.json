@@ -593,5 +593,15 @@
     "loading_detail": "Loading details...",
     "unit_meter": "meters",
     "unit_km": "km"
+  },
+  "updateBanner": {
+    "updateDownloaded": "Update Downloaded",
+    "updateReadySubtitle": "The latest version has been successfully downloaded. Restart now to experience new features.",
+    "restartNow": "Restart Now",
+    "downloadingTitle": "Downloading Update",
+    "downloadingSubtitle": "Please wait a moment while we are fetching the latest updates for you.",
+    "newUpdateAvailable": "New Update Available",
+    "updateSubtitle": "A new version of the app is available. Update now to get the latest features and bug fixes.",
+    "updateNow": "Update Now"
   }
 }

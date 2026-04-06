@@ -16,6 +16,7 @@ import { ThemeProvider } from "@/core/theme/ThemeContext";
 // Import các Wrapper logic
 // import AppUpdateWrapper from '@/components/AppUpdateWrapper';
 import AppContentWrapper from "@/components/base/AppContentWrapper";
+import UpdateOtaModal from "@/components/modals/UpdateOtaModal";
 import { OTPProvider } from "@/contexts/OTPContext";
 
 Sentry.init({
@@ -29,6 +30,7 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
       <SafeAreaProvider>
         <ThemeProvider>
           <GlobalProvider>
+            <UpdateOtaModal />
             <SignalRProvider>
               <NotificationProvider>
                 <OTPProvider>

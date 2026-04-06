@@ -301,6 +301,16 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
     loadAppInfo();
   }, []);
 
+  // 🔹 TRIGGER OTA CHECK
+  useEffect(() => {
+    if (isReady) {
+      const timer = setTimeout(() => {
+        checkForOtaUpdates();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isReady]);
+
   // 🔹 ADD — Fetch wallet when login / app start
   useEffect(() => {
     if (!appInfo?.user_code) return;
