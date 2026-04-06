@@ -17,6 +17,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -106,170 +107,181 @@ const LoginScreen = () => {
   ];
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.brandBg }]}>
-      <SafeAreaView edges={['top']} style={[styles.safeArea, { backgroundColor: colors.brandBlue }]}>
+    <SafeAreaView
+      edges={['top', 'bottom']}
+      style={[styles.container, { backgroundColor: colors.brandBlue }]}
+    >
+      <LinearGradient
+        colors={colors.gradianLightest}
+        style={styles.flex}
+      >
         <KeyboardAvoidingView
-          style={[styles.flex, { backgroundColor: 'transparent' }]}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 80}
         >
-          <LinearGradient
-            colors={colors.gradianLightest}
+          <ScrollView
             style={styles.flex}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-          <View style={[styles.header, { backgroundColor: colors.brandBlue }]}>
-            <View style={styles.headerCircleLeft} />
-            <View style={styles.headerCircleRight} />
+            <View style={[styles.header, { backgroundColor: colors.brandBlue }]}>
+              <View style={styles.headerCircleLeft} />
+              <View style={styles.headerCircleRight} />
 
-            <View style={styles.languageWrap}>
-              <TouchableOpacity
-                onPress={() => setShowLanguageModal(true)}
-                style={styles.langBtn}
-                disabled={isLoggingIn}
-              >
-                <Ionicons name="globe-outline" size={normalize(16)} color="#FFFFFF" />
-                <ThemedText style={styles.langText}>
-                  {i18n.language === 'vi' ? 'Tiếng Việt' : 'English'}
-                </ThemedText>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.logoWrap}>
-              <Image source={logoImg} style={styles.logo} resizeMode="contain" />
-            </View>
-
-            <ThemedText style={styles.headerTitle}>
-              {t('auth.login')}
-            </ThemedText>
-          </View>
-
-          <View style={styles.body}>
-            <ThemedText style={[styles.description, { color: colors.brandTextSecondary }]}>
-              {t('auth.login_description')}
-            </ThemedText>
-
-            <View style={styles.form}>
-              <View style={styles.inputGroup}>
-                <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
-                  {t('auth.phone')}
-                </ThemedText>
-
-                <TextInput
-                  style={[
-                    styles.input,
-                    touched.username && errors.username ? styles.inputError : null,
-                    { color: colors.brandTextPrimary },
-                  ]}
-                  placeholder={t('auth.phone_placeholder')}
-                  placeholderTextColor="#A8ADB7"
-                  value={username}
-                  onChangeText={handlePhoneChange}
-                  onBlur={handleBlur}
-                  keyboardType="numeric"
-                  maxLength={10}
-                  editable={!isLoggingIn}
-                />
-
-                {touched.username && errors.username ? (
-                  <ThemedText style={styles.errorText}>
-                    {errors.username}
+              <View style={styles.languageWrap}>
+                <TouchableOpacity
+                  onPress={() => setShowLanguageModal(true)}
+                  style={styles.langBtn}
+                  disabled={isLoggingIn}
+                >
+                  <Ionicons name="globe-outline" size={normalize(16)} color="#FFFFFF" />
+                  <ThemedText style={styles.langText}>
+                    {i18n.language === 'vi' ? 'Tiếng Việt' : 'English'}
                   </ThemedText>
-                ) : null}
+                </TouchableOpacity>
               </View>
 
-              <View style={styles.inputGroup}>
-                <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
-                  {t('auth.password')}
-                </ThemedText>
+              <View style={styles.logoWrap}>
+                <Image source={logoImg} style={styles.logo} resizeMode="contain" />
+              </View>
 
-                <View style={styles.passwordWrap}>
+              <ThemedText style={styles.headerTitle}>
+                {t('auth.login')}
+              </ThemedText>
+            </View>
+
+            <View style={styles.body}>
+              <ThemedText style={[styles.description, { color: colors.brandTextSecondary }]}>
+                {t('auth.login_description')}
+              </ThemedText>
+
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
+                    {t('auth.phone')}
+                  </ThemedText>
+
                   <TextInput
-                    style={[styles.input, styles.passwordInput, { color: colors.brandTextPrimary }]}
-                    placeholder={t('auth.password_placeholder')}
+                    style={[
+                      styles.input,
+                      touched.username && errors.username ? styles.inputError : null,
+                      { color: colors.brandTextPrimary },
+                    ]}
+                    placeholder={t('auth.phone_placeholder')}
                     placeholderTextColor="#A8ADB7"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoComplete="password"
+                    value={username}
+                    onChangeText={handlePhoneChange}
+                    onBlur={handleBlur}
+                    keyboardType="numeric"
+                    maxLength={10}
                     editable={!isLoggingIn}
                   />
 
+                  {touched.username && errors.username ? (
+                    <ThemedText style={styles.errorText}>
+                      {errors.username}
+                    </ThemedText>
+                  ) : null}
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
+                    {t('auth.password')}
+                  </ThemedText>
+
+                  <View style={styles.passwordWrap}>
+                    <TextInput
+                      style={[styles.input, styles.passwordInput, { color: colors.brandTextPrimary }]}
+                      placeholder={t('auth.password_placeholder')}
+                      placeholderTextColor="#A8ADB7"
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoComplete="password"
+                      editable={!isLoggingIn}
+                    />
+
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowPassword(!showPassword)}
+                      disabled={isLoggingIn}
+                    >
+                      <Ionicons
+                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={normalize(20)}
+                        color="#98A2B3"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.actionRow}>
+                  <TouchableOpacity disabled={isLoggingIn}>
+                    <ThemedText style={[styles.linkText, { color: colors.brandBlue }]}>
+                      {t('auth.switch_account')}
+                    </ThemedText>
+                  </TouchableOpacity>
+
                   <TouchableOpacity
-                    style={styles.eyeButton}
-                    onPress={() => setShowPassword(!showPassword)}
+                    onPress={handleForgotPassword}
                     disabled={isLoggingIn}
                   >
-                    <Ionicons
-                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                      size={normalize(20)}
-                      color="#98A2B3"
-                    />
+                    <ThemedText style={[styles.linkText, { color: colors.brandBlue }]}>
+                      {t('auth.forgot_password')}
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => handleLogin(true)}
+                  activeOpacity={0.9}
+                  disabled={!isFormValid || isLoggingIn || !!errors.username}
+                  style={styles.loginButtonWrap}
+                >
+                  <LinearGradient
+                    colors={colors.gradientPrimary as any}
+                    start={{ x: 0, y: 0.5 }}
+                    end={{ x: 1, y: 0.5 }}
+                    style={[
+                      styles.loginButton,
+                      (!isFormValid || isLoggingIn || !!errors.username) &&
+                      styles.loginButtonDisabled,
+                    ]}
+                  >
+                    {isLoggingIn ? (
+                      <ActivityIndicator
+                        color={Tokens.colors.main.white}
+                        size="small"
+                      />
+                    ) : (
+                      <ThemedText style={styles.loginButtonText}>
+                        {t('auth.login')}
+                      </ThemedText>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                <View style={styles.registerRow}>
+                  <ThemedText style={[styles.registerText, { color: colors.brandTextSecondary }]}>
+                    {t('auth.or')}{' '}
+                  </ThemedText>
+                  <TouchableOpacity
+                    onPress={handleCreateAccount}
+                    disabled={isLoggingIn}
+                  >
+                    <ThemedText style={[styles.registerLink, { color: colors.brandBlue }]}>
+                      {t('auth.create_account')}
+                    </ThemedText>
                   </TouchableOpacity>
                 </View>
               </View>
-
-              <View style={styles.actionRow}>
-                <TouchableOpacity disabled={isLoggingIn}>
-                  <ThemedText style={[styles.linkText, { color: colors.brandBlue }]}>
-                    {t('auth.switch_account')}
-                  </ThemedText>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={handleForgotPassword}
-                  disabled={isLoggingIn}
-                >
-                  <ThemedText style={[styles.linkText, { color: colors.brandBlue }]}>
-                    {t('auth.forgot_password')}
-                  </ThemedText>
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity
-                onPress={() => handleLogin(true)}
-                activeOpacity={0.9}
-                disabled={!isFormValid || isLoggingIn || !!errors.username}
-                style={styles.loginButtonWrap}
-              >
-                <LinearGradient
-                  colors={colors.gradientPrimary as any}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={[
-                    styles.loginButton,
-                    (!isFormValid || isLoggingIn || !!errors.username) &&
-                    styles.loginButtonDisabled,
-                  ]}
-                >
-                  {isLoggingIn ? (
-                    <ActivityIndicator
-                      color={Tokens.colors.main.white}
-                      size="small"
-                    />
-                  ) : (
-                    <ThemedText style={styles.loginButtonText}>
-                      {t('auth.login')}
-                    </ThemedText>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-
-              <View style={styles.registerRow}>
-                <ThemedText style={[styles.registerText, { color: colors.brandTextSecondary }]}>{t('auth.or')} </ThemedText>
-                <TouchableOpacity
-                  onPress={handleCreateAccount}
-                  disabled={isLoggingIn}
-                >
-                  <ThemedText style={[styles.registerLink, { color: colors.brandBlue }]}>
-                    {t('auth.create_account')}
-                  </ThemedText>
-                </TouchableOpacity>
-              </View>
-              </View>
             </View>
-          </LinearGradient>
+          </ScrollView>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </LinearGradient>
 
       <BottomActionModal
         visible={showLanguageModal}
@@ -281,24 +293,22 @@ const LoginScreen = () => {
         cancelText={t('common.cancel')}
         hasBottomNav={false}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E9EEF5',
-  },
-
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#0D63E6',
   },
 
   flex: {
     flex: 1,
-    backgroundColor: '#E9EEF5',
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: normalize(40),
   },
 
   header: {

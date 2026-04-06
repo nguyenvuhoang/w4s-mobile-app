@@ -187,11 +187,12 @@ const QuickLoginScreen = () => {
 
       {isAuthenticating && <View style={styles.biometricOverlay} />}
 
-      <View style={styles.screen}>
-        <SafeAreaView edges={["top"]} style={styles.safeArea}>
+      <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
+        <View style={styles.keyboardView}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={styles.keyboardView}
+            style={styles.flex}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 80}
           >
             <ScrollView
               contentContainerStyle={styles.scrollContent}
@@ -331,14 +332,14 @@ const QuickLoginScreen = () => {
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
-        </SafeAreaView>
-      </View>
+        </View>
+      </SafeAreaView>
     </>
   );
 };
 
 const styles = StyleSheet.create({
-  screen: {
+  flex: {
     flex: 1,
   },
 
@@ -354,6 +355,7 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: normalize(40),
   },
 
   header: {
