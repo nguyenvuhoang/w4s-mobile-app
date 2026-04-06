@@ -5,6 +5,7 @@ import {
   CreateEventPayload,
   eventRepository,
   EventSearchParams,
+  UpdateEventParams,
 } from "@/services/repositories/event.repository";
 import StorageService from "@/services/StorageService";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -132,6 +133,68 @@ export const useEvent = (options: UseEventOptions = {}) => {
     [fetchAllEvents]
   );
 
+  const deleteEvent = useCallback(
+    async (eventId: number) => {
+      try {
+        setError(null);
+        setLoading(true);
+        console.log("[useEvent] Deleting event:", eventId);
+
+        const response = await eventRepository.deleteWalletEvent(eventId);
+
+        if (!response.isSuccess()) {
+          throw new Error(response.message || "Xóa sự kiện thất bại");
+        }
+
+        // Clear cache và refresh lại sau khi xóa
+        console.log("[useEvent] Event deleted, clearing cache and refreshing");
+        sessionCache = null;
+        await fetchAllEvents(true);
+
+        return true;
+      } catch (err) {
+        console.error("[useEvent] Delete event failed:", err);
+        setError(err instanceof Error ? err.message : "Không thể xóa sự kiện");
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchAllEvents]
+  );
+
+  const updateEvent = useCallback(
+    async (payload: UpdateEventParams) => {
+      try {
+        setError(null);
+        setLoading(true);
+        console.log("[useEvent] Updating event payload:", payload);
+
+        const response = await eventRepository.updateWalletEvent(payload);
+
+        if (!response.isSuccess()) {
+          throw new Error(response.message || "Cập nhật sự kiện thất bại");
+        }
+
+        // Clear cache và refresh lại sau khi cập nhật
+        console.log("[useEvent] Event updated, clearing cache and refreshing");
+        sessionCache = null;
+        await fetchAllEvents(true);
+
+        return true;
+      } catch (err) {
+        console.error("[useEvent] Update event failed:", err);
+        setError(
+          err instanceof Error ? err.message : "Không thể cập nhật sự kiện"
+        );
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchAllEvents]
+  );
+
   /**
    * Force refresh - bỏ qua cache
    */
@@ -191,6 +254,8 @@ export const useEvent = (options: UseEventOptions = {}) => {
     loading,
     error,
     createEvent,
+    updateEvent,
+    deleteEvent,
     fetchAllEvents, // Deprecated - dùng refetch thay thế
     refetch,
     clearCache,

@@ -5,6 +5,8 @@
 
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
+import StorageKey from "@/constants/StorageKey";
+import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Event } from "@/features/event/types/Event";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
@@ -17,7 +19,6 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -31,6 +32,7 @@ import { useEvent } from "../hooks/useEvent";
 
 const EditEventScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { showNotification } = useNotification();
   const params = useLocalSearchParams();
   const eventId = params.id ? parseInt(params.id as string) : null;
   const insets = useSafeAreaInsets();
@@ -39,6 +41,7 @@ const EditEventScreen: React.FC = () => {
   const {
     allEvents,
     loading: eventsLoading,
+    updateEvent,
     refetch,
   } = useEvent({ autoFetch: true });
 
@@ -51,6 +54,9 @@ const EditEventScreen: React.FC = () => {
     null
   );
   const [endDate, setEndDate] = useState(new Date());
+  const [currency, setCurrency] = useState("VND");
+  const [currencySymbol, setCurrencySymbol] = useState("đ");
+  const [currencyName, setCurrencyName] = useState("Vietnamese Dong");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -72,6 +78,7 @@ const EditEventScreen: React.FC = () => {
       setColor(foundEvent.color);
       setEventName(foundEvent.title);
       setEndDate(new Date(foundEvent.end_on_utc));
+      setCurrency(foundEvent.currency_code || "VND");
 
       // Find wallet
       const wallet = wallets.find(
@@ -82,9 +89,8 @@ const EditEventScreen: React.FC = () => {
       }
       setLoading(false);
     } else if (!eventsLoading) {
-      // ✅ Chỉ báo lỗi khi đã load xong nhưng không tìm thấy
       setLoading(false);
-      Alert.alert("Lỗi", "Không tìm thấy sự kiện");
+      showNotification("Không tìm thấy sự kiện", "error");
       router.back();
     }
   }, [eventId, allEvents, wallets, eventsLoading]);
@@ -95,69 +101,102 @@ const EditEventScreen: React.FC = () => {
       const loadSelectedData = async () => {
         try {
           // Load selected icon
-          const selectedIcon =
-            await StorageService.getAsyncItem("temp_selected_icon");
+          const selectedIcon = await StorageService.getItem(
+            StorageKey.TEMP_ICON_STORAGE
+          );
           if (selectedIcon) {
             setIcon(selectedIcon);
-            await StorageService.removeAsyncItem("temp_selected_icon");
+            await StorageService.removeItem(StorageKey.TEMP_ICON_STORAGE);
           }
 
           // Load selected color
-          const selectedColor = await StorageService.getAsyncItem(
-            "temp_selected_color"
+          const selectedColor = await StorageService.getItem(
+            StorageKey.TEMP_COLOR_STORAGE
           );
           if (selectedColor) {
             setColor(selectedColor);
-            await StorageService.removeAsyncItem("temp_selected_color");
+            await StorageService.removeItem(StorageKey.TEMP_COLOR_STORAGE);
           }
 
-          // ✅ REMOVED: Wallet selection is disabled in edit mode
+          // Load selected wallet
+          const walletData = await StorageService.getAsyncItem(
+            StorageKey.TEMP_WALLET_STORAGE
+          );
+          if (walletData) {
+            const { walletId } = JSON.parse(walletData);
+            const wallet = wallets.find((w) => w.walletId === walletId);
+            if (wallet) {
+              setSelectedWallet(wallet);
+            }
+            await StorageService.removeAsyncItem(
+              StorageKey.TEMP_WALLET_STORAGE
+            );
+          }
+
+          // Load selected currency
+          const selectedCurrencyStr = await StorageService.getItem(
+            StorageKey.TEMP_CURRENCY_STORAGE
+          );
+          if (selectedCurrencyStr) {
+            try {
+              const selectedCurrency = JSON.parse(selectedCurrencyStr);
+              setCurrency(selectedCurrency.currencyId || "VND");
+              setCurrencySymbol(selectedCurrency.symbol || "đ");
+              setCurrencyName(selectedCurrency.name || "Vietnamese Dong");
+              await StorageService.removeItem(
+                StorageKey.TEMP_CURRENCY_STORAGE
+              );
+            } catch (parseError) {
+              console.error("[EditEvent] Failed to parse currency:", parseError);
+            }
+          }
         } catch (error) {
           console.error("[EditEvent] Failed to load selected data:", error);
         }
       };
 
       loadSelectedData();
-    }, [])
+    }, [wallets])
   );
 
   const handleSave = async () => {
     if (!eventName.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập tên sự kiện");
+      showNotification("Vui lòng nhập tên sự kiện", "error");
       return;
     }
 
     if (!selectedWallet) {
-      Alert.alert("Lỗi", "Vui lòng chọn nguồn tiền");
+      showNotification("Vui lòng chọn nguồn tiền", "error");
       return;
     }
 
     setSaving(true);
 
     try {
-      const eventData = {
-        id: eventId!,
-        event_name: eventName.trim(),
-        event_icon: icon,
-        event_color: color,
-        wallet_id: [selectedWallet.walletId],
-        end_date: endDate.toISOString(),
+      if (!event) return;
+
+      const eventData: any = {
+        ...event,
+        title: eventName.trim(),
+        icon: icon,
+        color: color,
+        wallet_id: selectedWallet.walletId,
+        currency_code: currency,
+        end_on_utc: endDate.toISOString(),
       };
 
       console.log("[EditEvent] Updating event:", eventData);
 
-      // TODO: Call API to update event
-      // await eventRepository.updateEvent(eventData);
+      // ✅ Call hook
+      const success = await updateEvent(eventData);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      await refetch();
-      router.back();
-      Alert.alert("Thành công", "Đã cập nhật sự kiện");
+      if (success) {
+        router.back();
+        showNotification("Đã cập nhật sự kiện", "success");
+      }
     } catch (error) {
       console.error("[EditEvent] Update failed:", error);
-      Alert.alert("Lỗi", "Không thể cập nhật sự kiện. Vui lòng thử lại.");
+      showNotification("Không thể cập nhật sự kiện. Vui lòng thử lại.", "error");
     } finally {
       setSaving(false);
     }
@@ -177,7 +216,21 @@ const EditEventScreen: React.FC = () => {
     });
   };
 
-  // ✅ REMOVED: handleSelectWallet - wallet selection is disabled in edit mode
+  const handleSelectWallet = () => {
+    router.push({
+      pathname: "/(protected)/wallet/wallet-list",
+      params: { mode: "select" },
+    });
+  };
+
+  const handleSelectCurrency = () => {
+    router.push({
+      pathname: "/(protected)/select-currency",
+      params: {
+        selectedCurrencyId: currency,
+      },
+    });
+  };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -316,7 +369,7 @@ const EditEventScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Wallet Selection - DISABLED in edit mode */}
+          {/* Wallet Selection */}
           <View style={styles.section}>
             <CustomText
               style={[styles.label, { color: colors.text }]}
@@ -324,12 +377,12 @@ const EditEventScreen: React.FC = () => {
             >
               Nguồn tiền áp dụng
             </CustomText>
-            <View
+            <TouchableOpacity
               style={[
                 styles.walletSelector,
-                styles.walletSelectorDisabled,
                 { backgroundColor: colors.card, borderColor: colors.border },
               ]}
+              onPress={handleSelectWallet}
             >
               {selectedWallet ? (
                 <View style={styles.walletLeft}>
@@ -370,59 +423,18 @@ const EditEventScreen: React.FC = () => {
                     style={[styles.walletPlaceholder, { color: colors.icon }]}
                     type="regular"
                   >
-                    Chưa chọn
+                    Chọn nguồn tiền
                   </CustomText>
                 </View>
               )}
-              {/* No chevron icon - indicating disabled state */}
-            </View>
+              <FontAwesome6
+                name="chevron-right"
+                size={normalize(14)}
+                color={colors.icon}
+              />
+            </TouchableOpacity>
           </View>
 
-          {/* Currency Selection - DISABLED in edit mode */}
-          <View style={styles.section}>
-            <CustomText
-              style={[styles.label, { color: colors.text }]}
-              type="semiBold"
-            >
-              Đơn vị tiền tệ
-            </CustomText>
-            <View
-              style={[
-                styles.currencySelector,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              <View style={styles.currencyLeft}>
-                <View style={styles.currencyIconWrapper}>
-                  <CustomText
-                    style={[styles.currencySymbolText, { color: colors.tint }]}
-                    type="bold"
-                  >
-                    //TODO "$"
-                    {/* {currencySymbol} */}
-                  </CustomText>
-                </View>
-                <View style={styles.currencyInfo}>
-                  <CustomText
-                    style={[styles.currencyNameText, { color: colors.icon }]}
-                    type="regular"
-                    numberOfLines={1}
-                  >
-                    "ĐÔ LA MỸ"
-                    {/* {currencyName} */}
-                  </CustomText>
-                  <CustomText
-                    style={[styles.currencyCode, { color: colors.text }]}
-                    type="semiBold"
-                  >
-                    "USD"
-                    {/* {currency} */}
-                  </CustomText>
-                </View>
-              </View>
-              {/* No chevron icon - indicating disabled state */}
-            </View>
-          </View>
 
           {/* End Date */}
           <View style={styles.section}>
@@ -487,7 +499,7 @@ const EditEventScreen: React.FC = () => {
               style={[styles.cancelButtonText, { color: colors.text }]}
               type="semiBold"
             >
-              Lịch sử giao dịch
+              Hủy
             </CustomText>
           </TouchableOpacity>
 
@@ -504,7 +516,7 @@ const EditEventScreen: React.FC = () => {
             disabled={saving || !eventName.trim() || !selectedWallet}
           >
             <CustomText style={styles.createButtonText} type="bold">
-              {saving ? "Đang lưu..." : "Kết thúc sự kiện"}
+              {saving ? "Đang lưu..." : "Lưu"}
             </CustomText>
           </TouchableOpacity>
         </View>

@@ -1,6 +1,7 @@
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
+import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
@@ -13,7 +14,6 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -41,9 +41,10 @@ interface AutofillData {
 
 const CreateEventScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { showNotification } = useNotification();
   const params = useLocalSearchParams();
   const { wallets } = useWallet();
-  const { refetch } = useEvent();
+  const { createEvent } = useEvent();
   const { defaultCurrency, loading: loadingDefaultCurrency } =
     useDefaultCurrency();
   const insets = useSafeAreaInsets();
@@ -210,12 +211,12 @@ const CreateEventScreen: React.FC = () => {
 
   const handleCreate = async () => {
     if (!eventName.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập tên sự kiện");
+      showNotification("Vui lòng nhập tên sự kiện", "error");
       return;
     }
 
     if (!selectedWallet) {
-      Alert.alert("Lỗi", "Vui lòng chọn nguồn tiền");
+      showNotification("Vui lòng chọn nguồn tiền", "error");
       return;
     }
 
@@ -232,13 +233,15 @@ const CreateEventScreen: React.FC = () => {
 
       console.log("[CreateEvent] Creating event:", eventData);
 
-      await eventRepository.createEvent(eventData);
-      refetch();
-      router.back();
-      Alert.alert("Thành công", "Đã tạo sự kiện mới");
+      const success = await createEvent(eventData);
+      
+      if (success) {
+        showNotification("Đã tạo sự kiện mới", "success");
+        router.back();
+      }
     } catch (error) {
       console.error("[CreateEvent] Create failed:", error);
-      Alert.alert("Lỗi", "Không thể tạo sự kiện. Vui lòng thử lại." + error);
+      showNotification("Không thể tạo sự kiện. Vui lòng thử lại.", "error");
     } finally {
       setCreating(false);
     }
@@ -457,53 +460,6 @@ const CreateEventScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Currency Selection */}
-          <View style={styles.section}>
-            <CustomText
-              style={[styles.label, { color: colors.text }]}
-              type="semiBold"
-            >
-              Đơn vị tiền tệ
-            </CustomText>
-            <TouchableOpacity
-              style={[
-                styles.currencySelector,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-              onPress={handleSelectCurrency}
-            >
-              <View style={styles.currencyLeft}>
-                <View style={styles.currencyIconWrapper}>
-                  <CustomText
-                    style={[styles.currencySymbolText, { color: colors.tint }]}
-                    type="bold"
-                  >
-                    {currencySymbol}
-                  </CustomText>
-                </View>
-                <View style={styles.currencyInfo}>
-                  <CustomText
-                    style={[styles.currencyNameText, { color: colors.icon }]}
-                    type="regular"
-                    numberOfLines={1}
-                  >
-                    {currencyName}
-                  </CustomText>
-                  <CustomText
-                    style={[styles.currencyCode, { color: colors.text }]}
-                    type="semiBold"
-                  >
-                    {currency}
-                  </CustomText>
-                </View>
-              </View>
-              <FontAwesome6
-                name="chevron-right"
-                size={normalize(14)}
-                color={colors.icon}
-              />
-            </TouchableOpacity>
-          </View>
 
           {/* End Date */}
           <View style={styles.section}>

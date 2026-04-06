@@ -4,6 +4,7 @@ import BottomActionModal, {
   ActionItem,
 } from "@/components/modals/BottomActionModal";
 import STORAGE_KEY from "@/constants/StorageKey";
+import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Event } from "@/features/event/types/Event";
 import StorageService from "@/services/StorageService";
@@ -31,6 +32,7 @@ interface EventListScreenProps {
 
 const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
   const { colors } = useAppTheme();
+  const { showNotification } = useNotification();
 
   // ✅ Lấy mode từ route params
   const params = useLocalSearchParams();
@@ -52,6 +54,8 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
     error,
     fetchAllEvents,
     refetch,
+    deleteEvent,
+    updateEvent,
   } = useEvent();
   const insets = useSafeAreaInsets();
 
@@ -63,7 +67,6 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
     return filtered;
   }, [activeTab, activeEvents, completedEvents]);
 
-  // Load ALL events khi screen focused (chỉ 1 lần)
   useFocusEffect(
     useCallback(() => {
       console.log("[EventListScreen] Fetching all events");
@@ -72,12 +75,10 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
     }, [fetchAllEvents])
   );
 
-  // ✅ Tab change KHÔNG gọi API - chỉ filter
   const handleTabChange = (tab: TabType) => {
     if (tab === activeTab) return;
     console.log("[EventListScreen] Switching tab to:", tab);
     setActiveTab(tab);
-    // Không cần fetch - data đã có trong allEvents
   };
 
   const handleRefresh = () => {
@@ -138,10 +139,13 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
             style: "destructive",
             onPress: async () => {
               try {
-                // TODO: call delete API with selectedEvent.id
-                await refetch();
-              } catch {
-                Alert.alert("Lỗi", "Không thể xóa sự kiện");
+                const success = await deleteEvent(selectedEvent.id);
+                if (success) {
+                  showNotification("Đã xóa sự kiện thành công", "success");
+                }
+              } catch (error) {
+                console.error("[EventListScreen] Delete failed:", error);
+                showNotification("Không thể xóa sự kiện. Vui lòng thử lại.", "error");
               }
             },
           },
@@ -150,25 +154,101 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
     }, 300);
   };
 
-  const handleCompleteEvent = () => {
-    setShowActionModal(false);
-    // TODO: Call API to complete event
-    setTimeout(() => {
-      Alert.alert(
-        "Thông báo",
-        "Chức năng hoàn thành sự kiện đang được phát triển"
-      );
-    }, 300);
-  };
+  // const handleCompleteEvent = () => {
+  //   if (!selectedEvent) return;
+  //   setShowActionModal(false);
 
-  const handleReactivateEvent = () => {
+  //   setTimeout(() => {
+  //     Alert.alert(
+  //       "Hoàn thành sự kiện",
+  //       `Bạn có chắc muốn đánh dấu sự kiện "${selectedEvent.title}" là đã hoàn thành?`,
+  //       [
+  //         { text: "Hủy", style: "cancel" },
+  //         {
+  //           text: "Hoàn thành",
+  //           onPress: async () => {
+  //             try {
+  //               const payload = {
+  //                 ...selectedEvent,
+  //                 status: "COMPLETED" as const,
+  //                 // Ensure mandatory fields from UpdateEventParams are present
+  //                 id: selectedEvent.id,
+  //                 wallet_id: selectedEvent.wallet_id,
+  //                 planned_amount: selectedEvent.planned_amount,
+  //                 currency_code: selectedEvent.currency_code,
+  //                 category_id: selectedEvent.category_id,
+  //                 budget_id: selectedEvent.budget_id,
+  //                 reminder_minutes: selectedEvent.reminder_minutes,
+  //                 reminder_on_utc: selectedEvent.reminder_on_utc,
+  //                 is_recurring: !!selectedEvent.is_recurring,
+  //               };
+  //               const success = await updateEvent(payload as any);
+  //               if (success) {
+  //                 showNotification("Đã hoàn thành sự kiện", "success");
+  //               }
+  //             } catch (error) {
+  //               console.error("[EventListScreen] Complete failed:", error);
+  //               showNotification("Không thể cập nhật sự kiện. Vui lòng thử lại.", "error");
+  //             }
+  //           },
+  //         },
+  //       ]
+  //     );
+  //   }, 300);
+  // };
+
+  // const handleReactivateEvent = () => {
+  //   if (!selectedEvent) return;
+  //   setShowActionModal(false);
+
+  //   setTimeout(() => {
+  //     Alert.alert(
+  //       "Kích hoạt lại sự kiện",
+  //       `Bạn có chắc muốn kích hoạt lại sự kiện "${selectedEvent.title}"?`,
+  //       [
+  //         { text: "Hủy", style: "cancel" },
+  //         {
+  //           text: "Kích hoạt",
+  //           onPress: async () => {
+  //             try {
+  //               const payload = {
+  //                 ...selectedEvent,
+  //                 status: "ACTIVE" as const,
+  //                 // Ensure mandatory fields are present
+  //                 id: selectedEvent.id,
+  //                 wallet_id: selectedEvent.wallet_id,
+  //                 planned_amount: selectedEvent.planned_amount,
+  //                 currency_code: selectedEvent.currency_code,
+  //                 category_id: selectedEvent.category_id,
+  //                 budget_id: selectedEvent.budget_id,
+  //                 reminder_minutes: selectedEvent.reminder_minutes,
+  //                 reminder_on_utc: selectedEvent.reminder_on_utc,
+  //                 is_recurring: !!selectedEvent.is_recurring,
+  //               };
+  //               const success = await updateEvent(payload as any);
+  //               if (success) {
+  //                 showNotification("Đã kích hoạt lại sự kiện thành công", "success");
+  //               }
+  //             } catch (error) {
+  //               console.error("[EventListScreen] Reactivate failed:", error);
+  //               showNotification("Không thể cập nhật sự kiện. Vui lòng thử lại.", "error");
+  //             }
+  //           },
+  //         },
+  //       ]
+  //     );
+  //   }, 300);
+  // };
+
+  const handleTransactionHistory = () => {
     setShowActionModal(false);
-    // TODO: Call API to reactivate event
+    if (!selectedEvent) return;
+
     setTimeout(() => {
-      Alert.alert(
-        "Thông báo",
-        "Chức năng kích hoạt lại sự kiện đang được phát triển"
-      );
+      router.push({
+        pathname: "/(protected)/event/transaction-history",
+        params: { id: selectedEvent.id.toString() }
+      });
     }, 300);
   };
 
@@ -182,19 +262,25 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
         onPress: handleEditEvent,
       },
       {
-        id: "complete",
-        icon: "checkmark-circle-outline",
-        label: "Hoàn thành",
-        onPress: handleCompleteEvent,
-        hide: selectedEvent?.status === "COMPLETED",
+        id: "history",
+        icon: "receipt-outline",
+        label: "Lịch sử giao dịch",
+        onPress: handleTransactionHistory,
       },
-      {
-        id: "reactivate",
-        icon: "refresh-outline",
-        label: "Kích hoạt lại",
-        onPress: handleReactivateEvent,
-        hide: selectedEvent?.status === "ACTIVE",
-      },
+      // {
+      //   id: "complete",
+      //   icon: "checkmark-circle-outline",
+      //   label: "Hoàn thành",
+      //   onPress: handleCompleteEvent,
+      //   hide: selectedEvent?.status === "COMPLETED",
+      // },
+      // {
+      //   id: "reactivate",
+      //   icon: "refresh-outline",
+      //   label: "Kích hoạt lại",
+      //   onPress: handleReactivateEvent,
+      //   hide: selectedEvent?.status === "ACTIVE",
+      // },
       {
         id: "delete",
         icon: "trash-outline",
