@@ -303,7 +303,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // 🔹 TRIGGER OTA CHECK
   useEffect(() => {
-    if (isReady) {
+    if (isReady && !__DEV__) {
       const timer = setTimeout(() => {
         checkForOtaUpdates();
       }, 1500);

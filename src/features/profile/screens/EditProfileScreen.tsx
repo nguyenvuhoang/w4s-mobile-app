@@ -18,6 +18,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DatePicker from "react-native-date-picker";
+import dayjs from "dayjs";
+import { Ionicons } from "@expo/vector-icons";
 
 const EditProfileScreen: React.FC = () => {
   const { colors } = useAppTheme();
@@ -26,6 +29,9 @@ const EditProfileScreen: React.FC = () => {
   const { profile, loading, updating, getUserProfile, updateUserProfile } = useProfile();
 
   const [formData, setFormData] = useState<Partial<UserProfile>>({
+    id: undefined,
+    user_id: "",
+    user_code: "",
     last_name: "",
     middle_name: "",
     first_name: "",
@@ -42,12 +48,18 @@ const EditProfileScreen: React.FC = () => {
     gender: "",
   });
 
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [currentDateField, setCurrentDateField] = useState<"date_of_birth" | "issued_date">("date_of_birth");
+
   useFocusEffect(
     useCallback(() => {
       const fetchProfile = async () => {
         const data = await getUserProfile();
         if (data) {
           setFormData({
+            id: data.id,
+            user_id: data.user_id || "",
+            user_code: data.user_code || "",
             last_name: data.last_name || "",
             middle_name: data.middle_name || "",
             first_name: data.first_name || "",
@@ -75,8 +87,40 @@ const EditProfileScreen: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      if (!formData.first_name?.trim() || !formData.last_name?.trim()) {
-        showNotification(t("profile.error_name_required", "Vui lòng nhập đầy đủ họ và tên"), "error");
+      const requiredFields: (keyof UserProfile)[] = [
+        "last_name",
+        "middle_name",
+        "first_name",
+        "phone",
+        "email",
+        "address",
+        "identity_number",
+        "gender",
+        "date_of_birth",
+        "issued_date",
+        "issued_place",
+        "nationality",
+        "place_of_origin",
+        "place_of_residence",
+      ];
+
+      for (const field of requiredFields) {
+        const value = formData[field];
+        if (value === undefined || value === null || (typeof value === "string" && !value.trim())) {
+          showNotification(t("profile.error_all_fields_required", "Vui lòng nhập đầy đủ tất cả các thông tin"), "error");
+          return;
+        }
+      }
+
+      // Basic Email validation
+      if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        showNotification(t("profile.error_invalid_email", "Email không hợp lệ"), "error");
+        return;
+      }
+
+      // Basic Phone validation
+      if (formData.phone && formData.phone.length < 10) {
+        showNotification(t("profile.error_invalid_phone", "Số điện thoại không hợp lệ"), "error");
         return;
       }
 
@@ -86,6 +130,11 @@ const EditProfileScreen: React.FC = () => {
     } catch (error) {
       showNotification(t("profile.update_failed", "Cập nhật thất bại"), "error");
     }
+  };
+
+  const openDatePicker = (field: "date_of_birth" | "issued_date") => {
+    setCurrentDateField(field);
+    setShowDatePicker(true);
   };
 
   return (
@@ -108,7 +157,7 @@ const EditProfileScreen: React.FC = () => {
               {/* Họ */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.last_name", "Họ")}
+                  {t("profile.last_name", "Họ")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
                 <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <TextInput
@@ -124,7 +173,7 @@ const EditProfileScreen: React.FC = () => {
               {/* Tên Phụ/Đệm */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.middle_name", "Tên đệm")}
+                  {t("profile.middle_name", "Tên đệm")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
                 <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <TextInput
@@ -140,7 +189,7 @@ const EditProfileScreen: React.FC = () => {
               {/* Tên */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.first_name", "Tên")}
+                  {t("profile.first_name", "Tên")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
                 <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <TextInput
@@ -156,7 +205,7 @@ const EditProfileScreen: React.FC = () => {
               {/* Số điện thoại */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.phone", "Số điện thoại")}
+                  {t("profile.phone", "Số điện thoại")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
                 <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <TextInput
@@ -173,7 +222,7 @@ const EditProfileScreen: React.FC = () => {
               {/* Email */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.email", "Email")}
+                  {t("profile.email", "Email")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
                 <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <TextInput
@@ -191,7 +240,7 @@ const EditProfileScreen: React.FC = () => {
               {/* Địa chỉ */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.address", "Địa chỉ")}
+                  {t("profile.address", "Địa chỉ")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
                 <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <TextInput
@@ -207,7 +256,7 @@ const EditProfileScreen: React.FC = () => {
               {/* CMND/CCCD */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.identity_number", "CMND / CCCD")}
+                  {t("profile.identity_number", "CMND / CCCD")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
                 <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <TextInput
@@ -224,7 +273,7 @@ const EditProfileScreen: React.FC = () => {
               {/* Giới tính */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.gender", "Giới tính")}
+                  {t("profile.gender", "Giới tính")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
                 <View style={styles.genderContainer}>
                   {[
@@ -258,42 +307,40 @@ const EditProfileScreen: React.FC = () => {
                 </View>
               </View>
 
-              {/* Ngày sinh */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.date_of_birth", "Ngày sinh")}
+                  {t("profile.date_of_birth", "Ngày sinh")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
-                <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    placeholder={t("profile.date_of_birth_placeholder", "VD: 2000-01-01")}
-                    placeholderTextColor={colors.icon}
-                    value={formData.date_of_birth || ""}
-                    onChangeText={(val) => handleUpdateField("date_of_birth", val)}
-                  />
-                </View>
+                <TouchableOpacity
+                  style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border, justifyContent: "space-between" }]}
+                  onPress={() => openDatePicker("date_of_birth")}
+                >
+                  <CustomText style={[styles.dateText, { color: formData.date_of_birth ? colors.text : colors.icon }]}>
+                    {formData.date_of_birth ? dayjs(formData.date_of_birth).format("DD/MM/YYYY") : t("profile.date_of_birth_placeholder", "Chọn ngày sinh")}
+                  </CustomText>
+                  <Ionicons name="calendar-outline" size={normalize(20)} color={colors.icon} />
+                </TouchableOpacity>
               </View>
 
-              {/* Ngày cấp */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.issued_date", "Ngày cấp")}
+                  {t("profile.issued_date", "Ngày cấp")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
-                <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    placeholder={t("profile.issued_date_placeholder", "VD: 2020-01-01")}
-                    placeholderTextColor={colors.icon}
-                    value={formData.issued_date || ""}
-                    onChangeText={(val) => handleUpdateField("issued_date", val)}
-                  />
-                </View>
+                <TouchableOpacity
+                  style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border, justifyContent: "space-between" }]}
+                  onPress={() => openDatePicker("issued_date")}
+                >
+                  <CustomText style={[styles.dateText, { color: formData.issued_date ? colors.text : colors.icon }]}>
+                    {formData.issued_date ? dayjs(formData.issued_date).format("DD/MM/YYYY") : t("profile.issued_date_placeholder", "Chọn ngày cấp")}
+                  </CustomText>
+                  <Ionicons name="calendar-outline" size={normalize(20)} color={colors.icon} />
+                </TouchableOpacity>
               </View>
 
               {/* Nơi cấp */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.issued_place", "Nơi cấp")}
+                  {t("profile.issued_place", "Nơi cấp")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
                 <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <TextInput
@@ -309,7 +356,7 @@ const EditProfileScreen: React.FC = () => {
               {/* Quốc tịch */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.nationality", "Quốc tịch")}
+                  {t("profile.nationality", "Quốc tịch")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
                 <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <TextInput
@@ -325,7 +372,7 @@ const EditProfileScreen: React.FC = () => {
               {/* Quê quán */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.place_of_origin", "Quê quán")}
+                  {t("profile.place_of_origin", "Quê quán")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
                 <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <TextInput
@@ -341,7 +388,7 @@ const EditProfileScreen: React.FC = () => {
               {/* Nơi thường trú */}
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t("profile.place_of_residence", "Nơi thường trú")}
+                  {t("profile.place_of_residence", "Nơi thường trú")} <CustomText style={{ color: "red" }}>*</CustomText>
                 </CustomText>
                 <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <TextInput
@@ -388,6 +435,21 @@ const EditProfileScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      <DatePicker
+        modal
+        open={showDatePicker}
+        date={formData[currentDateField] ? new Date(formData[currentDateField]!) : new Date()}
+        mode="date"
+        title={currentDateField === "date_of_birth" ? t("profile.select_dob", "Chọn ngày sinh") : t("profile.select_issued_date", "Chọn ngày cấp")}
+        confirmText={t("common.confirm", "Xác nhận")}
+        cancelText={t("common.cancel", "Hủy")}
+        onConfirm={(date) => {
+          setShowDatePicker(false);
+          handleUpdateField(currentDateField, dayjs(date).format("YYYY-MM-DD"));
+        }}
+        onCancel={() => setShowDatePicker(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -412,6 +474,10 @@ const styles = StyleSheet.create({
     paddingVertical: normalize(14),
     borderRadius: normalize(12),
     borderWidth: 1,
+  },
+  dateText: {
+    fontSize: normalize(16),
+    fontFamily: "Quicksand-Regular",
   },
   input: {
     flex: 1,
