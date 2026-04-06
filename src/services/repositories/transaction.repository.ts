@@ -40,6 +40,27 @@ export interface GetRecentTransactionsPayload {
   page_size: number;
 }
 
+export interface UpdateTransactionPayload {
+  transaction_id: string;
+  transaction_description?: string;
+  description?: string;
+  amount: number;
+  fee?: number;
+  currency: string;
+  category_id: number;
+  event_id?: string | null;
+  location?: string;
+  transaction_date: string;
+  reminder_at?: string | null;
+  is_calculate_report?: boolean;
+  images?: string[];
+  with_users?: TransactionParticipant[];
+  user_code: string;
+  current_user_code: string;
+  channel_id: string;
+  reference_id: string;
+}
+
 export interface AdvancedSearchTransactionPayload {
   transaction_id?: string;
   wallet_id?: number;
@@ -93,12 +114,54 @@ export const transactionRepository = {
               : true,
           images: data.images || [],
           with_users: data.with_users || [],
+          is_support_report: true,
         },
         false,
       );
     } catch (error) {
       console.error(
         "[transactionRepository] Error creating transaction:",
+        error,
+      );
+      throw error;
+    }
+  },
+  /**
+   * Update transaction
+   * @param data Transaction payload
+   * @returns API response
+   */
+  async updateTransaction(
+    data: UpdateTransactionPayload,
+  ): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_UPDATE_WALLET_TRANSACTION,
+        {
+          transaction_id: data.transaction_id,
+          transaction_description: data.transaction_description || "",
+          description: data.description || "",
+          amount: data.amount,
+          fee: data.fee || 0,
+          currency: data.currency,
+          category_id: data.category_id,
+          event_id: data.event_id || null,
+          location: data.location || "",
+          transaction_date: data.transaction_date,
+          reminder_at: data.reminder_at || null,
+          is_calculate_report: data.is_calculate_report ?? true,
+          images: data.images || [],
+          with_users: data.with_users || [],
+          user_code: data.user_code,
+          current_user_code: data.current_user_code,
+          channel_id: data.channel_id,
+          reference_id: data.reference_id,
+        },
+        false,
+      );
+    } catch (error) {
+      console.error(
+        "[transactionRepository] Error updating transaction:",
         error,
       );
       throw error;

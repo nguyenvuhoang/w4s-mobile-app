@@ -1,9 +1,11 @@
 import { FontAwesome6 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
+    Image,
     ScrollView,
     Share,
     StyleSheet,
@@ -16,6 +18,7 @@ import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useAppTheme } from '@/core/theme/ThemeContext';
+import { Fonts } from '@/core/theme/font';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import { hp, normalize, wp } from '@/utils/layout';
 import { useTransaction } from '../hooks/useTransaction';
@@ -25,7 +28,6 @@ import { useTransactionDetail } from '../hooks/useTransactionDetail';
 interface TransactionDetailScreenProps {
     transactionId?: string;
 }
-
 interface Visuals {
     type: string;
     color: string;
@@ -40,175 +42,89 @@ const parseName = (name: string | null, language: string): string | null => {
         if (!name.trim().startsWith('{')) return name;
         const parsed = JSON.parse(name);
         return parsed[language] || parsed.vi || parsed.en || name;
-    } catch {
-        return name;
-    }
+    } catch { return name; }
 };
 
-// --- Sub-Components ---
-
-const MenuDropdown = ({
-    visible,
-    onClose,
-    onShare,
-    onEdit,
-    onDelete,
-    onRefund,
-    onDuplicate,
-    colors,
-    t
-}: any) => {
+// --- Menu Dropdown ---
+const MenuDropdown = ({ visible, onClose, onShare, onEdit, onDelete, onRefund, onDuplicate, colors, t }: any) => {
     if (!visible) return null;
-
     return (
         <View style={[styles.menuDropdown, { backgroundColor: colors.card, shadowColor: colors.text }]}>
-            <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => { onClose(); onShare(); }}
-            >
-                <FontAwesome6 name="share-nodes" size={normalize(16)} color={colors.text} />
-                <CustomText style={[styles.menuItemText, { color: colors.text }]}>
-                    {t('Share') || 'Share'}
-                </CustomText>
-            </TouchableOpacity>
-            <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
-
-            <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => { onClose(); onEdit(); }}
-            >
-                <FontAwesome6 name="pen-to-square" size={normalize(16)} color={colors.text} />
-                <CustomText style={[styles.menuItemText, { color: colors.text }]}>
-                    {t('Edit') || 'Edit'}
-                </CustomText>
-            </TouchableOpacity>
-            <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
-
-            <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => { onClose(); onDuplicate(); }}
-            >
-                <FontAwesome6 name="copy" size={normalize(16)} color={colors.text} />
-                <CustomText style={[styles.menuItemText, { color: colors.text }]}>
-                    {t('Duplicate') || 'Duplicate'}
-                </CustomText>
-            </TouchableOpacity>
-            <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
-
-            <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => { onClose(); onRefund(); }}
-            >
-                <FontAwesome6 name="arrow-rotate-left" size={normalize(16)} color={colors.text} />
-                <CustomText style={[styles.menuItemText, { color: colors.text }]}>
-                    {t('Refund') || 'Refund'}
-                </CustomText>
-            </TouchableOpacity>
-            <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
-
-            <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => { onClose(); onDelete(); }}
-            >
-                <FontAwesome6 name="trash-can" size={normalize(16)} color="#EF4444" />
-                <CustomText style={[styles.menuItemText, { color: "#EF4444" }]}>
-                    {t('Delete') || 'Delete'}
-                </CustomText>
-            </TouchableOpacity>
+            {[
+                { icon: 'share-nodes', label: t('Share') || 'Share', onPress: onShare, color: colors.text },
+                { icon: 'pen-to-square', label: t('Edit') || 'Edit', onPress: onEdit, color: colors.text },
+                { icon: 'copy', label: t('Duplicate') || 'Duplicate', onPress: onDuplicate, color: colors.text },
+                { icon: 'arrow-rotate-left', label: t('Refund') || 'Refund', onPress: onRefund, color: colors.text },
+                { icon: 'trash-can', label: t('Delete') || 'Delete', onPress: onDelete, color: '#EF4444' },
+            ].map((item, i, arr) => (
+                <React.Fragment key={item.label}>
+                    <TouchableOpacity style={styles.menuItem} onPress={() => { onClose(); item.onPress(); }}>
+                        <FontAwesome6 name={item.icon} size={normalize(15)} color={item.color} />
+                        <CustomText style={[styles.menuItemText, { color: item.color }]}>{item.label}</CustomText>
+                    </TouchableOpacity>
+                    {i < arr.length - 1 && <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />}
+                </React.Fragment>
+            ))}
         </View>
     );
 };
 
-const InfoRow = ({ icon, label, value, colors, badge, badgeColor, small }: any) => (
-    <View style={[styles.infoRow, small && styles.infoRowSmall]}>
-        <View style={styles.infoLeft}>
-            <View style={styles.iconWrapper}>
-                <FontAwesome6
-                    name={icon}
-                    size={normalize(small ? 14 : 16)}
-                    color={colors.icon}
-                />
+// --- Gradient Hero Card (first card in scroll) ---
+const GradientHeroCard = ({ visuals, currencyFormatted, transactionCode }: any) => {
+    const isIncome = transactionCode === '01';
+    const arrowIcon = isIncome ? 'arrow-up' : 'arrow-down';
+    const arrowColor = isIncome ? '#10B981' : '#EF4444';
+
+    return (
+        <LinearGradient
+            colors={['#2563EB', '#1DA1F2']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.heroCard}
+        >
+            <View style={styles.heroRow}>
+                {/* Left: white circle icon + type name */}
+                <View style={styles.heroLeft}>
+                    <View style={styles.heroIconWrap}>
+                        <FontAwesome6 name={arrowIcon} size={normalize(18)} color={arrowColor} solid />
+                    </View>
+                    <CustomText style={styles.heroTypeName}>{visuals.type}</CustomText>
+                </View>
+
+                {/* Right: amount */}
+                <CustomText style={styles.heroAmount}>{currencyFormatted.primary}</CustomText>
             </View>
-            <CustomText style={[styles.infoLabel, { color: colors.icon }, small && styles.infoLabelSmall]}>
-                {label}
-            </CustomText>
-        </View>
-        <View style={styles.infoRight}>
-            {badge && (
-                <View style={[styles.badgePill, { backgroundColor: badgeColor + '20' }]}>
-                    <CustomText style={[styles.badgeText, { color: badgeColor }]}>
-                        {badge}
-                    </CustomText>
+
+            {(currencyFormatted.secondary || currencyFormatted.fee) && (
+                <View style={styles.heroSecondRow}>
+                    {currencyFormatted.secondary && (
+                        <CustomText style={styles.heroSecondary}>{currencyFormatted.secondary}</CustomText>
+                    )}
+                    {currencyFormatted.fee && (
+                        <CustomText style={styles.heroFee}>{currencyFormatted.fee}</CustomText>
+                    )}
                 </View>
             )}
-            <CustomText
-                style={[
-                    styles.infoValue,
-                    { color: colors.text },
-                    small && styles.infoValueSmall
-                ]}
-                numberOfLines={1}
-            >
-                {value}
-            </CustomText>
+        </LinearGradient>
+    );
+};
+
+// --- Section Label ---
+const SectionLabel = ({ label }: { label: string }) => (
+    <CustomText style={styles.sectionLabel}>{label}</CustomText>
+);
+
+// --- Item Card (icon + label) ---
+const ItemCard = ({ icon, iconBg, iconColor, label, colors }: any) => (
+    <View style={[styles.itemCard, { backgroundColor: colors.card }]}>
+        <View style={[styles.itemIconWrap, { backgroundColor: iconBg }]}>
+            <FontAwesome6 name={icon} size={normalize(18)} color={iconColor} solid />
         </View>
+        <CustomText style={[styles.itemLabel, { color: colors.text }]}>{label}</CustomText>
     </View>
 );
 
-const TransactionHeaderCard = ({ visuals, transaction, currencyFormatted, colors, statusInfo, language }: any) => {
-    const categoryName = parseName(transaction.walletcategory?.category_name || null, language) || visuals.type;
-
-    return (
-        <View style={[styles.headerCard, { backgroundColor: colors.card }]}>
-            <View style={styles.headerContent}>
-                <View style={[styles.iconContainer, { backgroundColor: visuals.bgColor }]}>
-                    <FontAwesome6
-                        name={visuals.icon}
-                        size={normalize(28)}
-                        color={visuals.color}
-                    />
-                </View>
-
-                <View style={styles.headerInfo}>
-                    <CustomText style={[styles.categoryName, { color: visuals.color }]}>
-                        {categoryName}
-                    </CustomText>
-
-                    {/* Primary Amount */}
-                    <CustomText style={[
-                        styles.amountText,
-                        { color: currencyFormatted.color }
-                    ]}>
-                        {currencyFormatted.primary}
-                    </CustomText>
-
-                    {/* Secondary Amount */}
-                    {currencyFormatted.secondary && (
-                        <CustomText style={[styles.secondaryAmountText, { color: colors.icon }]}>
-                            {currencyFormatted.secondary}
-                        </CustomText>
-                    )}
-
-                    {currencyFormatted.fee && (
-                        <CustomText style={[styles.feeText, { color: colors.icon }]}>
-                            {currencyFormatted.fee}
-                        </CustomText>
-                    )}
-
-                    <View style={[styles.statusBadge, { backgroundColor: statusInfo.bgColor }]}>
-                        <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
-                        <CustomText style={[styles.statusText, { color: statusInfo.color }]}>
-                            {statusInfo.label}
-                        </CustomText>
-                    </View>
-                </View>
-            </View>
-        </View>
-    );
-};
-
 // --- Main Screen ---
-
 const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ transactionId: propTransactionId }) => {
     const { colors } = useAppTheme();
     const { t, i18n } = useTranslation();
@@ -218,18 +134,14 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
     const { defaultCurrency } = useDefaultCurrency();
     const { showNotification } = useNotification();
 
-    // --- ID Resolution ---
     const transactionId = useMemo(() => {
         if (propTransactionId) return propTransactionId;
         if (typeof params.transactionId === 'string') return params.transactionId;
-
         if (params.transaction) {
             try {
                 const derived = JSON.parse(params.transaction as string);
                 return derived.transactionid || derived.id;
-            } catch (e) {
-                console.error("Failed to parse transaction param", e);
-            }
+            } catch { }
         }
         return null;
     }, [propTransactionId, params.transactionId, params.transaction]);
@@ -237,15 +149,13 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
     const { transaction, loading, error, refetch } = useTransactionDetail(transactionId);
     const { deleteTransaction, refundTransaction } = useTransaction();
 
-    // --- Formatters ---
     const formatDate = (dateString: string) => {
         try {
-            return new Date(dateString).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US', {
-                year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
-            });
-        } catch {
-            return dateString;
-        }
+            return new Date(dateString).toLocaleDateString(
+                i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+                { year: 'numeric', month: 'long', day: 'numeric' }
+            );
+        } catch { return dateString; }
     };
 
     const formatMoney = (amount: number, code: string) => {
@@ -254,108 +164,72 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
         return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
-    // --- Logic & Memos ---
-
     const statusInfo = useMemo(() => {
-        const statusMap: Record<string, { label: string; color: string; bgColor: string }> = {
-            'C': { label: t('Completed') || 'Completed', color: '#10B981', bgColor: colors.background },
-            'N': { label: t('New') || 'New', color: '#3B82F6', bgColor: colors.background },
-            'R': { label: t('Rejected') || 'Rejected', color: '#F59E0B', bgColor: colors.background },
-            'F': { label: t('Failed') || 'Failed', color: '#EF4444', bgColor: colors.background },
+        const map: Record<string, { label: string; color: string }> = {
+            'C': { label: t('Completed') || 'Hoàn thành', color: '#10B981' },
+            'N': { label: t('New') || 'Mới', color: '#3B82F6' },
+            'R': { label: t('Rejected') || 'Từ chối', color: '#F59E0B' },
+            'F': { label: t('Failed') || 'Thất bại', color: '#EF4444' },
         };
-        return statusMap[transaction?.status || 'N'] || statusMap['N'];
-    }, [transaction?.status, t, colors.background]);
+        return map[transaction?.status || 'N'] || map['N'];
+    }, [transaction?.status, t]);
 
     const visuals = useMemo((): Visuals => {
-        let res = {
-            type: t('Transaction') || 'Transaction',
-            color: '#6B7280',
-            bgColor: '#F3F4F6',
-            icon: 'receipt',
-        };
-
+        let res: Visuals = { type: t('Transaction') || 'Giao dịch', color: '#6B7280', bgColor: '#F3F4F6', icon: 'receipt' };
         const code = transaction?.transactioncode;
-        if (code === '01') {
-            res = { type: t('Income') || 'Income', color: '#10B981', bgColor: '#D1FAE5', icon: 'arrow-trend-up' };
-        } else if (code === '02') {
-            res = { type: t('Expense') || 'Expense', color: '#EF4444', bgColor: '#FEE2E2', icon: 'arrow-trend-down' };
-        } else if (code === 'WALLET_OPENING') {
-            res = { type: t('Wallet Opening') || 'Wallet Opening', color: '#3B82F6', bgColor: '#DBEAFE', icon: 'wallet' };
-        }
-
+        if (code === '01') res = { type: t('Income') || 'Thu nhập', color: '#10B981', bgColor: '#D1FAE5', icon: 'arrow-trend-up' };
+        else if (code === '02') res = { type: t('Expense') || 'Khoản chi', color: '#EF4444', bgColor: '#FEE2E2', icon: 'arrow-trend-down' };
+        else if (code === 'WALLET_OPENING') res = { type: t('Wallet Opening') || 'Mở ví', color: '#3B82F6', bgColor: '#DBEAFE', icon: 'wallet' };
         const cat = transaction?.walletcategory;
         if ((code === '01' || code === '02') && cat) {
-            if (cat.color) {
-                res.color = cat.color;
-                res.bgColor = cat.color + '20';
-            }
+            if (cat.color) { res.color = cat.color; res.bgColor = cat.color + '20'; }
             if (cat.icon) res.icon = cat.icon;
         }
         return res;
     }, [transaction, t]);
 
     const currencyInfo = useMemo(() => {
-        if (!transaction) return {};
+        if (!transaction) return { primary: '0 đ', secondary: null, fee: null, color: '#6B7280' };
         const baseAmount = transaction.amountbase || 0;
         const amount = transaction.amount || 0;
         const fee = transaction.fee || 0;
         const isExpense = transaction.transactioncode === '02';
         const baseCcy = defaultCurrency.currencyId;
         const transCcy = transaction.ccyid || 'VND';
-
-        const primaryPrefix = (transCcy !== baseCcy ? '≈ ' : '') + (isExpense ? '- ' : '');
-
         return {
-            primary: `${primaryPrefix}${formatMoney(baseAmount, baseCcy)}`,
+            primary: formatMoney(baseAmount, baseCcy),
             secondary: transCcy !== baseCcy ? formatMoney(amount, transCcy) : null,
             fee: fee > 0 ? `${t('Fee')}: ${formatMoney(fee, transCcy)}` : null,
             color: isExpense ? '#EF4444' : '#10B981',
-            baseAmount,
-            amount,
-            transCcy
         };
     }, [transaction, defaultCurrency, t]);
 
-    // --- Actions ---
-
     const handleShare = async () => {
         try {
-            const shareAmount = formatMoney(transaction?.amount || 0, transaction?.ccyid || 'VND');
-            const category = parseName(transaction?.walletcategory?.category_name || null, i18n.language) || 'N/A';
-            const date = formatDate(transaction?.transactiondate || '');
-
-            const message = [
-                `${t('Transaction Details') || 'Transaction Details'}`,
-                ``,
-                `${t('Type')}: ${visuals.type}`,
-                `${t('Amount')}: ${shareAmount}`,
-                `${t('Category')}: ${category}`,
-                `${t('Date')}: ${date}`,
-                `${t('ID')}: ${transaction?.transactionid}`
-            ].join('\n');
-
-            await Share.share({ message });
-        } catch (error) {
-            console.error('Error sharing:', error);
-        }
+            await Share.share({
+                message: [
+                    t('Transaction Details') || 'Chi tiết giao dịch',
+                    `${t('Type')}: ${visuals.type}`,
+                    `${t('Amount')}: ${currencyInfo.primary}`,
+                    `${t('Date')}: ${formatDate(transaction?.transactiondate || '')}`,
+                    `ID: ${transaction?.transactionid}`,
+                ].join('\n'),
+            });
+        } catch { }
     };
 
     const handleDelete = () => {
         showNotification(
-            t('Are you sure you want to delete this transaction? This action cannot be undone.') || 'Are you sure?',
-            'warning',
-            undefined,
-            undefined,
+            t('Are you sure you want to delete this transaction? This action cannot be undone.') || 'Bạn có chắc muốn xóa?',
+            'warning', undefined, undefined,
             async () => {
-                if (transactionId) {
-                    try {
-                        await deleteTransaction(transactionId);
-                        showNotification(t('Transaction deleted successfully') || 'Đã xóa giao dịch', 'success');
-                        router.back();
-                    } catch (err) {
-                        console.error('Delete transaction failed:', err);
-                        showNotification(t('Could not delete transaction') || 'Không thể xóa giao dịch', 'error');
-                    }
+                if (!transactionId) return;
+                try {
+                    await deleteTransaction(transactionId);
+                    showNotification(t('Transaction deleted successfully') || 'Đã xóa', 'success');
+                    router.back();
+                } catch {
+                    showNotification(t('Could not delete transaction') || 'Không thể xóa', 'error');
                 }
             }
         );
@@ -363,84 +237,78 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
 
     const handleRefund = () => {
         showNotification(
-            t('Are you sure you want to refund this transaction?') || 'Are you sure?',
-            'warning',
-            undefined,
-            undefined,
+            t('Are you sure you want to refund this transaction?') || 'Bạn có chắc muốn hoàn tiền?',
+            'warning', undefined, undefined,
             async () => {
-                if (transactionId) {
-                    try {
-                        await refundTransaction(transactionId);
-                        showNotification(t('Transaction refunded successfully') || 'Đã hoàn tiền giao dịch', 'success');
-                        router.back();
-                    } catch (err) {
-                        console.error('Refund transaction failed:', err);
-                        showNotification(t('Could not refund transaction') || 'Không thể hoàn tiền giao dịch', 'error');
-                    }
+                if (!transactionId) return;
+                try {
+                    await refundTransaction(transactionId);
+                    showNotification(t('Transaction refunded successfully') || 'Đã hoàn tiền', 'success');
+                    router.back();
+                } catch {
+                    showNotification(t('Could not refund transaction') || 'Không thể hoàn tiền', 'error');
                 }
             }
         );
     };
 
-    const handleEdit = () => console.log('Edit transaction:', transactionId);
-    const handleDuplicate = () => console.log('Duplicate transaction:', transactionId);
+    const handleEdit = () => {
+        if (!transactionId) return;
+        router.push({
+            pathname: '/(protected)/edit-transaction',
+            params: { transactionId },
+        });
+    };
+    const handleDuplicate = () => console.log('Duplicate:', transactionId);
 
-
-    // --- Render States ---
-
+    // --- Loading ---
     if (loading) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-                <AppHeader title={t('Transaction Details') || 'Transaction Details'} showBackButton />
+            <SafeAreaView style={[styles.container, { backgroundColor: '#EEF2F7' }]}>
+                <AppHeader title={t('Transaction Details') || 'Chi tiết giao dịch'} showBackButton />
                 <View style={styles.centerContent}>
                     <ActivityIndicator size="large" color={colors.tint} />
                     <CustomText style={[styles.loadingText, { color: colors.icon }]}>
-                        {t('Loading transaction details...') || 'Loading...'}
+                        {t('Loading...') || 'Đang tải...'}
                     </CustomText>
                 </View>
             </SafeAreaView>
         );
     }
 
+    // --- Error ---
     if (error || !transaction) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-                <AppHeader title={t('Transaction Details') || 'Transaction Details'} showBackButton />
+            <SafeAreaView style={[styles.container, { backgroundColor: '#EEF2F7' }]}>
+                <AppHeader title={t('Transaction Details') || 'Chi tiết giao dịch'} showBackButton />
                 <View style={styles.centerContent}>
-                    <View style={[styles.errorIcon, { backgroundColor: colors.card }]}>
+                    <View style={[styles.errorIconWrap, { backgroundColor: colors.card }]}>
                         <FontAwesome6 name="circle-exclamation" size={normalize(48)} color="#EF4444" />
                     </View>
                     <CustomText style={[styles.errorTitle, { color: colors.text }]}>
-                        {t('Transaction Not Found') || 'Transaction Not Found'}
+                        {t('Transaction Not Found') || 'Không tìm thấy giao dịch'}
                     </CustomText>
                     <CustomText style={[styles.errorText, { color: colors.icon }]}>
                         {error || t('The transaction you are looking for does not exist or has been deleted.')}
                     </CustomText>
                     <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.tint }]} onPress={refetch}>
-                        <FontAwesome6 name="rotate-right" size={normalize(16)} color="#FFFFFF" />
-                        <CustomText style={styles.retryButtonText}>{t('Retry') || 'Retry'}</CustomText>
+                        <FontAwesome6 name="rotate-right" size={normalize(16)} color="#fff" />
+                        <CustomText style={styles.retryButtonText}>{t('Retry') || 'Thử lại'}</CustomText>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
         );
     }
 
-    // Badge Logic for Info Section
-    const typeBadge = (() => {
-        const type = transaction.walletcategory?.category_type;
-        if (!type) return null;
-        const badges: Record<string, { label: string, color: string }> = {
-            'INCOME': { label: t('Income') || 'Income', color: '#10B981' },
-            'EXPENSE': { label: t('Expense') || 'Expense', color: '#EF4444' },
-            'LOAN': { label: t('Loan') || 'Loan', color: '#F59E0B' }
-        };
-        return badges[type];
-    })();
+    const categoryName = parseName(transaction.walletcategory?.category_name || null, i18n.language) || visuals.type;
+    const walletName = transaction.walletprofile?.wallet_name;
+    const hasImage = !!(transaction as any).imageUrl;
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: '#EEF2F7' }]}>
+            {/* Header giữ nguyên như code cũ */}
             <AppHeader
-                title={t('Transaction Details') || 'Transaction Details'}
+                title={t('Transaction Details') || 'Chi tiết giao dịch'}
                 showBackButton
                 rightComponent={
                     <TouchableOpacity style={styles.menuButton} onPress={() => setShowMenu(!showMenu)}>
@@ -462,74 +330,92 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
             />
 
             <ScrollView
-                style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                <TransactionHeaderCard
+                {/* === Gradient Hero Card (scrollable) === */}
+                <GradientHeroCard
                     visuals={visuals}
-                    transaction={transaction}
                     currencyFormatted={currencyInfo}
-                    colors={colors}
-                    statusInfo={statusInfo}
-                    language={i18n.language}
+                    transactionCode={transaction.transactioncode}
                 />
 
-                <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-                    <View style={styles.cardHeader}>
-                        <FontAwesome6 name="circle-info" size={normalize(18)} color={colors.tint} />
-                        <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
-                            {t('Transaction Information') || 'Transaction Information'}
-                        </CustomText>
-                    </View>
+                {/* === Nhóm === */}
+                {transaction.walletcategory && (
+                    <>
+                        <SectionLabel label={t('Category') || 'Nhóm'} />
+                        <ItemCard
+                            icon={transaction.walletcategory.icon || 'tag'}
+                            iconBg={transaction.walletcategory.color ? transaction.walletcategory.color + '25' : '#FEE2E2'}
+                            iconColor={transaction.walletcategory.color || '#EF4444'}
+                            label={categoryName}
+                            colors={colors}
+                        />
+                        {(transaction as any).subcategory && (
+                            <ItemCard
+                                icon={(transaction as any).subcategory.icon || 'tag'}
+                                iconBg={(transaction as any).subcategory.color
+                                    ? (transaction as any).subcategory.color + '25'
+                                    : '#FEE2E2'}
+                                iconColor={(transaction as any).subcategory.color || '#EF4444'}
+                                label={parseName((transaction as any).subcategory.category_name, i18n.language) || ''}
+                                colors={colors}
+                            />
+                        )}
+                    </>
+                )}
 
-                    <InfoRow
-                        icon="hashtag"
-                        label={t('Transaction ID') || 'Transaction ID'}
-                        value={transaction.transactionid || 'N/A'}
-                        colors={colors}
-                    />
-                    <InfoRow
-                        icon="calendar-days"
-                        label={t('Date & Time') || 'Date & Time'}
-                        value={formatDate(transaction.transactiondate)}
-                        colors={colors}
-                    />
-                    <InfoRow
-                        icon="layer-group"
-                        label={t('Category') || 'Category'}
-                        value={parseName(transaction.walletcategory?.category_name || null, i18n.language) || 'N/A'}
-                        colors={colors}
-                        badge={typeBadge?.label}
-                        badgeColor={typeBadge?.color}
-                    />
-                    <InfoRow
-                        icon="wallet"
-                        label={t('Wallet') || 'Wallet'}
-                        value={transaction.walletprofile?.wallet_name || 'N/A'}
-                        colors={colors}
-                    />
-                    <InfoRow
-                        icon="coins"
-                        label={t('Amount') || 'Amount'}
-                        value={currencyInfo.secondary || currencyInfo.primary?.replace(/[≈-]/g, '').trim()} // Show raw amount
-                        colors={colors}
-                    />
+                {/* === Nguồn tiền === */}
+                {walletName && (
+                    <>
+                        <SectionLabel label={t('Wallet') || 'Nguồn tiền'} />
+                        <ItemCard
+                            icon="wallet"
+                            iconBg="#D1FAE520"
+                            iconColor="#10B981"
+                            label={walletName}
+                            colors={colors}
+                        />
+                    </>
+                )}
+
+                {/* === Ghi chú === */}
+                <SectionLabel label={t('Note') || 'Ghi chú'} />
+                <View style={[styles.noteCard, { backgroundColor: colors.card }]}>
+                    <CustomText style={[
+                        styles.noteText,
+                        { color: transaction.trandesc ? colors.text : '#9CA3AF' }
+                    ]}>
+                        {transaction.trandesc || (t('No note') || 'Không có ghi chú')}
+                    </CustomText>
                 </View>
 
-                {transaction.trandesc ? (
-                    <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-                        <View style={styles.cardHeader}>
-                            <FontAwesome6 name="note-sticky" size={normalize(18)} color={colors.tint} />
-                            <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
-                                {t('Note') || 'Note'}
+                {/* === Ngày === */}
+                <SectionLabel label={t('Date') || 'Ngày'} />
+                <View style={[styles.dateCard, { backgroundColor: colors.card }]}>
+                    <CustomText style={[styles.dateText, { color: colors.text }]}>
+                        {formatDate(transaction.transactiondate)}
+                    </CustomText>
+                </View>
+
+                {/* === Hình ảnh === */}
+                <SectionLabel label={t('Image') || 'Hình ảnh'} />
+                <View style={[styles.imageCard, { backgroundColor: colors.card }]}>
+                    {hasImage ? (
+                        <Image
+                            source={{ uri: (transaction as any).imageUrl }}
+                            style={styles.transactionImage}
+                            resizeMode="contain"
+                        />
+                    ) : (
+                        <View style={styles.imagePlaceholder}>
+                            <FontAwesome6 name="image" size={normalize(32)} color="#D1D5DB" />
+                            <CustomText style={styles.imagePlaceholderText}>
+                                {t('No image') || 'Chưa có hình ảnh'}
                             </CustomText>
                         </View>
-                        <CustomText style={[styles.descriptionText, { color: colors.text }]}>
-                            {transaction.trandesc}
-                        </CustomText>
-                    </View>
-                ) : null}
+                    )}
+                </View>
             </ScrollView>
         </SafeAreaView>
     );
@@ -537,54 +423,192 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: wp(10) },
-    loadingText: { marginTop: hp(2), fontSize: normalize(14) },
-    errorIcon: { width: normalize(96), height: normalize(96), borderRadius: normalize(48), alignItems: 'center', justifyContent: 'center', marginBottom: hp(2) },
-    errorTitle: { fontSize: normalize(20), fontWeight: '700', marginBottom: hp(1), textAlign: 'center' },
-    errorText: { fontSize: normalize(14), textAlign: 'center', lineHeight: normalize(20), marginBottom: hp(3) },
-    retryButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: normalize(24), paddingVertical: normalize(12), borderRadius: normalize(12), gap: normalize(8) },
-    retryButtonText: { color: '#FFFFFF', fontSize: normalize(15), fontWeight: '600' },
+    centerContent: {
+        flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: wp(10),
+    },
+    loadingText: {
+        marginTop: hp(2), fontSize: normalize(14), fontFamily: Fonts.regular,
+    },
+    errorIconWrap: {
+        width: normalize(96), height: normalize(96), borderRadius: normalize(48),
+        alignItems: 'center', justifyContent: 'center', marginBottom: hp(2),
+    },
+    errorTitle: {
+        fontSize: normalize(20), fontFamily: Fonts.bold, marginBottom: hp(1), textAlign: 'center',
+    },
+    errorText: {
+        fontSize: normalize(14), fontFamily: Fonts.regular, textAlign: 'center',
+        lineHeight: normalize(20), marginBottom: hp(3),
+    },
+    retryButton: {
+        flexDirection: 'row', alignItems: 'center',
+        paddingHorizontal: normalize(24), paddingVertical: normalize(12),
+        borderRadius: normalize(12), gap: normalize(8),
+    },
+    retryButtonText: { color: '#fff', fontSize: normalize(15), fontFamily: Fonts.semiBold },
 
-    // Header
+    // AppHeader menu button
     menuButton: { padding: normalize(8), borderRadius: normalize(8) },
-    menuDropdown: { position: 'absolute', top: hp(8), right: wp(5), borderRadius: normalize(12), paddingVertical: normalize(8), minWidth: normalize(160), shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 5, zIndex: 1000 },
-    menuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: normalize(16), paddingVertical: normalize(12), gap: normalize(12) },
-    menuItemText: { fontSize: normalize(15), fontWeight: '500' },
-    menuDivider: { height: 1, marginVertical: normalize(4) },
+
+    // Menu dropdown
+    menuDropdown: {
+        position: 'absolute', top: hp(8), right: wp(5),
+        borderRadius: normalize(14), paddingVertical: normalize(6),
+        minWidth: normalize(160),
+        shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12,
+        elevation: 8, zIndex: 1000,
+    },
+    menuItem: {
+        flexDirection: 'row', alignItems: 'center',
+        paddingHorizontal: normalize(16), paddingVertical: normalize(12), gap: normalize(12),
+    },
+    menuItemText: { fontSize: normalize(14), fontFamily: Fonts.medium },
+    menuDivider: { height: StyleSheet.hairlineWidth, marginHorizontal: normalize(12) },
 
     // Scroll
-    scrollView: { flex: 1 },
-    scrollContent: { paddingBottom: hp(5) },
+    scrollContent: {
+        paddingHorizontal: wp(4),
+        paddingTop: hp(1.5),
+        paddingBottom: hp(5),
+    },
 
-    // Header Card
-    headerCard: { marginHorizontal: wp(5), marginTop: hp(2), padding: normalize(20), borderRadius: normalize(20), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-    headerContent: { flexDirection: 'row', alignItems: 'flex-start', gap: normalize(16) },
-    iconContainer: { width: normalize(56), height: normalize(56), borderRadius: normalize(28), alignItems: 'center', justifyContent: 'center' },
-    headerInfo: { flex: 1, gap: normalize(6) },
-    categoryName: { fontSize: normalize(14), fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-    amountText: { fontSize: normalize(28), fontWeight: '800', letterSpacing: -0.5 },
-    secondaryAmountText: { fontSize: normalize(14), fontWeight: '500' },
-    feeText: { fontSize: normalize(13) },
-    statusBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: normalize(12), paddingVertical: normalize(6), borderRadius: normalize(100), gap: normalize(6), marginTop: normalize(4) },
-    statusDot: { width: normalize(8), height: normalize(8), borderRadius: normalize(4) },
-    statusText: { fontSize: normalize(13), fontWeight: '700' },
+    // Gradient Hero Card
+    heroCard: {
+        borderRadius: normalize(16),
+        paddingHorizontal: normalize(16),
+        paddingVertical: normalize(18),
+        marginBottom: normalize(4),
+    },
+    heroRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    heroLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: normalize(10),
+        flex: 1,
+    },
+    heroIconWrap: {
+        width: normalize(38),
+        height: normalize(38),
+        borderRadius: normalize(19),
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    heroTypeName: {
+        fontSize: normalize(15),
+        fontFamily: Fonts.semiBold,
+        color: '#fff',
+    },
+    heroAmount: {
+        fontSize: normalize(22),
+        fontFamily: Fonts.bold,
+        color: '#fff',
+        letterSpacing: -0.5,
+    },
+    heroSecondRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginTop: normalize(6),
+        gap: normalize(12),
+    },
+    heroSecondary: {
+        fontSize: normalize(13),
+        fontFamily: Fonts.regular,
+        color: 'rgba(255,255,255,0.75)',
+    },
+    heroFee: {
+        fontSize: normalize(13),
+        fontFamily: Fonts.regular,
+        color: 'rgba(255,255,255,0.75)',
+    },
 
-    // Info Card
-    infoCard: { marginHorizontal: wp(5), marginTop: hp(2), padding: normalize(20), borderRadius: normalize(20), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-    cardHeader: { flexDirection: 'row', alignItems: 'center', gap: normalize(8), marginBottom: hp(2) },
-    sectionTitle: { fontSize: normalize(17), fontWeight: '700' },
-    infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: normalize(12), borderBottomWidth: 0.5, borderBottomColor: 'rgba(128, 128, 128, 0.1)' },
-    infoRowSmall: { paddingVertical: normalize(10) },
-    infoLeft: { flexDirection: 'row', alignItems: 'center', gap: normalize(12), flex: 1 },
-    iconWrapper: { width: normalize(28), alignItems: 'center' },
-    infoLabel: { fontSize: normalize(14), fontWeight: '500' },
-    infoLabelSmall: { fontSize: normalize(13) },
-    infoRight: { flexDirection: 'row', alignItems: 'center', gap: normalize(8), flex: 1.2, justifyContent: 'flex-end' },
-    infoValue: { fontSize: normalize(14), fontWeight: '600', textAlign: 'right', flexShrink: 1 },
-    infoValueSmall: { fontSize: normalize(12) },
-    badgePill: { paddingHorizontal: normalize(8), paddingVertical: normalize(4), borderRadius: normalize(6) },
-    badgeText: { fontSize: normalize(10), fontWeight: '700', textTransform: 'uppercase' },
-    descriptionText: { fontSize: normalize(15), lineHeight: normalize(24) },
+    // Section label
+    sectionLabel: {
+        fontSize: normalize(13),
+        fontFamily: Fonts.medium,
+        color: '#6B7280',
+        marginTop: normalize(16),
+        marginBottom: normalize(6),
+        marginLeft: normalize(2),
+    },
+
+    // Item card
+    itemCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: normalize(14),
+        paddingVertical: normalize(13),
+        paddingHorizontal: normalize(14),
+        marginBottom: normalize(6),
+        gap: normalize(12),
+    },
+    itemIconWrap: {
+        width: normalize(42),
+        height: normalize(42),
+        borderRadius: normalize(12),
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    itemLabel: {
+        fontSize: normalize(15),
+        fontFamily: Fonts.medium,
+    },
+
+    // Note
+    noteCard: {
+        borderRadius: normalize(14),
+        paddingVertical: normalize(14),
+        paddingHorizontal: normalize(14),
+        minHeight: normalize(72),
+        justifyContent: 'center',
+    },
+    noteText: {
+        fontSize: normalize(14),
+        fontFamily: Fonts.regular,
+        lineHeight: normalize(22),
+    },
+
+    // Date
+    dateCard: {
+        borderRadius: normalize(14),
+        paddingVertical: normalize(14),
+        paddingHorizontal: normalize(14),
+        alignItems: 'center',
+    },
+    dateText: {
+        fontSize: normalize(15),
+        fontFamily: Fonts.medium,
+    },
+
+    // Image
+    imageCard: {
+        borderRadius: normalize(14),
+        borderWidth: 1.5,
+        borderStyle: 'dashed',
+        borderColor: '#D1D5DB',
+        overflow: 'hidden',
+        minHeight: normalize(160),
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    transactionImage: {
+        width: '100%',
+        height: normalize(200),
+    },
+    imagePlaceholder: {
+        alignItems: 'center',
+        gap: normalize(8),
+        paddingVertical: normalize(36),
+    },
+    imagePlaceholderText: {
+        fontSize: normalize(13),
+        fontFamily: Fonts.regular,
+        color: '#9CA3AF',
+    },
 });
 
 export default TransactionDetailScreen;

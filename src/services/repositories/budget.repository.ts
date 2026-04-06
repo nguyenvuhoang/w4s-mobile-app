@@ -43,6 +43,7 @@ export interface CreateBudgetPayload {
   note?: string;
   include_in_report?: boolean;
   is_auto_repeat?: boolean;
+  contract_number?: string;
 }
 
 export interface UpdateBudgetPayload {
@@ -177,6 +178,7 @@ export const budgetRepository = {
           note: data.note,
           include_in_report: data.include_in_report,
           is_auto_repeat: data.is_auto_repeat,
+          contract_number: data.contract_number,
         },
         false
       );

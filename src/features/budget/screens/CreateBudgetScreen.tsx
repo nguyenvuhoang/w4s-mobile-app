@@ -5,6 +5,7 @@ import BottomDateRangeModal, {
     DateRangeResult,
     PeriodType,
 } from "@/components/modals/BottomDateRangeModal";
+import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
@@ -17,7 +18,7 @@ import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
     KeyboardAvoidingView,
     Platform,
@@ -93,6 +94,7 @@ const CreateBudgetScreen = () => {
     const { currencies, parseCurrencyName } = useCurrency({ autoFetch: true });
     const { convert } = useExchangeRate();
     const { createBudget, creating } = useBudget({ autoFetch: false });
+    const { appInfo } = useContext(GlobalContext);
     const { showNotification } = useNotification();
 
     const [selectedType, setSelectedType] = useState<BudgetType>("expense");
@@ -477,18 +479,21 @@ const CreateBudgetScreen = () => {
             ? (convertedAmount ?? 0)
             : parseFloat(amount.replace(/,/g, ""));
 
+        const contractNumber = appInfo?.contract_number || "";
+
         const payload = {
             amount: finalAmount,
             category_id: finalCategoryId,
             end_date: formatToISO(endDate),
             period_type: periodType,
-            source_gudget: typeToSourceGudget[selectedType],
+            source_gudget: "USER_MANUAL",
             source_tracker: sourceWalletId,
             start_date: formatToISO(startDate),
             wallet_id: sourceWalletId,
             note: note.trim() || undefined,
             include_in_report: includeInReport,
             is_auto_repeat: autoRepeat,
+            contract_number: contractNumber.trim() || undefined,
         };
 
         console.log("[CreateBudget] Submitting payload:", payload);

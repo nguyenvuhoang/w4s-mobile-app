@@ -22,6 +22,20 @@ export interface CreateTransactionData {
   categoryGroup?: "INCOME" | "EXPENSE" | "LOAN";
 }
 
+export interface UpdateTransactionData {
+  transactionId: string;
+  amount: number;
+  currency: string;
+  categoryId: number;
+  eventId?: string | null;
+  description?: string;
+  location?: string;
+  transactionDate: string; // ISO string e.g. "2026-03-20T06:37:02"
+  reminderAt?: string | null;
+  isCalculateReport?: boolean;
+  images?: string[];
+}
+
 export interface ParticipantData {
   id?: number;
   display_name: string;
@@ -45,24 +59,16 @@ export const useTransaction = () => {
       setLoading(true);
       setError(null);
 
-      // Tìm wallet
       const wallet = wallets?.find((w) => w.walletId === data.walletId);
-      if (!wallet) {
-        throw new Error("Wallet not found");
-      }
+      if (!wallet) throw new Error("Wallet not found");
 
-      // Map type to account type
-      const typeToAccountType: Record<
-        CreateTransactionData["type"],
-        AccountType
-      > = {
+      const typeToAccountType: Record<CreateTransactionData["type"], AccountType> = {
         income: "01",
         expense: "02",
         inout: "03",
       };
 
       let accountType: AccountType;
-
       if (data.categoryGroup) {
         const groupToAccountType: Record<string, AccountType> = {
           INCOME: "01",
@@ -74,18 +80,11 @@ export const useTransaction = () => {
         accountType = typeToAccountType[data.type];
       }
 
-      // Lấy account tương ứng với type
-      const account = wallet.accounts.find(
-        (acc) => acc.accountType === accountType,
-      );
-
+      const account = wallet.accounts.find((acc) => acc.accountType === accountType);
       if (!account) {
-        throw new Error(
-          `Account type ${accountType} not found in wallet ${wallet.name}`,
-        );
+        throw new Error(`Account type ${accountType} not found in wallet ${wallet.name}`);
       }
 
-      // Format participants cho server
       const formattedParticipants =
         data.participants?.map((p) => {
           const baseData = {
@@ -95,15 +94,7 @@ export const useTransaction = () => {
             CounterpartyType: p.counterparty_type || 1,
             IsFavorite: p.is_favorite || false,
           };
-
-          if (p.id) {
-            return {
-              id: p.id,
-              ...baseData,
-            };
-          }
-
-          return baseData;
+          return p.id ? { id: p.id, ...baseData } : baseData;
         }) || [];
 
       const payload = {
@@ -121,8 +112,7 @@ export const useTransaction = () => {
         location: data.location || "",
         recorded_at: data.recordedAt.toISOString(),
         reminder_at: data.reminderAt ? data.reminderAt.toISOString() : null,
-        is_calculate_report:
-          data.isCalculateReport !== undefined ? data.isCalculateReport : true,
+        is_calculate_report: data.isCalculateReport !== undefined ? data.isCalculateReport : true,
         is_loan_for_fund: data.isLoanForFund,
         is_funding: false,
         images: data.images || [],
@@ -147,6 +137,64 @@ export const useTransaction = () => {
     }
   };
 
+  const updateTransaction = async (data: UpdateTransactionData) => {
+    if (!appInfo?.user_code) {
+      throw new Error("User not authenticated");
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Tạo reference_id từ timestamp hiện tại
+      const now = new Date();
+      const pad = (n: number, l = 2) => String(n).padStart(l, "0");
+      const reference_id = [
+        now.getFullYear(),
+        pad(now.getMonth() + 1),
+        pad(now.getDate()),
+        pad(now.getHours()),
+        pad(now.getMinutes()),
+        pad(now.getSeconds()),
+        "01000001",
+      ].join("");
+
+      const response = await transactionRepository.updateTransaction({
+        transaction_id: data.transactionId,
+        transaction_description: data.description || "",
+        description: data.description || "",
+        amount: data.amount,
+        currency: data.currency,
+        category_id: data.categoryId,
+        event_id: data.eventId || null,
+        location: data.location || "",
+        transaction_date: data.transactionDate,
+        reminder_at: data.reminderAt || null,
+        is_calculate_report: data.isCalculateReport ?? true,
+        images: data.images || [],
+        with_users: [],
+        user_code: appInfo.user_code,
+        current_user_code: appInfo.user_code,
+        channel_id: "MB",
+        reference_id,
+      });
+
+      if (response.isSuccess()) {
+        TransactionEventEmitter.emitTransactionChanged();
+        return response;
+      } else {
+        throw new Error(response.getError() || "Không thể cập nhật giao dịch");
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Đã xảy ra lỗi";
+      console.error("[useTransaction] Error updating:", err);
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const deleteTransaction = async (transactionId: string) => {
     if (!appInfo?.user_code) {
       throw new Error("User not authenticated");
@@ -156,9 +204,7 @@ export const useTransaction = () => {
       setLoading(true);
       setError(null);
 
-      const response = await transactionRepository.deleteTransaction(
-        transactionId,
-      );
+      const response = await transactionRepository.deleteTransaction(transactionId);
 
       if (response.isSuccess()) {
         TransactionEventEmitter.emitTransactionChanged();
@@ -237,6 +283,7 @@ export const useTransaction = () => {
     loading,
     error,
     createTransaction,
+    updateTransaction,
     deleteTransaction,
     refundTransaction,
     advancedSearchTransactions,
