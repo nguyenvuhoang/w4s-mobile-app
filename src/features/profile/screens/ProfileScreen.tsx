@@ -1,14 +1,16 @@
 import AppHeader from "@/components/base/AppHeader";
 import { ThemedText } from "@/components/themed-text";
+import { GlobalContext } from "@/contexts/GlobalContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
 import { useProfile } from "@/features/profile/hooks/useProfile";
+import { Images } from "@/utils/images";
 import { hp, normalize, wp } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useContext, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { requestMediaLibraryPermission } from "@/utils/permissionHelper";
@@ -16,6 +18,7 @@ import { requestMediaLibraryPermission } from "@/utils/permissionHelper";
 const ProfileScreen = () => {
     const { colors } = useAppTheme();
     const { t } = useTranslation();
+    const { appInfo } = useContext(GlobalContext);
 
     const { profile, loading, getUserProfile } = useProfile();
     const [localAvatar, setLocalAvatar] = useState<string | null>(null);
@@ -151,9 +154,14 @@ const ProfileScreen = () => {
                                 {userData.avatar ? (
                                     <Image source={{ uri: userData.avatar }} style={styles.avatar} />
                                 ) : (
-                                    <View style={[styles.avatarPlaceholder, { backgroundColor: colors.tint }]}>
-                                        <Ionicons name="person" size={normalize(48)} color="#fff" />
-                                    </View>
+                                    <Image
+                                        source={
+                                            appInfo?.avatar?.startsWith("http")
+                                                ? { uri: appInfo.avatar }
+                                                : Images.placeholder.avatar
+                                        }
+                                        style={styles.avatar}
+                                    />
                                 )}
                                 <TouchableOpacity
                                     style={[styles.cameraButton, { backgroundColor: colors.tint }]}
