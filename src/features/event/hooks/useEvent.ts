@@ -164,13 +164,28 @@ export const useEvent = (options: UseEventOptions = {}) => {
   );
 
   const updateEvent = useCallback(
-    async (payload: UpdateEventParams) => {
+    async (payload: any) => {
       try {
         setError(null);
         setLoading(true);
-        console.log("[useEvent] Updating event payload:", payload);
 
-        const response = await eventRepository.updateWalletEvent(payload);
+        const repoPayload: UpdateEventParams = {
+          id: payload.id,
+          wallet_id: payload.wallet_id,
+          title: payload.title,
+          description: payload.description,
+          color: payload.color,
+          icon: payload.icon,
+          end_on_utc:
+            payload.end_on_utc instanceof Date
+              ? payload.end_on_utc.toISOString().split(".")[0]
+              : payload.end_on_utc,
+          status: payload.status,
+        };
+
+        console.log("[useEvent] Updating event payload:", repoPayload);
+
+        const response = await eventRepository.updateWalletEvent(repoPayload);
 
         if (!response.isSuccess()) {
           throw new Error(response.message || "Cập nhật sự kiện thất bại");

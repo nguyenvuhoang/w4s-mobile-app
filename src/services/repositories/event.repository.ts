@@ -32,25 +32,10 @@ export interface UpdateEventParams {
   wallet_id: number;
   title: string;
   description: string | null;
-  location: string | null;
   color: string;
   icon: string;
-  start_on_utc: string;
   end_on_utc: string;
-  is_all_day: boolean;
-  event_type: string;
   status: string;
-  planned_amount: number;
-  currency_code: string;
-  category_id: number;
-  budget_id: number;
-  reminder_minutes: number;
-  reminder_on_utc: string;
-  is_recurring: boolean;
-  recurrence_rule: string | null;
-  recurrence_group_id: string | null;
-  reference_type: string | null;
-  reference_id: number | null;
 }
 
 export const eventRepository = {
@@ -129,25 +114,10 @@ export const eventRepository = {
           wallet_id: params.wallet_id,
           title: params.title,
           description: params.description,
-          location: params.location,
           color: params.color,
           icon: params.icon,
-          start_on_utc: params.start_on_utc,
           end_on_utc: params.end_on_utc,
-          is_all_day: params.is_all_day,
-          event_type: params.event_type,
           status: params.status,
-          planned_amount: params.planned_amount,
-          currency_code: params.currency_code,
-          category_id: params.category_id,
-          budget_id: params.budget_id,
-          reminder_minutes: params.reminder_minutes,
-          reminder_on_utc: params.reminder_on_utc,
-          is_recurring: params.is_recurring,
-          recurrence_rule: params.recurrence_rule,
-          recurrence_group_id: params.recurrence_group_id,
-          reference_type: params.reference_type,
-          reference_id: params.reference_id,
         },
         false
       );

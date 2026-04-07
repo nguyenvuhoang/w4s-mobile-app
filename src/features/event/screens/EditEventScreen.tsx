@@ -175,14 +175,15 @@ const EditEventScreen: React.FC = () => {
     try {
       if (!event) return;
 
-      const eventData: any = {
-        ...event,
-        title: eventName.trim(),
-        icon: icon,
-        color: color,
+      const eventData = {
+        id: event.id,
         wallet_id: selectedWallet.walletId,
-        currency_code: currency,
-        end_on_utc: endDate.toISOString(),
+        title: eventName.trim(),
+        description: event.description,
+        color: color,
+        icon: icon,
+        end_on_utc: endDate,
+        status: event.status,
       };
 
       console.log("[EditEvent] Updating event:", eventData);

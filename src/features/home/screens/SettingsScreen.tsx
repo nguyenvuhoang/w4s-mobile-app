@@ -1,13 +1,16 @@
 import CustomText from "@/components/base/CustomText";
 import BottomActionModal, { ActionItem } from "@/components/modals/BottomActionModal";
 import { GlobalContext } from "@/contexts/GlobalContext";
+import { useNotification } from "@/contexts/NotificationContext";
 import { changeLanguage, languageMap } from "@/core/i18n/i18n";
 import { Tokens } from "@/core/theme/theme";
 import { useAppTheme } from "@/core/theme/ThemeContext";
+import { useProfile } from "@/features/profile/hooks/useProfile";
 import { useSettingService } from "@/features/settings/hooks/useSettingService";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import DefaultCurrencyService from "@/services/DefaultCurrencyService";
 import StorageService from "@/services/StorageService";
+import { Images } from "@/utils/images";
 import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
@@ -15,7 +18,6 @@ import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -31,11 +33,13 @@ interface SettingsScreenProps {
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { t, i18n } = useTranslation();
+  const { showNotification } = useNotification();
   const { handleLogout, touchIDClick, isUsingTouchID } = useSettingService();
   const { appInfo } = useContext(GlobalContext);
   const { mode, setMode, colors, isDark } = useAppTheme();
   const { defaultCurrency, loading, updateDefaultCurrency } =
     useDefaultCurrency();
+  const { profile, getUserProfile, loading: profileLoading } = useProfile();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [updatingCurrency, setUpdatingCurrency] = useState(false);
@@ -61,14 +65,15 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             "[CurrencySettings] Failed to load selected currency:",
             error,
           );
-          Alert.alert("Lỗi", "Không thể cập nhật tiền tệ. Vui lòng thử lại.");
+          showNotification("Không thể cập nhật tiền tệ. Vui lòng thử lại.", "error");
         } finally {
           setUpdatingCurrency(false);
         }
       };
 
       loadSelectedCurrency();
-    }, [updateDefaultCurrency]),
+      getUserProfile();
+    }, [updateDefaultCurrency, getUserProfile]),
   );
 
   const handleBiometricToggle = async () => {
@@ -124,16 +129,20 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         {/* Profile Section */}
         <View style={[styles.profileSection, { backgroundColor: colors.card }]}>
           <Image
-            source={{
-              uri: "https://media.istockphoto.com/id/814423752/photo/eye-of-model-with-colorful-art-make-up-close-up.jpg?s=612x612&w=0&k=20&c=l15OdMWjgCKycMMShP8UK94ELVlEGvt7GmB_esHWPYE=",
-            }}
+            source={
+              appInfo?.avatar?.startsWith("http")
+                ? { uri: appInfo.avatar }
+                : Images.placeholder.avatar
+            }
             style={styles.profileImage}
           />
           <CustomText style={[styles.profileName, { color: colors.text }]}>
-            Hoàng Nguyễn
+            {profile
+              ? `${profile.last_name || ""} ${profile.middle_name || ""} ${profile.first_name || ""}`.trim()
+              : t("common.loading")}
           </CustomText>
           <CustomText style={[styles.profileEmail, { color: colors.icon }]}>
-            hoang@example.com
+            {profile?.email || "..."}
           </CustomText>
         </View>
 

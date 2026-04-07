@@ -4,10 +4,10 @@ export const Images = {
   appLogoDark: require('@assets/logo/W4S_Dark.png'),
 
   // ===== Placeholder =====
-//   placeholder: {
-//     image: require('@assets/images/common/placeholder.png'),
-//     avatar: require('@assets/images/common/avatar.png'),
-//   },
+  placeholder: {
+    // image: require('@assets/images/common/placeholder.png'),
+    avatar: require('@assets/images/default_avatar.png'),
+  },
 
   // ===== Onboarding =====
   onboarding1: require('@assets/images/onboarding/onBoard_3D_1.png'),

@@ -14,7 +14,6 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -129,116 +128,99 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
     setShowActionModal(false);
 
     setTimeout(() => {
-      Alert.alert(
-        "Xác nhận xóa",
+      showNotification(
         `Bạn có chắc muốn xóa sự kiện "${selectedEvent.title}"?`,
-        [
-          { text: "Hủy", style: "cancel" },
-          {
-            text: "Xóa",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                const success = await deleteEvent(selectedEvent.id);
-                if (success) {
-                  showNotification("Đã xóa sự kiện thành công", "success");
-                }
-              } catch (error) {
-                console.error("[EventListScreen] Delete failed:", error);
-                showNotification("Không thể xóa sự kiện. Vui lòng thử lại.", "error");
-              }
-            },
-          },
-        ]
+        "warning",
+        undefined,
+        undefined,
+        async () => {
+          try {
+            const success = await deleteEvent(selectedEvent.id);
+            if (success) {
+              showNotification("Đã xóa sự kiện thành công", "success");
+            }
+          } catch (error) {
+            console.error("[EventListScreen] Delete failed:", error);
+            showNotification(
+              "Không thể xóa sự kiện. Vui lòng thử lại.",
+              "error"
+            );
+          }
+        }
       );
     }, 300);
   };
 
-  // const handleCompleteEvent = () => {
-  //   if (!selectedEvent) return;
-  //   setShowActionModal(false);
+  const handleCompleteEvent = () => {
+    if (!selectedEvent) return;
+    setShowActionModal(false);
 
-  //   setTimeout(() => {
-  //     Alert.alert(
-  //       "Hoàn thành sự kiện",
-  //       `Bạn có chắc muốn đánh dấu sự kiện "${selectedEvent.title}" là đã hoàn thành?`,
-  //       [
-  //         { text: "Hủy", style: "cancel" },
-  //         {
-  //           text: "Hoàn thành",
-  //           onPress: async () => {
-  //             try {
-  //               const payload = {
-  //                 ...selectedEvent,
-  //                 status: "COMPLETED" as const,
-  //                 // Ensure mandatory fields from UpdateEventParams are present
-  //                 id: selectedEvent.id,
-  //                 wallet_id: selectedEvent.wallet_id,
-  //                 planned_amount: selectedEvent.planned_amount,
-  //                 currency_code: selectedEvent.currency_code,
-  //                 category_id: selectedEvent.category_id,
-  //                 budget_id: selectedEvent.budget_id,
-  //                 reminder_minutes: selectedEvent.reminder_minutes,
-  //                 reminder_on_utc: selectedEvent.reminder_on_utc,
-  //                 is_recurring: !!selectedEvent.is_recurring,
-  //               };
-  //               const success = await updateEvent(payload as any);
-  //               if (success) {
-  //                 showNotification("Đã hoàn thành sự kiện", "success");
-  //               }
-  //             } catch (error) {
-  //               console.error("[EventListScreen] Complete failed:", error);
-  //               showNotification("Không thể cập nhật sự kiện. Vui lòng thử lại.", "error");
-  //             }
-  //           },
-  //         },
-  //       ]
-  //     );
-  //   }, 300);
-  // };
+    setTimeout(() => {
+      showNotification(
+        `Bạn có chắc muốn đánh dấu sự kiện "${selectedEvent.title}" là đã hoàn thành?`,
+        "warning",
+        undefined,
+        undefined,
+        async () => {
+          try {
+            const payload = {
+              ...selectedEvent,
+              id: selectedEvent.id,
+              wallet_id: selectedEvent.wallet_id,
+              status: "COMPLETED" as const,
+            };
+            const success = await updateEvent(payload as any);
+            if (success) {
+              showNotification("Đã hoàn thành sự kiện", "success");
+            }
+          } catch (error) {
+            console.error("[EventListScreen] Complete failed:", error);
+            showNotification(
+              "Không thể cập nhật sự kiện. Vui lòng thử lại.",
+              "error"
+            );
+          }
+        }
+      );
+    }, 300);
+  };
 
-  // const handleReactivateEvent = () => {
-  //   if (!selectedEvent) return;
-  //   setShowActionModal(false);
+  const handleReactivateEvent = () => {
+    if (!selectedEvent) return;
+    setShowActionModal(false);
 
-  //   setTimeout(() => {
-  //     Alert.alert(
-  //       "Kích hoạt lại sự kiện",
-  //       `Bạn có chắc muốn kích hoạt lại sự kiện "${selectedEvent.title}"?`,
-  //       [
-  //         { text: "Hủy", style: "cancel" },
-  //         {
-  //           text: "Kích hoạt",
-  //           onPress: async () => {
-  //             try {
-  //               const payload = {
-  //                 ...selectedEvent,
-  //                 status: "ACTIVE" as const,
-  //                 // Ensure mandatory fields are present
-  //                 id: selectedEvent.id,
-  //                 wallet_id: selectedEvent.wallet_id,
-  //                 planned_amount: selectedEvent.planned_amount,
-  //                 currency_code: selectedEvent.currency_code,
-  //                 category_id: selectedEvent.category_id,
-  //                 budget_id: selectedEvent.budget_id,
-  //                 reminder_minutes: selectedEvent.reminder_minutes,
-  //                 reminder_on_utc: selectedEvent.reminder_on_utc,
-  //                 is_recurring: !!selectedEvent.is_recurring,
-  //               };
-  //               const success = await updateEvent(payload as any);
-  //               if (success) {
-  //                 showNotification("Đã kích hoạt lại sự kiện thành công", "success");
-  //               }
-  //             } catch (error) {
-  //               console.error("[EventListScreen] Reactivate failed:", error);
-  //               showNotification("Không thể cập nhật sự kiện. Vui lòng thử lại.", "error");
-  //             }
-  //           },
-  //         },
-  //       ]
-  //     );
-  //   }, 300);
-  // };
+    setTimeout(() => {
+      showNotification(
+        `Bạn có chắc muốn kích hoạt lại sự kiện "${selectedEvent.title}"?`,
+        "warning",
+        undefined,
+        undefined,
+        async () => {
+          try {
+            const payload = {
+              ...selectedEvent,
+              id: selectedEvent.id,
+              wallet_id: selectedEvent.wallet_id,
+              status: "ACTIVE" as const,
+            };
+            const success = await updateEvent(payload as any);
+            if (success) {
+              showNotification(
+                "Đã kích hoạt lại sự kiện thành công",
+                "success"
+              );
+            }
+          } catch (error) {
+            console.error("[EventListScreen] Reactivate failed:", error);
+            showNotification(
+              "Không thể cập nhật sự kiện. Vui lòng thử lại.",
+              "error"
+            );
+          }
+        }
+      );
+    }, 300);
+  };
 
   const handleTransactionHistory = () => {
     setShowActionModal(false);
@@ -267,20 +249,20 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
         label: "Lịch sử giao dịch",
         onPress: handleTransactionHistory,
       },
-      // {
-      //   id: "complete",
-      //   icon: "checkmark-circle-outline",
-      //   label: "Hoàn thành",
-      //   onPress: handleCompleteEvent,
-      //   hide: selectedEvent?.status === "COMPLETED",
-      // },
-      // {
-      //   id: "reactivate",
-      //   icon: "refresh-outline",
-      //   label: "Kích hoạt lại",
-      //   onPress: handleReactivateEvent,
-      //   hide: selectedEvent?.status === "ACTIVE",
-      // },
+      {
+        id: "complete",
+        icon: "checkmark-circle-outline",
+        label: "Hoàn thành",
+        onPress: handleCompleteEvent,
+        hide: selectedEvent?.status === "COMPLETED",
+      },
+      {
+        id: "reactivate",
+        icon: "refresh-outline",
+        label: "Kích hoạt lại",
+        onPress: handleReactivateEvent,
+        hide: selectedEvent?.status === "ACTIVE",
+      },
       {
         id: "delete",
         icon: "trash-outline",

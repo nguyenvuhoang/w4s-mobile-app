@@ -80,12 +80,15 @@ export const useProfile = () => {
     setError(null);
     try {
       const code = payload.user_code || await StorageService.getAsyncItem(StorageKey.userCode);
+      const appInfo = await StorageService.getAsyncItem(StorageKey.appInfo);
+      const username = JSON.parse(appInfo).login_name;
       if (!code) throw new Error('Missing user code');
 
       // Ensure user_code is included
       const requestPayload = {
         ...payload,
-        user_code: code
+        user_code: code,
+        user_name: username
       };
 
       const response = await apiService.executeWorkflow(

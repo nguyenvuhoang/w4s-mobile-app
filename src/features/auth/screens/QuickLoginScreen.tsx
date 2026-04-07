@@ -27,7 +27,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const logoImg = Images.appLogoLight;
-const defaultAvatar = require("@assets/images/default_avatar.png");
 
 const QuickLoginScreen = () => {
   const router = useRouter();
@@ -219,7 +218,11 @@ const QuickLoginScreen = () => {
 
                 <View style={styles.userInfoRow}>
                   <Image
-                    source={appInfo?.avatar ? { uri: appInfo.avatar } : defaultAvatar}
+                    source={
+                      appInfo?.avatar?.startsWith("http")
+                        ? { uri: appInfo.avatar }
+                        : Images.placeholder.avatar
+                    }
                     style={styles.avatar}
                   />
                   <ThemedText style={styles.username}>
