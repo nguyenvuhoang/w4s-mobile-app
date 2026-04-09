@@ -1,4 +1,5 @@
 import { useAppTheme } from "@/core/theme/ThemeContext";
+import { LinearGradient } from "expo-linear-gradient";
 import { getBottomSpace, hp, normalize } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -114,11 +115,17 @@ const CustomTabBarButton = ({ children }: any) => {
         <Animated.View
           style={[
             styles.customButtonInner,
-            { backgroundColor: colors.tint },
             centerPlusStyle,
           ]}
         >
-          {children}
+          <LinearGradient
+            colors={colors.gradientPrimary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.gradientInner}
+          >
+            {children}
+          </LinearGradient>
         </Animated.View>
       </TouchableOpacity>
     </View>
@@ -265,13 +272,18 @@ const styles = StyleSheet.create({
     width: normalize(64),
     height: normalize(64),
     borderRadius: normalize(32),
-    justifyContent: "center",
-    alignItems: "center",
+    overflow: "hidden",
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 5,
+  },
+  gradientInner: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
   },
   arcOption: {
     justifyContent: "center",

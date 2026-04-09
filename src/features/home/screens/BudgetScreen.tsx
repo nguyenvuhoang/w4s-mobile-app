@@ -7,6 +7,7 @@ import { useCategory } from '@/hooks/useCategory';
 import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -167,10 +168,18 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
-            style={[styles.createButton, { backgroundColor: colors.tint }]}
+            style={styles.createButton}
             onPress={handleCreateBudget}
+            activeOpacity={0.8}
           >
-            <CustomText style={styles.createButtonText}>{t("budget.create_budget")}</CustomText>
+            <LinearGradient
+              colors={colors.gradientPrimary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.gradientBtn}
+            >
+              <CustomText style={styles.createButtonText}>{t("budget.create_budget")}</CustomText>
+            </LinearGradient>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -217,19 +226,34 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                 style={[
                   styles.periodButton,
                   {
-                    backgroundColor: selectedPeriod === period.key ? colors.tint : 'transparent',
+                    backgroundColor: selectedPeriod === period.key ? 'transparent' : 'transparent',
                   },
                 ]}
                 onPress={() => setSelectedPeriod(period.key)}
               >
-                <CustomText
-                  style={[
-                    styles.periodText,
-                    { color: selectedPeriod === period.key ? '#fff' : colors.icon },
-                  ]}
-                >
-                  {period.label}
-                </CustomText>
+                {selectedPeriod === period.key ? (
+                  <LinearGradient
+                    colors={colors.gradientPrimary}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.periodGradient}
+                  >
+                    <CustomText style={[styles.periodText, { color: '#fff' }]}>
+                      {period.label}
+                    </CustomText>
+                  </LinearGradient>
+                ) : (
+                  <View style={styles.periodInner}>
+                    <CustomText
+                      style={[
+                        styles.periodText,
+                        { color: colors.icon },
+                      ]}
+                    >
+                      {period.label}
+                    </CustomText>
+                  </View>
+                )}
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -259,10 +283,18 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
               {t("budget.create_budget_prompt", "Hãy tạo ngân sách ngay để quản lý chi tiêu hiệu quả hơn")}
             </CustomText>
             <TouchableOpacity
-              style={[styles.emptyCreateButton, { backgroundColor: colors.tint }]}
+              style={styles.emptyCreateButton}
               onPress={handleCreateBudget}
+              activeOpacity={0.8}
             >
-              <CustomText style={styles.emptyCreateButtonText}>{t("budget.create_now", "Tạo ngân sách ngay")}</CustomText>
+              <LinearGradient
+                colors={colors.gradientPrimary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.emptyGradientBtn}
+              >
+                <CustomText style={styles.emptyCreateButtonText}>{t("budget.create_now", "Tạo ngân sách ngay")}</CustomText>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         ) : (
@@ -471,9 +503,12 @@ const styles = StyleSheet.create({
     paddingBottom: hp(2),
   },
   createButton: {
+    borderRadius: normalize(24),
+    overflow: 'hidden',
+  },
+  gradientBtn: {
     paddingHorizontal: normalize(20),
     paddingVertical: normalize(10),
-    borderRadius: normalize(24),
   },
   createButtonText: {
     color: '#fff',
@@ -524,9 +559,20 @@ const styles = StyleSheet.create({
     gap: normalize(6),
   },
   periodButton: {
+    borderRadius: normalize(20),
+    overflow: 'hidden',
+  },
+  periodGradient: {
     paddingHorizontal: normalize(18),
     paddingVertical: normalize(8),
-    borderRadius: normalize(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  periodInner: {
+    paddingHorizontal: normalize(18),
+    paddingVertical: normalize(8),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   periodText: {
     fontSize: normalize(13),
@@ -694,10 +740,13 @@ const styles = StyleSheet.create({
     lineHeight: normalize(20),
   },
   emptyCreateButton: {
-    paddingHorizontal: normalize(24),
-    paddingVertical: normalize(12),
     borderRadius: normalize(24),
     width: '100%',
+    overflow: 'hidden',
+  },
+  emptyGradientBtn: {
+    width: '100%',
+    paddingVertical: normalize(12),
     alignItems: 'center',
   },
   emptyCreateButtonText: {
