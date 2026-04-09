@@ -16,6 +16,7 @@ export interface RecentTransaction {
     occurred_at: string;
     icon: string;
     color: string;
+    description?: string;
 }
 
 interface UseRecentTransactionsReturn {

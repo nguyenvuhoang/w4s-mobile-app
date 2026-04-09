@@ -88,7 +88,8 @@ export const useProfile = () => {
       const requestPayload = {
         ...payload,
         user_code: code,
-        user_name: username
+        user_name: username,
+        status: "A"
       };
 
       const response = await apiService.executeWorkflow(

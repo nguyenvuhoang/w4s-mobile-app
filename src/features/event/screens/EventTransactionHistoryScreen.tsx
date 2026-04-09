@@ -159,17 +159,17 @@ const EventTransactionHistoryScreen: React.FC = () => {
                     </View>
                     <View style={localStyles.transactionInfo}>
                         <CustomText style={[localStyles.transactionTitle, { color: colors.text }]} type="bold" numberOfLines={1}>
-                            {parseName(item.title) || t("home.transaction_default_name")}
-                        </CustomText>
-                        <CustomText style={[localStyles.transactionCategory, { color: colors.icon }]} numberOfLines={1}>
                             {parseName(item.category_name) || "Khác"}
                         </CustomText>
-                        {/* @ts-ignore item.description might exist in runtime but not in RecentTransaction interface */}
-                        {item.description && (
-                            <CustomText style={[localStyles.transactionNote, { color: colors.icon }]} numberOfLines={1}>
-                                {(item as any).description}
+                        {item.description ? (
+                            <CustomText style={[localStyles.transactionCategory, { color: colors.icon }]} numberOfLines={1}>
+                                {parseName(item.description)}
                             </CustomText>
-                        )}
+                        ) : (item.title && parseName(item.title) !== parseName(item.category_name)) ? (
+                            <CustomText style={[localStyles.transactionCategory, { color: colors.icon }]} numberOfLines={1}>
+                                {parseName(item.title)}
+                            </CustomText>
+                        ) : null}
                     </View>
                 </View>
                 <View style={localStyles.cardRight}>

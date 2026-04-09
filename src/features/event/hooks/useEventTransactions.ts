@@ -3,8 +3,9 @@ import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
 import { transactionRepository } from "@/services/repositories/transaction.repository";
 import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
+import { useCategory } from "@/hooks/useCategory";
 
 interface UseEventTransactionsReturn {
     transactions: RecentTransaction[];
@@ -28,6 +29,7 @@ export const useEventTransactions = (
     eventId: number,
     pageSize: number = 20,
 ): UseEventTransactionsReturn => {
+    const { categories } = useCategory();
     const [transactions, setTransactions] = useState<RecentTransaction[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [totalIncome, setTotalIncome] = useState(0);
@@ -36,11 +38,13 @@ export const useEventTransactions = (
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [noMoreData, setNoMoreData] = useState(false);
 
     const fetchTransactions = useCallback(async (pageIndex: number, append: boolean = false) => {
         try {
             if (!append) {
                 setLoading(true);
+                setNoMoreData(false);
             } else {
                 setLoadingMore(true);
             }
@@ -58,9 +62,54 @@ export const useEventTransactions = (
             });
 
             if (response.isSuccess() && response.data) {
-                const transactionList = response.data.transactions || [];
+                const transactionList = response.data.items || response.data.transactions || [];
                 const total = response.data.total_count || 0;
                 
+                // If we are loading more but get 0 items, mark that we have no more data to prevent infinite loops
+                if (append && transactionList.length === 0) {
+                    setNoMoreData(true);
+                    return;
+                }
+
+                // Map API item to RecentTransaction interface
+                const mappedTransactions: RecentTransaction[] = transactionList.map((item: any) => {
+                    const amount = Number(item.amount || 0);
+                    const rawType = String(item.type || item.transaction_type || "").toUpperCase();
+                    
+                    // Look up category info from cache
+                    const category = categories.find(c => c.id === item.category_id);
+
+                    // Determine type: INCOME, EXPENSE, or LOAN
+                    let type = "EXPENSE";
+                    if (rawType === "INCOME" || rawType === "01") {
+                        type = "INCOME";
+                    } else if (rawType === "LOAN" || rawType === "03") {
+                        type = "LOAN";
+                    } else if (rawType === "EXPENSE" || rawType === "02") {
+                        type = "EXPENSE";
+                    } else {
+                        // Guess based on amount or name if type is missing
+                        const name = (item.name || item.title || "").toLowerCase();
+                        if (amount < 0) type = "EXPENSE";
+                        else if (name.includes("expense") || name.includes("chi tiêu")) type = "EXPENSE";
+                        else if (name.includes("income") || name.includes("thu nhập")) type = "INCOME";
+                    }
+
+                    return {
+                        transaction_id: item.transaction_id || item.id?.toString() || "",
+                        type,
+                        category_id: item.category_id || 0,
+                        category_name: category?.category_name || item.category_name || "",
+                        title: item.name || item.title || item.transaction_description || "Transaction",
+                        amount: Math.abs(amount),
+                        currency: item.currency || "",
+                        occurred_at: item.transaction_date || item.occurred_at || item.recorded_at || new Date().toISOString(),
+                        icon: category?.icon || item.icon || "",
+                        color: category?.color || item.color || "",
+                        description: item.description || item.transaction_description || "",
+                    };
+                });
+
                 // Summary data if available in response
                 if (response.data.summary) {
                     setTotalIncome(response.data.summary.total_income || 0);
@@ -69,7 +118,7 @@ export const useEventTransactions = (
                     // Fallback to manual calculation from current transactions list
                     let income = 0;
                     let expense = 0;
-                    transactionList.forEach((t: RecentTransaction) => {
+                    mappedTransactions.forEach((t: RecentTransaction) => {
                         if (t.type === "INCOME") income += t.amount;
                         else if (t.type === "EXPENSE") expense += Math.abs(t.amount);
                     });
@@ -84,9 +133,9 @@ export const useEventTransactions = (
                 }
 
                 if (append) {
-                    setTransactions(prev => [...prev, ...transactionList]);
+                    setTransactions(prev => [...prev, ...mappedTransactions]);
                 } else {
-                    setTransactions(transactionList);
+                    setTransactions(mappedTransactions);
                 }
                 setTotalCount(total);
                 setCurrentPage(pageIndex);
@@ -102,7 +151,7 @@ export const useEventTransactions = (
             setLoading(false);
             setLoadingMore(false);
         }
-    }, [eventId, pageSize]);
+    }, [eventId, pageSize, categories]);
 
     const refresh = useCallback(async () => {
         await fetchTransactions(1, false);
@@ -142,7 +191,7 @@ export const useEventTransactions = (
         };
     }, [refresh]);
 
-    const hasMore = transactions.length < totalCount;
+    const hasMore = !noMoreData && transactions.length < totalCount;
 
     return {
         transactions,

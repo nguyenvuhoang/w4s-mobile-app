@@ -150,7 +150,9 @@ const CategoryDetailScreen: React.FC = () => {
                 if (Array.isArray(txArray)) {
                     const mappedTransactions = txArray.map((tx: any) => ({
                         id: tx.transaction_id || tx.id,
-                        name: parseTransactionName(tx.title || tx.description || tx.transaction_description || tx.name),
+                        name: parseTransactionName(tx.title || tx.name || ""),
+                        category_name: categoryName,
+                        description: parseTransactionName(tx.description || tx.transaction_description || ""),
                         icon: tx.icon || category.icon || 'tag',
                         iconColor: tx.color || category.color || '#9E9E9E',
                         date: tx.occurred_at || tx.recorded_at || tx.transaction_date,
@@ -311,9 +313,18 @@ const CategoryDetailScreen: React.FC = () => {
                                         />
                                     </View>
                                     <View style={styles.transactionInfo}>
-                                        <CustomText style={[styles.transactionName, { color: colors.text }]}>
-                                            {transaction.name}
+                                        <CustomText style={[styles.transactionName, { color: colors.text }]} type="semiBold">
+                                            {transaction.category_name}
                                         </CustomText>
+                                        {transaction.description ? (
+                                            <CustomText style={[styles.transactionTime, { color: colors.text, opacity: 0.8 }]} numberOfLines={1}>
+                                                {transaction.description}
+                                            </CustomText>
+                                        ) : (transaction.name && transaction.name !== transaction.category_name) ? (
+                                            <CustomText style={[styles.transactionTime, { color: colors.text, opacity: 0.8 }]} numberOfLines={1}>
+                                                {transaction.name}
+                                            </CustomText>
+                                        ) : null}
                                         <CustomText style={[styles.transactionTime, { color: colors.icon }]}>
                                             {formatTransactionTime(transaction.date)}
                                         </CustomText>
