@@ -32,6 +32,24 @@ export interface CreateLoanPayload {
   note?: string;
 }
 
+export interface UpdateLoanPayload {
+  id: number;
+  counterparty_name: string;
+  counterparty_type: CounterpartyType | string;
+  description: string;
+  principal_amount: number;
+  balance?: number;
+  interest_rate: number;
+  interest_rate_type: InterestRateType | string;
+  interest_calc_method: InterestCalcMethod | string;
+  start_date: string;
+  maturity_date: string;
+  status: string;
+  payment_type: PaymentType | string;
+  total_installments?: number | null;
+  note?: string;
+}
+
 // ─── Repository ──────────────────────────────────────────────────────────────
 
 export const paybookRepository = {
@@ -71,6 +89,40 @@ export const paybookRepository = {
   },
 
   /**
+   * Cập nhật thông tin sổ nợ
+   * workflowid: WF_MB_UPDATE_LOAN
+   */
+  async updateLoan(payload: UpdateLoanPayload): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_UPDATE_LOAN,
+        {
+          id: payload.id,
+          counterparty_name: payload.counterparty_name,
+          counterparty_type: payload.counterparty_type,
+          description: payload.description,
+          principal_amount: payload.principal_amount,
+          balance: payload.balance,
+          interest_rate: payload.interest_rate,
+          interest_rate_type: payload.interest_rate_type,
+          interest_calc_method: payload.interest_calc_method,
+          start_date: payload.start_date,
+          maturity_date: payload.maturity_date,
+          status: payload.status,
+          payment_type: payload.payment_type,
+          total_installments: payload.total_installments ?? null,
+          note: payload.note ?? "",
+        },
+        false,
+        true
+      );
+    } catch (error) {
+      console.error("[paybookRepository] Error updating loan:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Lấy danh sách sổ nợ
    * workflowid: WF_MB_GET_LIST_LOAN
    */
@@ -84,6 +136,24 @@ export const paybookRepository = {
       );
     } catch (error) {
       console.error("[paybookRepository] Error fetching loans:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy chi tiết sổ nợ
+   * workflowid: WF_MB_GET_LOAN
+   */
+  async getLoan(loanId: number): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_GET_LOAN,
+        { loan_id: loanId },
+        false,
+        true
+      );
+    } catch (error) {
+      console.error("[paybookRepository] Error fetching loan detail:", error);
       throw error;
     }
   },

@@ -6,6 +6,8 @@ export default function PaybookLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="[id]" />
       <Stack.Screen name="create" />
+      <Stack.Screen name="edit" />
+      <Stack.Screen name="schedule" />
     </Stack>
   );
 }

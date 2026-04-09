@@ -1,23 +1,20 @@
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
-import STORAGE_KEY from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
 import { Fonts } from "@/core/theme/font";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { usePaybookDetail } from "@/features/paybook/hooks/usePaybook";
+import type { LoanStatus } from "@/features/paybook/types";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
-import {
-  type CounterpartyType,
-  type InterestCalcMethod,
-  type InterestRateType,
-  type LoanType,
-  type PaymentType,
+import type {
+  InterestCalcMethod,
+  InterestRateType,
+  PaymentType,
 } from "@/services/repositories/paybook.repository";
-import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { router, useFocusEffect } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, {
   useCallback,
   useEffect,
@@ -39,34 +36,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// ─── Local types ─────────────────────────────────────────────────────────────
-
-interface SelectedContact {
-  id: string;
-  name: string;
-  phoneNumber?: string;
-  avatarColor?: string;
-  display_name?: string;
-  phone?: string;
-  isFromServer?: boolean;
-}
-
 // ─── Option configs ───────────────────────────────────────────────────────────
-
-const LOAN_TYPE_TABS: { key: LoanType; label: string; icon: string; color: string }[] = [
-  { key: "LEND", label: "Cho vay", icon: "arrow-trend-up", color: "#22C55E" },
-  { key: "BORROW", label: "Đi vay", icon: "arrow-trend-down", color: "#EF4444" },
-];
-
-const COUNTERPARTY_TYPES: { key: CounterpartyType; label: string; icon: string }[] = [
-  // { key: "INDIVIDUAL", label: "Cá nhân", icon: "user" },
-  // { key: "MERCHANT", label: "Doanh nghiệp", icon: "building" },
-];
-
-// const INTEREST_RATE_TYPES: { key: InterestRateType; label: string }[] = [
-//   { key: "FIXED", label: "Cố định" },
-//   { key: "FLOATING", label: "Thả nổi" },
-// ];
 
 const INTEREST_CALC_METHODS: { key: InterestCalcMethod; label: string; desc: string }[] = [
   { key: "REDUCING", label: "Dư nợ giảm dần", desc: "Lãi tính trên số dư còn lại" },
@@ -78,13 +48,12 @@ const PAYMENT_TYPES: { key: PaymentType; label: string; icon: string; desc: stri
   { key: "INSTALLMENT", label: "Trả góp", icon: "calendar-days", desc: "Trả theo nhiều kỳ" },
 ];
 
-const AVATAR_COLORS = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F"];
-
-// ─── Default values khi toggle off ───────────────────────────────────────────
-const DEFAULT_INTEREST_RATE = "0";
-const DEFAULT_INTEREST_RATE_TYPE: InterestRateType = "FIXED";
-const DEFAULT_INTEREST_CALC_METHOD: InterestCalcMethod = "REDUCING";
-const DEFAULT_PAYMENT_TYPE: PaymentType = "BULLET";
+const STATUS_OPTIONS: { key: LoanStatus; label: string; color: string }[] = [
+  { key: "ACTIVE", label: "Đang hoạt động", color: "#22C55E" },
+  { key: "COMPLETED", label: "Đã hoàn thành", color: "#6366F1" },
+  { key: "OVERDUE", label: "Quá hạn", color: "#EF4444" },
+  { key: "CANCELLED", label: "Đã huỷ", color: "#9CA3AF" },
+];
 
 // ─── CollapsibleSection ───────────────────────────────────────────────────────
 
@@ -120,7 +89,6 @@ const CollapsibleSection = ({
 
   return (
     <View style={{ marginBottom: hp(0.5) }}>
-      {/* Toggle header */}
       <View
         style={[
           collapsibleStyles.header,
@@ -165,7 +133,6 @@ const CollapsibleSection = ({
         />
       </View>
 
-      {/* Collapsible content */}
       <Animated.View
         style={{
           opacity: animHeight,
@@ -220,30 +187,38 @@ const collapsibleStyles = StyleSheet.create({
   },
 });
 
-const CreatePaybookScreen = () => {
+// ─── Component ───────────────────────────────────────────────────────────────
+
+const EditPaybookScreen = () => {
   const { colors } = useAppTheme();
   const { showNotification } = useNotification();
-  const { wallets, defaultWallet, refresh } = useWallet();
-  const sessionIdRef = useRef<string>(Date.now().toString());
+  const { wallets } = useWallet();
+  const { loanId } = useLocalSearchParams<{ loanId: string }>();
+  const { getLoanDetail, updateLoan, loading } = usePaybookDetail();
+
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [interestEnabled, setInterestEnabled] = useState(false);
-  const [loanType, setLoanType] = useState<LoanType>("LEND");
+
+  // Read-only fields (displayed but not editable)
+  const [loanType, setLoanType] = useState<string>("LEND");
   const [walletId, setWalletId] = useState<number | null>(null);
+  const [loanNo, setLoanNo] = useState("");
+
+  // Editable fields
   const [counterpartyName, setCounterpartyName] = useState("");
-  const [counterpartyType, setCounterpartyType] = useState<CounterpartyType>("INDIVIDUAL");
-  const [selectedContact, setSelectedContact] = useState<SelectedContact | null>(null);
+  const [counterpartyType, setCounterpartyType] = useState("INDIVIDUAL");
   const [loanDescription, setLoanDescription] = useState("");
-  const [currencyCode] = useState("VND");
-  const [loanLimit, setLoanLimit] = useState("");
   const [principalAmount, setPrincipalAmount] = useState("");
+  const [balance, setBalance] = useState<number>(0);
   const [interestRate, setInterestRate] = useState("");
   const [interestRateType, setInterestRateType] = useState<InterestRateType>("FIXED");
   const [interestCalcMethod, setInterestCalcMethod] = useState<InterestCalcMethod>("REDUCING");
   const [startDate, setStartDate] = useState(new Date());
   const [maturityDate, setMaturityDate] = useState<Date | null>(null);
+  const [status, setStatus] = useState<LoanStatus>("ACTIVE");
   const [paymentType, setPaymentType] = useState<PaymentType>("BULLET");
   const [totalInstallments, setTotalInstallments] = useState("");
   const [note, setNote] = useState("");
-  const { createLoan, loading } = usePaybookDetail();
 
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showMaturityPicker, setShowMaturityPicker] = useState(false);
@@ -251,87 +226,55 @@ const CreatePaybookScreen = () => {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const accentColor = colors.tint;
 
-  const effectiveInterestRate = interestEnabled ? parseFloat(interestRate) || 0 : parseFloat(DEFAULT_INTEREST_RATE);
-  const effectiveInterestRateType = interestEnabled ? interestRateType : DEFAULT_INTEREST_RATE_TYPE;
-  const effectiveInterestCalcMethod = interestEnabled ? interestCalcMethod : DEFAULT_INTEREST_CALC_METHOD;
-  const effectivePaymentType = paymentType;
-  const effectiveTotalInstallments = paymentType === "INSTALLMENT"
-    ? parseInt(totalInstallments) || undefined
-    : undefined;
-
+  // ── Fetch loan detail on mount ──────────────────────────────────────────
   useEffect(() => {
+    if (!loanId) return;
+    const fetchDetail = async () => {
+      const detail = await getLoanDetail(Number(loanId));
+      if (!detail) {
+        showNotification("Không tìm thấy khoản vay!", "error");
+        router.back();
+        return;
+      }
+
+      // Populate form
+      setLoanType(detail.loan_type);
+      setWalletId(detail.wallet_id);
+      setLoanNo(detail.loan_no || "");
+      setCounterpartyName(detail.counterparty_name || "");
+      setCounterpartyType(detail.counterparty_type || "INDIVIDUAL");
+      setLoanDescription(detail.description || "");
+      setPrincipalAmount(detail.principal_amount > 0 ? formatNumRaw(detail.principal_amount) : "");
+      setBalance(detail.balance || 0);
+      setInterestRate(detail.interest_rate > 0 ? String(detail.interest_rate) : "");
+      setInterestRateType(detail.interest_rate_type || "FIXED");
+      setInterestCalcMethod(detail.interest_calc_method || "REDUCING");
+      setStartDate(new Date(detail.start_date));
+      setMaturityDate(detail.maturity_date ? new Date(detail.maturity_date) : null);
+      setStatus(detail.status || "ACTIVE");
+      setPaymentType(detail.payment_type || "BULLET");
+      setTotalInstallments(detail.total_installments > 0 ? String(detail.total_installments) : "");
+      setNote(detail.note || "");
+      setInterestEnabled(detail.interest_rate > 0);
+      setDataLoaded(true);
+    };
+    fetchDetail();
+  }, [loanId]);
+
+  // ── Auto-calculate maturity date for INSTALLMENT ────────────────────────
+  useEffect(() => {
+    if (!dataLoaded) return;
     if (paymentType === "INSTALLMENT") {
       const installments = parseInt(totalInstallments || "0", 10);
       if (installments > 0 && startDate) {
         const newMaturityDate = new Date(startDate);
         newMaturityDate.setMonth(newMaturityDate.getMonth() + installments);
         setMaturityDate(newMaturityDate);
-      } else if (installments === 0) {
-        setMaturityDate(null);
       }
     }
-  }, [startDate, paymentType, totalInstallments]);
+  }, [startDate, paymentType, totalInstallments, dataLoaded]);
 
-  // ── Default wallet ────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!walletId && defaultWallet) {
-      setWalletId(defaultWallet.walletId);
-    }
-  }, [defaultWallet, walletId]);
-
-  // ── Load contact từ SelectParticipants ────────────────────────────────────
-  useFocusEffect(
-    useCallback(() => {
-      const loadContact = async () => {
-        try {
-          const stored = await StorageService.getAsyncItem(
-            STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE
-          );
-          if (!stored) return;
-          const data = JSON.parse(stored);
-          if (data.sessionId !== sessionIdRef.current) return;
-          const participants: SelectedContact[] = data.participants || [];
-          if (participants.length === 0) return;
-          const contact = participants[0];
-          setSelectedContact(contact);
-          setCounterpartyName(contact.display_name || contact.name || "");
-          await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE);
-        } catch (err) {
-          console.error("[CreatePaybook] Load contact failed:", err);
-        }
-      };
-      loadContact();
-    }, [])
-  );
-
-  // ── Load selected wallet ──────────────────────────────────────────────────
-  useFocusEffect(
-    useCallback(() => {
-      const loadSelectedWallet = async () => {
-        try {
-          const stored = await StorageService.getAsyncItem(
-            STORAGE_KEY.TEMP_WALLET_STORAGE
-          );
-          if (!stored) return;
-          const wallet = JSON.parse(stored);
-          if (wallet && wallet.walletId !== undefined) {
-            setWalletId(wallet.walletId);
-            // Nếu ví không có trong danh sách hiện tại, refresh lại
-            const exists = wallets.some(w => w.walletId === wallet.walletId);
-            if (!exists) {
-              refresh();
-            }
-          }
-          await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_WALLET_STORAGE);
-        } catch (err) {
-          console.error("[CreatePaybook] Load wallet failed:", err);
-        }
-      };
-      loadSelectedWallet();
-    }, [wallets, refresh])
-  );
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // ── Helpers ─────────────────────────────────────────────────────────────
   const parseNumber = (val: string) => {
     const raw = val.replace(/\./g, "").replace(/,/g, "");
     const n = parseFloat(raw);
@@ -344,51 +287,43 @@ const CreatePaybookScreen = () => {
     return new Intl.NumberFormat("vi-VN").format(parseInt(raw, 10));
   }, []);
 
+  const formatNumRaw = (num: number) => {
+    return new Intl.NumberFormat("vi-VN").format(num);
+  };
+
   const formatDate = (d: Date) =>
     d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
-
-  const getInitials = (n: string) => {
-    const words = n.trim().split(" ");
-    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
-    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
-  };
 
   const selectedWallet = useMemo(
     () => wallets.find((w) => w.walletId === walletId),
     [wallets, walletId]
   );
 
-  // ── Validation ────────────────────────────────────────────────────────────
-  const parsedPrincipal = parseNumber(principalAmount);
-  const parsedLimit = parseNumber(loanLimit);
+  // ── Effective values ───────────────────────────────────────────────────
+  const effectiveInterestRate = interestEnabled ? parseFloat(interestRate) || 0 : 0;
+  const effectiveInterestCalcMethod = interestEnabled ? interestCalcMethod : "REDUCING";
 
-  // const isValid = true;
+  // ── Validation ─────────────────────────────────────────────────────────
+  const parsedPrincipal = parseNumber(principalAmount);
+
   const isValid =
-    !!walletId &&
     counterpartyName.trim().length > 0 &&
     parsedPrincipal > 0 &&
     !!maturityDate &&
-    (effectivePaymentType === "BULLET" || (effectivePaymentType === "INSTALLMENT" && parseInt(totalInstallments || "0") > 0));
+    (paymentType === "BULLET" || (paymentType === "INSTALLMENT" && parseInt(totalInstallments || "0") > 0));
 
-
-  // ── Handlers ─────────────────────────────────────────────────────────────
-  const clearContact = () => {
-    setSelectedContact(null);
-    setCounterpartyName("");
-  };
-
+  // ── Handlers ───────────────────────────────────────────────────────────
   const handleToggleInterest = (val: boolean) => {
     setInterestEnabled(val);
     if (!val) {
-      // Reset về default
       setInterestRate("");
-      setInterestRateType(DEFAULT_INTEREST_RATE_TYPE);
-      setInterestCalcMethod(DEFAULT_INTEREST_CALC_METHOD);
+      setInterestRateType("FIXED");
+      setInterestCalcMethod("REDUCING");
     }
   };
 
-  const handleCreate = async () => {
-    if (!maturityDate) return;
+  const handleUpdate = async () => {
+    if (!maturityDate || !loanId) return;
     if (effectiveInterestRate < 0) {
       return showNotification("Lãi suất không được là số âm!", "error");
     }
@@ -397,35 +332,36 @@ const CreatePaybookScreen = () => {
     }
 
     try {
-      await createLoan({
-        wallet_id: walletId!,
-        loan_type: loanType,
+      await updateLoan({
+        id: Number(loanId),
         counterparty_name: counterpartyName.trim(),
         counterparty_type: counterpartyType,
-        loan_description: loanDescription.trim(),
-        currency_code: currencyCode,
-        loan_limit: parsedLimit,
+        description: loanDescription.trim(),
         principal_amount: parsedPrincipal,
+        balance: balance,
         interest_rate: effectiveInterestRate,
-        interest_rate_type: effectiveInterestRateType,
+        interest_rate_type: interestEnabled ? interestRateType : "FIXED",
         interest_calc_method: effectiveInterestCalcMethod,
         start_date: startDate.toISOString(),
         maturity_date: maturityDate.toISOString(),
-        payment_type: effectivePaymentType,
-        total_installments: effectiveTotalInstallments,
-        note: note.trim() || undefined,
+        status: status,
+        payment_type: paymentType,
+        total_installments: paymentType === "INSTALLMENT"
+          ? parseInt(totalInstallments) || undefined
+          : undefined,
+        note: note.trim() || "",
       });
-      showNotification("Tạo sổ nợ thành công!", "success");
+      showNotification("Cập nhật sổ nợ thành công!", "success");
       router.back();
     } catch (error) {
       showNotification(
-        error instanceof Error ? error.message : "Tạo sổ nợ thất bại!",
+        error instanceof Error ? error.message : "Cập nhật sổ nợ thất bại!",
         "error"
       );
     }
   };
 
-  // ── Section renderer ──────────────────────────────────────────────────────
+  // ── Section renderer ──────────────────────────────────────────────────
   const SectionHeader = ({ title }: { title: string }) => (
     <View style={[styles.sectionHeader, { borderLeftColor: accentColor }]}>
       <CustomText style={[styles.sectionHeaderText, { color: colors.text }]}>
@@ -434,199 +370,115 @@ const CreatePaybookScreen = () => {
     </View>
   );
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Loading state ──────────────────────────────────────────────────────
+  if (!dataLoaded) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <AppHeader title="Chỉnh sửa sổ nợ" />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator size="large" color={accentColor} />
+          <CustomText style={[styles.loadingText, { color: colors.icon }]}>
+            Đang tải dữ liệu...
+          </CustomText>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────
+  const typeColor = loanType === "LEND" ? "#22C55E" : "#EF4444";
+  const typeLabel = loanType === "LEND" ? "Cho vay" : "Đi vay";
+  const typeIcon = loanType === "LEND" ? "arrow-trend-up" : "arrow-trend-down";
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.flex}
       >
-        <AppHeader title="Tạo sổ nợ mới" />
+        <AppHeader title="Chỉnh sửa sổ nợ" />
 
         <ScrollView
           style={styles.flex}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* ════════════════════════════════════════════════════════════════
-              1. LOẠI KHOẢN VAY
-          ════════════════════════════════════════════════════════════════ */}
+          {/* ══════════════════════════════════════════════════════════════
+              1. THÔNG TIN CỐ ĐỊNH (Read-only)
+          ══════════════════════════════════════════════════════════════ */}
           <View style={styles.section}>
-            <View style={styles.typeContainer}>
-              {LOAN_TYPE_TABS.map((tab) => {
-                const isActive = loanType === tab.key;
-                return (
-                  <TouchableOpacity
-                    key={tab.key}
-                    style={[
-                      styles.typeButton,
-                      { backgroundColor: isActive ? tab.color : colors.card, borderColor: isActive ? tab.color : colors.border },
-                    ]}
-                    onPress={() => setLoanType(tab.key)}
-                    activeOpacity={0.7}
-                  >
-                    <FontAwesome6
-                      name={tab.icon as any}
-                      size={normalize(14)}
-                      color={isActive ? "#fff" : colors.icon}
-                      style={{ marginRight: wp(1.5) }}
-                    />
-                    <CustomText style={[styles.typeText, { color: isActive ? "#fff" : colors.text }]}>
-                      {tab.label}
-                    </CustomText>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* ════════════════════════════════════════════════════════════════
-              2. THÔNG TIN ĐỐI TÁC
-          ════════════════════════════════════════════════════════════════ */}
-          <SectionHeader title="Thông tin đối tác" />
-
-          {/* Loại đối tác */}
-          <View style={styles.section}>
-            {/* <CustomText style={[styles.label, { color: colors.text }]}>Loại đối tác</CustomText> */}
-            <View style={styles.chipRow}>
-              {COUNTERPARTY_TYPES.map((ct) => {
-                const isActive = counterpartyType === ct.key;
-                return (
-                  <TouchableOpacity
-                    key={ct.key}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: isActive ? `${accentColor}20` : colors.card,
-                        borderColor: isActive ? accentColor : colors.border,
-                      },
-                    ]}
-                    onPress={() => setCounterpartyType(ct.key)}
-                    activeOpacity={0.7}
-                  >
-                    <FontAwesome6
-                      name={ct.icon as any}
-                      size={normalize(13)}
-                      color={isActive ? accentColor : colors.icon}
-                      solid
-                      style={{ marginRight: wp(1.5) }}
-                    />
-                    <CustomText
-                      style={[
-                        styles.chipText,
-                        { color: isActive ? accentColor : colors.text, fontFamily: isActive ? Fonts.semiBold : Fonts.regular },
-                      ]}
-                    >
-                      {ct.label}
-                    </CustomText>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Tên đối tác + điền nhanh */}
-          <View style={styles.section}>
-            <View style={styles.labelRow}>
-              <CustomText style={[styles.label, { color: colors.text }]}>
-                {loanType === "LEND" ? "Người được vay" : "Chủ nợ"}{" "}
-                <CustomText style={{ color: "#EF4444" }}>*</CustomText>
-              </CustomText>
-              <TouchableOpacity
-                style={[styles.quickFillBtn, { borderColor: accentColor }]}
-                onPress={() =>
-                  router.push({
-                    pathname: "/(protected)/select-participants",
-                    params: { sessionId: sessionIdRef.current },
-                  })
-                }
-                activeOpacity={0.7}
-              >
+            <View style={[styles.readonlyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {/* Loan type badge */}
+              <View style={[styles.typeBadge, { backgroundColor: `${typeColor}15` }]}>
                 <FontAwesome6
-                  name="address-book"
-                  size={normalize(11)}
-                  color={accentColor}
-                  solid
-                  style={{ marginRight: wp(1) }}
+                  name={typeIcon as any}
+                  size={normalize(13)}
+                  color={typeColor}
+                  style={{ marginRight: wp(1.5) }}
                 />
-                <CustomText style={[styles.quickFillText, { color: accentColor }]}>
-                  Chọn từ danh bạ
+                <CustomText style={[styles.typeBadgeText, { color: typeColor }]}>
+                  {typeLabel}
                 </CustomText>
-              </TouchableOpacity>
-            </View>
-
-            {selectedContact ? (
-              <View style={[styles.contactCard, { backgroundColor: colors.card, borderColor: accentColor }]}>
-                <View style={[styles.contactAvatar, { backgroundColor: selectedContact.avatarColor || AVATAR_COLORS[0] }]}>
-                  <CustomText style={styles.contactAvatarText}>
-                    {getInitials(counterpartyName || selectedContact.name)}
-                  </CustomText>
-                </View>
-                <View style={styles.contactInfo}>
-                  <CustomText style={[styles.contactName, { color: colors.text }]}>
-                    {counterpartyName}
-                  </CustomText>
-                  {(selectedContact.phone || selectedContact.phoneNumber) ? (
-                    <CustomText style={[styles.contactPhone, { color: colors.icon }]}>
-                      {selectedContact.phone || selectedContact.phoneNumber}
-                    </CustomText>
-                  ) : null}
-                </View>
-                <TouchableOpacity style={[styles.removeBtn, { backgroundColor: colors.background }]} onPress={clearContact} hitSlop={8}>
-                  <FontAwesome6 name="xmark" size={normalize(12)} color={colors.icon} />
-                </TouchableOpacity>
               </View>
-            ) : (
-              <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <FontAwesome6 name="user" size={normalize(16)} color={counterpartyName.trim() ? accentColor : colors.icon} solid style={styles.fieldIcon} />
-                <TextInput
-                  style={[styles.fieldInput, { color: colors.text }]}
-                  placeholder={
-                    counterpartyType === "MERCHANT"
-                      ? "Tên công ty / tổ chức..."
-                      : loanType === "LEND"
-                        ? "Người được bạn cho vay..."
-                        : "Người bạn đang vay..."
-                  }
-                  placeholderTextColor={colors.icon}
-                  value={counterpartyName}
-                  onChangeText={setCounterpartyName}
-                  returnKeyType="next"
-                />
-              </View>
-            )}
-          </View>
 
-          {/* ════════════════════════════════════════════════════════════════
-              3. THÔNG TIN KHOẢN VAY
-          ════════════════════════════════════════════════════════════════ */}
-          <SectionHeader title="Thông tin khoản vay" />
-
-          {/* Ví liên kết */}
-          <View style={styles.section}>
-            <CustomText style={[styles.label, { color: colors.text }]}>
-              Ví liên kết <CustomText style={{ color: "#EF4444" }}>*</CustomText>
-            </CustomText>
-            <TouchableOpacity
-              style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push("/(protected)/wallet/wallet-list?mode=select")}
-              activeOpacity={0.7}
-            >
-              <View style={styles.fieldLeft}>
+              {/* Wallet */}
+              <View style={styles.readonlyRow}>
                 <FontAwesome6
                   name={(selectedWallet?.icon as any) || "wallet"}
-                  size={normalize(16)}
+                  size={normalize(14)}
                   color={selectedWallet?.color || colors.icon}
                   solid
-                  style={styles.fieldIcon}
+                  style={{ marginRight: wp(2), width: normalize(20), textAlign: "center" }}
                 />
-                <CustomText style={[styles.fieldText, { color: selectedWallet ? colors.text : colors.icon }]}>
-                  {selectedWallet?.name || "Chọn ví liên kết"}
+                <CustomText style={[styles.readonlyLabel, { color: colors.icon }]}>Ví nguồn:</CustomText>
+                <CustomText style={[styles.readonlyValue, { color: colors.text }]}>
+                  {selectedWallet?.name || `ID: ${walletId}`}
                 </CustomText>
               </View>
-              <FontAwesome6 name="chevron-right" size={normalize(12)} color={colors.icon} />
-            </TouchableOpacity>
+
+              {/* Loan No */}
+              {loanNo ? (
+                <View style={styles.readonlyRow}>
+                  <FontAwesome6
+                    name="hashtag"
+                    size={normalize(14)}
+                    color={colors.icon}
+                    style={{ marginRight: wp(2), width: normalize(20), textAlign: "center" }}
+                  />
+                  <CustomText style={[styles.readonlyLabel, { color: colors.icon }]}>Mã sổ:</CustomText>
+                  <CustomText style={[styles.readonlyValue, { color: colors.text }]}>
+                    {loanNo}
+                  </CustomText>
+                </View>
+              ) : null}
+            </View>
           </View>
+
+          {/* ══════════════════════════════════════════════════════════════
+              3. THÔNG TIN ĐỐI TÁC
+          ══════════════════════════════════════════════════════════════ */}
+          <SectionHeader title="Thông tin đối tác" />
+          <View style={styles.section}>
+            <CustomText style={[styles.label, { color: colors.text }]}>
+              Tên đối tác <CustomText style={{ color: "#EF4444" }}>*</CustomText>
+            </CustomText>
+            <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <FontAwesome6 name="user" size={normalize(16)} color={counterpartyName.trim() ? accentColor : colors.icon} solid style={styles.fieldIcon} />
+              <TextInput
+                style={[styles.fieldInput, { color: colors.text }]}
+                placeholder="Tên người/đơn vị giao dịch..."
+                placeholderTextColor={colors.icon}
+                value={counterpartyName}
+                onChangeText={setCounterpartyName}
+                returnKeyType="next"
+              />
+            </View>
+          </View>
+
+          {/* ══════════════════════════════════════════════════════════════
+              4. THÔNG TIN KHOẢN VAY
+          ══════════════════════════════════════════════════════════════ */}
+          <SectionHeader title="Thông tin khoản vay" />
 
           {/* Mô tả */}
           <View style={styles.section}>
@@ -644,53 +496,27 @@ const CreatePaybookScreen = () => {
             </View>
           </View>
 
-          {/* Hạn mức & Số tiền thực */}
-          <View style={[styles.section, { flexDirection: "row", gap: wp(3) }]}>
-            <View style={{ flex: 1 }}>
-              <CustomText style={[styles.label, { color: colors.text }]}>
-                Hạn mức
-              </CustomText>
-              <View style={[styles.amountWrapper, { backgroundColor: colors.card, borderColor: parsedLimit > 0 ? accentColor : colors.border }]}>
-                <TextInput
-                  style={[styles.amountInputSm, { color: parsedLimit > 0 ? accentColor : colors.text, fontFamily: parsedLimit > 0 ? Fonts.semiBold : Fonts.regular }]}
-                  placeholder="0"
-                  placeholderTextColor={colors.icon}
-                  value={loanLimit}
-                  onChangeText={(t) => setLoanLimit(formatNum(t))}
-                  keyboardType="numeric"
-                />
-                <CustomText style={[styles.currencyTag, { color: accentColor }]}>đ</CustomText>
-              </View>
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <CustomText style={[styles.label, { color: colors.text }]}>
-                Số tiền vay <CustomText style={{ color: "#EF4444" }}>*</CustomText>
-              </CustomText>
-              <View style={[styles.amountWrapper, { backgroundColor: colors.card, borderColor: parsedPrincipal > 0 ? accentColor : colors.border }]}>
-                <TextInput
-                  style={[styles.amountInputSm, { color: parsedPrincipal > 0 ? accentColor : colors.text, fontFamily: parsedPrincipal > 0 ? Fonts.semiBold : Fonts.regular }]}
-                  placeholder="0"
-                  placeholderTextColor={colors.icon}
-                  value={principalAmount}
-                  onChangeText={(t) => setPrincipalAmount(formatNum(t))}
-                  keyboardType="numeric"
-                />
-                <CustomText style={[styles.currencyTag, { color: accentColor }]}>đ</CustomText>
-              </View>
+          {/* Số tiền vay */}
+          <View style={styles.section}>
+            <CustomText style={[styles.label, { color: colors.text }]}>
+              Số tiền gốc <CustomText style={{ color: "#EF4444" }}>*</CustomText>
+            </CustomText>
+            <View style={[styles.amountWrapper, { backgroundColor: colors.card, borderColor: parsedPrincipal > 0 ? accentColor : colors.border }]}>
+              <TextInput
+                style={[styles.amountInputSm, { color: parsedPrincipal > 0 ? accentColor : colors.text, fontFamily: parsedPrincipal > 0 ? Fonts.semiBold : Fonts.regular }]}
+                placeholder="0"
+                placeholderTextColor={colors.icon}
+                value={principalAmount}
+                onChangeText={(t) => setPrincipalAmount(formatNum(t))}
+                keyboardType="numeric"
+              />
+              <CustomText style={[styles.currencyTag, { color: accentColor }]}>đ</CustomText>
             </View>
           </View>
 
-          {parsedLimit > 0 && parsedPrincipal > parsedLimit && (
-            <View style={styles.section}>
-              <CustomText style={[styles.warningText, { color: "#EF4444" }]}>
-                Số tiền vay không được vượt quá hạn mức!
-              </CustomText>
-            </View>
-          )}
-
-
-          {/* Hình thức thanh toán */}
+          {/* ══════════════════════════════════════════════════════════════
+              5. HÌNH THỨC THANH TOÁN
+          ══════════════════════════════════════════════════════════════ */}
           <SectionHeader title="Hình thức thanh toán" />
           <View style={styles.section}>
             <View style={styles.chipRow}>
@@ -744,9 +570,9 @@ const CreatePaybookScreen = () => {
             </View>
           )}
 
-          {/* ════════════════════════════════════════════════════════════════
-              5. LÃI SUẤT — Toggle section
-          ════════════════════════════════════════════════════════════════ */}
+          {/* ══════════════════════════════════════════════════════════════
+              6. LÃI SUẤT — Toggle section
+          ══════════════════════════════════════════════════════════════ */}
           <CollapsibleSection
             title="Lãi suất"
             subtitle={interestEnabled ? "Tuỳ chỉnh lãi suất & phương thức" : "Mặc định: không lãi suất (0%)"}
@@ -772,28 +598,6 @@ const CreatePaybookScreen = () => {
                 <CustomText style={[styles.unitTag, { color: colors.icon }]}>%/năm</CustomText>
               </View>
             </View>
-
-            {/* Loại lãi suất */}
-            {/* <View style={styles.section}>
-              <CustomText style={[styles.label, { color: colors.text }]}>Loại lãi suất</CustomText>
-              <View style={styles.chipRow}>
-                {INTEREST_RATE_TYPES.map((rt) => {
-                  const isActive = interestRateType === rt.key;
-                  return (
-                    <TouchableOpacity
-                      key={rt.key}
-                      style={[styles.chip, { flex: 1, backgroundColor: isActive ? `${accentColor}20` : colors.card, borderColor: isActive ? accentColor : colors.border }]}
-                      onPress={() => setInterestRateType(rt.key)}
-                      activeOpacity={0.7}
-                    >
-                      <CustomText style={[styles.chipText, { color: isActive ? accentColor : colors.text, fontFamily: isActive ? Fonts.semiBold : Fonts.regular }]}>
-                        {rt.label}
-                      </CustomText>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View> */}
 
             {/* Phương pháp tính lãi */}
             <View style={styles.section}>
@@ -823,6 +627,9 @@ const CreatePaybookScreen = () => {
             </View>
           </CollapsibleSection>
 
+          {/* ══════════════════════════════════════════════════════════════
+              7. THỜI HẠN
+          ══════════════════════════════════════════════════════════════ */}
           <SectionHeader title="Thời hạn" />
           <View style={[styles.section, { flexDirection: "row", gap: wp(3) }]}>
             <View style={{ flex: 1 }}>
@@ -869,9 +676,9 @@ const CreatePaybookScreen = () => {
             </View>
           </View>
 
-          {/* ════════════════════════════════════════════════════════════════
-              6. GHI CHÚ
-          ════════════════════════════════════════════════════════════════ */}
+          {/* ══════════════════════════════════════════════════════════════
+              8. GHI CHÚ
+          ══════════════════════════════════════════════════════════════ */}
           <SectionHeader title="Ghi chú" />
           <View style={styles.section}>
             <TextInput
@@ -937,7 +744,7 @@ const CreatePaybookScreen = () => {
               styles.createBtn,
               { backgroundColor: isValid && !loading ? accentColor : colors.border, shadowColor: isValid && !loading ? accentColor : "transparent" },
             ]}
-            onPress={handleCreate}
+            onPress={handleUpdate}
             disabled={!isValid || loading}
             activeOpacity={0.8}
           >
@@ -946,7 +753,7 @@ const CreatePaybookScreen = () => {
             ) : (
               <>
                 <FontAwesome6 name="floppy-disk" size={normalize(15)} color="#fff" style={{ marginRight: wp(1.5) }} solid />
-                <CustomText style={styles.createText}>Lưu sổ nợ</CustomText>
+                <CustomText style={styles.createText}>Lưu thay đổi</CustomText>
               </>
             )}
           </TouchableOpacity>
@@ -963,6 +770,9 @@ const createStyles = (colors: any) =>
     flex: { flex: 1 },
     container: { flex: 1, backgroundColor: colors.background },
 
+    // Loading
+    loadingText: { fontSize: normalize(14), fontFamily: Fonts.medium, marginTop: hp(2) },
+
     // Section header
     sectionHeader: {
       marginHorizontal: wp(4),
@@ -975,25 +785,52 @@ const createStyles = (colors: any) =>
 
     section: { paddingHorizontal: wp(4), paddingTop: hp(1.5) },
 
-    // Type tabs
-    typeContainer: { flexDirection: "row", gap: wp(3) },
-    typeButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: hp(1.4), borderRadius: normalize(14), borderWidth: 1.5 },
-    typeText: { fontSize: normalize(14), fontFamily: Fonts.semiBold },
+    // Readonly card
+    readonlyCard: {
+      borderWidth: 1,
+      borderRadius: normalize(14),
+      padding: normalize(14),
+      gap: hp(1.2),
+    },
+    readonlyRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    readonlyLabel: {
+      fontSize: normalize(13),
+      fontFamily: Fonts.regular,
+      marginRight: wp(1.5),
+    },
+    readonlyValue: {
+      fontSize: normalize(13),
+      fontFamily: Fonts.semiBold,
+      flex: 1,
+    },
+
+    // Type badge
+    typeBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start",
+      paddingHorizontal: wp(3),
+      paddingVertical: hp(0.6),
+      borderRadius: normalize(20),
+    },
+    typeBadgeText: {
+      fontSize: normalize(12),
+      fontFamily: Fonts.semiBold,
+    },
+
+    // Status dot
+    statusDot: {
+      width: normalize(8),
+      height: normalize(8),
+      borderRadius: normalize(4),
+      marginRight: wp(1.5),
+    },
 
     // Label
     label: { fontSize: normalize(13), fontFamily: Fonts.medium, marginBottom: hp(0.8) },
-    labelRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: hp(0.8) },
-    quickFillBtn: { flexDirection: "row", alignItems: "center", paddingHorizontal: wp(2.5), paddingVertical: hp(0.5), borderRadius: normalize(20), borderWidth: 1 },
-    quickFillText: { fontSize: normalize(11), fontFamily: Fonts.semiBold },
-
-    // Contact card
-    contactCard: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderRadius: normalize(14), paddingHorizontal: wp(3), paddingVertical: hp(1.2), gap: wp(2.5) },
-    contactAvatar: { width: normalize(40), height: normalize(40), borderRadius: normalize(20), alignItems: "center", justifyContent: "center" },
-    contactAvatarText: { fontSize: normalize(14), fontFamily: Fonts.semiBold, color: "#fff" },
-    contactInfo: { flex: 1 },
-    contactName: { fontSize: normalize(15), fontFamily: Fonts.semiBold, marginBottom: hp(0.2) },
-    contactPhone: { fontSize: normalize(12), fontFamily: Fonts.regular },
-    removeBtn: { width: normalize(26), height: normalize(26), borderRadius: normalize(13), alignItems: "center", justifyContent: "center" },
 
     // Fields
     field: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: normalize(14), paddingHorizontal: wp(4), paddingVertical: hp(1.6) },
@@ -1004,12 +841,12 @@ const createStyles = (colors: any) =>
     unitTag: { fontSize: normalize(13), fontFamily: Fonts.medium, marginLeft: wp(1) },
 
     // Chip selectors
-    chipRow: { flexDirection: "row", gap: wp(2) },
+    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: wp(2) },
     chip: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: hp(1.2), paddingHorizontal: wp(3), borderRadius: normalize(12), borderWidth: 1 },
     chipText: { fontSize: normalize(13) },
     chipDesc: { fontSize: normalize(11), fontFamily: Fonts.regular, textAlign: "center" },
 
-    // Payment type chips (vertical)
+    // Payment type chips
     paymentChip: { alignItems: "center", justifyContent: "center", paddingVertical: hp(1.5), paddingHorizontal: wp(2), borderRadius: normalize(14), borderWidth: 1, gap: hp(0.3) },
 
     // Option rows (radio)
@@ -1028,9 +865,6 @@ const createStyles = (colors: any) =>
     dateField: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: normalize(14), paddingHorizontal: wp(3), paddingVertical: hp(1.4) },
     dateText: { fontSize: normalize(13), fontFamily: Fonts.medium },
 
-    // Warning
-    warningText: { fontSize: normalize(12), fontFamily: Fonts.medium },
-
     // Note
     noteInput: { borderWidth: 1, borderRadius: normalize(14), padding: normalize(12), fontSize: normalize(14), fontFamily: Fonts.regular, minHeight: hp(10) },
 
@@ -1047,4 +881,4 @@ const createStyles = (colors: any) =>
     createText: { fontSize: normalize(15), color: "#fff", fontFamily: Fonts.semiBold },
   });
 
-export default CreatePaybookScreen;
+export default EditPaybookScreen;

@@ -14,6 +14,7 @@ interface AppHeaderProps {
   onBack?: () => void;
   showBackButton?: boolean;
   rightComponent?: React.ReactNode;
+  centerComponent?: React.ReactNode;
   containerStyle?: ViewStyle;
   titleStyle?: ViewStyle;
   backgroundColor?: string;
@@ -28,6 +29,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   onBack,
   showBackButton = true,
   rightComponent,
+  centerComponent,
   containerStyle,
   titleStyle,
   backgroundColor,
@@ -76,12 +78,16 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       </View>
 
       <View style={styles.centerContainer}>
-        <CustomText
-          style={[styles.title, { color: colors.text }, titleStyle]}
-          numberOfLines={1}
-        >
-          {title}
-        </CustomText>
+        {centerComponent ? (
+          centerComponent
+        ) : (
+          <CustomText
+            style={[styles.title, { color: colors.text }, titleStyle]}
+            numberOfLines={1}
+          >
+            {title}
+          </CustomText>
+        )}
       </View>
       <View style={styles.rightContainer}>
         {rightComponent || <View style={styles.placeholder} />}
@@ -110,9 +116,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   centerContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: normalize(8),

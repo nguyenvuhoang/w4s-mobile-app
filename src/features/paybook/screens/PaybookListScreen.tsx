@@ -11,6 +11,7 @@ import type {
 import { paybookRepository } from "@/services/repositories/paybook.repository";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
@@ -18,8 +19,9 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -66,6 +68,8 @@ const FILTER_TABS: { key: LoanFilterType; label: string; icon: string }[] = [
 const PaybookListScreen = () => {
   const { colors } = useAppTheme();
   const [activeFilter, setActiveFilter] = useState<LoanFilterType>("ALL");
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loans, setLoans] = useState<Loan[]>([]);
   const [summary, setSummary] = useState<LoanSummary>({
     total_lend: 0,
@@ -85,7 +89,21 @@ const PaybookListScreen = () => {
 
       // Server trả về data — adapt theo response thực tế
       if (res?.data) {
-        const items: Loan[] = res.data.items ?? res.data ?? [];
+        const rawItems = res.data.items ?? res.data ?? [];
+        const items: Loan[] = rawItems.map((item: any) => ({
+          ...item,
+          loan_id: String(item.loan_id || item.id || ""),
+          remaining_amount: item.remaining_amount ?? item.balance ?? 0,
+          paid_amount:
+            item.paid_amount ??
+            (item.principal_amount ?? 0) - (item.balance ?? 0),
+          principal_amount: item.principal_amount ?? 0,
+          maturity_date: item.maturity_date ?? item.start_date ?? "",
+          counterparty_name: item.counterparty_name ?? "Chưa rõ",
+          loan_type: item.loan_type ?? "LEND",
+          status: item.status ?? "ACTIVE",
+          interest_rate: item.interest_rate ?? 0,
+        }));
         setLoans(items);
 
         const sum: LoanSummary = res.data.summary ?? {
@@ -121,9 +139,26 @@ const PaybookListScreen = () => {
 
   // ── Derived data ───────────────────────────────────────────────────────────
   const filteredLoans = useMemo(() => {
-    if (activeFilter === "ALL") return loans;
-    return loans.filter((l) => l.loan_type === activeFilter);
-  }, [loans, activeFilter]);
+    let result = loans;
+
+    // Lọc theo mảng tabs
+    if (activeFilter !== "ALL") {
+      result = result.filter((l) => l.loan_type === activeFilter);
+    }
+
+    // Lọc theo search query
+    if (searchQuery.trim().length > 0) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (l) =>
+          l.counterparty_name.toLowerCase().includes(q) ||
+          (l.loan_description && l.loan_description.toLowerCase().includes(q)) ||
+          ((l as any).loan_no && (l as any).loan_no.toLowerCase().includes(q))
+      );
+    }
+
+    return result;
+  }, [loans, activeFilter, searchQuery]);
 
   const filterCounts = useMemo(() => ({
     ALL: loans.length,
@@ -215,9 +250,10 @@ const PaybookListScreen = () => {
                 </View>
               </View>
 
-              {loan.loan_description ? (
+              {/* Hiển thị description hoặc loan_no */}
+              {(loan.loan_description || (loan as any).loan_no) ? (
                 <CustomText style={[styles.cardDesc, { color: colors.icon }]} numberOfLines={1}>
-                  {loan.loan_description}
+                  {(loan as any).loan_no ? `[${(loan as any).loan_no}] ` : ""}{loan.loan_description || ""}
                 </CustomText>
               ) : null}
             </View>
@@ -273,8 +309,8 @@ const PaybookListScreen = () => {
                     isDueSoon
                       ? "#EF4444"
                       : loan.status === "OVERDUE"
-                      ? "#DC2626"
-                      : colors.icon
+                        ? "#DC2626"
+                        : colors.icon
                   }
                   style={{ marginRight: wp(1) }}
                 />
@@ -296,8 +332,8 @@ const PaybookListScreen = () => {
                   {loan.status === "OVERDUE"
                     ? `Quá hạn ${Math.abs(daysLeft)} ngày`
                     : isDueSoon
-                    ? `Còn ${daysLeft} ngày`
-                    : formatDate(loan.maturity_date)}
+                      ? `Còn ${daysLeft} ngày`
+                      : formatDate(loan.maturity_date)}
                 </CustomText>
               </View>
 
@@ -335,7 +371,43 @@ const PaybookListScreen = () => {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <AppHeader title="Sổ nợ" />
+      <AppHeader
+        title={isSearchMode ? "" : "Sổ nợ"}
+        centerComponent={
+          isSearchMode ? (
+            <View style={styles.headerSearchWrapper}>
+              <TextInput
+                style={[styles.headerSearchInput, { color: colors.text }]}
+                placeholder="Tìm tên đối tác, mô tả..."
+                placeholderTextColor={colors.icon}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+                returnKeyType="search"
+              />
+            </View>
+          ) : undefined
+        }
+        rightComponent={
+          <TouchableOpacity
+            style={styles.headerIconButton}
+            onPress={() => {
+              if (isSearchMode) {
+                setIsSearchMode(false);
+                setSearchQuery("");
+              } else {
+                setIsSearchMode(true);
+              }
+            }}
+          >
+            <FontAwesome6
+              name={isSearchMode ? "xmark" : "magnifying-glass"}
+              size={normalize(18)}
+              color={colors.text}
+            />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView
         style={styles.content}
@@ -419,43 +491,46 @@ const PaybookListScreen = () => {
               return (
                 <TouchableOpacity
                   key={tab.key}
+                  onPress={() => setActiveFilter(tab.key)}
+                  activeOpacity={0.7}
                   style={[
                     styles.filterTab,
                     {
-                      backgroundColor: isActive ? colors.tint : colors.card,
-                      borderColor: isActive ? colors.tint : colors.border,
+                      borderColor: isActive ? "transparent" : colors.border,
+                      backgroundColor: isActive ? "transparent" : colors.card,
                     },
                   ]}
-                  onPress={() => setActiveFilter(tab.key)}
-                  activeOpacity={0.7}
                 >
-                  <CustomText
-                    style={[
-                      styles.filterTabText,
-                      { color: isActive ? "#fff" : colors.text },
-                    ]}
-                  >
-                    {tab.label}
-                  </CustomText>
-                  {count > 0 && (
-                    <View
-                      style={[
-                        styles.filterBadge,
-                        {
-                          backgroundColor: isActive
-                            ? "rgba(255,255,255,0.3)"
-                            : colors.border,
-                        },
-                      ]}
+                  {isActive ? (
+                    <LinearGradient
+                      colors={colors.gradientPrimary}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.filterTabGradient}
                     >
-                      <CustomText
-                        style={[
-                          styles.filterBadgeText,
-                          { color: isActive ? "#fff" : colors.text },
-                        ]}
-                      >
-                        {count}
+                      <CustomText style={[styles.filterTabText, { color: "#fff" }]}>
+                        {tab.label}
                       </CustomText>
+                      {count > 0 && (
+                        <View style={[styles.filterBadge, { backgroundColor: "rgba(255,255,255,0.3)" }]}>
+                          <CustomText style={[styles.filterBadgeText, { color: "#fff" }]}>
+                            {count}
+                          </CustomText>
+                        </View>
+                      )}
+                    </LinearGradient>
+                  ) : (
+                    <View style={styles.filterTabInner}>
+                      <CustomText style={[styles.filterTabText, { color: colors.text }]}>
+                        {tab.label}
+                      </CustomText>
+                      {count > 0 && (
+                        <View style={[styles.filterBadge, { backgroundColor: colors.border }]}>
+                          <CustomText style={[styles.filterBadgeText, { color: colors.text }]}>
+                            {count}
+                          </CustomText>
+                        </View>
+                      )}
                     </View>
                   )}
                 </TouchableOpacity>
@@ -503,15 +578,22 @@ const PaybookListScreen = () => {
         <TouchableOpacity
           onPress={() => router.push("/(protected)/paybook/create")}
           activeOpacity={0.8}
-          style={[styles.createButton, { backgroundColor: colors.tint, shadowColor: colors.tint }]}
+          style={[styles.createButton, { shadowColor: colors.tint }]}
         >
-          <FontAwesome6
-            name="plus"
-            size={normalize(15)}
-            color="#fff"
-            style={{ marginRight: wp(2) }}
-          />
-          <CustomText style={styles.createButtonText}>Thêm sổ nợ mới</CustomText>
+          <LinearGradient
+            colors={colors.gradientPrimary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.gradientBg}
+          >
+            <FontAwesome6
+              name="plus"
+              size={normalize(15)}
+              color="#fff"
+              style={{ marginRight: wp(2) }}
+            />
+            <CustomText style={styles.createButtonText}>Thêm sổ nợ mới</CustomText>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -523,6 +605,24 @@ const PaybookListScreen = () => {
 const createStyles = (colors: any) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
+
+    // Header Search
+    headerSearchWrapper: {
+      flex: 1,
+      marginHorizontal: wp(2),
+    },
+    headerSearchInput: {
+      fontSize: normalize(15),
+      fontFamily: Fonts.regular,
+      height: hp(5),
+    },
+    headerIconButton: {
+      width: normalize(40),
+      height: normalize(40),
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
     content: { flex: 1 },
 
     // Summary
@@ -561,13 +661,22 @@ const createStyles = (colors: any) =>
     },
     filterContainer: { flexDirection: "row", gap: wp(2) },
     filterTab: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      paddingVertical: hp(1.2),
       borderRadius: normalize(12),
       borderWidth: 1,
+      overflow: "hidden",
+    },
+    filterTabGradient: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: wp(3.5),
+      paddingVertical: hp(1),
+      gap: wp(1.5),
+    },
+    filterTabInner: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: wp(3.5),
+      paddingVertical: hp(1),
       gap: wp(1.5),
     },
     filterTabText: { fontSize: normalize(13), fontFamily: Fonts.medium },
@@ -696,15 +805,19 @@ const createStyles = (colors: any) =>
       borderTopWidth: 1,
     },
     createButton: {
-      paddingVertical: hp(1.8),
       borderRadius: normalize(16),
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
+      overflow: "hidden",
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 8,
       elevation: 8,
+    },
+    gradientBg: {
+      paddingVertical: hp(1.8),
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "100%",
     },
     createButtonText: {
       fontSize: normalize(16),
