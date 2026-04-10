@@ -33,8 +33,19 @@ export const usePaybookDetail = () => {
         detailData = rawData;
       }
 
-      setLoanDetail(detailData as LoanDetail);
-      return detailData as LoanDetail;
+      const mappedData: LoanDetail = {
+        ...detailData,
+        loan_type: (detailData.loan_type || "LEND").toUpperCase(),
+        status: (detailData.status || "ACTIVE").toUpperCase(),
+        payment_type: (detailData.payment_type || "BULLET").toUpperCase(),
+        total_installments: detailData.total_installments ?? detailData.total_installment ?? 0,
+        // Adapt other fields if necessary
+        principal_amount: detailData.principal_amount ?? 0,
+        balance: detailData.balance ?? detailData.remaining_amount ?? 0,
+      };
+
+      setLoanDetail(mappedData);
+      return mappedData;
     } catch (err: any) {
       const message = err.message || "Lỗi khi lấy chi tiết khoản vay";
       setError(message);

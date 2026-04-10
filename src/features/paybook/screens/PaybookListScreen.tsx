@@ -100,9 +100,12 @@ const PaybookListScreen = () => {
           principal_amount: item.principal_amount ?? 0,
           maturity_date: item.maturity_date ?? item.start_date ?? "",
           counterparty_name: item.counterparty_name ?? "Chưa rõ",
-          loan_type: item.loan_type ?? "LEND",
-          status: item.status ?? "ACTIVE",
+          loan_type: (item.loan_type || "LEND").toUpperCase(),
+          status: (item.status || "ACTIVE").toUpperCase(),
+          payment_type: (item.payment_type || "BULLET").toUpperCase(),
           interest_rate: item.interest_rate ?? 0,
+          total_installments: item.total_installments ?? item.total_installment ?? 0,
+          paid_installments: item.paid_installments ?? item.paid_installment ?? 0,
         }));
         setLoans(items);
 
@@ -293,8 +296,10 @@ const PaybookListScreen = () => {
           </View>
           <CustomText style={[styles.progressLabel, { color: colors.icon }]}>
             Đã trả {Math.round(progress * 100)}% •{" "}
-            {loan.payment_type === "INSTALLMENT" && loan.total_installments
-              ? `${loan.paid_installments ?? 0}/${loan.total_installments} kỳ`
+            {loan.payment_type === "INSTALLMENT"
+              ? loan.total_installments && loan.total_installments > 0
+                ? `${loan.paid_installments ?? 0}/${loan.total_installments} kỳ`
+                : "Trả góp"
               : "Trả 1 lần"}
           </CustomText>
 
