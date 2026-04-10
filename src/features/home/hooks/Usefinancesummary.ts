@@ -3,7 +3,7 @@ import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
 import { financeSummaryRepository } from "@/services/repositories/financeSummary.repository";
 import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface ExpenseSummary {
   total: number;
@@ -155,6 +155,13 @@ export const useWalletOpeningClosingBalance = () => {
   const [data, setData] = useState<WalletOpeningClosingBalanceData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Store last params for refresh
+  const lastParams = useRef<{
+    period_type: string,
+    anchor_date: string,
+    type: string,
+    wallet_id?: number
+  } | null>(null);
 
   const fetchBalance = useCallback(
     async (params: {
@@ -163,6 +170,7 @@ export const useWalletOpeningClosingBalance = () => {
         type: string,
         wallet_id?: number
     }) => {
+      lastParams.current = params;
       setLoading(true);
       setError(null);
       try {
@@ -197,6 +205,22 @@ export const useWalletOpeningClosingBalance = () => {
     },
     []
   );
+
+  useEffect(() => {
+    const handleTransactionChanged = () => {
+      if (lastParams.current) {
+        fetchBalance(lastParams.current);
+      }
+    };
+
+    TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
+    CurrencyEventEmitter.onCurrencyChanged(handleTransactionChanged);
+
+    return () => {
+      TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
+      CurrencyEventEmitter.offCurrencyChanged(handleTransactionChanged);
+    };
+  }, [fetchBalance]);
 
   return {
     data,
@@ -291,6 +315,30 @@ export const useMonthlyChartData = (params?: {
 
   useEffect(() => {
     fetchChartData();
+  }, [fetchChartData]);
+
+  // Listen for currency changes
+  useEffect(() => {
+    const handleCurrencyChanged = () => {
+      fetchChartData();
+    };
+    CurrencyEventEmitter.onCurrencyChanged(handleCurrencyChanged);
+    return () => {
+      CurrencyEventEmitter.offCurrencyChanged(handleCurrencyChanged);
+    };
+  }, [fetchChartData]);
+
+  // Listen for transaction changes (create/update/delete)
+  useEffect(() => {
+    const handleTransactionChanged = () => {
+      fetchChartData();
+    };
+
+    TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
+
+    return () => {
+      TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
+    };
   }, [fetchChartData]);
 
   return {

@@ -6,7 +6,8 @@ import StorageService from "@/services/StorageService";
 import { AppInfo } from "@/types/UserCommand";
 import { WalletSummary } from "@/types/wallet"; // 🔹 ADD
 import { t } from "i18next";
-import React, {
+import TransactionEventEmitter from "@/services/TransactionEventEmitter";
+import {
   createContext,
   useCallback,
   useEffect,
@@ -315,6 +316,20 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (!appInfo?.user_code) return;
     fetchWallets(true);
+  }, [appInfo?.user_code]);
+
+  // 🔹 ADD — Listen for transaction changes to refresh wallets
+  useEffect(() => {
+    const handleTransactionChanged = () => {
+      if (appInfo?.user_code) {
+        fetchWallets(true);
+      }
+    };
+
+    TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
+    return () => {
+      TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
+    };
   }, [appInfo?.user_code]);
 
   return (

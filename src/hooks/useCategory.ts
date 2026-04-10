@@ -1,8 +1,10 @@
 import { AppConfig } from '@/config/AppConfig';
 import StorageKey from '@/constants/StorageKey';
+import CurrencyEventEmitter from '@/services/CurrencyEventEmitter';
 import { AnalyzeCategoryPayload, Category, categoryRepository, CreateCategoryPayload } from '@/services/repositories/category.repository';
 import StorageService from '@/services/StorageService';
-import { useCallback, useEffect, useState } from 'react';
+import TransactionEventEmitter from '@/services/TransactionEventEmitter';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseCategoryOptions {
   autoFetch?: boolean;
@@ -52,10 +54,14 @@ export const useTopSpendingCategories = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Lưu trữ params cuối cùng để dùng cho refresh khi có event
+  const lastParams = useRef({ period_type: 'M', take: 5 });
+
   const fetchTopCategories = useCallback(async (
     period_type: string = 'M',
     take: number = 5
   ) => {
+    lastParams.current = { period_type, take };
     setLoading(true);
     setError(null);
 
@@ -93,6 +99,21 @@ export const useTopSpendingCategories = () => {
       setLoading(false);
     }
   }, []);
+
+  // Lắng nghe sự thay đổi giao dịch
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchTopCategories(lastParams.current.period_type, lastParams.current.take);
+    };
+
+    TransactionEventEmitter.onTransactionChanged(handleRefresh);
+    CurrencyEventEmitter.onCurrencyChanged(handleRefresh);
+
+    return () => {
+      TransactionEventEmitter.offTransactionChanged(handleRefresh);
+      CurrencyEventEmitter.offCurrencyChanged(handleRefresh);
+    };
+  }, [fetchTopCategories]);
 
   return { data, loading, error, fetchTopCategories };
 };
