@@ -26,18 +26,23 @@ const formatDate = (dateStr: string) => {
   }
 };
 
-const daysBetween = (a: Date, b: Date) =>
-  Math.max(0, Math.ceil((b.getTime() - a.getTime()) / 86400000));
+const daysBetween = (a: Date, b: Date) => {
+  const d1 = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+  const d2 = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round((d2.getTime() - d1.getTime()) / 86400000);
+};
 
 // ─── Sparkline Chart ─────────────────────────────────────────────────────────────
 interface SparklineProps {
   data: { day: number; amount: number }[];
   lineColor: string;
   totalBudget: number;
+  maxDay?: number;
+  projectionAmount?: number;
 }
 
-const SparklineChart: React.FC<SparklineProps> = ({ data, lineColor, totalBudget }) => {
-  const CHART_W = SCREEN_WIDTH - wp(10);
+const SparklineChart: React.FC<SparklineProps> = ({ data, lineColor, totalBudget, maxDay: propMaxDay, projectionAmount }) => {
+  const CHART_W = SCREEN_WIDTH - wp(10) - normalize(32);
   const CHART_H = normalize(140);
   const PAD = normalize(12);
 
@@ -51,9 +56,9 @@ const SparklineChart: React.FC<SparklineProps> = ({ data, lineColor, totalBudget
     );
   }
 
-  const maxAmount = Math.max(totalBudget, ...data.map(d => d.amount));
-  const minDay = data[0].day;
-  const maxDay = data[data.length - 1].day;
+  const maxAmount = Math.max(totalBudget, projectionAmount || 0, ...data.map(d => d.amount));
+  const minDay = 0;
+  const maxDay = propMaxDay || data[data.length - 1].day || 1;
   const dayRange = maxDay - minDay || 1;
 
   const toX = (day: number) => PAD + ((day - minDay) / dayRange) * (CHART_W - 2 * PAD);
@@ -65,8 +70,19 @@ const SparklineChart: React.FC<SparklineProps> = ({ data, lineColor, totalBudget
     const y = toY(d.amount);
     return acc + (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
   }, '');
-  const filledPath = `${pathD} L ${toX(maxDay)} ${CHART_H - PAD} L ${toX(minDay)} ${CHART_H - PAD} Z`;
+  const filledPath = `${pathD} L ${toX(data[data.length - 1].day)} ${CHART_H - PAD} L ${toX(minDay)} ${CHART_H - PAD} Z`;
   const limitY = toY(totalBudget);
+
+  // Projection path
+  let projectionD = "";
+  if (projectionAmount !== undefined && data.length > 0 && maxDay > data[data.length - 1].day) {
+    const lastPoint = data[data.length - 1];
+    const startX = toX(lastPoint.day);
+    const startY = toY(lastPoint.amount);
+    const endX = toX(maxDay);
+    const endY = toY(projectionAmount);
+    projectionD = `M ${startX} ${startY} L ${endX} ${endY}`;
+  }
 
   return (
     <Svg width={CHART_W} height={CHART_H}>
@@ -79,6 +95,9 @@ const SparklineChart: React.FC<SparklineProps> = ({ data, lineColor, totalBudget
       <Line x1={PAD} y1={limitY} x2={CHART_W - PAD} y2={limitY}
         stroke="#FF6B6B" strokeWidth={1.5} strokeDasharray="5,4" strokeOpacity={0.7} />
       <Path d={filledPath} fill="url(#sparkGrad)" />
+      {projectionD ? (
+        <Path d={projectionD} fill="none" stroke={lineColor} strokeWidth={2} strokeDasharray="6,4" opacity={0.5} />
+      ) : null}
       <Polyline points={points} fill="none" stroke={lineColor}
         strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
     </Svg>
@@ -217,8 +236,9 @@ const BudgetDetailScreen = () => {
 
     // Only expense / debit transactions
     const expenses = transactions.filter((t: any) => {
-      const type = String(t.type || t.transaction_type || '').toUpperCase();
-      return type === 'EXPENSE' || type === '02' || Number(t.amount ?? 0) < 0;
+      const type = String(t.type || t.transaction_type || t.name || '').toUpperCase();
+      const amount = Number(t.amount ?? 0);
+      return type === 'EXPENSE' || type === '02' || amount < 0;
     });
 
     if (expenses.length === 0) return [];
@@ -344,7 +364,7 @@ const BudgetDetailScreen = () => {
                 <ActivityIndicator size="small" color={colors.tint} />
               </View>
             ) : (
-              <SparklineChart data={sparklineData} lineColor={colors.tint} totalBudget={total} />
+              <SparklineChart data={sparklineData} lineColor={colors.tint} totalBudget={total} maxDay={totalDays} projectionAmount={estimatedTotal} />
             )}
           </View>
           <View style={styles.chartAxisRow}>
@@ -407,8 +427,9 @@ const BudgetDetailScreen = () => {
               params: {
                 budgetId: budget.id || budget.budget_id,
                 walletId: budget.wallet_id,
-                categoryName: budget.categoryName,
-                transactions: JSON.stringify(transactions),
+                categoryName: budget.categoryName || budget.category_name || 'Ngân sách',
+                fromDate: budget.start_date,
+                toDate: budget.end_date,
               },
             })
           }
