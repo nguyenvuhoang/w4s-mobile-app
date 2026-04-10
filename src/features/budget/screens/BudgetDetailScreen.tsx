@@ -9,12 +9,19 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Defs, Line, LinearGradient, Path, Polyline, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Line, LinearGradient, Path, Polyline, Stop, Text as SvgText } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────────
 const formatMoney = (n: number, currency: string = 'đ') => `${n.toLocaleString('vi-VN')} ${currency}`;
+
+const formatMoneyShort = (n: number): string => {
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
+  return `${n}`;
+};
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '—';
@@ -41,10 +48,22 @@ interface SparklineProps {
   projectionAmount?: number;
 }
 
-const SparklineChart: React.FC<SparklineProps> = ({ data, lineColor, totalBudget, maxDay: propMaxDay, projectionAmount }) => {
+const SparklineChart: React.FC<SparklineProps> = ({
+  data,
+  lineColor,
+  totalBudget,
+  maxDay: propMaxDay,
+  projectionAmount,
+}) => {
   const CHART_W = SCREEN_WIDTH - wp(10) - normalize(32);
-  const CHART_H = normalize(140);
-  const PAD = normalize(12);
+  const CHART_H = normalize(170);
+  const PAD_TOP = normalize(12);
+  const PAD_BOTTOM = normalize(8);
+  const PAD_LEFT = normalize(52);   // room for Y-axis labels
+  const PAD_RIGHT = normalize(10);
+
+  const innerW = CHART_W - PAD_LEFT - PAD_RIGHT;
+  const innerH = CHART_H - PAD_TOP - PAD_BOTTOM;
 
   if (!data || data.length < 2) {
     return (
@@ -56,50 +75,147 @@ const SparklineChart: React.FC<SparklineProps> = ({ data, lineColor, totalBudget
     );
   }
 
-  const maxAmount = Math.max(totalBudget, projectionAmount || 0, ...data.map(d => d.amount));
-  const minDay = 0;
+  // ── Dimensions ───────────────────────────────────────────────────────────────
   const maxDay = propMaxDay || data[data.length - 1].day || 1;
-  const dayRange = maxDay - minDay || 1;
+  const currentDay = data[data.length - 1].day;          // today's day index
 
-  const toX = (day: number) => PAD + ((day - minDay) / dayRange) * (CHART_W - 2 * PAD);
-  const toY = (val: number) => PAD + (1 - val / maxAmount) * (CHART_H - 2 * PAD);
+  // Y-axis max: only based on budget & actual data — NOT projectionAmount
+  // (projection can exceed budget, but the scale stays anchored to the budget)
+  const rawMax = Math.max(
+    totalBudget,
+    ...data.map(d => d.amount),
+  );
+  const maxAmount = rawMax * 1.2;   // 20% headroom — budget line sits at ~83% height
 
-  const points = data.map(d => `${toX(d.day)},${toY(d.amount)}`).join(' ');
-  const pathD = data.reduce((acc, d, i) => {
-    const x = toX(d.day);
-    const y = toY(d.amount);
-    return acc + (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
-  }, '');
-  const filledPath = `${pathD} L ${toX(data[data.length - 1].day)} ${CHART_H - PAD} L ${toX(minDay)} ${CHART_H - PAD} Z`;
+  const toX = (day: number) => PAD_LEFT + (day / maxDay) * innerW;
+  const toY = (val: number) => PAD_TOP + (1 - val / maxAmount) * innerH;
+
+  const bottomY = PAD_TOP + innerH;
+
+  // ── Solid line (actual) ───────────────────────────────────────────────────────
+  const solidPoints = data.map(d => `${toX(d.day)},${toY(d.amount)}`).join(' ');
+
+  // Filled gradient area under solid line
+  const solidPathD = data.reduce(
+    (acc, d, i) =>
+      acc + (i === 0 ? `M ${toX(d.day)} ${toY(d.amount)}` : ` L ${toX(d.day)} ${toY(d.amount)}`),
+    '',
+  );
+  const filledPath = `${solidPathD} L ${toX(currentDay)} ${bottomY} L ${toX(0)} ${bottomY} Z`;
+
+  // ── Budget-limit dashed line ──────────────────────────────────────────────────
   const limitY = toY(totalBudget);
 
-  // Projection path
-  let projectionD = "";
-  if (projectionAmount !== undefined && data.length > 0 && maxDay > data[data.length - 1].day) {
-    const lastPoint = data[data.length - 1];
-    const startX = toX(lastPoint.day);
-    const startY = toY(lastPoint.amount);
-    const endX = toX(maxDay);
-    const endY = toY(projectionAmount);
-    projectionD = `M ${startX} ${startY} L ${endX} ${endY}`;
-  }
+  // ── Projection dashed line (today → end) ─────────────────────────────────────
+  const lastPoint = data[data.length - 1];
+  const projStartX = toX(lastPoint.day);
+  const projStartY = toY(lastPoint.amount);
+  const projEndX = toX(maxDay);
+  // Clamp projection Y: if estimatedTotal > maxAmount, pin to top of chart
+  const clampedProjAmount = projectionAmount !== undefined
+    ? Math.min(projectionAmount, maxAmount)
+    : undefined;
+  const projEndY = clampedProjAmount !== undefined ? toY(clampedProjAmount) : projStartY;
+  const projectionD =
+    projectionAmount !== undefined && maxDay > currentDay
+      ? `M ${projStartX} ${projStartY} L ${projEndX} ${projEndY}`
+      : '';
+
+  // ── Today vertical marker ─────────────────────────────────────────────────────
+  const todayX = toX(currentDay);
+  const todayDotY = toY(lastPoint.amount);
+
+  // ── Y-axis ticks (4 levels) ───────────────────────────────────────────────────
+  const yTicks = [0, 0.33, 0.66, 1].map(f => Math.round(maxAmount * f));
 
   return (
     <Svg width={CHART_W} height={CHART_H}>
       <Defs>
         <LinearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={lineColor} stopOpacity="0.3" />
+          <Stop offset="0" stopColor={lineColor} stopOpacity="0.22" />
           <Stop offset="1" stopColor={lineColor} stopOpacity="0" />
         </LinearGradient>
       </Defs>
-      <Line x1={PAD} y1={limitY} x2={CHART_W - PAD} y2={limitY}
-        stroke="#FF6B6B" strokeWidth={1.5} strokeDasharray="5,4" strokeOpacity={0.7} />
+
+      {/* ── Y-axis grid lines + labels ───────────────────────────── */}
+      {yTicks.map((tick, i) => {
+        const y = toY(tick);
+        return (
+          <React.Fragment key={i}>
+            <Line
+              x1={PAD_LEFT}
+              y1={y}
+              x2={CHART_W - PAD_RIGHT}
+              y2={y}
+              stroke="#888"
+              strokeWidth={0.5}
+              strokeOpacity={0.25}
+            />
+            <SvgText
+              x={PAD_LEFT - normalize(5)}
+              y={y + normalize(4)}
+              fontSize={normalize(9)}
+              fill="#888"
+              textAnchor="end"
+            >
+              {formatMoneyShort(tick)}
+            </SvgText>
+          </React.Fragment>
+        );
+      })}
+
+      {/* ── Budget-limit dashed line (red) ───────────────────────── */}
+      <Line
+        x1={PAD_LEFT}
+        y1={limitY}
+        x2={CHART_W - PAD_RIGHT}
+        y2={limitY}
+        stroke="#FF6B6B"
+        strokeWidth={1.5}
+        strokeDasharray="5,4"
+        strokeOpacity={0.75}
+      />
+
+      {/* ── Gradient fill under solid line ───────────────────────── */}
       <Path d={filledPath} fill="url(#sparkGrad)" />
+
+      {/* ── Projection dashed line ───────────────────────────────── */}
       {projectionD ? (
-        <Path d={projectionD} fill="none" stroke={lineColor} strokeWidth={2} strokeDasharray="6,4" opacity={0.5} />
+        <Path
+          d={projectionD}
+          fill="none"
+          stroke={lineColor}
+          strokeWidth={2}
+          strokeDasharray="7,5"
+          opacity={0.65}
+        />
       ) : null}
-      <Polyline points={points} fill="none" stroke={lineColor}
-        strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+
+      {/* ── Solid actual-spending line ────────────────────────────── */}
+      <Polyline
+        points={solidPoints}
+        fill="none"
+        stroke={lineColor}
+        strokeWidth={2.5}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+
+      {/* ── Today vertical guide ──────────────────────────────────── */}
+      <Line
+        x1={todayX}
+        y1={PAD_TOP}
+        x2={todayX}
+        y2={bottomY}
+        stroke={lineColor}
+        strokeWidth={1}
+        strokeDasharray="3,3"
+        strokeOpacity={0.4}
+      />
+
+      {/* ── Today dot ────────────────────────────────────────────── */}
+      <Circle cx={todayX} cy={todayDotY} r={normalize(6)} fill={lineColor} fillOpacity={0.2} />
+      <Circle cx={todayX} cy={todayDotY} r={normalize(3.5)} fill={lineColor} />
     </Svg>
   );
 };
@@ -197,14 +313,20 @@ const BudgetDetailScreen = () => {
   const dailyPace = daysElapsed > 0 ? spent / daysElapsed : 0;
   const estimatedTotal = dailyPace * totalDays;
 
-
   const accentColor = budget.iconColor || colors.tint;
   const progressFillColor = isOverBudget ? '#FF6B6B' : accentColor;
 
-  // Resolve wallet name & currency using the hook
   const walletObj = budget.wallet_id ? getWalletById(Number(budget.wallet_id)) : null;
   const currency = walletObj?.currency || 'đ';
-  const displayWalletName = budget.walletName || budget.wallet_name || walletObj?.name || (budget.wallet_id === 'all' ? 'Tất cả các ví' : (budget.wallet_id ? `Ví #${budget.wallet_id}` : 'Tất cả các ví'));
+  const displayWalletName =
+    budget.walletName ||
+    budget.wallet_name ||
+    walletObj?.name ||
+    (budget.wallet_id === 'all'
+      ? 'Tất cả các ví'
+      : budget.wallet_id
+        ? `Ví #${budget.wallet_id}`
+        : 'Tất cả các ví');
 
   // ─── Fetch transactions & build real sparkline ──────────────────────────────
   useEffect(() => {
@@ -234,16 +356,26 @@ const BudgetDetailScreen = () => {
   const sparklineData = useMemo(() => {
     if (!startDate || !endDate || transactions.length === 0) return [];
 
-    // Only expense / debit transactions
     const expenses = transactions.filter((t: any) => {
       const type = String(t.type || t.transaction_type || t.name || '').toUpperCase();
       const amount = Number(t.amount ?? 0);
       return type === 'EXPENSE' || type === '02' || amount < 0;
     });
 
-    if (expenses.length === 0) return [];
+    if (expenses.length === 0) {
+      // Fallback: no matching expense transactions but we do have a spent value
+      // → draw a straight line from 0 to spent at today's position
+      if (spent > 0) {
+        const today = now > endDate ? endDate : now;
+        const todayIdx = daysBetween(startDate, today);
+        return [
+          { day: 0, amount: 0 },
+          { day: todayIdx, amount: spent },
+        ];
+      }
+      return [];
+    }
 
-    // Group by day index from start_date
     const dayMap: Record<number, number> = {};
     expenses.forEach((t: any) => {
       const tDate = new Date(t.recorded_at || t.transaction_date || t.created_at);
@@ -251,7 +383,7 @@ const BudgetDetailScreen = () => {
       dayMap[dayIdx] = (dayMap[dayIdx] || 0) + Math.abs(Number(t.amount ?? 0));
     });
 
-    // Build cumulative points
+    // Cumulative from day 0 → today (capped at endDate)
     const today = now > endDate ? endDate : now;
     const totalDayCount = daysBetween(startDate, today);
     const points: { day: number; amount: number }[] = [];
@@ -260,6 +392,18 @@ const BudgetDetailScreen = () => {
       cumulative += dayMap[i] || 0;
       points.push({ day: i, amount: cumulative });
     }
+
+    // ── Normalize: pin the final point to budget.spent ──────────────────────
+    // Transactions summed independently may differ from the authoritative
+    // spent value on the budget object (rounding, type filters, etc.).
+    // Scale all points proportionally so the curve shape is preserved
+    // but the endpoint always matches reality.
+    const rawTotal = points[points.length - 1]?.amount ?? 0;
+    if (rawTotal > 0 && Math.abs(rawTotal - spent) > 1) {
+      const scale = spent / rawTotal;
+      return points.map(p => ({ day: p.day, amount: p.amount * scale }));
+    }
+
     return points;
   }, [transactions, startDate, endDate]);
 
@@ -271,7 +415,6 @@ const BudgetDetailScreen = () => {
         {/* ── 1. Budget Header Card ─────────────────────────────────────────────── */}
         <View style={[styles.headerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.categoryRow}>
-            {/* Icon nhỏ dùng accentColor làm màu icon, nền mờ */}
             <View style={[styles.iconCircle, { backgroundColor: accentColor + '22' }]}>
               <FontAwesome6 name={budget.icon || 'wallet'} size={normalize(24)} color={accentColor} />
             </View>
@@ -292,7 +435,6 @@ const BudgetDetailScreen = () => {
             )}
           </View>
 
-          {/* Progress bar — fill dùng accentColor, track dùng colors.border */}
           <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
             <View style={[styles.progressBarFill, { width: `${percentage}%`, backgroundColor: progressFillColor }]} />
           </View>
@@ -300,7 +442,6 @@ const BudgetDetailScreen = () => {
             {percentage.toFixed(1)}% đã sử dụng
           </CustomText>
 
-          {/* Amount row — nền colors.background, text theo theme */}
           <View style={[styles.amountRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <View style={styles.amountBlock}>
               <CustomText style={[styles.amountLabel, { color: colors.icon }]}>Tổng ngân sách</CustomText>
@@ -340,7 +481,7 @@ const BudgetDetailScreen = () => {
               iconBg={daysLeft <= 3 ? '#FF6B6B18' : colors.tint + '18'}
               iconColor={daysLeft <= 3 ? '#FF6B6B' : colors.tint}
               textColor={colors.text} subColor={colors.icon} />
-            <InfoRow icon={walletObj?.icon || "wallet"} label="Ví"
+            <InfoRow icon={walletObj?.icon || 'wallet'} label="Ví"
               value={displayWalletName}
               iconBg={colors.tint + '18'} iconColor={colors.tint}
               textColor={colors.text} subColor={colors.icon} />
@@ -349,30 +490,53 @@ const BudgetDetailScreen = () => {
 
         {/* ── 3. Spending Chart ─────────────────────────────────────────────────── */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {/* Header + legend */}
           <View style={styles.chartHeader}>
             <CustomText style={[styles.sectionTitle, { color: colors.text }]}>Xu hướng chi tiêu</CustomText>
             <View style={styles.legendRow}>
-              <View style={[styles.legendDot, { backgroundColor: colors.tint }]} />
-              <CustomText style={[styles.legendLabel, { color: colors.icon }]}>Chi tiêu</CustomText>
-              <View style={[styles.legendDot, { backgroundColor: '#FF6B6B' }]} />
+              {/* Solid line legend */}
+              <View style={[styles.legendLine, { backgroundColor: colors.tint }]} />
+              <CustomText style={[styles.legendLabel, { color: colors.icon }]}>Thực tế</CustomText>
+              {/* Dashed line legend */}
+              <View style={styles.legendDashedContainer}>
+                <View style={[styles.legendDash, { backgroundColor: colors.tint }]} />
+                <View style={[styles.legendDashGap]} />
+                <View style={[styles.legendDash, { backgroundColor: colors.tint }]} />
+              </View>
+              <CustomText style={[styles.legendLabel, { color: colors.icon }]}>Dự đoán</CustomText>
+              {/* Budget limit legend */}
+              <View style={[styles.legendLine, { backgroundColor: '#FF6B6B' }]} />
               <CustomText style={[styles.legendLabel, { color: colors.icon }]}>Giới hạn</CustomText>
             </View>
           </View>
+
+          {/* Chart */}
           <View style={{ marginTop: normalize(8) }}>
             {chartLoading ? (
-              <View style={{ height: normalize(140), alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ height: normalize(170), alignItems: 'center', justifyContent: 'center' }}>
                 <ActivityIndicator size="small" color={colors.tint} />
               </View>
             ) : (
-              <SparklineChart data={sparklineData} lineColor={colors.tint} totalBudget={total} maxDay={totalDays} projectionAmount={estimatedTotal} />
+              <SparklineChart
+                data={sparklineData}
+                lineColor={colors.tint}
+                totalBudget={total}
+                maxDay={totalDays}
+                projectionAmount={estimatedTotal}
+              />
             )}
           </View>
+
+          {/* X-axis labels: Đầu kì — Hôm nay — Cuối kì */}
           <View style={styles.chartAxisRow}>
             <CustomText style={[styles.axisLabel, { color: colors.icon }]}>
-              {startDate ? formatDate(budget.start_date) : 'Bắt đầu'}
+              {startDate ? formatDate(budget.start_date) : 'Đầu kì'}
+            </CustomText>
+            <CustomText style={[styles.axisLabelToday, { color: colors.tint }]}>
+              ● Hôm nay
             </CustomText>
             <CustomText style={[styles.axisLabel, { color: colors.icon }]}>
-              {endDate ? formatDate(budget.end_date) : 'Kết thúc'}
+              {endDate ? formatDate(budget.end_date) : 'Cuối kì'}
             </CustomText>
           </View>
         </View>
@@ -418,7 +582,7 @@ const BudgetDetailScreen = () => {
           </View>
         </View>
 
-        {/* ── 6. Transaction List Button — dùng colors.tint chuẩn app ─────────── */}
+        {/* ── 6. Transaction List Button ────────────────────────────────────────── */}
         <TouchableOpacity
           style={[styles.transactionBtn, { backgroundColor: colors.tint }]}
           onPress={() =>
@@ -471,11 +635,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoryName: {
-    fontSize: normalize(18),
-    fontWeight: '700',
-    marginBottom: normalize(2),
-  },
+  categoryName: { fontSize: normalize(18), fontWeight: '700', marginBottom: normalize(2) },
   noteText: { fontSize: normalize(13) },
   overBadge: {
     backgroundColor: '#FF6B6B',
@@ -484,12 +644,7 @@ const styles = StyleSheet.create({
     borderRadius: normalize(8),
   },
   overBadgeText: { color: '#fff', fontSize: normalize(11), fontWeight: '700' },
-  progressBarBg: {
-    height: normalize(8),
-    borderRadius: normalize(4),
-    marginBottom: normalize(6),
-    overflow: 'hidden',
-  },
+  progressBarBg: { height: normalize(8), borderRadius: normalize(4), marginBottom: normalize(6), overflow: 'hidden' },
   progressBarFill: { height: '100%', borderRadius: normalize(4) },
   progressPercent: { fontSize: normalize(12), marginBottom: normalize(14) },
   amountRow: {
@@ -517,43 +672,36 @@ const styles = StyleSheet.create({
 
   infoGrid: { gap: normalize(12) },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: normalize(12) },
-  infoIconBox: {
-    width: normalize(36), height: normalize(36),
-    borderRadius: normalize(10), alignItems: 'center', justifyContent: 'center',
-  },
+  infoIconBox: { width: normalize(36), height: normalize(36), borderRadius: normalize(10), alignItems: 'center', justifyContent: 'center' },
   infoLabel: { fontSize: normalize(11), marginBottom: normalize(1) },
   infoValue: { fontSize: normalize(14), fontWeight: '600' },
 
-  chartHeader: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: normalize(4),
-  },
+  chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: normalize(4) },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: normalize(4) },
-  legendDot: { width: normalize(8), height: normalize(8), borderRadius: normalize(4) },
-  legendLabel: { fontSize: normalize(11), marginRight: normalize(6) },
+  legendLine: { width: normalize(14), height: normalize(2.5), borderRadius: normalize(2) },
+  legendDashedContainer: { flexDirection: 'row', alignItems: 'center', gap: 0 },
+  legendDash: { width: normalize(5), height: normalize(2.5), borderRadius: normalize(1) },
+  legendDashGap: { width: normalize(3) },
+  legendLabel: { fontSize: normalize(10), marginRight: normalize(5) },
   chartAxisRow: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    marginTop: normalize(4), paddingHorizontal: normalize(6),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: normalize(6),
+    paddingHorizontal: normalize(2),
   },
-  axisLabel: { fontSize: normalize(11) },
+  axisLabel: { fontSize: normalize(10) },
+  axisLabelToday: { fontSize: normalize(10), fontWeight: '600' },
 
   recommendRow: { flexDirection: 'row', alignItems: 'flex-start', gap: normalize(14) },
-  recommendIcon: {
-    width: normalize(40), height: normalize(40),
-    borderRadius: normalize(12), alignItems: 'center', justifyContent: 'center',
-    marginTop: normalize(2),
-  },
+  recommendIcon: { width: normalize(40), height: normalize(40), borderRadius: normalize(12), alignItems: 'center', justifyContent: 'center', marginTop: normalize(2) },
   recommendTitle: { fontSize: normalize(12), fontWeight: '500', marginBottom: normalize(4) },
   recommendAmount: { fontSize: normalize(20), fontWeight: '700', marginBottom: normalize(2) },
   recommendSub: { fontSize: normalize(12), lineHeight: normalize(18) },
 
   summaryGrid: { flexDirection: 'row', gap: normalize(10) },
   summaryBlock: { flex: 1, alignItems: 'center' },
-  summaryIconBox: {
-    width: normalize(44), height: normalize(44),
-    borderRadius: normalize(14), alignItems: 'center', justifyContent: 'center',
-    marginBottom: normalize(8),
-  },
+  summaryIconBox: { width: normalize(44), height: normalize(44), borderRadius: normalize(14), alignItems: 'center', justifyContent: 'center', marginBottom: normalize(8) },
   summaryLabel: { fontSize: normalize(11), textAlign: 'center', marginBottom: normalize(4) },
   summaryValue: { fontSize: normalize(12), fontWeight: '700', textAlign: 'center', marginBottom: normalize(2) },
   summaryNote: { fontSize: normalize(10), textAlign: 'center' },
