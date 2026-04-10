@@ -9,6 +9,8 @@ import { useCategory } from '@/hooks/useCategory';
 import StorageService from '@/services/StorageService';
 import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
+import { useReport } from '../hooks/useReport';
+
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -66,13 +68,9 @@ const parseCategoryName = (nameJson: string, lang: string = 'vi'): string => {
   }
 };
 
-const MOCK_DEBT_DETAILS = [
-  { label: 'Nợ', amount: 0 },
-  { label: 'Cho vay', amount: 0 },
-  { label: 'Khác', amount: 0 },
-];
 
 /* ================= SCREEN ================= */
+
 
 import { useWalletOpeningClosingBalance } from '@/features/home/hooks/Usefinancesummary';
 
@@ -84,32 +82,39 @@ const ReportScreen = () => {
 
   const { fetchBalance, data: balanceData, loading: balanceLoading } = useWalletOpeningClosingBalance();
   const { analyzeCategory, categoryAnalysis, analyzing } = useCategory({ autoFetch: false });
+  const { fetchMonthlyDebitSummary, debitSummary, loading: debitLoading } = useReport();
 
-  // Initialize selected wallet with default wallet or first wallet
   useEffect(() => {
-    if (!selectedWallet && wallets.length > 0) {
-      setSelectedWallet(defaultWallet || wallets[0]);
+    if (!loading && wallets.length > 0 && !selectedWallet) {
+      const initialWallet = defaultWallet || wallets[0];
+      setSelectedWallet(initialWallet);
     }
-  }, [wallets, defaultWallet, selectedWallet]);
+  }, [loading, wallets, defaultWallet, selectedWallet]);
 
   useEffect(() => {
-    if (selectedWallet && selectedPeriod) {
+    if (selectedWallet?.walletId && selectedPeriod?.date) {
+      console.log('[ReportScreen] Fetching data for wallet:', selectedWallet.walletId, 'period:', selectedPeriod.date);
+
       fetchBalance({
         period_type: 'M',
         anchor_date: selectedPeriod.date,
         type: 'W',
         wallet_id: selectedWallet.walletId
       });
-      // Gọi API phân tích category theo ví đang chọn
+
       analyzeCategory({
         wallet_id: selectedWallet.walletId,
         anchor_date: selectedPeriod.date,
         period_type: 'M',
       });
-    }
-  }, [selectedWallet, selectedPeriod]);
 
-  // Handle wallet selection from WalletListScreen
+      fetchMonthlyDebitSummary({
+        wallet_id: selectedWallet.walletId,
+        anchor_date: selectedPeriod.date.slice(0, 7),
+      });
+    }
+  }, [selectedWallet?.walletId, selectedPeriod?.id, fetchBalance, analyzeCategory, fetchMonthlyDebitSummary]);
+
   useFocusEffect(
     useCallback(() => {
       const loadSelectedWallet = async () => {
@@ -312,14 +317,22 @@ const ReportScreen = () => {
 
         {/* ===== DEBT SECTION ===== */}
         <View style={[styles.debtCard, { backgroundColor: colors.card }]}>
-          {MOCK_DEBT_DETAILS.map((item, index) => (
-            <View key={index} style={styles.debtRow}>
-              <CustomText size={14}>{item.label}</CustomText>
-              <CustomText type="medium" size={14}>
-                {formatCurrency(item.amount)}
-              </CustomText>
-            </View>
-          ))}
+          {debitLoading ? (
+            <CustomText size={14} style={{ textAlign: 'center' }}>Đang tải...</CustomText>
+          ) : (
+            debitSummary.length > 0 ? (
+              debitSummary.map((item, index) => (
+                <View key={index} style={styles.debtRow}>
+                  <CustomText size={14}>{item.label}</CustomText>
+                  <CustomText type="medium" size={14}>
+                    {formatCurrency(item.amount)}
+                  </CustomText>
+                </View>
+              ))
+            ) : (
+              <CustomText size={14} style={{ textAlign: 'center', opacity: 0.5 }}>Không có dữ liệu công nợ</CustomText>
+            )
+          )}
         </View>
 
         <SectionHeader

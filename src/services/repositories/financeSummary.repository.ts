@@ -154,5 +154,30 @@ export const financeSummaryRepository = {
       throw error;
     }
   },
+
+  async getMonthlyDebitSummary(params: {
+    usercode: string;
+    anchor_date: string;
+    wallet_id?: number;
+  }): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_WALLET_MONTHLY_DEBIT_SUMMARY,
+        {
+          usercode: params.usercode,
+          anchor_date: params.anchor_date,
+          wallet_id: params.wallet_id,
+        },
+        false,
+        true,
+      );
+    } catch (error) {
+      console.error(
+        "[financeSummaryRepository] Error fetching monthly debit summary:",
+        error,
+      );
+      throw error;
+    }
+  },
 };
 

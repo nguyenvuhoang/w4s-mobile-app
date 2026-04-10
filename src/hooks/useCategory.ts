@@ -214,7 +214,7 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
     }
   };
 
-  const analyzeCategory = async (payload: Omit<AnalyzeCategoryPayload, 'usercode'>) => {
+  const analyzeCategory = useCallback(async (payload: Omit<AnalyzeCategoryPayload, 'usercode'>) => {
     setAnalyzing(true);
     setError(null);
 
@@ -240,7 +240,7 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
     } finally {
       setAnalyzing(false);
     }
-  };
+  }, []);
 
   const refetch = () => {
     console.log('[useCategory] Force refresh');
