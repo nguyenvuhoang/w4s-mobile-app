@@ -1,11 +1,11 @@
 import StorageKey from "@/constants/StorageKey";
+import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
+import { useCategory } from "@/hooks/useCategory";
 import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
 import { transactionRepository } from "@/services/repositories/transaction.repository";
 import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
-import { useCategory } from "@/hooks/useCategory";
 
 interface UseEventTransactionsReturn {
     transactions: RecentTransaction[];
@@ -30,7 +30,7 @@ export const useEventTransactions = (
     pageSize: number = 20,
 ): UseEventTransactionsReturn => {
     const { categories } = useCategory();
-    const [transactions, setTransactions] = useState<RecentTransaction[]>([]);
+    const [rawTransactions, setRawTransactions] = useState<RecentTransaction[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [totalIncome, setTotalIncome] = useState(0);
     const [totalExpense, setTotalExpense] = useState(0);
@@ -39,6 +39,26 @@ export const useEventTransactions = (
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [noMoreData, setNoMoreData] = useState(false);
+
+    /**
+     * Memoized transactions with category information enriched.
+     * This ensures that when categories load, the transactions list updates
+     * automatically without needing a re-fetch.
+     */
+    const enrichedTransactions = useMemo(() => {
+        return rawTransactions.map((t) => {
+            const category = categories.find((c) => c.id === t.category_id);
+            if (category) {
+                return {
+                    ...t,
+                    category_name: category.category_name,
+                    icon: category.icon,
+                    color: category.color,
+                };
+            }
+            return t;
+        });
+    }, [rawTransactions, categories]);
 
     const fetchTransactions = useCallback(async (pageIndex: number, append: boolean = false) => {
         try {
@@ -76,9 +96,6 @@ export const useEventTransactions = (
                     const amount = Number(item.amount || 0);
                     const rawType = String(item.type || item.transaction_type || "").toUpperCase();
                     
-                    // Look up category info from cache
-                    const category = categories.find(c => c.id === item.category_id);
-
                     // Determine type: INCOME, EXPENSE, or LOAN
                     let type = "EXPENSE";
                     if (rawType === "INCOME" || rawType === "01") {
@@ -99,13 +116,13 @@ export const useEventTransactions = (
                         transaction_id: item.transaction_id || item.id?.toString() || "",
                         type,
                         category_id: item.category_id || 0,
-                        category_name: category?.category_name || item.category_name || "",
+                        category_name: item.category_name || "",
                         title: item.name || item.title || item.transaction_description || "Transaction",
                         amount: Math.abs(amount),
                         currency: item.currency || "",
                         occurred_at: item.transaction_date || item.occurred_at || item.recorded_at || new Date().toISOString(),
-                        icon: category?.icon || item.icon || "",
-                        color: category?.color || item.color || "",
+                        icon: item.icon || "",
+                        color: item.color || "",
                         description: item.description || item.transaction_description || "",
                     };
                 });
@@ -133,9 +150,9 @@ export const useEventTransactions = (
                 }
 
                 if (append) {
-                    setTransactions(prev => [...prev, ...mappedTransactions]);
+                    setRawTransactions(prev => [...prev, ...mappedTransactions]);
                 } else {
-                    setTransactions(mappedTransactions);
+                    setRawTransactions(mappedTransactions);
                 }
                 setTotalCount(total);
                 setCurrentPage(pageIndex);
@@ -151,7 +168,7 @@ export const useEventTransactions = (
             setLoading(false);
             setLoadingMore(false);
         }
-    }, [eventId, pageSize, categories]);
+    }, [eventId, pageSize]);
 
     const refresh = useCallback(async () => {
         await fetchTransactions(1, false);
@@ -161,12 +178,12 @@ export const useEventTransactions = (
         if (loadingMore || loading) return;
         
         const nextPage = currentPage + 1;
-        const hasMoreData = transactions.length < totalCount;
+        const hasMoreData = rawTransactions.length < totalCount;
         
         if (hasMoreData) {
             await fetchTransactions(nextPage, true);
         }
-    }, [currentPage, transactions.length, totalCount, loadingMore, loading, fetchTransactions]);
+    }, [currentPage, rawTransactions.length, totalCount, loadingMore, loading, fetchTransactions]);
 
     useEffect(() => {
         fetchTransactions(1, false);
@@ -191,10 +208,10 @@ export const useEventTransactions = (
         };
     }, [refresh]);
 
-    const hasMore = !noMoreData && transactions.length < totalCount;
+    const hasMore = !noMoreData && rawTransactions.length < totalCount;
 
     return {
-        transactions,
+        transactions: enrichedTransactions,
         totalCount,
         totalIncome,
         totalExpense,

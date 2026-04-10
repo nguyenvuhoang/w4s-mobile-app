@@ -102,8 +102,22 @@ export const parseMultilingualCategoryName = (
   }
 };
 
+/**
+ * Loại bỏ dấu tiếng Việt khỏi chuỗi
+ * @param str - Chuỗi cần loại bỏ dấu
+ * @returns Chuỗi không dấu
+ */
+export const removeAccents = (str: string): string => {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+};
+
 export default {
   translateText,
   createMultilingualCategoryName,
   parseMultilingualCategoryName,
+  removeAccents,
 };

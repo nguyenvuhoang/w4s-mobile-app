@@ -11,6 +11,7 @@ import {
   useTopSpendingCategories
 } from "@/features/home/hooks/useTopSpendingCategories";
 import { styles } from "@/features/home/styles/HomeScreen.Style";
+import FeatureSearchModal from "@/components/modals/FeatureSearchModal";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { getValidIconName } from "@/utils/iconMapper";
 import { hp, normalize } from "@/utils/layout";
@@ -54,6 +55,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   } = useTopSpendingCategories("M", 5);
 
   const [refreshing, setRefreshing] = React.useState(false);
+  const [isSearchVisible, setSearchVisible] = React.useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -332,7 +334,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.searchBar}
-          onPress={handleFeatureDeveloping}
+          onPress={() => setSearchVisible(true)}
           activeOpacity={0.7}
         >
           <Ionicons name="search" size={normalize(20)} color={colors.text} style={{ opacity: 0.5 }} />
@@ -651,6 +653,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
         <View style={{ height: hp(2) }} />
       </ScrollView>
+
+      <FeatureSearchModal
+        isVisible={isSearchVisible}
+        onClose={() => setSearchVisible(false)}
+      />
     </SafeAreaView>
   );
 };

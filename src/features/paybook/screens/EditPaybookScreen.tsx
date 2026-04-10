@@ -515,7 +515,7 @@ const EditPaybookScreen = () => {
           </View>
 
           {/* ══════════════════════════════════════════════════════════════
-              5. HÌNH THỨC THANH TOÁN
+              5. HÌNH THỨC THANH TOÁN (Disabled in Edit)
           ══════════════════════════════════════════════════════════════ */}
           <SectionHeader title="Hình thức thanh toán" />
           <View style={styles.section}>
@@ -523,14 +523,17 @@ const EditPaybookScreen = () => {
               {PAYMENT_TYPES.map((pt) => {
                 const isActive = paymentType === pt.key;
                 return (
-                  <TouchableOpacity
+                  <View
                     key={pt.key}
                     style={[
                       styles.paymentChip,
-                      { flex: 1, backgroundColor: isActive ? `${accentColor}18` : colors.card, borderColor: isActive ? accentColor : colors.border },
+                      { 
+                        flex: 1, 
+                        backgroundColor: isActive ? `${accentColor}10` : colors.card, 
+                        borderColor: isActive ? `${accentColor}50` : colors.border,
+                        opacity: isActive ? 1 : 0.5
+                      },
                     ]}
-                    onPress={() => setPaymentType(pt.key)}
-                    activeOpacity={0.7}
                   >
                     <FontAwesome6
                       name={pt.icon as any}
@@ -542,13 +545,11 @@ const EditPaybookScreen = () => {
                       {pt.label}
                     </CustomText>
                     <CustomText style={[styles.chipDesc, { color: colors.icon }]}>{pt.desc}</CustomText>
-                  </TouchableOpacity>
+                  </View>
                 );
               })}
             </View>
           </View>
-
-          {/* Số kỳ trả (chỉ hiện khi INSTALLMENT) */}
           {paymentType === "INSTALLMENT" && (
             <View style={styles.section}>
               <CustomText style={[styles.label, { color: colors.text }]}>
@@ -605,14 +606,16 @@ const EditPaybookScreen = () => {
               {INTEREST_CALC_METHODS.map((cm) => {
                 const isActive = interestCalcMethod === cm.key;
                 return (
-                  <TouchableOpacity
+                  <View
                     key={cm.key}
                     style={[
                       styles.optionRow,
-                      { backgroundColor: colors.card, borderColor: isActive ? accentColor : colors.border },
+                      { 
+                        backgroundColor: colors.card, 
+                        borderColor: isActive ? `${accentColor}40` : colors.border,
+                        opacity: isActive ? 1 : 0.5
+                      },
                     ]}
-                    onPress={() => setInterestCalcMethod(cm.key)}
-                    activeOpacity={0.7}
                   >
                     <View style={[styles.radioCircle, { borderColor: isActive ? accentColor : colors.border }]}>
                       {isActive && <View style={[styles.radioFill, { backgroundColor: accentColor }]} />}
@@ -621,7 +624,7 @@ const EditPaybookScreen = () => {
                       <CustomText style={[styles.optionLabel, { color: colors.text }]}>{cm.label}</CustomText>
                       <CustomText style={[styles.optionDesc, { color: colors.icon }]}>{cm.desc}</CustomText>
                     </View>
-                  </TouchableOpacity>
+                  </View>
                 );
               })}
             </View>
