@@ -117,6 +117,38 @@ export const useProfile = () => {
     }
   };
 
+  const uploadAvatar = async (imageUri: string) => {
+    setUpdating(true);
+    setError(null);
+    try {
+      const code = await StorageService.getAsyncItem(StorageKey.userCode);
+      if (!code) throw new Error('Missing user code');
+
+      const response = await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_CHANGE_AVATAR,
+        { user_code: code, avatar: imageUri },
+        false,
+        true
+      );
+
+      if (!response.isSuccess()) {
+        throw new Error(response.getError?.() || 'Failed to upload avatar');
+      }
+
+      // Refresh profile immediately upon successful upload
+      await getUserProfile(String(code));
+      
+      return response;
+    } catch (err: any) {
+      const message = err.message || 'Lỗi khi tải ảnh lên';
+      setError(message);
+      console.error('[useProfile] uploadAvatar failed', err);
+      throw err;
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   return {
     loading,
     updating,

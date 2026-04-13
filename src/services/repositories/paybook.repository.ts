@@ -9,9 +9,26 @@ export type LoanType = "LEND" | "BORROW";
 export type CounterpartyType = "INDIVIDUAL" | "MERCHANT";
 export type InterestRateType = "FIXED" | "FLOATING";
 export type InterestCalcMethod = "REDUCING" | "FLAT";
-export type PaymentType = "INSTALLMENT" | "BULLET";
+export type PaymentType = "INSTALLMENT" | "ONE_TIME";
 
 // ─── Create Payload ──────────────────────────────────────────────────────────
+
+export type PeriodUnit = "DAY" | "WEEK" | "MONTH" | "QUARTER" | "YEAR";
+
+export interface FloatingRatePeriod {
+  from_installment: number; // áp dụng từ kỳ này
+  rate: number;             // %/năm
+}
+
+export interface LoanScheduleItem {
+  installment_no: number;
+  from_date: string;
+  to_date: string;
+  due_date: string;
+  principal_due_amount: number;
+  interest_due_amount?: number;
+  note?: string;
+}
 
 export interface CreateLoanPayload {
   wallet_id: number;
@@ -28,7 +45,8 @@ export interface CreateLoanPayload {
   start_date: string;
   maturity_date: string;
   payment_type: PaymentType;
-  total_installments?: number;
+  /** Lịch trả nợ — bắt buộc nếu payment_type = INSTALLMENT, tự sinh client-side */
+  schedules?: LoanScheduleItem[];
   note?: string;
 }
 
@@ -76,8 +94,8 @@ export const paybookRepository = {
           start_date: payload.start_date,
           maturity_date: payload.maturity_date,
           payment_type: payload.payment_type,
-          total_installments: payload.total_installments ?? null,
-          note: payload.note ?? "",
+          ...(payload.schedules?.length ? { schedules: payload.schedules } : {}),
+          ...(payload.note ? { note: payload.note } : {}),
         },
         false,
         true

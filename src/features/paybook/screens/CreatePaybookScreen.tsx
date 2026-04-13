@@ -1,17 +1,21 @@
-import AppHeader from "@/components/base/AppHeader";
+﻿import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
 import { Fonts } from "@/core/theme/font";
 import { useAppTheme } from "@/core/theme/ThemeContext";
+import { FloatingSchedulePreview } from "@/features/paybook/components/FloatingSchedulePreview";
 import { usePaybookDetail } from "@/features/paybook/hooks/usePaybook";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import {
   type CounterpartyType,
+  type FloatingRatePeriod,
   type InterestCalcMethod,
   type InterestRateType,
+  type LoanScheduleItem,
   type LoanType,
   type PaymentType,
+  type PeriodUnit,
 } from "@/services/repositories/paybook.repository";
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
@@ -63,10 +67,18 @@ const COUNTERPARTY_TYPES: { key: CounterpartyType; label: string; icon: string }
   // { key: "MERCHANT", label: "Doanh nghiệp", icon: "building" },
 ];
 
-// const INTEREST_RATE_TYPES: { key: InterestRateType; label: string }[] = [
-//   { key: "FIXED", label: "Cố định" },
-//   { key: "FLOATING", label: "Thả nổi" },
-// ];
+const INTEREST_RATE_TYPES: { key: InterestRateType; label: string; icon: string; desc: string }[] = [
+  { key: "FIXED", label: "Cố định", icon: "lock", desc: "Lãi suất không đổi" },
+  { key: "FLOATING", label: "Thả nổi", icon: "wave-square", desc: "Lãi theo từng giai đoạn" },
+];
+
+const PERIOD_UNITS: { key: PeriodUnit; label: string }[] = [
+  { key: "DAY", label: "Ngày" },
+  { key: "WEEK", label: "Tuần" },
+  { key: "MONTH", label: "Tháng" },
+  { key: "QUARTER", label: "Quý" },
+  { key: "YEAR", label: "Năm" },
+];
 
 const INTEREST_CALC_METHODS: { key: InterestCalcMethod; label: string; desc: string }[] = [
   { key: "REDUCING", label: "Dư nợ giảm dần", desc: "Lãi tính trên số dư còn lại" },
@@ -85,6 +97,79 @@ const DEFAULT_INTEREST_RATE = "0";
 const DEFAULT_INTEREST_RATE_TYPE: InterestRateType = "FIXED";
 const DEFAULT_INTEREST_CALC_METHOD: InterestCalcMethod = "REDUCING";
 const DEFAULT_PAYMENT_TYPE: PaymentType = "BULLET";
+// ─── Schedule generation helpers ─────────────────────────────────────────────
+
+const PERIOD_MONTHS_MAP: Record<PeriodUnit, number> = {
+  DAY: 1 / 30,
+  WEEK: 7 / 30,
+  MONTH: 1,
+  QUARTER: 3,
+  YEAR: 12,
+};
+
+function addPeriod(date: Date, unit: PeriodUnit, count = 1): Date {
+  const d = new Date(date);
+  switch (unit) {
+    case "DAY": d.setDate(d.getDate() + count); break;
+    case "WEEK": d.setDate(d.getDate() + count * 7); break;
+    case "MONTH": d.setMonth(d.getMonth() + count); break;
+    case "QUARTER": d.setMonth(d.getMonth() + count * 3); break;
+    case "YEAR": d.setFullYear(d.getFullYear() + count); break;
+  }
+  return d;
+}
+
+function generateSchedules(
+  principal: number,
+  totalInstallments: number,
+  startDate: Date,
+  periodUnit: PeriodUnit,
+  interestEnabled: boolean,
+  interestRate: number,
+  interestRateType: InterestRateType,
+  calcMethod: InterestCalcMethod,
+  floatingRates: FloatingRatePeriod[],
+): LoanScheduleItem[] {
+  const monthsPerPeriod = PERIOD_MONTHS_MAP[periodUnit];
+  const principalDue = Math.round(principal / totalInstallments);
+  const rows: LoanScheduleItem[] = [];
+  let balance = principal;
+
+  for (let i = 1; i <= totalInstallments; i++) {
+    const fromDate = addPeriod(startDate, periodUnit, i - 1);
+    const toDate = addPeriod(startDate, periodUnit, i);
+
+    let interestDue: number | undefined;
+    if (interestEnabled) {
+      const annualRate =
+        interestRateType === "FLOATING"
+          ? (() => {
+            let r = floatingRates[0]?.rate ?? 0;
+            for (const fr of floatingRates) {
+              if (i >= fr.from_installment) r = fr.rate;
+              else break;
+            }
+            return r;
+          })()
+          : interestRate;
+      const periodicRate = (annualRate / 100 / 12) * monthsPerPeriod;
+      const base = calcMethod === "FLAT" ? principal : balance;
+      interestDue = Math.round(base * periodicRate);
+    }
+
+    rows.push({
+      installment_no: i,
+      from_date: fromDate.toISOString(),
+      to_date: toDate.toISOString(),
+      due_date: toDate.toISOString(),
+      principal_due_amount: principalDue,
+      ...(interestDue !== undefined ? { interest_due_amount: interestDue } : {}),
+    });
+    balance = Math.max(balance - principalDue, 0);
+  }
+  return rows;
+}
+
 
 // ─── CollapsibleSection ───────────────────────────────────────────────────────
 
@@ -172,7 +257,7 @@ const CollapsibleSection = ({
           overflow: "hidden",
           maxHeight: animHeight.interpolate({
             inputRange: [0, 1],
-            outputRange: [0, 2000],
+            outputRange: [0, 5000],
           }),
         }}
       >
@@ -238,6 +323,14 @@ const CreatePaybookScreen = () => {
   const [interestRate, setInterestRate] = useState("");
   const [interestRateType, setInterestRateType] = useState<InterestRateType>("FIXED");
   const [interestCalcMethod, setInterestCalcMethod] = useState<InterestCalcMethod>("REDUCING");
+  // Lãi thả nổi
+  const [floatingRates, setFloatingRates] = useState<FloatingRatePeriod[]>([{ from_installment: 1, rate: 0 }]);
+  const [showAddFloating, setShowAddFloating] = useState(false);
+  const [newFloatingFrom, setNewFloatingFrom] = useState("");
+  const [newFloatingRate, setNewFloatingRate] = useState("");
+  // Khoảng thời gian mỗi kỳ (mặc định 1 Tháng)
+  const [periodValue, setPeriodValue] = useState("1");
+  const [periodUnit, setPeriodUnit] = useState<PeriodUnit>("MONTH");
   const [startDate, setStartDate] = useState(new Date());
   const [maturityDate, setMaturityDate] = useState<Date | null>(null);
   const [paymentType, setPaymentType] = useState<PaymentType>("BULLET");
@@ -248,29 +341,40 @@ const CreatePaybookScreen = () => {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showMaturityPicker, setShowMaturityPicker] = useState(false);
 
+  // Auto-reset interestRateType khi chuyển sang BULLET (FLOATING chỉ dành cho INSTALLMENT)
+  useEffect(() => {
+    if (paymentType === "BULLET" && interestRateType === "FLOATING") {
+      setInterestRateType("FIXED");
+      setFloatingRates([{ from_installment: 1, rate: 0 }]);
+    }
+  }, [paymentType]);
+
   const styles = useMemo(() => createStyles(colors), [colors]);
   const accentColor = colors.tint;
 
   const effectiveInterestRate = interestEnabled ? parseFloat(interestRate) || 0 : parseFloat(DEFAULT_INTEREST_RATE);
   const effectiveInterestRateType = interestEnabled ? interestRateType : DEFAULT_INTEREST_RATE_TYPE;
   const effectiveInterestCalcMethod = interestEnabled ? interestCalcMethod : DEFAULT_INTEREST_CALC_METHOD;
-  const effectivePaymentType = paymentType;
-  const effectiveTotalInstallments = paymentType === "INSTALLMENT"
-    ? parseInt(totalInstallments) || undefined
-    : undefined;
 
   useEffect(() => {
     if (paymentType === "INSTALLMENT") {
       const installments = parseInt(totalInstallments || "0", 10);
+      const pVal = parseInt(periodValue || "1", 10) || 1;
       if (installments > 0 && startDate) {
-        const newMaturityDate = new Date(startDate);
-        newMaturityDate.setMonth(newMaturityDate.getMonth() + installments);
-        setMaturityDate(newMaturityDate);
+        const d = new Date(startDate);
+        switch (periodUnit) {
+          case "DAY": d.setDate(d.getDate() + installments * pVal); break;
+          case "WEEK": d.setDate(d.getDate() + installments * pVal * 7); break;
+          case "MONTH": d.setMonth(d.getMonth() + installments * pVal); break;
+          case "QUARTER": d.setMonth(d.getMonth() + installments * pVal * 3); break;
+          case "YEAR": d.setFullYear(d.getFullYear() + installments * pVal); break;
+        }
+        setMaturityDate(d);
       } else if (installments === 0) {
         setMaturityDate(null);
       }
     }
-  }, [startDate, paymentType, totalInstallments]);
+  }, [startDate, paymentType, totalInstallments, periodValue, periodUnit]);
 
   // ── Default wallet ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -362,13 +466,12 @@ const CreatePaybookScreen = () => {
   const parsedPrincipal = parseNumber(principalAmount);
   const parsedLimit = parseNumber(loanLimit);
 
-  // const isValid = true;
   const isValid =
     !!walletId &&
     counterpartyName.trim().length > 0 &&
     parsedPrincipal > 0 &&
     !!maturityDate &&
-    (effectivePaymentType === "BULLET" || (effectivePaymentType === "INSTALLMENT" && parseInt(totalInstallments || "0") > 0));
+    (paymentType === "BULLET" || (paymentType === "INSTALLMENT" && parseInt(totalInstallments || "0") > 0));
 
 
   // ── Handlers ─────────────────────────────────────────────────────────────
@@ -380,20 +483,56 @@ const CreatePaybookScreen = () => {
   const handleToggleInterest = (val: boolean) => {
     setInterestEnabled(val);
     if (!val) {
-      // Reset về default
       setInterestRate("");
       setInterestRateType(DEFAULT_INTEREST_RATE_TYPE);
       setInterestCalcMethod(DEFAULT_INTEREST_CALC_METHOD);
+      setFloatingRates([{ from_installment: 1, rate: 0 }]);
     }
+  };
+
+  // ── Floating rate helpers ─────────────────────────────────────────────────
+  const updateFloatingRate = (idx: number, val: string) => {
+    const r = parseFloat(val) || 0;
+    setFloatingRates((prev) => prev.map((p, i) => (i === idx ? { ...p, rate: r } : p)));
+  };
+
+  const removeFloatingPeriod = (idx: number) => {
+    setFloatingRates((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)));
+  };
+
+  const addFloatingPeriod = () => {
+    const from = parseInt(newFloatingFrom) || 0;
+    const totalKy = parseInt(totalInstallments) || 1;
+    if (from < 1 || from > totalKy) {
+      showNotification(`Kỳ bắt đầu phải từ 1 đến ${totalKy}!`, "error"); return;
+    }
+    if (floatingRates.find((f) => f.from_installment === from)) {
+      showNotification(`Kỳ ${from} đã có lãi suất!`, "error"); return;
+    }
+    setFloatingRates((prev) =>
+      [...prev, { from_installment: from, rate: parseFloat(newFloatingRate) || 0 }].sort(
+        (a, b) => a.from_installment - b.from_installment
+      )
+    );
+    setNewFloatingFrom(""); setNewFloatingRate(""); setShowAddFloating(false);
   };
 
   const handleCreate = async () => {
     if (!maturityDate) return;
-    if (effectiveInterestRate < 0) {
-      return showNotification("Lãi suất không được là số âm!", "error");
-    }
-    if (maturityDate <= startDate) {
-      return showNotification("Ngày đáo hạn phải sau ngày bắt đầu!", "error");
+    if (effectiveInterestRate < 0) return showNotification("Lãi suất không được là số âm!", "error");
+    if (maturityDate <= startDate) return showNotification("Ngày đáo hạn phải sau ngày bắt đầu!", "error");
+
+    // Sinh schedules cho INSTALLMENT
+    let schedules: LoanScheduleItem[] | undefined;
+    if (paymentType === "INSTALLMENT") {
+      const n = parseInt(totalInstallments);
+      if (!n || n <= 0) return showNotification("Vui lòng nhập số kỳ trả!", "error");
+      schedules = generateSchedules(
+        parsedPrincipal, n, startDate, periodUnit,
+        interestEnabled, effectiveInterestRate,
+        effectiveInterestRateType, effectiveInterestCalcMethod,
+        floatingRates,
+      );
     }
 
     try {
@@ -411,9 +550,9 @@ const CreatePaybookScreen = () => {
         interest_calc_method: effectiveInterestCalcMethod,
         start_date: startDate.toISOString(),
         maturity_date: maturityDate.toISOString(),
-        payment_type: effectivePaymentType,
-        total_installments: effectiveTotalInstallments,
-        note: note.trim() || undefined,
+        payment_type: paymentType,
+        ...(schedules ? { schedules } : {}),
+        ...(note.trim() ? { note: note.trim() } : {}),
       });
       showNotification("Tạo sổ nợ thành công!", "success");
       router.back();
@@ -722,7 +861,7 @@ const CreatePaybookScreen = () => {
             </View>
           </View>
 
-          {/* Số kỳ trả (chỉ hiện khi INSTALLMENT) */}
+          {/* Số kỳ trả + Khoảng thời gian mỗi kỳ (chỉ hiện khi INSTALLMENT) */}
           {paymentType === "INSTALLMENT" && (
             <View style={styles.section}>
               <CustomText style={[styles.label, { color: colors.text }]}>
@@ -735,11 +874,43 @@ const CreatePaybookScreen = () => {
                   placeholder="Ví dụ: 12"
                   placeholderTextColor={colors.icon}
                   value={totalInstallments}
-                  onChangeText={setTotalInstallments}
+                  onChangeText={(t) => {
+                    const raw = t.replace(/\D/g, "");
+                    const num = parseInt(raw) || 0;
+                    setTotalInstallments(num > 100 ? "100" : raw);
+                  }}
                   keyboardType="number-pad"
                   returnKeyType="done"
                 />
                 <CustomText style={[styles.unitTag, { color: colors.icon }]}>kỳ</CustomText>
+              </View>
+              {parseInt(totalInstallments) >= 100 && (
+                <CustomText style={[styles.warningText, { color: accentColor, marginTop: hp(0.5) }]}>
+                  Tối đa 100 kỳ
+                </CustomText>
+              )}
+
+              {/* Khoảng thời gian mỗi kỳ — chỉ cần chọn đơn vị, mặc định số lượng = 1 */}
+              <CustomText style={[styles.label, { color: colors.text, marginTop: hp(1.5) }]}>Khoảng thời gian mỗi kỳ</CustomText>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: wp(1.5) }}>
+                {PERIOD_UNITS.map((pu) => {
+                  const isActive = periodUnit === pu.key;
+                  return (
+                    <TouchableOpacity
+                      key={pu.key}
+                      style={[
+                        styles.periodUnitBtn,
+                        { backgroundColor: isActive ? accentColor : colors.card, borderColor: isActive ? accentColor : colors.border },
+                      ]}
+                      onPress={() => setPeriodUnit(pu.key)}
+                      activeOpacity={0.7}
+                    >
+                      <CustomText style={{ fontSize: normalize(13), fontFamily: isActive ? Fonts.semiBold : Fonts.regular, color: isActive ? "#fff" : colors.text }}>
+                        {pu.label}
+                      </CustomText>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
           )}
@@ -755,45 +926,147 @@ const CreatePaybookScreen = () => {
             accentColor={accentColor}
             colors={colors}
           >
-            {/* Lãi suất % */}
-            <View style={styles.section}>
-              <CustomText style={[styles.label, { color: colors.text }]}>Lãi suất (%/năm)</CustomText>
-              <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <FontAwesome6 name="percent" size={normalize(14)} color={effectiveInterestRate > 0 ? accentColor : colors.icon} style={styles.fieldIcon} />
-                <TextInput
-                  style={[styles.fieldInput, { color: colors.text }]}
-                  placeholder="0"
-                  placeholderTextColor={colors.icon}
-                  value={interestRate}
-                  onChangeText={setInterestRate}
-                  keyboardType="decimal-pad"
-                  returnKeyType="next"
-                />
-                <CustomText style={[styles.unitTag, { color: colors.icon }]}>%/năm</CustomText>
-              </View>
-            </View>
 
-            {/* Loại lãi suất */}
-            {/* <View style={styles.section}>
-              <CustomText style={[styles.label, { color: colors.text }]}>Loại lãi suất</CustomText>
-              <View style={styles.chipRow}>
-                {INTEREST_RATE_TYPES.map((rt) => {
-                  const isActive = interestRateType === rt.key;
+            {/* Loại lãi suất: Cố định / Thả nổi (chỉ hiện khi INSTALLMENT) */}
+            {paymentType === "INSTALLMENT" && (
+              <View style={styles.section}>
+                <CustomText style={[styles.label, { color: colors.text }]}>Loại lãi suất</CustomText>
+                <View style={styles.chipRow}>
+                  {INTEREST_RATE_TYPES.map((rt) => {
+                    const isActive = interestRateType === rt.key;
+                    return (
+                      <TouchableOpacity
+                        key={rt.key}
+                        style={[
+                          styles.paymentChip,
+                          { flex: 1, backgroundColor: isActive ? `${accentColor}18` : colors.card, borderColor: isActive ? accentColor : colors.border },
+                        ]}
+                        onPress={() => setInterestRateType(rt.key)}
+                        activeOpacity={0.7}
+                      >
+                        <FontAwesome6 name={rt.icon as any} size={normalize(15)} color={isActive ? accentColor : colors.icon} solid />
+                        <CustomText style={[styles.chipText, { color: isActive ? accentColor : colors.text, fontFamily: isActive ? Fonts.semiBold : Fonts.regular, marginTop: hp(0.4) }]}>
+                          {rt.label}
+                        </CustomText>
+                        <CustomText style={[styles.chipDesc, { color: colors.icon }]}>{rt.desc}</CustomText>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* Nếu FIXED: nhập lãi suất */}
+            {interestRateType === "FIXED" && (
+              <View style={styles.section}>
+                <CustomText style={[styles.label, { color: colors.text }]}>Lãi suất (%/năm)</CustomText>
+                <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <FontAwesome6 name="percent" size={normalize(14)} color={effectiveInterestRate > 0 ? accentColor : colors.icon} style={styles.fieldIcon} />
+                  <TextInput
+                    style={[styles.fieldInput, { color: colors.text }]}
+                    placeholder="0"
+                    placeholderTextColor={colors.icon}
+                    value={interestRate}
+                    onChangeText={setInterestRate}
+                    keyboardType="decimal-pad"
+                    returnKeyType="next"
+                  />
+                  <CustomText style={[styles.unitTag, { color: colors.icon }]}>%/năm</CustomText>
+                </View>
+              </View>
+            )}
+
+            {/* Nếu FLOATING: danh sách giai đoạn lãi + preview */}
+            {interestRateType === "FLOATING" && (
+              <View style={styles.section}>
+                <CustomText style={[styles.label, { color: colors.text }]}>Lãi suất theo kỳ (%/năm)</CustomText>
+                {floatingRates.map((fr, idx) => {
+                  const nextFrom = floatingRates[idx + 1]?.from_installment;
+                  const toLabel = nextFrom ? `${fr.from_installment}–${nextFrom - 1}` : `${fr.from_installment}+`;
                   return (
-                    <TouchableOpacity
-                      key={rt.key}
-                      style={[styles.chip, { flex: 1, backgroundColor: isActive ? `${accentColor}20` : colors.card, borderColor: isActive ? accentColor : colors.border }]}
-                      onPress={() => setInterestRateType(rt.key)}
-                      activeOpacity={0.7}
-                    >
-                      <CustomText style={[styles.chipText, { color: isActive ? accentColor : colors.text, fontFamily: isActive ? Fonts.semiBold : Fonts.regular }]}>
-                        {rt.label}
-                      </CustomText>
-                    </TouchableOpacity>
+                    <View key={idx} style={[styles.floatingRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                      <View style={{ flex: 1 }}>
+                        <CustomText style={[styles.optionLabel, { color: colors.text, marginBottom: 0 }]}>Kỳ {toLabel}</CustomText>
+                        <CustomText style={[styles.optionDesc, { color: colors.icon }]}>
+                          {idx === 0 ? "Lãi suất khởi đầu" : "Lãi suất điều chỉnh"}
+                        </CustomText>
+                      </View>
+                      <View style={[styles.floatingRateInput, { borderColor: colors.border }]}>
+                        <TextInput
+                          style={[styles.fieldInput, { color: colors.text, textAlign: "right" }]}
+                          value={fr.rate > 0 ? String(fr.rate) : ""}
+                          onChangeText={(t) => updateFloatingRate(idx, t)}
+                          keyboardType="decimal-pad"
+                          placeholder="0"
+                          placeholderTextColor={colors.icon}
+                        />
+                        <CustomText style={[styles.unitTag, { color: colors.icon }]}>%</CustomText>
+                      </View>
+                      {floatingRates.length > 1 && (
+                        <TouchableOpacity onPress={() => removeFloatingPeriod(idx)} hitSlop={8} style={{ marginLeft: wp(1) }}>
+                          <FontAwesome6 name="circle-xmark" size={normalize(18)} color={colors.icon} solid />
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   );
                 })}
+
+                {!showAddFloating ? (
+                  <TouchableOpacity
+                    style={[styles.addFloatingBtn, { borderColor: accentColor }]}
+                    onPress={() => {
+                      const used = new Set(floatingRates.map((f) => f.from_installment));
+                      let s = 2; const max = parseInt(totalInstallments) || 99;
+                      while (used.has(s) && s <= max) s++;
+                      setNewFloatingFrom(s <= max ? String(s) : "");
+                      setNewFloatingRate(""); setShowAddFloating(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <FontAwesome6 name="circle-plus" size={normalize(16)} color={accentColor} solid />
+                    <CustomText style={[styles.addFloatingLabel, { color: accentColor }]}>Thêm giai đoạn lãi</CustomText>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={[styles.addFloatingPanel, { backgroundColor: colors.card, borderColor: accentColor }]}>
+                    <CustomText style={[styles.label, { color: colors.text }]}>Thêm giai đoạn lãi</CustomText>
+                    <View style={{ flexDirection: "row", gap: wp(2), marginBottom: hp(1) }}>
+                      <View style={{ flex: 1 }}>
+                        <CustomText style={[styles.optionDesc, { color: colors.icon, marginBottom: hp(0.3) }]}>Từ kỳ</CustomText>
+                        <View style={[styles.field, { backgroundColor: colors.background, borderColor: colors.border, paddingVertical: hp(1.2) }]}>
+                          <TextInput style={[styles.fieldInput, { color: colors.text }]} value={newFloatingFrom} onChangeText={setNewFloatingFrom} keyboardType="number-pad" placeholder="2" placeholderTextColor={colors.icon} />
+                        </View>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <CustomText style={[styles.optionDesc, { color: colors.icon, marginBottom: hp(0.3) }]}>Lãi suất (%/năm)</CustomText>
+                        <View style={[styles.field, { backgroundColor: colors.background, borderColor: colors.border, paddingVertical: hp(1.2) }]}>
+                          <TextInput style={[styles.fieldInput, { color: colors.text }]} value={newFloatingRate} onChangeText={setNewFloatingRate} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={colors.icon} />
+                          <CustomText style={[styles.unitTag, { color: colors.icon }]}>%</CustomText>
+                        </View>
+                      </View>
+                    </View>
+                    <View style={{ flexDirection: "row", gap: wp(2) }}>
+                      <TouchableOpacity style={[styles.cancelBtn, { borderColor: colors.border }]} onPress={() => setShowAddFloating(false)} activeOpacity={0.7}>
+                        <CustomText style={[styles.cancelText, { color: colors.icon }]}>Huỷ</CustomText>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.addFloatingConfirm, { backgroundColor: accentColor }]} onPress={addFloatingPeriod} activeOpacity={0.7}>
+                        <CustomText style={{ color: "#fff", fontSize: normalize(13), fontFamily: Fonts.semiBold }}>Thêm</CustomText>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                {/* Preview bảng lịch lãi */}
+                <FloatingSchedulePreview
+                  floatingRates={floatingRates}
+                  totalInstallments={parseInt(totalInstallments) || 0}
+                  principalAmount={parseNumber(principalAmount)}
+                  interestCalcMethod={interestCalcMethod}
+                  periodUnit={periodUnit}
+                  colors={colors}
+                  accentColor={accentColor}
+                />
               </View>
-            </View> */}
+            )}
 
             {/* Phương pháp tính lãi */}
             <View style={styles.section}>
@@ -1045,6 +1318,64 @@ const createStyles = (colors: any) =>
     cancelText: { fontSize: normalize(15), fontFamily: Fonts.semiBold },
     createBtn: { flex: 2, flexDirection: "row", paddingVertical: hp(1.8), borderRadius: normalize(14), alignItems: "center", justifyContent: "center", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
     createText: { fontSize: normalize(15), color: "#fff", fontFamily: Fonts.semiBold },
+
+    // Period unit selector
+    periodUnitBtn: {
+      paddingHorizontal: wp(3),
+      paddingVertical: hp(0.9),
+      borderRadius: normalize(10),
+      borderWidth: 1,
+    },
+
+    // Floating rate
+    floatingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderWidth: 1,
+      borderRadius: normalize(12),
+      paddingHorizontal: wp(3),
+      paddingVertical: hp(1.2),
+      marginBottom: hp(1),
+      gap: wp(2),
+    },
+    floatingRateInput: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderWidth: 1,
+      borderRadius: normalize(10),
+      paddingHorizontal: wp(2.5),
+      paddingVertical: hp(0.9),
+      width: normalize(100),
+    },
+    addFloatingBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: wp(1.5),
+      borderWidth: 1.5,
+      borderStyle: "dashed",
+      borderRadius: normalize(12),
+      paddingHorizontal: wp(3),
+      paddingVertical: hp(1.2),
+      justifyContent: "center",
+      marginTop: hp(0.5),
+    },
+    addFloatingLabel: { fontSize: normalize(13), fontFamily: Fonts.semiBold },
+    addFloatingPanel: {
+      borderWidth: 1.5,
+      borderRadius: normalize(14),
+      padding: wp(3.5),
+      marginTop: hp(0.5),
+    },
+    addFloatingConfirm: {
+      flex: 1,
+      paddingVertical: hp(1.4),
+      borderRadius: normalize(12),
+      alignItems: "center",
+      justifyContent: "center",
+    },
   });
 
+
 export default CreatePaybookScreen;
+
+

@@ -29,6 +29,7 @@ export interface AdvancedSearchBudgetParams {
   period_type: string;
   page_index: number;
   page_size: number;
+  only_current_period?: boolean;
 }
 
 export interface CreateBudgetPayload {
@@ -123,13 +124,12 @@ export const budgetRepository = {
    */
   async advancedSearchBudget(params: AdvancedSearchBudgetParams): Promise<BaseResponseModel> {
     try {
+      const { only_current_period = true, ...rest } = params;
       return await apiService.executeWorkflow(
         WORKFLOWCODE.WF_MB_ADVANCED_SEARCH_WALLET_BUDGET,
         {
-          wallet_id: params.wallet_id,
-          period_type: params.period_type,
-          page_index: params.page_index,
-          page_size: params.page_size,
+          only_current_period,
+          ...rest,
         },
         false,
         true
