@@ -9,7 +9,7 @@ export type LoanType = "LEND" | "BORROW";
 export type CounterpartyType = "INDIVIDUAL" | "MERCHANT";
 export type InterestRateType = "FIXED" | "FLOATING";
 export type InterestCalcMethod = "REDUCING" | "FLAT";
-export type PaymentType = "INSTALLMENT" | "ONE_TIME";
+export type PaymentType = "INSTALLMENT" | "BULLET";
 
 // ─── Create Payload ──────────────────────────────────────────────────────────
 
