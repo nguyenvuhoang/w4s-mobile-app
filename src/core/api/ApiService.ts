@@ -1,3 +1,4 @@
+import i18n from "../i18n/i18n";
 import { apiClient } from "./ApiClient";
 import { BaseResponseModel, SimpleRequestModel } from "./models/ClientModel";
 
@@ -58,6 +59,29 @@ class ApiService {
       workflowId
     );
   }
+
+  async uploadImage(
+  uri: string,
+  folderName?: string,
+  customerCode?: string,
+  isShowLoading: boolean = true
+): Promise<any> {
+  try {
+    if (isShowLoading) {
+      (window as any).showLoading?.();
+    }
+
+    const lang = i18n.language; // hoặc lấy từ config
+
+    const response = await apiClient.uploadImage(uri, lang, folderName, customerCode);
+
+    return response;
+  } finally {
+    if (isShowLoading) {
+      (window as any).hideLoading?.();
+    }
+  }
+}
 }
 
 export const apiService = new ApiService();

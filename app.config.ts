@@ -16,6 +16,7 @@ export default () => {
       platforms: ["ios", "android"],
       name: "W4S Mobile",
       slug: "w4s",
+      scheme: "w4s",
       version: versionName,
       description:
         "W4S Mobile is a personal finance management application that helps you track, control, and optimize your cash flow comprehensively, from fiat currency to digital assets and DeFi - all in a single platform.",
@@ -217,6 +218,7 @@ export default () => {
             androidSpeechServicePackages: ["com.google.android.googlequicksearchbox"],
           },
         ],
+        "expo-web-browser",
       ],
       extra: {
         eas: {

@@ -1,7 +1,10 @@
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
-import { useAppTheme } from "@/core/theme/ThemeContext";
+import StorageKey from "@/constants/StorageKey";
 import { Fonts } from "@/core/theme/font";
+import { useAppTheme } from "@/core/theme/ThemeContext";
+import { invoiceRepository } from "@/services/repositories/invoice.repository";
+import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -14,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 
 // Mock Data
 const MOCK_INVOICES = {
@@ -128,6 +132,61 @@ const InvoiceListScreen = () => {
     [styles, formatCurrency, handleInvoicePress],
   );
 
+  const testSimpleSearch = async () => {
+    try {
+      console.log("Testing WF_MB_SIMPLE_SEARCH_BILL...");
+      const res = await invoiceRepository.simpleSearchInvoice({
+        search_text: "điện",
+        page_index: 0,
+        page_size: 20
+      });
+      console.log("Result simpleSearchInvoice:", JSON.stringify(res, null, 2));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const testDelete = async () => {
+    try {
+      console.log("Testing WF_MB_DELETE_BILL...");
+      const res = await invoiceRepository.deleteInvoice(1);
+      console.log("Result deleteInvoice:", JSON.stringify(res, null, 2));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const testAdvancedSearch = async () => {
+    try {
+      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      console.log("Testing WF_MB_ADVANCED_SEARCH_BILL...");
+      const res = await invoiceRepository.advancedSearchInvoice({
+        user_code: userCode,
+        wallet_id: 0,
+        business_type: null,
+        schedule_type: null,
+        status: "Pending",
+        from_due_at_utc: "2026-03-01T00:00:00Z",
+        to_due_at_utc: "2026-04-31T23:59:59Z", // Note: 31st of April is mathematically invalid in Date but passed as requested
+        page_index: 0,
+        page_size: 20
+      });
+      console.log("Result advancedSearchInvoice:", JSON.stringify(res, null, 2));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const testGet = async () => {
+    try {
+      console.log("Testing WF_MB_GET_BILL...");
+      const res = await invoiceRepository.getInvoice(5);
+      console.log("Result getInvoice:", JSON.stringify(res, null, 2));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <AppHeader
@@ -180,6 +239,24 @@ const InvoiceListScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        <View style={{ padding: 16, backgroundColor: colors.card, marginHorizontal: wp(4), marginTop: hp(2), borderRadius: normalize(16), borderWidth: 1, borderColor: colors.border }}>
+          <CustomText style={{ fontFamily: Fonts.bold, marginBottom: 8, color: colors.text }}>Dev: Test Workflows</CustomText>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <TouchableOpacity onPress={testSimpleSearch} style={{ backgroundColor: "#3B82F6", padding: 8, borderRadius: 8 }}>
+              <CustomText style={{ color: "white", fontSize: normalize(12) }}>Simple Search</CustomText>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={testAdvancedSearch} style={{ backgroundColor: "#10B981", padding: 8, borderRadius: 8 }}>
+              <CustomText style={{ color: "white", fontSize: normalize(12) }}>Advanced Search</CustomText>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={testGet} style={{ backgroundColor: "#F59E0B", padding: 8, borderRadius: 8 }}>
+              <CustomText style={{ color: "white", fontSize: normalize(12) }}>Get Bill</CustomText>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={testDelete} style={{ backgroundColor: "#EF4444", padding: 8, borderRadius: 8 }}>
+              <CustomText style={{ color: "white", fontSize: normalize(12) }}>Delete Bill</CustomText>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {activeTab === "active" && (
           <>
             {/* Summary Card */}

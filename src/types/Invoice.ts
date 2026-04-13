@@ -38,3 +38,21 @@ export interface Invoice {
   is_forever: boolean;
   status: string;
 }
+
+export interface SimpleSearchInvoicePayload {
+  search_text: string;
+  page_index: number;
+  page_size: number;
+}
+
+export interface AdvancedSearchInvoicePayload {
+  user_code?: string;
+  wallet_id?: number | null;
+  business_type?: string | null;
+  schedule_type?: string | null;
+  status?: string | null;
+  from_due_at_utc?: string | null;
+  to_due_at_utc?: string | null;
+  page_index: number;
+  page_size: number;
+}

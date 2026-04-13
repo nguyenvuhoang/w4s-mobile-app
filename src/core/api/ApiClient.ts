@@ -1,4 +1,3 @@
-import StorageKey from "@/constants/StorageKey";
 import { BaseResponseModel } from "@/core/api/models/ClientModel";
 import i18n from "@/core/i18n/i18n";
 import StorageService from "@/services/StorageService";
@@ -173,7 +172,7 @@ class ApiClient {
     } as any);
 
     let url =
-      this.axiosInstance.defaults.baseURL + "/api/Media/UploadFile/upload";
+      this.axiosInstance.defaults.baseURL + "/api/v1/upload";
 
     const params = new URLSearchParams();
     if (folderName) params.append("folder", folderName);
@@ -182,27 +181,37 @@ class ApiClient {
     const query = params.toString();
     if (query) url += `?${query}`;
 
-    const appCode = await StorageService.getAsyncItem(StorageKey.channelId);
+
     const headers: HeadersInit = {
-      App: appCode,
+      App: "MB",
       Lang: lang,
     };
 
-    const res = await fetch(url, {
-      method: "POST",
-      headers,
-      body: formData,
-    });
+
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+    } catch (networkError) {
+      console.error("[uploadImage] Network error (fetch failed):", networkError);
+      throw networkError;
+    }
+
 
     let data: any;
     try {
       data = await res.json();
-      console.log("=== Upload response data:", data);
-    } catch {
+      console.log("[uploadImage] Response data:", JSON.stringify(data));
+    } catch (parseError) {
+      console.warn("[uploadImage] Failed to parse response as JSON:", parseError);
       data = null;
     }
 
     if (!res.ok) {
+      console.error(`[uploadImage] Upload failed — status: ${res.status}, data:`, JSON.stringify(data));
       throw new Error(`Upload failed (${res.status}): ${JSON.stringify(data)}`);
     }
     return data;

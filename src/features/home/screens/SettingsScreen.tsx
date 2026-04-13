@@ -2,6 +2,7 @@ import CustomText from "@/components/base/CustomText";
 import BottomActionModal, { ActionItem } from "@/components/modals/BottomActionModal";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
+import { apiService } from "@/core/api/ApiService";
 import { changeLanguage, languageMap } from "@/core/i18n/i18n";
 import { Tokens } from "@/core/theme/theme";
 import { useAppTheme } from "@/core/theme/ThemeContext";
@@ -19,6 +20,7 @@ import { Images } from "@/utils/images";
 import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
+import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -45,6 +47,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { defaultCurrency, loading, updateDefaultCurrency } =
     useDefaultCurrency();
   const { profile, getUserProfile, loading: profileLoading } = useProfile();
+  const { uploadAvatar } = useProfile();
 
   const { clearCache: clearCategoryCache } = useCategory({ autoFetch: false });
   const { clearCache: clearCurrencyCache } = useCurrency({ autoFetch: false });
@@ -86,6 +89,55 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       getUserProfile();
     }, [updateDefaultCurrency, getUserProfile]),
   );
+
+  const handlePickAvatar = async () => {
+    try {
+      // Xin quyền truy cập thư viện ảnh
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        showNotification(t("settings.photo_permission_denied") || "Cần quyền truy cập thư viện ảnh", "error");
+        return;
+      }
+
+      // Mở thư viện ảnh
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],      // crop vuông cho avatar
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets?.length) return;
+
+      const uri = result.assets[0].uri;
+      const userCode = appInfo?.user_code || "";
+
+      // Bước 1: Upload ảnh lên server → nhận về URL
+      const uploadResponse = await apiService.uploadImage(
+        uri,
+        "avatars",        // folderName — chỉnh theo backend của bạn
+        userCode,
+        true              // show loading
+      );
+
+      const avatarUrl = uploadResponse?.file_url || uploadResponse?.data?.file_url;
+      if (!avatarUrl) throw new Error("Không nhận được URL ảnh sau khi upload");
+
+      // Bước 2: Gọi API đổi avatar với URL vừa nhận
+      await uploadAvatar(avatarUrl);
+
+      showNotification(t("settings.avatar_updated") || "Cập nhật ảnh đại diện thành công!", "success");
+
+      // Bước 3: Refresh profile để UI cập nhật
+      await getUserProfile();
+    } catch (error: any) {
+      console.error("[SettingsScreen] handlePickAvatar failed:", error);
+      showNotification(
+        error?.message || t("settings.avatar_update_failed") || "Cập nhật ảnh đại diện thất bại!",
+        "error"
+      );
+    }
+  };
 
   const handleBiometricToggle = async () => {
     const userCode = appInfo?.user_code || "";
@@ -153,14 +205,21 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
 
         {/* Profile Section */}
         <View style={[styles.profileSection, { backgroundColor: colors.card }]}>
-          <Image
-            source={
-              appInfo?.avatar?.startsWith("http")
-                ? { uri: appInfo.avatar }
-                : Images.placeholder.avatar
-            }
-            style={styles.profileImage}
-          />
+          <TouchableOpacity onPress={handlePickAvatar} style={styles.avatarWrapper}>
+            <Image
+              source={
+                appInfo?.avatar?.startsWith("http")
+                  ? { uri: appInfo.avatar }
+                  : Images.placeholder.avatar
+              }
+              style={styles.profileImage}
+            />
+            <View style={[styles.cameraOverlay, { backgroundColor: colors.tint }]}>
+              <Ionicons name="camera-outline" size={normalize(14)} color="#fff" />
+            </View>
+          </TouchableOpacity>
+
+          {/* Giữ nguyên 2 dòng text bên dưới */}
           <CustomText style={[styles.profileName, { color: colors.text }]}>
             {profile
               ? `${profile.last_name || ""} ${profile.middle_name || ""} ${profile.first_name || ""}`.trim()
@@ -644,6 +703,22 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: normalize(12),
     marginBottom: normalize(70),
+  },
+  avatarWrapper: {
+    position: "relative",
+    marginBottom: normalize(12),
+  },
+  cameraOverlay: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: normalize(26),
+    height: normalize(26),
+    borderRadius: normalize(13),
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#fff",
   },
 });
 

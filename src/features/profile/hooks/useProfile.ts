@@ -117,7 +117,11 @@ export const useProfile = () => {
     }
   };
 
-  const uploadAvatar = async (imageUri: string) => {
+  /**
+   * Gọi API đổi avatar sau khi đã upload ảnh lên server.
+   * @param avatarUrl - URL ảnh đã được upload (trả về từ apiService.uploadImage)
+   */
+  const uploadAvatar = async (avatarUrl: string) => {
     setUpdating(true);
     setError(null);
     try {
@@ -126,21 +130,19 @@ export const useProfile = () => {
 
       const response = await apiService.executeWorkflow(
         WORKFLOWCODE.WF_MB_CHANGE_AVATAR,
-        { user_code: code, avatar: imageUri },
+        { user_code: code, avatar_url: avatarUrl },
         false,
         true
       );
 
       if (!response.isSuccess()) {
-        throw new Error(response.getError?.() || 'Failed to upload avatar');
+        throw new Error(response.getError?.() || 'Failed to change avatar');
       }
+      // await getUserProfile(String(code));
 
-      // Refresh profile immediately upon successful upload
-      await getUserProfile(String(code));
-      
       return response;
     } catch (err: any) {
-      const message = err.message || 'Lỗi khi tải ảnh lên';
+      const message = err.message || 'Lỗi khi đổi ảnh đại diện';
       setError(message);
       console.error('[useProfile] uploadAvatar failed', err);
       throw err;
@@ -156,5 +158,6 @@ export const useProfile = () => {
     profile,
     getUserProfile,
     updateUserProfile,
+    uploadAvatar,
   };
 };

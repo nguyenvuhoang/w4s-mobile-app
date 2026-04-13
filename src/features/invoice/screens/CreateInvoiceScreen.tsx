@@ -4,6 +4,7 @@ import BottomRecurringModal, {
   RecurringResult,
   RecurringType,
 } from "@/components/modals/BottomRecurringModal";
+import BottomSelectModal, { BottomSelectOption } from "@/components/modals/SelectModal";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
@@ -62,6 +63,13 @@ interface AutofillData {
   };
 }
 
+const BUSINESS_TYPE_OPTIONS: BottomSelectOption<string>[] = [
+  { label: "Điện", value: "1" },
+  { label: "Nước", value: "2" },
+  { label: "Internet", value: "3" },
+  { label: "Khác", value: "4" },
+];
+
 const CreateRecurringInvoiceScreen = () => {
   const { colors } = useAppTheme();
   const params = useLocalSearchParams();
@@ -87,6 +95,8 @@ const CreateRecurringInvoiceScreen = () => {
   const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
   const [selectedCategoryData, setSelectedCategoryData] =
     useState<SelectedCategoryData | null>(null);
+  const [businessType, setBusinessType] = useState<string | null>(null);
+  const [showBusinessTypeModal, setShowBusinessTypeModal] = useState(false);
   const [amount, setAmount] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [note, setNote] = useState("");
@@ -346,10 +356,11 @@ const CreateRecurringInvoiceScreen = () => {
     () =>
       selectedWallet &&
       selectedCategoryData &&
+      businessType &&
       amount.trim() !== "" &&
       amount !== "0" &&
       recurringType !== "none",
-    [selectedWallet, selectedCategoryData, amount, recurringType],
+    [selectedWallet, selectedCategoryData, businessType, amount, recurringType],
   );
 
   // Set default wallet
@@ -463,7 +474,7 @@ const CreateRecurringInvoiceScreen = () => {
       category_id: selectedCategoryData.id,
       payment_transaction_type: selectedCategoryData.category_type === "INCOME" ? "01" : "02",
       bill_name: parseCategoryName(selectedCategoryData.category_name),
-      business_type: parseCategoryName(selectedCategoryData.category_name),
+      business_type: businessType as string,
       recurring: {
         type: (recurringType.charAt(0).toUpperCase() + recurringType.slice(1)) as any,
         count: isForever ? null : recurringCount,
@@ -653,6 +664,35 @@ const CreateRecurringInvoiceScreen = () => {
               />
             </TouchableOpacity>
           </View>
+
+          {/* Business Type - REQUIRED */}
+          <View style={styles.section}>
+            <CustomText style={styles.label}>
+              Loại dịch vụ <CustomText style={{ color: "red" }}>*</CustomText>
+            </CustomText>
+            <TouchableOpacity
+              style={styles.field}
+              onPress={() => setShowBusinessTypeModal(true)}
+            >
+              <View style={styles.fieldLeft}>
+                <FontAwesome6
+                  name="building"
+                  size={normalize(18)}
+                  color={businessType ? colors.tint : colors.icon}
+                  solid
+                />
+                <CustomText style={[styles.fieldText, !businessType && { color: colors.icon }]}>
+                  {BUSINESS_TYPE_OPTIONS.find((t) => t.value === businessType)?.label || "Chọn loại dịch vụ"}
+                </CustomText>
+              </View>
+              <FontAwesome6
+                name="chevron-right"
+                size={normalize(16)}
+                color={colors.icon}
+              />
+            </TouchableOpacity>
+          </View>
+
           {/* Amount - REQUIRED */}
           <TransactionAmountInput
             amount={amount}
@@ -838,6 +878,16 @@ const CreateRecurringInvoiceScreen = () => {
         initialSelectedDays={selectedDays}
         onSelect={handleRecurringSelect}
         onClose={() => setShowRecurringModal(false)}
+      />
+
+      {/* Business Type Modal */}
+      <BottomSelectModal
+        visible={showBusinessTypeModal}
+        title="Chọn loại dịch vụ"
+        options={BUSINESS_TYPE_OPTIONS}
+        selectedValue={businessType || undefined}
+        onSelect={(option) => setBusinessType(option.value)}
+        onClose={() => setShowBusinessTypeModal(false)}
       />
     </SafeAreaView>
   );
