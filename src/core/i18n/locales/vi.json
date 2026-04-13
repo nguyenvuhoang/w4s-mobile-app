@@ -156,7 +156,9 @@
     "website": "Trang chủ",
     "support": "Hỗ trợ khách hàng",
     "rate_app": "Đánh giá ứng dụng",
-    "rate_app_desc": "Để lại phản hồi trên các chợ ứng dụng"
+    "rate_app_desc": "Để lại phản hồi trên các chợ ứng dụng",
+    "clear_cache": "Xóa bộ nhớ đệm",
+    "cache_cleared": "Xóa dữ liệu bộ đệm thành công!"
   },
   "validation": {
     "invalid_email": "Email không hợp lệ",

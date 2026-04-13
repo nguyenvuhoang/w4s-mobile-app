@@ -5,9 +5,14 @@ import { useNotification } from "@/contexts/NotificationContext";
 import { changeLanguage, languageMap } from "@/core/i18n/i18n";
 import { Tokens } from "@/core/theme/theme";
 import { useAppTheme } from "@/core/theme/ThemeContext";
+import { useBudget } from "@/features/budget/hooks/useBudget";
+import { useEvent } from "@/features/event/hooks/useEvent";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { useSettingService } from "@/features/settings/hooks/useSettingService";
+import { useCategory } from "@/hooks/useCategory";
+import { useCurrency } from "@/hooks/useCurrency";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 import DefaultCurrencyService from "@/services/DefaultCurrencyService";
 import StorageService from "@/services/StorageService";
 import { Images } from "@/utils/images";
@@ -40,6 +45,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { defaultCurrency, loading, updateDefaultCurrency } =
     useDefaultCurrency();
   const { profile, getUserProfile, loading: profileLoading } = useProfile();
+
+  const { clearCache: clearCategoryCache } = useCategory({ autoFetch: false });
+  const { clearCache: clearCurrencyCache } = useCurrency({ autoFetch: false });
+  const { clearCache: clearExchangeRateCache } = useExchangeRate({ autoFetch: false });
+  const { clearCache: clearEventCache } = useEvent({ autoFetch: false });
+  const { clearCache: clearBudgetCache } = useBudget({ autoFetch: false });
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [updatingCurrency, setUpdatingCurrency] = useState(false);
@@ -80,6 +91,20 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     const userCode = appInfo?.user_code || "";
     if (userCode) {
       await touchIDClick(userCode);
+    }
+  };
+
+  const handleClearCache = async () => {
+    try {
+      clearCategoryCache();
+      clearCurrencyCache();
+      clearExchangeRateCache();
+      clearEventCache();
+      clearBudgetCache();
+      showNotification(t("settings.cache_cleared") || "Xóa dữ liệu bộ đệm thành công!", "success");
+    } catch (error) {
+      console.error("[SettingsScreen] Error clearing cache:", error);
+      showNotification("Xóa dữ liệu bộ đệm thất bại!", "error");
     }
   };
 
@@ -344,6 +369,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               onPress={() => {
                 router.push("/(protected)/app-info");
               }}
+              colors={colors}
+            />
+            <SettingItem
+              icon="trash-outline"
+              title={t("settings.clear_cache") || "Xóa dữ liệu bộ đệm"}
+              onPress={handleClearCache}
               colors={colors}
             />
           </View>

@@ -1,4 +1,5 @@
 import CustomText from "@/components/base/CustomText";
+import FeatureSearchModal from "@/components/modals/FeatureSearchModal";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
@@ -11,7 +12,6 @@ import {
   useTopSpendingCategories
 } from "@/features/home/hooks/useTopSpendingCategories";
 import { styles } from "@/features/home/styles/HomeScreen.Style";
-import FeatureSearchModal from "@/components/modals/FeatureSearchModal";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { getValidIconName } from "@/utils/iconMapper";
 import { hp, normalize } from "@/utils/layout";
@@ -525,7 +525,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               {t("home.top_spending")}
             </CustomText>
             <TouchableOpacity
-              onPress={() => { }}
+              onPress={() => router.push('/(protected)/top-spending-categories')}
             >
               <CustomText style={[styles.seeMore, { color: colors.tint }]}>
                 {t("home.see_more")}

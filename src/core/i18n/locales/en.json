@@ -156,7 +156,9 @@
     "website": "Website",
     "support": "Customer Support",
     "rate_app": "Rate App",
-    "rate_app_desc": "Leave feedback on app stores"
+    "rate_app_desc": "Leave feedback on app stores",
+    "clear_cache": "Clear Cache",
+    "cache_cleared": "Cache cleared successfully!"
   },
   "validation": {
     "invalid_email": "Invalid Email",
