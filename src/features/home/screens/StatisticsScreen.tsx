@@ -4,9 +4,13 @@ import LineChartCard from "@/components/chart/LineChartCard";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useFinanceSummary, useMonthlyChartData, useWalletOpeningClosingBalance } from "@/features/home/hooks/Usefinancesummary";
+import { useTopSpendingCategories } from "@/features/home/hooks/useTopSpendingCategories";
+import { useTransaction } from "@/features/transaction/hooks/useTransaction";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
-import { useTopSpendingCategories } from "@/hooks/useCategory";
+import { useCategory } from "@/hooks/useCategory";
+import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import StorageService from "@/services/StorageService";
+import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -15,16 +19,17 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Circle } from "react-native-svg";
 
 const { width } = Dimensions.get("window");
 
 /* ================= HELPERS ================= */
 
 /** Parse category_name từ JSON string {"vi":"...","en":"..."} hoặc plain string */
-const parseCategoryName = (raw: string, lang: string): string => {
+const parseCategoryName = (raw: string | null, lang: string): string => {
   if (!raw) return "";
   try {
-    if (!raw.startsWith("{")) return raw;
+    if (typeof raw !== 'string' || !raw.startsWith("{")) return raw;
     const parsed = JSON.parse(raw);
     return parsed[lang] || parsed.vi || parsed.en || raw;
   } catch {
@@ -32,47 +37,108 @@ const parseCategoryName = (raw: string, lang: string): string => {
   }
 };
 
-/* ================= MOCK DATA ================= */
-
-
-const MOCK_FREQUENT_EXPENSES = [
-  {
-    id: "1",
-    name: "Shoppe",
-    category: "Mua sắm",
-    icon: "bag-shopping",
-    color: "#EE4D2D",
-    amount: 89000,
-  },
-  {
-    id: "2",
-    name: "Starbucks",
-    category: "Thực phẩm",
-    icon: "mug-hot",
-    color: "#00704A",
-    amount: 45000,
-  },
-];
-
 /* ================= SCREEN ================= */
 
 const StatisticsScreen = () => {
   const { colors } = useAppTheme();
   const { t, i18n } = useTranslation();
+  const { defaultCurrency } = useDefaultCurrency();
   const [balanceVisible, setBalanceVisible] = useState(true);
   const { wallets, loading: walletsLoading } = useWallet();
   const { data: financeSummary, loading: summaryLoading } = useFinanceSummary();
   const {
-    data: topCategories,
+    categories: topCategories,
     loading: categoriesLoading,
-    fetchTopCategories,
-  } = useTopSpendingCategories();
+    refresh: refreshCategories,
+  } = useTopSpendingCategories("M", 100);
+
+  const { advancedSearchTransactions, loading: searchLoading } = useTransaction();
+  const { categories: allCategories } = useCategory();
+  const [topRecentExpenses, setTopRecentExpenses] = useState<any[]>([]);
+
+  const fetchTopExpenses = useCallback(async () => {
+    try {
+      const now = new Date();
+      // Year and Month of now
+      const year = now.getFullYear();
+      const month = now.getMonth(); // 0-indexed
+      
+      // Local 1st of current month
+      const fromDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      
+      // Local last day of current month
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const toDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+      const result = await advancedSearchTransactions({
+        from_transaction_date: fromDate,
+        to_transaction_date: toDate,
+        page_index: 1,
+        page_size: 100,
+      });
+
+      const list = Array.isArray(result) ? result : (result?.items ?? result?.data ?? []);
+      
+      const sorted = list
+        .filter((t: any) => {
+          // Normalize type and amount from multiple possible fields
+          const type = String(t.name || t.type || t.transaction_type || t.transaction_code || t.tran_code || '').toUpperCase();
+          const amount = Number(t.amount ?? t.nu_m01 ?? 0);
+          
+          const isExpense = type === 'EXPENSE' || type === '02' || amount < 0 || (t.name === 'Expense' && amount > 0);
+          return isExpense;
+        })
+        .sort((a: any, b: any) => {
+          const amountA = Math.abs(Number(a.amount ?? a.nu_m01 ?? 0));
+          const amountB = Math.abs(Number(b.amount ?? b.nu_m01 ?? 0));
+          return amountB - amountA;
+        })
+        .slice(0, 5);
+
+      setTopRecentExpenses(sorted);
+    } catch (error) {
+      console.error("[StatisticsScreen] fetchTopExpenses error:", error);
+    }
+  }, [advancedSearchTransactions]);
+
+  const enhancedTopExpenses = useMemo(() => {
+    return topRecentExpenses.map(item => {
+      const findId = item.category_id || item.cat_id;
+      // Match with c.id from useCategory
+      const cat = allCategories.find(c => Number(c.id) === Number(findId));
+      
+      const rawTitle = item.title || item.trandesc || item.tran_name || t("home.transaction_default_name");
+      const mappedName = cat ? parseCategoryName(cat.category_name, i18n.language) : parseCategoryName(rawTitle, i18n.language);
+
+      return {
+        ...item,
+        catInfo: cat,
+        icon: cat?.icon || item.icon || "receipt",
+        color: cat?.color || item.color || "#9E9E9E",
+        displayName: mappedName
+      };
+    });
+  }, [topRecentExpenses, allCategories, t, i18n.language]);
+
+  useEffect(() => {
+    fetchTopExpenses();
+  }, [fetchTopExpenses]);
+
+  // Listen for changes
+  useEffect(() => {
+    const handleTransactionChange = () => {
+      fetchTopExpenses();
+    };
+
+    TransactionEventEmitter.onTransactionChanged(handleTransactionChange);
+    return () => {
+      TransactionEventEmitter.offTransactionChanged(handleTransactionChange);
+    };
+  }, [fetchTopExpenses]);
 
   const { fetchBalance, data: openingBalanceData } = useWalletOpeningClosingBalance();
 
-  useEffect(() => {
-    fetchTopCategories('M', 0);
-  }, [fetchTopCategories]);
+  // Auto-refresh when transaction changes is handled inside the hook
 
   const {
     expenses: monthlyExpenses,
@@ -170,7 +236,7 @@ const StatisticsScreen = () => {
         >
           <View style={styles.balanceHeader}>
             <View style={styles.balanceIconCircle}>
-              <CustomText style={{ color: "#1DA1F2", fontSize: normalize(18), fontWeight: "bold" }}>$</CustomText>
+              <CustomText type="bold" size={18} style={{ color: "#1DA1F2" }}>$</CustomText>
             </View>
             <CustomText type="medium" size={14} style={{ color: "#fff", marginLeft: normalize(10), flex: 1 }}>
               {t("home.total_balance")}
@@ -200,7 +266,7 @@ const StatisticsScreen = () => {
         <View
           style={[
             styles.walletStackContainer,
-            { height: (displayWallets.length - 1) * normalize(WALLET_CARD_PEEK) + normalize(WALLET_CARD_H) + normalize(WALLET_CARD_PEEK) },
+            { height: (displayWallets.length - 1) * WALLET_CARD_PEEK + WALLET_CARD_H + WALLET_CARD_PEEK },
           ]}
         >
           {displayWallets.map((w, index) => {
@@ -215,11 +281,13 @@ const StatisticsScreen = () => {
                   styles.walletStackCard,
                   {
                     backgroundColor: cardColor,
-                    top: index * normalize(WALLET_CARD_PEEK),
+                    top: index * WALLET_CARD_PEEK,
                     zIndex: index + 1,
                     height: isLast
-                      ? normalize(WALLET_CARD_H) + normalize(WALLET_CARD_PEEK)
-                      : normalize(WALLET_CARD_H),
+                      ? WALLET_CARD_H + WALLET_CARD_PEEK
+                      : WALLET_CARD_H,
+                    borderBottomLeftRadius: isLast ? undefined : 0,
+                    borderBottomRightRadius: isLast ? undefined : 0,
                   },
                 ]}
               >
@@ -260,7 +328,7 @@ const StatisticsScreen = () => {
         />
 
         {chartLoading ? (
-          <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+          <View style={{ paddingVertical: normalize(24), alignItems: 'center' }}>
             <ActivityIndicator color={colors.tint} />
           </View>
         ) : (
@@ -285,63 +353,76 @@ const StatisticsScreen = () => {
         <SectionHeader title={t("statistics.category_analysis")} />
 
         {categoriesLoading ? (
-          <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+          <View style={{ paddingVertical: normalize(24), alignItems: 'center' }}>
             <ActivityIndicator color={colors.tint} />
           </View>
         ) : topCategories.length === 0 ? (
-          <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+          <View style={{ paddingVertical: normalize(20), alignItems: 'center' }}>
             <CustomText size={14} style={{ color: colors.icon }}>
               {t("statistics.no_category_data") || "Không có dữ liệu danh mục"}
             </CustomText>
           </View>
         ) : (
           <View style={styles.categoryList}>
-            {topCategories.map((c) => {
-              const displayName = parseCategoryName(c.category_name, i18n.language);
+            {topCategories.map((c, index) => {
+              const displayName = parseCategoryName(c.name, i18n.language);
               const pct = Math.round(c.percentage * 100);
+              const radius = normalize(26);
+              const stroke = normalize(5);
+              const normalizedRadius = radius - stroke;
+              const circumference = normalizedRadius * 2 * Math.PI;
+              const strokeDashoffset = circumference - (Math.min(pct, 100) / 100) * circumference;
+
               return (
-                <View
-                  key={c.id}
-                  style={[styles.categoryItem, { backgroundColor: colors.card }]}
+                <TouchableOpacity
+                  key={`${c.category_id}-${index}`}
+                  style={[styles.categoryCard, { backgroundColor: colors.card }]}
+                  activeOpacity={0.7}
+                  onPress={() => router.push({
+                    pathname: '/(protected)/category-detail',
+                    params: {
+                      category: JSON.stringify(c)
+                    }
+                  })}
                 >
-                  <View style={styles.categoryRow}>
-                    <View
-                      style={[styles.categoryIcon, { backgroundColor: c.color || colors.tint }]}
-                    >
-                      <FontAwesome6
-                        name={(c.icon || "tag") as any}
-                        size={normalize(18)}
-                        color="#fff"
+                  <View style={styles.categoryCardLeft}>
+                    <Svg height={radius * 2} width={radius * 2}>
+                      <Circle
+                        stroke="rgba(128,128,128,0.15)"
+                        fill="transparent"
+                        strokeWidth={stroke}
+                        r={normalizedRadius}
+                        cx={radius}
+                        cy={radius}
                       />
+                      <Circle
+                        stroke={c.color || colors.tint}
+                        fill="transparent"
+                        strokeWidth={stroke}
+                        strokeDasharray={circumference + ' ' + circumference}
+                        strokeDashoffset={strokeDashoffset}
+                        strokeLinecap="round"
+                        r={normalizedRadius}
+                        cx={radius}
+                        cy={radius}
+                        transform={`rotate(-90 ${radius} ${radius})`}
+                      />
+                    </Svg>
+                    <View style={styles.categoryCardPct}>
+                      <CustomText size={11} type="bold" style={{ color: colors.text }}>
+                        {pct}%
+                      </CustomText>
                     </View>
-                    <CustomText type="medium" size={15}>
+                  </View>
+                  <View style={styles.categoryCardRight}>
+                    <CustomText size={14} numberOfLines={1} style={{ color: colors.icon }}>
                       {displayName}
                     </CustomText>
-                  </View>
-
-                  <View style={styles.categoryRight}>
-                    <CustomText type="medium" size={13}>
-                      {pct}%
-                    </CustomText>
-                    <CustomText type="bold" size={15}>
+                    <CustomText size={16} type="bold" numberOfLines={1}>
                       {formatCurrency(c.total_amount)}
                     </CustomText>
                   </View>
-
-                  <View
-                    style={[
-                      styles.progressBg,
-                      { backgroundColor: colors.background },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.progressFill,
-                        { width: `${Math.min(pct, 100)}%`, backgroundColor: c.color || colors.tint },
-                      ]}
-                    />
-                  </View>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>
@@ -351,29 +432,71 @@ const StatisticsScreen = () => {
         <SectionHeader title={t("statistics.daily_expenses")} />
 
         <View style={styles.frequentList}>
-          {MOCK_FREQUENT_EXPENSES.map((i) => (
-            <View
-              key={i.id}
-              style={[styles.frequentItem, { backgroundColor: colors.card }]}
-            >
-              <View style={[styles.frequentIcon, { backgroundColor: i.color }]}>
-                <FontAwesome6
-                  name={i.icon as any}
-                  size={normalize(18)}
-                  color="#fff"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <CustomText type="medium" size={15}>
-                  {i.name}
-                </CustomText>
-                <CustomText size={13}>{i.category}</CustomText>
-              </View>
-              <CustomText type="bold" size={15}>
-                {formatCurrency(i.amount)}
-              </CustomText>
+          {searchLoading && topRecentExpenses.length === 0 ? (
+            <ActivityIndicator color={colors.tint} />
+          ) : enhancedTopExpenses.length === 0 ? (
+            <View style={{ paddingVertical: normalize(20), alignItems: 'center' }}>
+              <CustomText style={{ color: colors.icon }}>{t("home.no_transactions")}</CustomText>
             </View>
-          ))}
+          ) : (
+            enhancedTopExpenses.map((item) => {
+              const amount = Math.abs(Number(item.amount ?? item.nu_m01 ?? 0));
+              const title = item.displayName;
+              const date = item.occurred_at || item.transaction_date || item.created_at;
+              const iconColor = item.color;
+              
+              return (
+                <TouchableOpacity
+                  key={item.transaction_id || item.id}
+                  style={[styles.frequentItem, { backgroundColor: colors.card }]}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    const detailData = {
+                      transactionid: item.transaction_id || item.id,
+                      transactiondate: date,
+                      transactionname: title,
+                      transactioncode: "02", // Explicitly expense
+                      nu_m01: amount,
+                      nu_m02: 0,
+                      ccyid: item.currency || defaultCurrency.currencyId,
+                      trandesc: title,
+                      status: "Completed",
+                      icon: item.icon,
+                      color: item.color,
+                    };
+
+                    router.push({
+                      pathname: "/(protected)/transaction-detail",
+                      params: { transaction: JSON.stringify(detailData) },
+                    });
+                  }}
+                >
+                  <View style={[styles.frequentIcon, { backgroundColor: iconColor + "1A" }]}>
+                    <FontAwesome6
+                      name={(item.icon || "receipt") as any}
+                      size={normalize(20)}
+                      color={iconColor}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <CustomText type="semiBold" size={15} numberOfLines={1}>
+                      {parseCategoryName(title, i18n.language)}
+                    </CustomText>
+                    <CustomText size={12} style={{ color: colors.icon, marginTop: normalize(2) }}>
+                      {new Date(date).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                    </CustomText>
+                  </View>
+                  <CustomText 
+                    type="bold" 
+                    size={16}
+                    style={{ color: "#FF6B6B" }}
+                  >
+                    -{amount.toLocaleString()} {defaultCurrency.symbol}
+                  </CustomText>
+                </TouchableOpacity>
+              );
+            })
+          )}
         </View>
 
         <View style={{ height: hp(8) }} />
@@ -387,9 +510,9 @@ const StatisticsScreen = () => {
 const WALLET_FALLBACK_COLORS = ["#2196F3", "#7B2FBE", "#00B96B"];
 
 /** Chiều cao cơ bản của mỗi wallet card */
-const WALLET_CARD_H = 64;
+const WALLET_CARD_H = normalize(64);
 /** Số pixel nhô ra của mỗi card phía dưới card trên */
-const WALLET_CARD_PEEK = 54;
+const WALLET_CARD_PEEK = normalize(54);
 
 /** Map wallet type sang label hiển thị tiếng Việt */
 const WALLET_TYPE_LABEL: Record<string, string> = {
@@ -497,40 +620,46 @@ const styles = StyleSheet.create({
   legendDot: {
     width: normalize(10),
     height: normalize(10),
-    borderRadius: 5,
+    borderRadius: normalize(5),
     marginRight: normalize(8),
   },
 
-  categoryList: { paddingHorizontal: wp(5), gap: normalize(12) },
-  categoryItem: {
-    padding: normalize(16),
-    borderRadius: normalize(12),
+  categoryList: {
+    paddingHorizontal: wp(5),
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
-  categoryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: normalize(10),
+  categoryCard: {
+    width: '48.5%',
+    padding: normalize(12),
+    borderRadius: normalize(16),
+    marginBottom: normalize(10),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: normalize(8),
+    // Android Shadow
+    elevation: 2,
+    // iOS Shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  categoryIcon: {
-    width: normalize(36),
-    height: normalize(36),
-    borderRadius: normalize(10),
-    alignItems: "center",
-    justifyContent: "center",
+  categoryCardLeft: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  categoryRight: {
-    position: "absolute",
-    right: normalize(16),
-    top: normalize(16),
-    alignItems: "flex-end",
+  categoryCardPct: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  progressBg: {
-    height: normalize(6),
-    borderRadius: 3,
-    marginTop: normalize(10),
-    overflow: "hidden",
+  categoryCardRight: {
+    flex: 1,
+    justifyContent: 'center',
   },
-  progressFill: { height: "100%" },
 
   frequentList: { paddingHorizontal: wp(5), gap: normalize(12) },
   frequentItem: {

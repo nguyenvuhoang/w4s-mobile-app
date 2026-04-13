@@ -2,7 +2,7 @@ import { GlobalContext } from "@/contexts/GlobalContext";
 import { transactionRepository } from "@/services/repositories/transaction.repository";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { AccountType } from "@/types/wallet";
-import { useContext, useState } from "react";
+import { useCallback, useContext, useState } from "react";
 
 export interface CreateTransactionData {
   walletId: number;
@@ -50,7 +50,7 @@ export const useTransaction = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createTransaction = async (data: CreateTransactionData) => {
+  const createTransaction = useCallback(async (data: CreateTransactionData) => {
     if (!appInfo?.user_code || !appInfo?.contract_number) {
       throw new Error("User not authenticated");
     }
@@ -135,9 +135,9 @@ export const useTransaction = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [appInfo, wallets]);
 
-  const updateTransaction = async (data: UpdateTransactionData) => {
+  const updateTransaction = useCallback(async (data: UpdateTransactionData) => {
     if (!appInfo?.user_code) {
       throw new Error("User not authenticated");
     }
@@ -193,9 +193,9 @@ export const useTransaction = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [appInfo]);
 
-  const deleteTransaction = async (transactionId: string) => {
+  const deleteTransaction = useCallback(async (transactionId: string) => {
     if (!appInfo?.user_code) {
       throw new Error("User not authenticated");
     }
@@ -220,9 +220,9 @@ export const useTransaction = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [appInfo]);
 
-  const advancedSearchTransactions = async (params: {
+  const advancedSearchTransactions = useCallback(async (params: {
     transaction_id?: string;
     wallet_id?: number;
     category_id?: number;
@@ -252,9 +252,9 @@ export const useTransaction = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const refundTransaction = async (transactionId: string) => {
+  const refundTransaction = useCallback(async (transactionId: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -277,7 +277,7 @@ export const useTransaction = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return {
     loading,

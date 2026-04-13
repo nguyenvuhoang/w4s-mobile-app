@@ -80,11 +80,14 @@ export const useTopSpendingCategories = () => {
       });
 
       if (response.isSuccess() && response.data) {
-        // API có thể trả về dưới dạng mảng trực tiếp hoặc lồng trong key
-        const list: TopSpendingCategoryItem[] =
-          Array.isArray(response.data)
-            ? response.data
-            : response.data.data || response.data.categories || response.data.category_analyze || [];
+        let list: TopSpendingCategoryItem[] = [];
+        if (Array.isArray(response.data)) {
+          list = response.data;
+        } else if (response.data.data && Array.isArray(response.data.data) && response.data.data.length > 0 && response.data.data[0].top_categories) {
+          list = response.data.data[0].top_categories;
+        } else {
+          list = response.data.data || response.data.categories || response.data.category_analyze || [];
+        }
         setData(list);
         return list;
       } else {
