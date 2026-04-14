@@ -13,7 +13,7 @@ export interface CreateInvoicePayload {
   category_id: number;
   payment_transaction_type: string;
   bill_name: string;
-  business_type: string;
+  business_type: string | null;
   recurring: InvoiceRecurring;
   amount: number;
   currency_code: string;
@@ -28,7 +28,7 @@ export interface Invoice {
   account_number: string;
   category_id: number;
   bill_name: string;
-  business_type: string;
+  business_type: string | null;
   amount: number;
   currency_code: string;
   due_at_utc: string;
@@ -55,4 +55,20 @@ export interface AdvancedSearchInvoicePayload {
   to_due_at_utc?: string | null;
   page_index: number;
   page_size: number;
+}
+
+export interface UpdateInvoicePayload {
+  id: number;
+  wallet_id: number | null;
+  account_number: string;
+  category_id: number;
+  payment_transaction_type: string;
+  bill_name: string;
+  business_type: string | null;
+  recurring: InvoiceRecurring;
+  amount: number;
+  currency_code: string;
+  due_at_utc: string;
+  note: string;
+  contract_number: string;
 }

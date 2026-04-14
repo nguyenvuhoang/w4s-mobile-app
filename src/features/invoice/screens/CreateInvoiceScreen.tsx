@@ -7,6 +7,7 @@ import BottomRecurringModal, {
 import BottomSelectModal, { BottomSelectOption } from "@/components/modals/SelectModal";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { GlobalContext } from "@/contexts/GlobalContext";
+import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
 import TransactionAmountInput from "@/features/transaction/components/TransactionAmountInput";
@@ -14,20 +15,20 @@ import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import StorageService from "@/services/StorageService";
+import { invoiceRepository } from "@/services/repositories/invoice.repository";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useInvoice } from "../hooks/useInvoice";
@@ -63,19 +64,13 @@ interface AutofillData {
   };
 }
 
-const BUSINESS_TYPE_OPTIONS: BottomSelectOption<string>[] = [
-  { label: "Điện", value: "1" },
-  { label: "Nước", value: "2" },
-  { label: "Internet", value: "3" },
-  { label: "Khác", value: "4" },
-];
-
 const CreateRecurringInvoiceScreen = () => {
   const { colors } = useAppTheme();
   const params = useLocalSearchParams();
   const { wallets, defaultWallet } = useWallet();
   const { appInfo } = React.useContext(GlobalContext);
-  const { createInvoice, loading: creating } = useInvoice();
+  const { createInvoice, updateInvoice, deleteInvoice, loading: creating } = useInvoice();
+  const { showNotification } = useNotification();
   const { t } = useTranslation();
   const { parseCurrencyName, currencies } = useCurrency({ autoFetch: true });
   const { convert } = useExchangeRate();
@@ -95,8 +90,6 @@ const CreateRecurringInvoiceScreen = () => {
   const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
   const [selectedCategoryData, setSelectedCategoryData] =
     useState<SelectedCategoryData | null>(null);
-  const [businessType, setBusinessType] = useState<string | null>(null);
-  const [showBusinessTypeModal, setShowBusinessTypeModal] = useState(false);
   const [amount, setAmount] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [note, setNote] = useState("");
@@ -206,58 +199,63 @@ const CreateRecurringInvoiceScreen = () => {
     }
   }, [selectedCategoryData]);
 
-  // Load edit data from params
+  // Load edit data from API when in edit mode
   useEffect(() => {
-    if (isEditMode) {
-      // Pre-fill amount
-      if (params.amount) {
-        setAmount(params.amount as string);
-      }
-      // Pre-fill note
-      if (params.note) {
-        setNote(params.note as string);
-      }
-      // Pre-fill recurring type
-      if (params.recurring) {
-        const recurType = params.recurring as RecurringType;
-        setRecurringType(recurType);
-        // Set matching label
-        const labelMap: Record<string, string> = {
-          daily: "Hàng ngày",
-          weekly: "Hàng tuần",
-          monthly: "Hàng tháng",
-          yearly: "Hàng năm",
-        };
-        setRecurringLabel(labelMap[recurType] || "Hàng Tháng - 12 lần");
-      }
-      // Pre-fill date
-      if (params.nextDate) {
-        const dateParts = (params.nextDate as string).split("/");
-        if (dateParts.length === 3) {
-          const date = new Date(
-            parseInt(dateParts[2]),
-            parseInt(dateParts[1]) - 1,
-            parseInt(dateParts[0]),
-          );
-          if (!isNaN(date.getTime())) {
-            setSelectedDate(date);
-          }
+    if (!isEditMode || !editId) return;
+
+    const loadBillData = async () => {
+      try {
+        const res = await invoiceRepository.getInvoice(parseInt(editId));
+        if (!res?.success || !res?.data) return;
+
+        const bill = res.data;
+
+        // Pre-fill amount
+        if (bill.amount !== undefined) {
+          setAmount(String(bill.amount));
         }
+        // Pre-fill note
+        if (bill.note) setNote(bill.note);
+
+        // Pre-fill wallet
+        if (bill.wallet_id) setSourceWalletId(bill.wallet_id);
+
+        // Pre-fill due date
+        if (bill.due_at_utc) {
+          const d = new Date(bill.due_at_utc);
+          if (!isNaN(d.getTime())) setSelectedDate(d);
+        }
+
+        // Pre-fill recurring
+        if (bill.recurring) {
+          const typeRaw: string = bill.recurring.type ?? "Monthly";
+          const typeKey = typeRaw.toLowerCase() as RecurringType;
+          setRecurringType(typeKey);
+          setIsForever(bill.recurring.is_forever ?? false);
+          setRecurringCount(bill.recurring.count ?? 12);
+
+          const labelMap: Record<string, string> = {
+            daily: "Hàng ngày",
+            weekly: "Hàng tuần",
+            monthly: "Hàng tháng",
+            yearly: "Hàng năm",
+          };
+          let label = labelMap[typeKey] ?? "Hàng tháng";
+          if (bill.recurring.is_forever) {
+            label += " - Mãi mãi";
+          } else if (bill.recurring.count) {
+            label += ` - ${bill.recurring.count} lần`;
+          }
+          setRecurringLabel(label);
+        }
+      } catch (err) {
+        console.error("[CreateInvoiceScreen] loadBillData error:", err);
       }
-      // Pre-fill category from params (icon, color, type)
-      if (params.icon && params.color) {
-        setSelectedCategoryData({
-          id: 0,
-          category_id: params.categoryId as string || "",
-          category_name: JSON.stringify({ vi: params.editTitle || params.title || "" }),
-          category_type: (params.type as string) === "income" ? "INCOME" : "EXPENSE",
-          category_group: (params.type as string) === "income" ? "INCOME" : "EXPENSE",
-          icon: params.icon as string,
-          color: params.color as string,
-        });
-      }
-    }
-  }, [isEditMode]);
+    };
+
+    loadBillData();
+  }, [isEditMode, editId]);
+
 
   const selectedWallet = useMemo(
     () => wallets.find((w) => w.walletId === sourceWalletId),
@@ -356,11 +354,10 @@ const CreateRecurringInvoiceScreen = () => {
     () =>
       selectedWallet &&
       selectedCategoryData &&
-      businessType &&
       amount.trim() !== "" &&
       amount !== "0" &&
       recurringType !== "none",
-    [selectedWallet, selectedCategoryData, businessType, amount, recurringType],
+    [selectedWallet, selectedCategoryData, amount, recurringType],
   );
 
   // Set default wallet
@@ -474,7 +471,7 @@ const CreateRecurringInvoiceScreen = () => {
       category_id: selectedCategoryData.id,
       payment_transaction_type: selectedCategoryData.category_type === "INCOME" ? "01" : "02",
       bill_name: parseCategoryName(selectedCategoryData.category_name),
-      business_type: businessType as string,
+      business_type: null,
       recurring: {
         type: (recurringType.charAt(0).toUpperCase() + recurringType.slice(1)) as any,
         count: isForever ? null : recurringCount,
@@ -489,16 +486,41 @@ const CreateRecurringInvoiceScreen = () => {
     };
 
     if (isEditMode) {
-      console.log("Update recurring invoice", { id: editId, ...payload });
-      // TODO: Call update API
+      const payload = {
+        id: parseInt(editId || "0"),
+        wallet_id: selectedWallet?.walletId ?? null,
+        account_number: accountNumber,
+        category_id: selectedCategoryData.id,
+        payment_transaction_type: selectedCategoryData.category_type === "INCOME" ? "01" : "02",
+        bill_name: parseCategoryName(selectedCategoryData.category_name),
+        business_type: null,
+        recurring: {
+          type: (recurringType.charAt(0).toUpperCase() + recurringType.slice(1)) as any,
+          count: isForever ? null : recurringCount,
+          is_forever: isForever,
+          selected_days: recurringType === "weekly" ? selectedDays : null,
+        },
+        amount: finalAmount || 0,
+        currency_code: walletCurrency.currencyId,
+        due_at_utc: selectedDate.toISOString(),
+        note,
+        contract_number: appInfo.contract_number || "",
+      };
+      const success = await updateInvoice(payload);
+      if (success) {
+        showNotification("Đã cập nhật hóa đơn định kỳ thành công", "success");
+        router.back();
+      } else {
+        showNotification("Không thể cập nhật hóa đơn. Vui lòng thử lại.", "error");
+      }
     } else {
       console.log("Create recurring invoice", payload);
       const success = await createInvoice(payload);
       if (success) {
-        Alert.alert("Thành công", "Đã tạo hóa đơn định kỳ thành công");
+        showNotification("Đã tạo hóa đơn định kỳ thành công", "success");
         router.back();
       } else {
-        Alert.alert("Lỗi", "Không thể tạo hóa đơn định kỳ. Vui lòng thử lại.");
+        showNotification("Không thể tạo hóa đơn định kỳ. Vui lòng thử lại.", "error");
       }
     }
   }, [
@@ -524,23 +546,21 @@ const CreateRecurringInvoiceScreen = () => {
 
   // Delete handler (only in edit mode)
   const handleDelete = useCallback(() => {
-    Alert.alert(
-      "Xác nhận xóa",
+    showNotification(
       "Bạn có chắc muốn xóa giao dịch định kỳ này không?",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xóa",
-          style: "destructive",
-          onPress: () => {
-            console.log("Delete recurring invoice:", editId);
-            // TODO: Call delete API with editId
-            router.back();
-          },
-        },
-      ],
+      "warning",
+      undefined,
+      undefined,
+      async () => {
+        const success = await deleteInvoice(parseInt(editId || "0"));
+        if (success) {
+          router.back();
+        } else {
+          showNotification("Không thể xóa hóa đơn. Vui lòng thử lại.", "error");
+        }
+      }
     );
-  }, [editId]);
+  }, [editId, deleteInvoice, showNotification]);
 
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -656,34 +676,6 @@ const CreateRecurringInvoiceScreen = () => {
                     </CustomText>
                   </>
                 )}
-              </View>
-              <FontAwesome6
-                name="chevron-right"
-                size={normalize(16)}
-                color={colors.icon}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Business Type - REQUIRED */}
-          <View style={styles.section}>
-            <CustomText style={styles.label}>
-              Loại dịch vụ <CustomText style={{ color: "red" }}>*</CustomText>
-            </CustomText>
-            <TouchableOpacity
-              style={styles.field}
-              onPress={() => setShowBusinessTypeModal(true)}
-            >
-              <View style={styles.fieldLeft}>
-                <FontAwesome6
-                  name="building"
-                  size={normalize(18)}
-                  color={businessType ? colors.tint : colors.icon}
-                  solid
-                />
-                <CustomText style={[styles.fieldText, !businessType && { color: colors.icon }]}>
-                  {BUSINESS_TYPE_OPTIONS.find((t) => t.value === businessType)?.label || "Chọn loại dịch vụ"}
-                </CustomText>
               </View>
               <FontAwesome6
                 name="chevron-right"
@@ -880,15 +872,6 @@ const CreateRecurringInvoiceScreen = () => {
         onClose={() => setShowRecurringModal(false)}
       />
 
-      {/* Business Type Modal */}
-      <BottomSelectModal
-        visible={showBusinessTypeModal}
-        title="Chọn loại dịch vụ"
-        options={BUSINESS_TYPE_OPTIONS}
-        selectedValue={businessType || undefined}
-        onSelect={(option) => setBusinessType(option.value)}
-        onClose={() => setShowBusinessTypeModal(false)}
-      />
     </SafeAreaView>
   );
 };
