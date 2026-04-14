@@ -1,4 +1,4 @@
-﻿import AppHeader from "@/components/base/AppHeader";
+import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
@@ -157,15 +157,17 @@ function generateSchedules(
       interestDue = Math.round(base * periodicRate);
     }
 
+    const currentPrincipalDue = i === totalInstallments ? balance : principalDue;
+
     rows.push({
       installment_no: i,
       from_date: fromDate.toISOString(),
       to_date: toDate.toISOString(),
       due_date: toDate.toISOString(),
-      principal_due_amount: principalDue,
+      principal_due_amount: currentPrincipalDue,
       ...(interestDue !== undefined ? { interest_due_amount: interestDue } : {}),
     });
-    balance = Math.max(balance - principalDue, 0);
+    balance = Math.max(balance - currentPrincipalDue, 0);
   }
   return rows;
 }

@@ -213,13 +213,14 @@ export const FloatingSchedulePreview: React.FC<Props> = ({
   const schedule = useMemo<ScheduleRow[]>(() => {
     if (totalInstallments <= 0 || principalAmount <= 0) return [];
     const monthsPerPeriod = PERIOD_MONTHS[periodUnit] ?? 1;
-    const principalDue = principalAmount / totalInstallments;
+    const basePrincipalDue = Math.round(principalAmount / totalInstallments);
     const rows: ScheduleRow[] = [];
     let balance = principalAmount;
 
     for (let i = 1; i <= totalInstallments; i++) {
       const annualRate = getRateForInstallment(i, floatingRates);
       const periodicRate = (annualRate / 100 / 12) * monthsPerPeriod;
+      const currentPrincipalDue = i === totalInstallments ? balance : basePrincipalDue;
 
       const interest =
         interestCalcMethod === "FLAT"
@@ -229,11 +230,11 @@ export const FloatingSchedulePreview: React.FC<Props> = ({
       rows.push({
         installment: i,
         annualRate,
-        principalDue,
+        principalDue: currentPrincipalDue,
         interest,
-        balance: Math.max(balance - principalDue, 0),
+        balance: Math.max(balance - currentPrincipalDue, 0),
       });
-      balance = Math.max(balance - principalDue, 0);
+      balance = Math.max(balance - currentPrincipalDue, 0);
     }
     return rows;
   }, [floatingRates, totalInstallments, principalAmount, interestCalcMethod, periodUnit]);
