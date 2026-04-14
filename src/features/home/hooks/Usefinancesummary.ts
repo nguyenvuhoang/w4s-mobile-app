@@ -3,6 +3,7 @@ import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
 import { financeSummaryRepository } from "@/services/repositories/financeSummary.repository";
 import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface ExpenseSummary {
@@ -40,7 +41,7 @@ interface UseFinanceSummaryReturn {
  */
 export const useFinanceSummary = (): UseFinanceSummaryReturn => {
   const [data, setData] = useState<FinanceSummaryData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSummary = useCallback(async () => {
@@ -94,9 +95,13 @@ export const useFinanceSummary = (): UseFinanceSummaryReturn => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchSummary();
-  }, [fetchSummary]);
+  // Dùng useFocusEffect thay useEffect để fetch lại mỗi khi màn hình được focus
+  // Giải quyết race condition khi app mới khởi động (token chưa sẵn sàng)
+  useFocusEffect(
+    useCallback(() => {
+      fetchSummary();
+    }, [fetchSummary])
+  );
 
   // Listen for currency changes
   useEffect(() => {

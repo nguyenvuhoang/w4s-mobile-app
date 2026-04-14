@@ -40,7 +40,7 @@ export const financeSummaryRepository = {
   ): Promise<BaseResponseModel> {
     try {
       return await apiService.executeWorkflow(
-        WORKFLOWCODE.WF_MB_USER_INCOME_EXPENSE_SUMMARY,
+        WORKFLOWCODE.WF_MB_WALLET_INCOME_EXPENSE_SUMMARY,
         {
           usercode: params.usercode,
           period_type: params.period_type,
