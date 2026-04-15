@@ -191,13 +191,14 @@ export default function InvoiceListScreen() {
     if (!payBill || !selWallet || paying) return;
     setPaying(true);
     try {
-      const primary =
+      const expenseAccount =
+        selWallet.accounts?.find((a) => a.accountType === "02") ??
         selWallet.accounts?.find((a) => a.isPrimary) ??
         selWallet.accounts?.[0];
       const res = await invoiceRepository.payBill({
         id: payBill.bill_id,
         wallet_id: selWallet.walletId,
-        account_number: primary?.accountNumber ?? primary?.accountNumber ?? "",
+        account_number: expenseAccount?.accountNumber ?? "",
         paid_at_utc: new Date().toISOString(),
       });
       setPayBill(null);
