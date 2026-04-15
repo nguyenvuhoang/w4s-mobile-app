@@ -5,14 +5,14 @@ import { Fonts } from "@/core/theme/font";
 import type {
   Loan,
   LoanFilterType,
-  LoanStatus,
-  LoanSummary,
+  LoanSummary
 } from "@/features/paybook/types";
 import { paybookRepository } from "@/services/repositories/paybook.repository";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
+import { t } from "i18next";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -27,41 +27,42 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<
-  LoanStatus,
-  { label: string; color: string; bgColor: string; icon: string }
-> = {
+const STATUS_CONFIG = {
   ACTIVE: {
-    label: "Đang vay",
+    label: t("paybook.status_active"),
     color: "#B45309",
     bgColor: "#FEF3C7",
     icon: "clock",
   },
   COMPLETED: {
-    label: "Đã tất toán",
+    label: t("paybook.status_completed"),
     color: "#15803D",
     bgColor: "#DCFCE7",
     icon: "check",
   },
   OVERDUE: {
-    label: "Quá hạn",
+    label: t("paybook.status_overdue"),
     color: "#DC2626",
     bgColor: "#FEE2E2",
     icon: "triangle-exclamation",
   },
   CANCELLED: {
-    label: "Đã huỷ",
+    label: t("paybook.status_cancelled"),
     color: "#6B7280",
     bgColor: "#F3F4F6",
     icon: "ban",
   },
 };
 
-const FILTER_TABS: { key: LoanFilterType; label: string; icon: string }[] = [
-  { key: "ALL", label: "Tất cả", icon: "list" },
-  { key: "LEND", label: "Cho vay", icon: "arrow-trend-up" },
-  { key: "BORROW", label: "Đi vay", icon: "arrow-trend-down" },
-];
+const FILTER_TABS: {
+  key: LoanFilterType;
+  labelKey: string;
+  icon: string;
+}[] = [
+    { key: "ALL", labelKey: "common.all", icon: "list" },
+    { key: "LEND", labelKey: "paybook.lend", icon: "arrow-trend-up" },
+    { key: "BORROW", labelKey: "paybook.borrow", icon: "arrow-trend-down" },
+  ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -219,7 +220,7 @@ const PaybookListScreen = () => {
           onPress={() => router.push(`/(protected)/paybook/${loan.loan_id}`)}
           activeOpacity={0.7}
         >
-          {/* ── Header: avatar + tên + badge ── */}
+          {/* Header */}
           <View style={styles.cardHeader}>
             <View
               style={[
@@ -237,53 +238,79 @@ const PaybookListScreen = () => {
 
             <View style={styles.cardMeta}>
               <View style={styles.nameRow}>
-                <CustomText style={[styles.cardName, { color: colors.text }]} numberOfLines={1}>
+                <CustomText
+                  style={[styles.cardName, { color: colors.text }]}
+                  numberOfLines={1}
+                >
                   {loan.counterparty_name}
                 </CustomText>
-                <View style={[styles.typeBadge, { backgroundColor: isLend ? "#E8F5E9" : "#FFEBEE" }]}>
+
+                <View
+                  style={[
+                    styles.typeBadge,
+                    { backgroundColor: isLend ? "#E8F5E9" : "#FFEBEE" },
+                  ]}
+                >
                   <FontAwesome6
                     name={isLend ? "arrow-trend-up" : "arrow-trend-down"}
                     size={normalize(9)}
                     color={amountColor}
                     style={{ marginRight: wp(0.8) }}
                   />
-                  <CustomText style={[styles.typeBadgeText, { color: amountColor }]}>
-                    {isLend ? "Cho vay" : "Đi vay"}
+                  <CustomText
+                    style={[styles.typeBadgeText, { color: amountColor }]}
+                  >
+                    {isLend
+                      ? t("paybook.lend")
+                      : t("paybook.borrow")}
                   </CustomText>
                 </View>
               </View>
 
-              {/* Hiển thị description hoặc loan_no */}
               {(loan.loan_description || (loan as any).loan_no) ? (
-                <CustomText style={[styles.cardDesc, { color: colors.icon }]} numberOfLines={1}>
-                  {(loan as any).loan_no ? `[${(loan as any).loan_no}] ` : ""}{loan.loan_description || ""}
+                <CustomText
+                  style={[styles.cardDesc, { color: colors.icon }]}
+                  numberOfLines={1}
+                >
+                  {(loan as any).loan_no
+                    ? `[${(loan as any).loan_no}] `
+                    : ""}
+                  {loan.loan_description || ""}
                 </CustomText>
               ) : null}
             </View>
           </View>
 
-          {/* ── Amounts ── */}
+          {/* Amount */}
           <View style={styles.amountRow}>
             <View>
               <CustomText style={[styles.amountLabel, { color: colors.icon }]}>
-                Còn lại
+                {t("paybook.remaining")}
               </CustomText>
-              <CustomText style={[styles.remainingAmount, { color: amountColor }]}>
-                {amountPrefix}{formatCurrency(loan.remaining_amount)} đ
+              <CustomText
+                style={[styles.remainingAmount, { color: amountColor }]}
+              >
+                {amountPrefix}
+                {formatCurrency(loan.remaining_amount)} {loan.currency_code}
               </CustomText>
             </View>
+
             <View style={{ alignItems: "flex-end" }}>
               <CustomText style={[styles.amountLabel, { color: colors.icon }]}>
-                Gốc
+                {t("paybook.principal")}
               </CustomText>
-              <CustomText style={[styles.principalAmount, { color: colors.text }]}>
-                {formatCurrency(loan.principal_amount)} đ
+              <CustomText
+                style={[styles.principalAmount, { color: colors.text }]}
+              >
+                {formatCurrency(loan.principal_amount)} {loan.currency_code}
               </CustomText>
             </View>
           </View>
 
-          {/* ── Progress bar ── */}
-          <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
+          {/* Progress */}
+          <View
+            style={[styles.progressTrack, { backgroundColor: colors.border }]}
+          >
             <View
               style={[
                 styles.progressFill,
@@ -294,16 +321,17 @@ const PaybookListScreen = () => {
               ]}
             />
           </View>
+
           <CustomText style={[styles.progressLabel, { color: colors.icon }]}>
-            Đã trả {Math.round(progress * 100)}% •{" "}
+            {t("paybook.paid")} {Math.round(progress * 100)}% •{" "}
             {loan.payment_type === "INSTALLMENT"
               ? loan.total_installments && loan.total_installments > 0
-                ? `${loan.paid_installments ?? 0}/${loan.total_installments} kỳ`
-                : "Trả góp"
-              : "Trả 1 lần"}
+                ? `${loan.paid_installments ?? 0}/${loan.total_installments} ${t("paybook.installment")}`
+                : t("paybook.installment_payment")
+              : t("paybook.one_time_payment")}
           </CustomText>
 
-          {/* ── Footer: ngày đáo hạn + lãi suất + status ── */}
+          {/* Footer */}
           <View style={styles.cardFooter}>
             <View style={styles.footerLeft}>
               <View style={styles.footerItem}>
@@ -327,17 +355,15 @@ const PaybookListScreen = () => {
                         isDueSoon || loan.status === "OVERDUE"
                           ? "#EF4444"
                           : colors.icon,
-                      fontFamily:
-                        isDueSoon || loan.status === "OVERDUE"
-                          ? Fonts.semiBold
-                          : Fonts.regular,
                     },
                   ]}
                 >
                   {loan.status === "OVERDUE"
-                    ? `Quá hạn ${Math.abs(daysLeft)} ngày`
+                    ? t("paybook.overdue_days", {
+                      days: Math.abs(daysLeft),
+                    })
                     : isDueSoon
-                      ? `Còn ${daysLeft} ngày`
+                      ? t("paybook.days_left", { days: daysLeft })
                       : formatDate(loan.maturity_date)}
                 </CustomText>
               </View>
@@ -349,20 +375,29 @@ const PaybookListScreen = () => {
                   color={colors.icon}
                   style={{ marginRight: wp(1) }}
                 />
-                <CustomText style={[styles.footerText, { color: colors.icon }]}>
-                  {loan.interest_rate}%/năm
+                <CustomText
+                  style={[styles.footerText, { color: colors.icon }]}
+                >
+                  {loan.interest_rate}%/{t("paybook.year")}
                 </CustomText>
               </View>
             </View>
 
-            <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: statusConfig.bgColor },
+              ]}
+            >
               <FontAwesome6
                 name={statusConfig.icon as any}
                 size={normalize(9)}
                 color={statusConfig.color}
                 style={{ marginRight: wp(1) }}
               />
-              <CustomText style={[styles.statusText, { color: statusConfig.color }]}>
+              <CustomText
+                style={[styles.statusText, { color: statusConfig.color }]}
+              >
                 {statusConfig.label}
               </CustomText>
             </View>
@@ -370,20 +405,20 @@ const PaybookListScreen = () => {
         </TouchableOpacity>
       );
     },
-    [styles, colors, formatCurrency]
+    [styles, colors, formatCurrency, t]
   );
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <AppHeader
-        title={isSearchMode ? "" : "Sổ nợ"}
+        title={isSearchMode ? "" : t("paybook.title")}
         centerComponent={
           isSearchMode ? (
             <View style={styles.headerSearchWrapper}>
               <TextInput
                 style={[styles.headerSearchInput, { color: colors.text }]}
-                placeholder="Tìm tên đối tác, mô tả..."
+                placeholder={t("paybook.search_placeholder")}
                 placeholderTextColor={colors.icon}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -433,7 +468,7 @@ const PaybookListScreen = () => {
             <View style={[styles.summaryIconWrapper, { backgroundColor: "#E8F5E9" }]}>
               <FontAwesome6 name="arrow-trend-up" size={normalize(16)} color="#22C55E" />
             </View>
-            <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>Cho vay</CustomText>
+            <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>{t("paybook.lend")}</CustomText>
             <CustomText style={[styles.summaryAmount, { color: "#22C55E" }]}>
               +{formatCurrency(summary.total_lend)} đ
             </CustomText>
@@ -446,7 +481,7 @@ const PaybookListScreen = () => {
             <View style={[styles.summaryIconWrapper, { backgroundColor: "#FFEBEE" }]}>
               <FontAwesome6 name="arrow-trend-down" size={normalize(16)} color="#EF4444" />
             </View>
-            <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>Đi vay</CustomText>
+            <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>{t("paybook.borrow")}</CustomText>
             <CustomText style={[styles.summaryAmount, { color: "#EF4444" }]}>
               -{formatCurrency(summary.total_borrow)} đ
             </CustomText>
@@ -471,7 +506,7 @@ const PaybookListScreen = () => {
                 color={summary.net_balance >= 0 ? "#6366F1" : "#EF4444"}
               />
             </View>
-            <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>Chênh lệch</CustomText>
+            <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>{t("paybook.net")}</CustomText>
             <CustomText
               style={[
                 styles.summaryAmount,
@@ -487,7 +522,7 @@ const PaybookListScreen = () => {
         {/* ── Filter Tabs ───────────────────────────────────────────────── */}
         <View style={styles.filterSection}>
           <CustomText style={[styles.filterSectionTitle, { color: colors.text }]}>
-            Danh sách
+            {t("paybook.list")}
           </CustomText>
           <View style={styles.filterContainer}>
             {FILTER_TABS.map((tab) => {
@@ -514,7 +549,7 @@ const PaybookListScreen = () => {
                       style={styles.filterTabGradient}
                     >
                       <CustomText style={[styles.filterTabText, { color: "#fff" }]}>
-                        {tab.label}
+                        {t(tab.labelKey)}
                       </CustomText>
                       {count > 0 && (
                         <View style={[styles.filterBadge, { backgroundColor: "rgba(255,255,255,0.3)" }]}>
@@ -527,7 +562,7 @@ const PaybookListScreen = () => {
                   ) : (
                     <View style={styles.filterTabInner}>
                       <CustomText style={[styles.filterTabText, { color: colors.text }]}>
-                        {tab.label}
+                        {t(tab.labelKey)}
                       </CustomText>
                       {count > 0 && (
                         <View style={[styles.filterBadge, { backgroundColor: colors.border }]}>
@@ -550,7 +585,7 @@ const PaybookListScreen = () => {
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.tint} />
               <CustomText style={[styles.loadingText, { color: colors.icon }]}>
-                Đang tải...
+                {t("common.loading")}
               </CustomText>
             </View>
           ) : filteredLoans.length > 0 ? (
@@ -566,10 +601,10 @@ const PaybookListScreen = () => {
                 />
               </View>
               <CustomText style={[styles.emptyTitle, { color: colors.text }]}>
-                Chưa có sổ nợ nào
+                {t("paybook.empty_title")}
               </CustomText>
               <CustomText style={[styles.emptySubtitle, { color: colors.icon }]}>
-                Nhấn nút bên dưới để tạo sổ nợ mới
+                {t("paybook.empty_desc")}
               </CustomText>
             </View>
           )}
@@ -597,7 +632,7 @@ const PaybookListScreen = () => {
               color="#fff"
               style={{ marginRight: wp(2) }}
             />
-            <CustomText style={styles.createButtonText}>Thêm sổ nợ mới</CustomText>
+            <CustomText style={styles.createButtonText}>{t("paybook.create")}</CustomText>
           </LinearGradient>
         </TouchableOpacity>
       </View>

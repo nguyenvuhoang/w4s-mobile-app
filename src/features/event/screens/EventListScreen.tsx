@@ -12,6 +12,7 @@ import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
@@ -31,14 +32,24 @@ interface EventListScreenProps {
 
 const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
   const { colors } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const { showNotification } = useNotification();
+
+  /** Parses multi-language JSON string e.g. {"vi": "...", "en": "..."} */
+  const parseLocalizedName = useCallback((nameStr: string): string => {
+    if (!nameStr) return "";
+    if (!nameStr.startsWith("{")) return nameStr; // Not JSON
+    try {
+      const parsed = JSON.parse(nameStr);
+      return parsed[i18n.language] || parsed.vi || parsed.en || nameStr;
+    } catch {
+      return nameStr;
+    }
+  }, [i18n.language]);
 
   // ✅ Lấy mode từ route params
   const params = useLocalSearchParams();
   const mode = (params.mode as "select" | "manage") || "manage";
-
-  console.log("[EventListScreen] params:", params);
-  console.log("[EventListScreen] mode:", mode);
 
   const [activeTab, setActiveTab] = useState<TabType>("ACTIVE");
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -60,15 +71,11 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
 
   // ✅ Computed events dựa vào activeTab (client-side filter)
   const events = useMemo(() => {
-    const filtered = activeTab === "ACTIVE" ? activeEvents : completedEvents;
-    console.log("[EventListScreen] Filtered events for tab:", activeTab);
-    console.log("[EventListScreen] Count:", filtered.length);
-    return filtered;
+    return activeTab === "ACTIVE" ? activeEvents : completedEvents;
   }, [activeTab, activeEvents, completedEvents]);
 
   useFocusEffect(
     useCallback(() => {
-      console.log("[EventListScreen] Fetching all events");
       fetchAllEvents();
       return () => { };
     }, [fetchAllEvents])
@@ -76,12 +83,10 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
 
   const handleTabChange = (tab: TabType) => {
     if (tab === activeTab) return;
-    console.log("[EventListScreen] Switching tab to:", tab);
     setActiveTab(tab);
   };
 
   const handleRefresh = () => {
-    console.log("[EventListScreen] Refreshing all events");
     refetch();
   };
 
@@ -90,12 +95,13 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
   };
 
   const handleEventPress = async (event: Event) => {
+    const localizedTitle = parseLocalizedName(event.title);
     if (mode === "select") {
       await StorageService.setAsyncItem(
         STORAGE_KEY.TEMP_EVENT_STORAGE,
         JSON.stringify({
           eventId: event.id,
-          eventName: event.title,
+          eventName: localizedTitle,
           icon: event.icon,
           color: event.color,
         })
@@ -103,8 +109,6 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
       router.back();
       return;
     } else {
-      // Mode manage: mở modal options
-      console.log("Selected event for management:", event);
       setSelectedEvent(event);
       setShowActionModal(true);
     }
@@ -127,9 +131,10 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
     if (!selectedEvent) return;
     setShowActionModal(false);
 
+    const localizedTitle = parseLocalizedName(selectedEvent.title);
     setTimeout(() => {
       showNotification(
-        `Bạn có chắc muốn xóa sự kiện "${selectedEvent.title}"?`,
+        t("event.confirm_delete", { title: localizedTitle }),
         "warning",
         undefined,
         undefined,
@@ -137,14 +142,11 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
           try {
             const success = await deleteEvent(selectedEvent.id);
             if (success) {
-              showNotification("Đã xóa sự kiện thành công", "success");
+              showNotification(t("event.delete_success"), "success");
             }
           } catch (error) {
             console.error("[EventListScreen] Delete failed:", error);
-            showNotification(
-              "Không thể xóa sự kiện. Vui lòng thử lại.",
-              "error"
-            );
+            showNotification(t("event.delete_failed"), "error");
           }
         }
       );
@@ -155,9 +157,10 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
     if (!selectedEvent) return;
     setShowActionModal(false);
 
+    const localizedTitle = parseLocalizedName(selectedEvent.title);
     setTimeout(() => {
       showNotification(
-        `Bạn có chắc muốn đánh dấu sự kiện "${selectedEvent.title}" là đã hoàn thành?`,
+        t("event.confirm_complete", { title: localizedTitle }),
         "warning",
         undefined,
         undefined,
@@ -171,14 +174,11 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
             };
             const success = await updateEvent(payload as any);
             if (success) {
-              showNotification("Đã hoàn thành sự kiện", "success");
+              showNotification(t("event.complete_success"), "success");
             }
           } catch (error) {
             console.error("[EventListScreen] Complete failed:", error);
-            showNotification(
-              "Không thể cập nhật sự kiện. Vui lòng thử lại.",
-              "error"
-            );
+            showNotification(t("event.update_failed"), "error");
           }
         }
       );
@@ -189,9 +189,10 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
     if (!selectedEvent) return;
     setShowActionModal(false);
 
+    const localizedTitle = parseLocalizedName(selectedEvent.title);
     setTimeout(() => {
       showNotification(
-        `Bạn có chắc muốn kích hoạt lại sự kiện "${selectedEvent.title}"?`,
+        t("event.confirm_reactivate", { title: localizedTitle }),
         "warning",
         undefined,
         undefined,
@@ -205,17 +206,11 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
             };
             const success = await updateEvent(payload as any);
             if (success) {
-              showNotification(
-                "Đã kích hoạt lại sự kiện thành công",
-                "success"
-              );
+              showNotification(t("event.reactivate_success"), "success");
             }
           } catch (error) {
             console.error("[EventListScreen] Reactivate failed:", error);
-            showNotification(
-              "Không thể cập nhật sự kiện. Vui lòng thử lại.",
-              "error"
-            );
+            showNotification(t("event.update_failed"), "error");
           }
         }
       );
@@ -240,38 +235,38 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
       {
         id: "edit",
         icon: "create-outline",
-        label: "Chỉnh sửa",
+        label: t("common.edit"),
         onPress: handleEditEvent,
       },
       {
         id: "history",
         icon: "receipt-outline",
-        label: "Lịch sử giao dịch",
+        label: t("event.transaction_history",),
         onPress: handleTransactionHistory,
       },
       {
         id: "complete",
         icon: "checkmark-circle-outline",
-        label: "Hoàn thành",
+        label: t("event.complete_event"),
         onPress: handleCompleteEvent,
         hide: selectedEvent?.status === "COMPLETED",
       },
       {
         id: "reactivate",
         icon: "refresh-outline",
-        label: "Kích hoạt lại",
+        label: t("event.reactivate_event"),
         onPress: handleReactivateEvent,
         hide: selectedEvent?.status === "ACTIVE",
       },
       {
         id: "delete",
         icon: "trash-outline",
-        label: "Xóa sự kiện",
+        label: t("event.delete_event"),
         onPress: handleDeleteEvent,
         destructive: true,
       },
     ],
-    [selectedEvent]
+    [selectedEvent, t]
   );
 
   const renderEventItem = ({ item }: { item: Event }) => (
@@ -280,6 +275,9 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
       onPress={() => handleEventPress(item)}
       colors={colors}
       mode={mode}
+      t={t}
+      language={i18n.language}
+      parseLocalizedName={parseLocalizedName}
     />
   );
 
@@ -298,15 +296,14 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
           type="semiBold"
         >
           {activeTab === "ACTIVE"
-            ? "Chưa có sự kiện đang diễn ra"
-            : "Chưa có sự kiện đã kết thúc"}
+            ? t("event.empty_active")
+            : t("event.empty_completed")}
         </CustomText>
       </View>
     );
   };
 
   const renderFooter = () => {
-    // Không còn pagination, chỉ hiện loading khi fetch all
     if (!loading) return null;
 
     return (
@@ -344,7 +341,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
             ]}
             type="semiBold"
           >
-            Đang diễn ra ({activeEvents.length})
+            {t("event.active_count", { count: activeEvents.length })}
           </CustomText>
         </TouchableOpacity>
 
@@ -366,7 +363,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
             ]}
             type="semiBold"
           >
-            Đã kết thúc ({completedEvents.length})
+            {t("event.completed_count", { count: completedEvents.length })}
           </CustomText>
         </TouchableOpacity>
       </View>
@@ -382,7 +379,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
         edges={["top", "bottom"]}
       >
         <AppHeader
-          title={mode === "select" ? "Chọn sự kiện" : "Sự kiện"}
+          title={mode === "select" ? t("event.select_title") : t("event.title")}
           showBackButton
         />
         <View style={styles.centerContainer}>
@@ -391,7 +388,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
             style={{ marginTop: normalize(12), color: colors.text }}
             type="regular"
           >
-            Đang tải...
+            {t("common.loading")}
           </CustomText>
         </View>
       </SafeAreaView>
@@ -404,7 +401,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
       edges={["top", "bottom"]}
     >
       <AppHeader
-        title={mode === "select" ? "Chọn sự kiện" : "Sự kiện"}
+        title={mode === "select" ? t("event.select_title") : t("event.title")}
         showBackButton
       />
 
@@ -430,7 +427,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
             onPress={handleRefresh}
           >
             <CustomText style={styles.retryButtonText} type="bold">
-              Thử lại
+              {t("common.retry")}
             </CustomText>
           </TouchableOpacity>
         </View>
@@ -469,7 +466,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
         onPress={handleCreateEvent}
       >
         <CustomText style={styles.createButtonText} type="bold">
-          Tạo sự kiện
+          {t("event.create_event")}
         </CustomText>
       </TouchableOpacity>
 
@@ -477,13 +474,13 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
       <BottomActionModal
         visible={showActionModal}
         onClose={() => setShowActionModal(false)}
-        title={selectedEvent?.title}
+        title={selectedEvent ? parseLocalizedName(selectedEvent.title) : ""}
         subtitle={
-          selectedEvent?.status === "ACTIVE" ? "Đang diễn ra" : "Đã kết thúc"
+          selectedEvent?.status === "ACTIVE" ? t("event.ongoing") : t("event.finished")
         }
         actions={eventActions}
         colors={colors}
-        cancelText="Hủy"
+        cancelText={t("common.cancel")}
       />
     </SafeAreaView>
   );
@@ -495,6 +492,9 @@ interface EventCardProps {
   onPress: () => void;
   colors: any;
   mode: "select" | "manage";
+  t: any;
+  language: string;
+  parseLocalizedName: (s: string) => string;
 }
 
 const EventCard: React.FC<EventCardProps> = ({
@@ -502,10 +502,13 @@ const EventCard: React.FC<EventCardProps> = ({
   onPress,
   colors,
   mode,
+  t,
+  language,
+  parseLocalizedName,
 }) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("vi-VN", {
+    return date.toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -519,13 +522,13 @@ const EventCard: React.FC<EventCardProps> = ({
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) {
-      return `Đã quá ${Math.abs(diffDays)} ngày`;
+      return t("event.overdue_days", { days: Math.abs(diffDays) });
     } else if (diffDays === 0) {
-      return "Hôm nay";
+      return t("event.today");
     } else if (diffDays === 1) {
-      return "Ngày mai";
+      return t("event.tomorrow");
     } else {
-      return `Còn ${diffDays} ngày`;
+      return t("event.days_remaining", { days: diffDays });
     }
   };
 
@@ -552,7 +555,7 @@ const EventCard: React.FC<EventCardProps> = ({
             type="bold"
             numberOfLines={1}
           >
-            {event.title}
+            {parseLocalizedName(event.title)}
           </CustomText>
           <CustomText
             style={[styles.eventDate, { color: colors.icon }]}

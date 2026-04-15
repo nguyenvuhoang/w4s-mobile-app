@@ -1,6 +1,7 @@
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { wp } from '@/utils/layout';
+import { t } from 'i18next';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -14,7 +15,7 @@ interface SectionHeaderProps {
 const SectionHeader = ({
   title,
   showAction = false,
-  actionText = 'Xem tất cả',
+  actionText = t("common.view_all"),
   onPressAction,
 }: SectionHeaderProps) => {
   const { colors } = useAppTheme();

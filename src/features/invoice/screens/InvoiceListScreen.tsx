@@ -13,6 +13,7 @@ import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Modal,
@@ -50,16 +51,6 @@ interface BillItem {
 
 type TabType = "unpaid" | "paid";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const RECURRING_LABELS: Record<string, string> = {
-  Monthly: "Hàng tháng",
-  Weekly: "Hàng tuần",
-  Daily: "Hàng ngày",
-  Yearly: "Hàng năm",
-  None: "Một lần",
-};
-
 interface StatusCfg {
   label: string;
   color: string;
@@ -67,34 +58,8 @@ interface StatusCfg {
   icon: string;
 }
 
-const STATUS_MAP: Record<string, StatusCfg> = {
-  Pending: { label: "Chưa tới kỳ thanh toán", color: "#F59E0B", bg: "#FEF3C7", icon: "clock" },
-  Due: { label: "Có thể thanh toán", color: "#3B82F6", bg: "#DBEAFE", icon: "bolt" },
-  Overdue: { label: "Quá hạn", color: "#EF4444", bg: "#FEE2E2", icon: "circle-exclamation" },
-  Paid: { label: "Đã thanh toán", color: "#10B981", bg: "#D1FAE5", icon: "circle-check" },
-};
-const DEFAULT_STATUS: StatusCfg = STATUS_MAP.Pending;
-
 const DEFAULT_ICON = "receipt";
 const DEFAULT_COLOR = "#6B7280";
-
-function fmtDate(utc: string) {
-  try { return new Date(utc).toLocaleDateString("vi-VN"); }
-  catch { return utc; }
-}
-
-function parseName(s: string) {
-  if (!s) return "";
-  if (!s.startsWith("{")) return s;
-  try { const p = JSON.parse(s); return p.vi || p.en || s; }
-  catch { return s; }
-}
-
-function recurringLabel(r: RecurringInfo) {
-  const base = RECURRING_LABELS[r?.type] ?? r?.type ?? "";
-  if (!r || r.type === "None") return base;
-  return r.is_forever ? base : `${base} · ${r.count} lần`;
-}
 
 const isPayable = (b: BillItem) =>
   b.status === "Pending" || b.status === "Due";
@@ -103,8 +68,52 @@ const isPayable = (b: BillItem) =>
 
 export default function InvoiceListScreen() {
   const { colors } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const { showNotification, showNotificationAPI } = useNotification();
   const { wallets, defaultWallet } = useWallet();
+
+  // ─── Localized configs ──────────────────────────────────────────────────
+
+  const RECURRING_LABELS: Record<string, string> = useMemo(() => ({
+    Monthly: t("invoice.rec_monthly"),
+    Weekly: t("invoice.rec_weekly"),
+    Daily: t("invoice.rec_daily"),
+    Yearly: t("invoice.rec_yearly"),
+    None: t("invoice.rec_none"),
+  }), [t]);
+
+  const STATUS_MAP: Record<string, StatusCfg> = useMemo(() => ({
+    Pending: { label: t("invoice.status_pending"), color: "#F59E0B", bg: "#FEF3C7", icon: "clock" },
+    Due: { label: t("invoice.status_due"), color: "#3B82F6", bg: "#DBEAFE", icon: "bolt" },
+    Overdue: { label: t("invoice.status_overdue"), color: "#EF4444", bg: "#FEE2E2", icon: "circle-exclamation" },
+    Paid: { label: t("invoice.status_paid"), color: "#10B981", bg: "#D1FAE5", icon: "circle-check" },
+  }), [t]);
+
+  const DEFAULT_STATUS: StatusCfg = useMemo(() => STATUS_MAP.Pending, [STATUS_MAP]);
+
+  const parseName = useCallback((s: string) => {
+    if (!s) return "";
+    if (!s.startsWith("{")) return s;
+    try {
+      const p = JSON.parse(s);
+      return p[i18n.language] || p.vi || p.en || s;
+    }
+    catch { return s; }
+  }, [i18n.language]);
+
+  const fmtDate = useCallback((utc: string) => {
+    try {
+      return new Date(utc).toLocaleDateString(i18n.language === "vi" ? "vi-VN" : "en-US");
+    } catch {
+      return utc;
+    }
+  }, [i18n.language]);
+
+  const recurringLabel = useCallback((r: RecurringInfo) => {
+    const base = RECURRING_LABELS[r?.type] ?? r?.type ?? "";
+    if (!r || r.type === "None") return base;
+    return r.is_forever ? base : t("invoice.rec_count", { base, count: r.count });
+  }, [t, RECURRING_LABELS]);
 
   const [tab, setTab] = useState<TabType>("unpaid");
   const [loading, setLoading] = useState(true);
@@ -129,11 +138,11 @@ export default function InvoiceListScreen() {
       }),
     );
     return m;
-  }, [categories]);
+  }, [categories, parseName]);
 
   const fmt = useCallback(
-    (n: number) => new Intl.NumberFormat("vi-VN").format(Math.abs(n)),
-    [],
+    (n: number) => new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : "en-US").format(Math.abs(n)),
+    [i18n.language],
   );
 
   // ── Fetch ────────────────────────────────────────────────────────────────
@@ -188,18 +197,18 @@ export default function InvoiceListScreen() {
       const res = await invoiceRepository.payBill({
         id: payBill.bill_id,
         wallet_id: selWallet.walletId,
-        account_number: primary?.accountNumber ?? "",
+        account_number: primary?.accountNumber ?? primary?.accountNumber ?? "",
         paid_at_utc: new Date().toISOString(),
       });
       setPayBill(null);
       showNotificationAPI(res);
       if (res?.success) load(true);
     } catch {
-      showNotification("Thanh toán thất bại, vui lòng thử lại", "error");
+      showNotification(t("invoice.payment_failed"), "error");
     } finally {
       setPaying(false);
     }
-  }, [payBill, selWallet, paying, showNotification, showNotificationAPI, load]);
+  }, [payBill, selWallet, paying, showNotification, showNotificationAPI, load, t]);
 
   // ── Card ─────────────────────────────────────────────────────────────────
 
@@ -279,14 +288,14 @@ export default function InvoiceListScreen() {
                 activeOpacity={0.8}
               >
                 <FontAwesome6 name="bolt" size={normalize(10)} color="#fff" solid />
-                <CustomText style={styles.payBtnText}>Thanh Toán</CustomText>
+                <CustomText style={styles.payBtnText}>{t("invoice.pay_now")}</CustomText>
               </TouchableOpacity>
             )}
           </View>
         </View>
       );
     },
-    [styles, fmt, catMap, openPay, colors.icon, colors.tint],
+    [styles, fmt, catMap, openPay, colors.icon, colors.tint, STATUS_MAP, DEFAULT_STATUS, fmtDate, parseName, recurringLabel, t],
   );
 
   // ── Pay Modal ────────────────────────────────────────────────────────────
@@ -318,7 +327,7 @@ export default function InvoiceListScreen() {
 
           {/* Header */}
           <CustomText style={[styles.sheetTitle, { color: colors.text }]}>
-            Xác nhận thanh toán
+            {t("invoice.confirm_payment")}
           </CustomText>
 
           {/* Bill summary card */}
@@ -339,7 +348,7 @@ export default function InvoiceListScreen() {
                 {title}
               </CustomText>
               <CustomText style={[styles.billCardSub, { color: colors.icon }]}>
-                Hạn: {fmtDate(payBill.due_at_utc)}
+                {t("invoice.due_date", { date: fmtDate(payBill.due_at_utc) })}
               </CustomText>
             </View>
             <View style={{ alignItems: "flex-end" }}>
@@ -354,7 +363,7 @@ export default function InvoiceListScreen() {
 
           {/* Wallet selector label */}
           <CustomText style={[styles.sectionLabel, { color: colors.icon }]}>
-            Thanh toán từ ví
+            {t("invoice.pay_from_wallet")}
           </CustomText>
 
           {/* Wallet list */}
@@ -430,14 +439,14 @@ export default function InvoiceListScreen() {
             ) : (
               <>
                 <FontAwesome6 name="bolt" size={normalize(14)} color="#fff" solid />
-                <CustomText style={styles.confirmText}>Xác nhận thanh toán</CustomText>
+                <CustomText style={styles.confirmText}>{t("invoice.confirm_payment")}</CustomText>
               </>
             )}
           </TouchableOpacity>
 
           {/* Cancel */}
           <TouchableOpacity style={styles.cancelBtn} onPress={closePay}>
-            <CustomText style={[styles.cancelText, { color: colors.icon }]}>Hủy</CustomText>
+            <CustomText style={[styles.cancelText, { color: colors.icon }]}>{t("common.cancel")}</CustomText>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -449,24 +458,15 @@ export default function InvoiceListScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <AppHeader
-        title="Hóa đơn"
-        rightComponent={
-          <TouchableOpacity>
-            <FontAwesome6
-              name="ellipsis-vertical"
-              size={normalize(20)}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-        }
+        title={t("invoice.title")}
       />
 
       {/* Tabs */}
       <View style={styles.tabs}>
         {(
           [
-            { key: "unpaid", label: "Chưa thanh toán", count: unpaid.length },
-            { key: "paid", label: "Đã thanh toán", count: 0 },
+            { key: "unpaid", label: t("invoice.unpaid"), count: unpaid.length },
+            { key: "paid", label: t("invoice.paid"), count: 0 },
           ] as { key: TabType; label: string; count: number }[]
         ).map(({ key, label, count }) => {
           const active = tab === key;
@@ -522,8 +522,8 @@ export default function InvoiceListScreen() {
               />
               <CustomText style={[styles.emptyText, { color: colors.icon }]}>
                 {tab === "unpaid"
-                  ? "Không có hóa đơn nào cần thanh toán"
-                  : "Chưa có hóa đơn đã thanh toán"}
+                  ? t("invoice.empty_unpaid")
+                  : t("invoice.empty_paid")}
               </CustomText>
             </View>
           )}
@@ -539,7 +539,7 @@ export default function InvoiceListScreen() {
           activeOpacity={0.8}
         >
           <FontAwesome6 name="plus" size={normalize(15)} color="#fff" />
-          <CustomText style={styles.fabText}>Tạo hóa đơn</CustomText>
+          <CustomText style={styles.fabText}>{t("invoice.create_invoice")}</CustomText>
         </TouchableOpacity>
       </View>
 

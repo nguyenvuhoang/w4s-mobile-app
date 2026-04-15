@@ -29,6 +29,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Animated,
@@ -56,39 +57,6 @@ interface SelectedContact {
 }
 
 // ─── Option configs ───────────────────────────────────────────────────────────
-
-const LOAN_TYPE_TABS: { key: LoanType; label: string; icon: string; color: string }[] = [
-  { key: "LEND", label: "Cho vay", icon: "arrow-trend-up", color: "#22C55E" },
-  { key: "BORROW", label: "Đi vay", icon: "arrow-trend-down", color: "#EF4444" },
-];
-
-const COUNTERPARTY_TYPES: { key: CounterpartyType; label: string; icon: string }[] = [
-  // { key: "INDIVIDUAL", label: "Cá nhân", icon: "user" },
-  // { key: "MERCHANT", label: "Doanh nghiệp", icon: "building" },
-];
-
-const INTEREST_RATE_TYPES: { key: InterestRateType; label: string; icon: string; desc: string }[] = [
-  { key: "FIXED", label: "Cố định", icon: "lock", desc: "Lãi suất không đổi" },
-  { key: "FLOATING", label: "Thả nổi", icon: "wave-square", desc: "Lãi theo từng giai đoạn" },
-];
-
-const PERIOD_UNITS: { key: PeriodUnit; label: string }[] = [
-  { key: "DAY", label: "Ngày" },
-  { key: "WEEK", label: "Tuần" },
-  { key: "MONTH", label: "Tháng" },
-  { key: "QUARTER", label: "Quý" },
-  { key: "YEAR", label: "Năm" },
-];
-
-const INTEREST_CALC_METHODS: { key: InterestCalcMethod; label: string; desc: string }[] = [
-  { key: "REDUCING", label: "Dư nợ giảm dần", desc: "Lãi tính trên số dư còn lại" },
-  { key: "FLAT", label: "Lãi phẳng", desc: "Lãi tính theo số gốc ban đầu" },
-];
-
-const PAYMENT_TYPES: { key: PaymentType; label: string; icon: string; desc: string }[] = [
-  { key: "BULLET", label: "Trả 1 lần", icon: "circle-check", desc: "Trả toàn bộ cuối kỳ" },
-  { key: "INSTALLMENT", label: "Trả góp", icon: "calendar-days", desc: "Trả theo nhiều kỳ" },
-];
 
 const AVATAR_COLORS = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F"];
 
@@ -309,9 +277,41 @@ const collapsibleStyles = StyleSheet.create({
 
 const CreatePaybookScreen = () => {
   const { colors } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const { showNotification } = useNotification();
   const { wallets, defaultWallet, refresh } = useWallet();
   const sessionIdRef = useRef<string>(Date.now().toString());
+
+  // ─── Localized option configs ────────────────────────────────────────────────
+
+  const LOAN_TYPE_TABS: { key: LoanType; label: string; icon: string; color: string }[] = useMemo(() => [
+    { key: "LEND", label: t("paybook.lend"), icon: "arrow-trend-up", color: "#22C55E" },
+    { key: "BORROW", label: t("paybook.borrow"), icon: "arrow-trend-down", color: "#EF4444" },
+  ], [t]);
+
+  const INTEREST_RATE_TYPES: { key: InterestRateType; label: string; icon: string; desc: string }[] = useMemo(() => [
+    { key: "FIXED", label: t("paybook.fixed"), icon: "lock", desc: t("paybook.fixed_desc") },
+    { key: "FLOATING", label: t("paybook.floating"), icon: "wave-square", desc: t("paybook.floating_desc") },
+  ], [t]);
+
+  const PERIOD_UNITS: { key: PeriodUnit; label: string }[] = useMemo(() => [
+    { key: "DAY", label: t("paybook.day") },
+    { key: "WEEK", label: t("paybook.week") },
+    { key: "MONTH", label: t("paybook.month") },
+    { key: "QUARTER", label: t("paybook.quarter") },
+    { key: "YEAR", label: t("paybook.year_unit") },
+  ], [t]);
+
+  const INTEREST_CALC_METHODS: { key: InterestCalcMethod; label: string; desc: string }[] = useMemo(() => [
+    { key: "REDUCING", label: t("paybook.reducing"), desc: t("paybook.reducing_desc") },
+    { key: "FLAT", label: t("paybook.flat"), desc: t("paybook.flat_desc") },
+  ], [t]);
+
+  const PAYMENT_TYPES: { key: PaymentType; label: string; icon: string; desc: string }[] = useMemo(() => [
+    { key: "BULLET", label: t("paybook.bullet"), icon: "circle-check", desc: t("paybook.bullet_desc") },
+    { key: "INSTALLMENT", label: t("paybook.installment_payment"), icon: "calendar-days", desc: t("paybook.installment_desc") },
+  ], [t]);
+
   const [interestEnabled, setInterestEnabled] = useState(false);
   const [loanType, setLoanType] = useState<LoanType>("LEND");
   const [walletId, setWalletId] = useState<number | null>(null);
@@ -447,11 +447,11 @@ const CreatePaybookScreen = () => {
   const formatNum = useCallback((val: string) => {
     const raw = val.replace(/\D/g, "");
     if (!raw) return "";
-    return new Intl.NumberFormat("vi-VN").format(parseInt(raw, 10));
-  }, []);
+    return new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : "en-US").format(parseInt(raw, 10));
+  }, [i18n.language]);
 
   const formatDate = (d: Date) =>
-    d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    d.toLocaleDateString(i18n.language === "vi" ? "vi-VN" : "en-US", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   const getInitials = (n: string) => {
     const words = n.trim().split(" ");
@@ -506,10 +506,10 @@ const CreatePaybookScreen = () => {
     const from = parseInt(newFloatingFrom) || 0;
     const totalKy = parseInt(totalInstallments) || 1;
     if (from < 1 || from > totalKy) {
-      showNotification(`Kỳ bắt đầu phải từ 1 đến ${totalKy}!`, "error"); return;
+      showNotification(t("paybook.error_period_range", { max: totalKy }), "error"); return;
     }
     if (floatingRates.find((f) => f.from_installment === from)) {
-      showNotification(`Kỳ ${from} đã có lãi suất!`, "error"); return;
+      showNotification(t("paybook.error_period_exists", { period: from }), "error"); return;
     }
     setFloatingRates((prev) =>
       [...prev, { from_installment: from, rate: parseFloat(newFloatingRate) || 0 }].sort(
@@ -521,14 +521,14 @@ const CreatePaybookScreen = () => {
 
   const handleCreate = async () => {
     if (!maturityDate) return;
-    if (effectiveInterestRate < 0) return showNotification("Lãi suất không được là số âm!", "error");
-    if (maturityDate <= startDate) return showNotification("Ngày đáo hạn phải sau ngày bắt đầu!", "error");
+    if (effectiveInterestRate < 0) return showNotification(t("paybook.error_negative_rate"), "error");
+    if (maturityDate <= startDate) return showNotification(t("paybook.error_maturity_date"), "error");
 
     // Sinh schedules cho INSTALLMENT
     let schedules: LoanScheduleItem[] | undefined;
     if (paymentType === "INSTALLMENT") {
       const n = parseInt(totalInstallments);
-      if (!n || n <= 0) return showNotification("Vui lòng nhập số kỳ trả!", "error");
+      if (!n || n <= 0) return showNotification(t("paybook.error_installments_required"), "error");
       schedules = generateSchedules(
         parsedPrincipal, n, startDate, periodUnit,
         interestEnabled, effectiveInterestRate,
@@ -556,11 +556,11 @@ const CreatePaybookScreen = () => {
         ...(schedules ? { schedules } : {}),
         ...(note.trim() ? { note: note.trim() } : {}),
       });
-      showNotification("Tạo sổ nợ thành công!", "success");
+      showNotification(t("paybook.success_create"), "success");
       router.back();
     } catch (error) {
       showNotification(
-        error instanceof Error ? error.message : "Tạo sổ nợ thất bại!",
+        error instanceof Error ? error.message : t("paybook.error_create"),
         "error"
       );
     }
@@ -582,7 +582,7 @@ const CreatePaybookScreen = () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.flex}
       >
-        <AppHeader title="Tạo sổ nợ mới" />
+        <AppHeader title={t("paybook.create_new")} />
 
         <ScrollView
           style={styles.flex}
@@ -624,45 +624,13 @@ const CreatePaybookScreen = () => {
           {/* ════════════════════════════════════════════════════════════════
               2. THÔNG TIN ĐỐI TÁC
           ════════════════════════════════════════════════════════════════ */}
-          <SectionHeader title="Thông tin đối tác" />
+          <SectionHeader title={t("paybook.partner_info")} />
 
           {/* Loại đối tác */}
           <View style={styles.section}>
             {/* <CustomText style={[styles.label, { color: colors.text }]}>Loại đối tác</CustomText> */}
             <View style={styles.chipRow}>
-              {COUNTERPARTY_TYPES.map((ct) => {
-                const isActive = counterpartyType === ct.key;
-                return (
-                  <TouchableOpacity
-                    key={ct.key}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: isActive ? `${accentColor}20` : colors.card,
-                        borderColor: isActive ? accentColor : colors.border,
-                      },
-                    ]}
-                    onPress={() => setCounterpartyType(ct.key)}
-                    activeOpacity={0.7}
-                  >
-                    <FontAwesome6
-                      name={ct.icon as any}
-                      size={normalize(13)}
-                      color={isActive ? accentColor : colors.icon}
-                      solid
-                      style={{ marginRight: wp(1.5) }}
-                    />
-                    <CustomText
-                      style={[
-                        styles.chipText,
-                        { color: isActive ? accentColor : colors.text, fontFamily: isActive ? Fonts.semiBold : Fonts.regular },
-                      ]}
-                    >
-                      {ct.label}
-                    </CustomText>
-                  </TouchableOpacity>
-                );
-              })}
+              {/* COUNTERPARTY_TYPES rendering (commented out in original) */}
             </View>
           </View>
 
@@ -670,7 +638,7 @@ const CreatePaybookScreen = () => {
           <View style={styles.section}>
             <View style={styles.labelRow}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                {loanType === "LEND" ? "Người được vay" : "Chủ nợ"}{" "}
+                {loanType === "LEND" ? t("paybook.debtor") : t("paybook.creditor")}{" "}
                 <CustomText style={{ color: "#EF4444" }}>*</CustomText>
               </CustomText>
               <TouchableOpacity
@@ -691,7 +659,7 @@ const CreatePaybookScreen = () => {
                   style={{ marginRight: wp(1) }}
                 />
                 <CustomText style={[styles.quickFillText, { color: accentColor }]}>
-                  Chọn từ danh bạ
+                  {t("paybook.select_contact")}
                 </CustomText>
               </TouchableOpacity>
             </View>
@@ -724,10 +692,10 @@ const CreatePaybookScreen = () => {
                   style={[styles.fieldInput, { color: colors.text }]}
                   placeholder={
                     counterpartyType === "MERCHANT"
-                      ? "Tên công ty / tổ chức..."
+                      ? t("paybook.company_placeholder")
                       : loanType === "LEND"
-                        ? "Người được bạn cho vay..."
-                        : "Người bạn đang vay..."
+                        ? t("paybook.lend_placeholder")
+                        : t("paybook.borrow_placeholder")
                   }
                   placeholderTextColor={colors.icon}
                   value={counterpartyName}
@@ -741,12 +709,12 @@ const CreatePaybookScreen = () => {
           {/* ════════════════════════════════════════════════════════════════
               3. THÔNG TIN KHOẢN VAY
           ════════════════════════════════════════════════════════════════ */}
-          <SectionHeader title="Thông tin khoản vay" />
+          <SectionHeader title={t("paybook.loan_info")} />
 
           {/* Ví liên kết */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Ví liên kết <CustomText style={{ color: "#EF4444" }}>*</CustomText>
+              {t("paybook.linked_wallet")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
               style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -762,7 +730,7 @@ const CreatePaybookScreen = () => {
                   style={styles.fieldIcon}
                 />
                 <CustomText style={[styles.fieldText, { color: selectedWallet ? colors.text : colors.icon }]}>
-                  {selectedWallet?.name || "Chọn ví liên kết"}
+                  {selectedWallet?.name || t("paybook.select_wallet_placeholder")}
                 </CustomText>
               </View>
               <FontAwesome6 name="chevron-right" size={normalize(12)} color={colors.icon} />
@@ -771,12 +739,12 @@ const CreatePaybookScreen = () => {
 
           {/* Mô tả */}
           <View style={styles.section}>
-            <CustomText style={[styles.label, { color: colors.text }]}>Mô tả khoản vay</CustomText>
+            <CustomText style={[styles.label, { color: colors.text }]}>{t("paybook.loan_description")}</CustomText>
             <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <FontAwesome6 name="file-lines" size={normalize(16)} color={loanDescription.trim() ? accentColor : colors.icon} solid style={styles.fieldIcon} />
               <TextInput
                 style={[styles.fieldInput, { color: colors.text }]}
-                placeholder="Mô tả ngắn gọn mục đích..."
+                placeholder={t("paybook.desc_placeholder")}
                 placeholderTextColor={colors.icon}
                 value={loanDescription}
                 onChangeText={setLoanDescription}
@@ -789,7 +757,7 @@ const CreatePaybookScreen = () => {
           <View style={[styles.section, { flexDirection: "row", gap: wp(3) }]}>
             <View style={{ flex: 1 }}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                Hạn mức
+                {t("paybook.limit")}
               </CustomText>
               <View style={[styles.amountWrapper, { backgroundColor: colors.card, borderColor: parsedLimit > 0 ? accentColor : colors.border }]}>
                 <TextInput
@@ -800,13 +768,13 @@ const CreatePaybookScreen = () => {
                   onChangeText={(t) => setLoanLimit(formatNum(t))}
                   keyboardType="numeric"
                 />
-                <CustomText style={[styles.currencyTag, { color: accentColor }]}>đ</CustomText>
+                <CustomText style={[styles.currencyTag, { color: accentColor }]}>{i18n.language === "vi" ? "đ" : "$"}</CustomText>
               </View>
             </View>
 
             <View style={{ flex: 1 }}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                Số tiền vay <CustomText style={{ color: "#EF4444" }}>*</CustomText>
+                {t("paybook.loan_amount")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
               </CustomText>
               <View style={[styles.amountWrapper, { backgroundColor: colors.card, borderColor: parsedPrincipal > 0 ? accentColor : colors.border }]}>
                 <TextInput
@@ -817,7 +785,7 @@ const CreatePaybookScreen = () => {
                   onChangeText={(t) => setPrincipalAmount(formatNum(t))}
                   keyboardType="numeric"
                 />
-                <CustomText style={[styles.currencyTag, { color: accentColor }]}>đ</CustomText>
+                <CustomText style={[styles.currencyTag, { color: accentColor }]}>{i18n.language === "vi" ? "đ" : "$"}</CustomText>
               </View>
             </View>
           </View>
@@ -825,14 +793,14 @@ const CreatePaybookScreen = () => {
           {parsedLimit > 0 && parsedPrincipal > parsedLimit && (
             <View style={styles.section}>
               <CustomText style={[styles.warningText, { color: "#EF4444" }]}>
-                Số tiền vay không được vượt quá hạn mức!
+                {t("paybook.amount_limit_warning")}
               </CustomText>
             </View>
           )}
 
 
           {/* Hình thức thanh toán */}
-          <SectionHeader title="Hình thức thanh toán" />
+          <SectionHeader title={t("paybook.payment_method")} />
           <View style={styles.section}>
             <View style={styles.chipRow}>
               {PAYMENT_TYPES.map((pt) => {
@@ -867,13 +835,13 @@ const CreatePaybookScreen = () => {
           {paymentType === "INSTALLMENT" && (
             <View style={styles.section}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                Số kỳ trả <CustomText style={{ color: "#EF4444" }}>*</CustomText>
+                {t("paybook.installments_count")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
               </CustomText>
               <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <FontAwesome6 name="list-ol" size={normalize(15)} color={totalInstallments ? accentColor : colors.icon} style={styles.fieldIcon} />
                 <TextInput
                   style={[styles.fieldInput, { color: colors.text }]}
-                  placeholder="Ví dụ: 12"
+                  placeholder={t("paybook.installments_placeholder")}
                   placeholderTextColor={colors.icon}
                   value={totalInstallments}
                   onChangeText={(t) => {
@@ -884,16 +852,16 @@ const CreatePaybookScreen = () => {
                   keyboardType="number-pad"
                   returnKeyType="done"
                 />
-                <CustomText style={[styles.unitTag, { color: colors.icon }]}>kỳ</CustomText>
+                <CustomText style={[styles.unitTag, { color: colors.icon }]}>{t("paybook.installments")}</CustomText>
               </View>
               {parseInt(totalInstallments) >= 100 && (
                 <CustomText style={[styles.warningText, { color: accentColor, marginTop: hp(0.5) }]}>
-                  Tối đa 100 kỳ
+                  {t("paybook.max_installments_hint")}
                 </CustomText>
               )}
 
               {/* Khoảng thời gian mỗi kỳ — chỉ cần chọn đơn vị, mặc định số lượng = 1 */}
-              <CustomText style={[styles.label, { color: colors.text, marginTop: hp(1.5) }]}>Khoảng thời gian mỗi kỳ</CustomText>
+              <CustomText style={[styles.label, { color: colors.text, marginTop: hp(1.5) }]}>{t("paybook.period_duration")}</CustomText>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: wp(1.5) }}>
                 {PERIOD_UNITS.map((pu) => {
                   const isActive = periodUnit === pu.key;
@@ -921,8 +889,8 @@ const CreatePaybookScreen = () => {
               5. LÃI SUẤT — Toggle section
           ════════════════════════════════════════════════════════════════ */}
           <CollapsibleSection
-            title="Lãi suất"
-            subtitle={interestEnabled ? "Tuỳ chỉnh lãi suất & phương thức" : "Mặc định: không lãi suất (0%)"}
+            title={t("paybook.interest")}
+            subtitle={interestEnabled ? t("paybook.custom_interest_hint", "Tuỳ chỉnh lãi suất & phương thức") : t("paybook.default_interest_hint", "Mặc định: không lãi suất (0%)")}
             enabled={interestEnabled}
             onToggle={handleToggleInterest}
             accentColor={accentColor}
@@ -932,7 +900,7 @@ const CreatePaybookScreen = () => {
             {/* Loại lãi suất: Cố định / Thả nổi (chỉ hiện khi INSTALLMENT) */}
             {paymentType === "INSTALLMENT" && (
               <View style={styles.section}>
-                <CustomText style={[styles.label, { color: colors.text }]}>Loại lãi suất</CustomText>
+                <CustomText style={[styles.label, { color: colors.text }]}>{t("paybook.interest_rate_type")}</CustomText>
                 <View style={styles.chipRow}>
                   {INTEREST_RATE_TYPES.map((rt) => {
                     const isActive = interestRateType === rt.key;
@@ -961,7 +929,7 @@ const CreatePaybookScreen = () => {
             {/* Nếu FIXED: nhập lãi suất */}
             {interestRateType === "FIXED" && (
               <View style={styles.section}>
-                <CustomText style={[styles.label, { color: colors.text }]}>Lãi suất (%/năm)</CustomText>
+                <CustomText style={[styles.label, { color: colors.text }]}>{t("paybook.interest_rate_annual")}</CustomText>
                 <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <FontAwesome6 name="percent" size={normalize(14)} color={effectiveInterestRate > 0 ? accentColor : colors.icon} style={styles.fieldIcon} />
                   <TextInput
@@ -973,7 +941,7 @@ const CreatePaybookScreen = () => {
                     keyboardType="decimal-pad"
                     returnKeyType="next"
                   />
-                  <CustomText style={[styles.unitTag, { color: colors.icon }]}>%/năm</CustomText>
+                  <CustomText style={[styles.unitTag, { color: colors.icon }]}>%/{t("paybook.year")}</CustomText>
                 </View>
               </View>
             )}
@@ -981,16 +949,16 @@ const CreatePaybookScreen = () => {
             {/* Nếu FLOATING: danh sách giai đoạn lãi + preview */}
             {interestRateType === "FLOATING" && (
               <View style={styles.section}>
-                <CustomText style={[styles.label, { color: colors.text }]}>Lãi suất theo kỳ (%/năm)</CustomText>
+                <CustomText style={[styles.label, { color: colors.text }]}>{t("paybook.interest_rate_period")}</CustomText>
                 {floatingRates.map((fr, idx) => {
                   const nextFrom = floatingRates[idx + 1]?.from_installment;
                   const toLabel = nextFrom ? `${fr.from_installment}–${nextFrom - 1}` : `${fr.from_installment}+`;
                   return (
                     <View key={idx} style={[styles.floatingRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
                       <View style={{ flex: 1 }}>
-                        <CustomText style={[styles.optionLabel, { color: colors.text, marginBottom: 0 }]}>Kỳ {toLabel}</CustomText>
+                        <CustomText style={[styles.optionLabel, { color: colors.text, marginBottom: 0 }]}>{t("paybook.period_label", { label: toLabel })}</CustomText>
                         <CustomText style={[styles.optionDesc, { color: colors.icon }]}>
-                          {idx === 0 ? "Lãi suất khởi đầu" : "Lãi suất điều chỉnh"}
+                          {idx === 0 ? t("paybook.initial_rate_desc") : t("paybook.adjusted_rate_desc")}
                         </CustomText>
                       </View>
                       <View style={[styles.floatingRateInput, { borderColor: colors.border }]}>
@@ -1026,20 +994,20 @@ const CreatePaybookScreen = () => {
                     activeOpacity={0.7}
                   >
                     <FontAwesome6 name="circle-plus" size={normalize(16)} color={accentColor} solid />
-                    <CustomText style={[styles.addFloatingLabel, { color: accentColor }]}>Thêm giai đoạn lãi</CustomText>
+                    <CustomText style={[styles.addFloatingLabel, { color: accentColor }]}>{t("paybook.add_floating_period")}</CustomText>
                   </TouchableOpacity>
                 ) : (
                   <View style={[styles.addFloatingPanel, { backgroundColor: colors.card, borderColor: accentColor }]}>
-                    <CustomText style={[styles.label, { color: colors.text }]}>Thêm giai đoạn lãi</CustomText>
+                    <CustomText style={[styles.label, { color: colors.text }]}>{t("paybook.add_floating_period")}</CustomText>
                     <View style={{ flexDirection: "row", gap: wp(2), marginBottom: hp(1) }}>
                       <View style={{ flex: 1 }}>
-                        <CustomText style={[styles.optionDesc, { color: colors.icon, marginBottom: hp(0.3) }]}>Từ kỳ</CustomText>
+                        <CustomText style={[styles.optionDesc, { color: colors.icon, marginBottom: hp(0.3) }]}>{t("paybook.from_period")}</CustomText>
                         <View style={[styles.field, { backgroundColor: colors.background, borderColor: colors.border, paddingVertical: hp(1.2) }]}>
                           <TextInput style={[styles.fieldInput, { color: colors.text }]} value={newFloatingFrom} onChangeText={setNewFloatingFrom} keyboardType="number-pad" placeholder="2" placeholderTextColor={colors.icon} />
                         </View>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <CustomText style={[styles.optionDesc, { color: colors.icon, marginBottom: hp(0.3) }]}>Lãi suất (%/năm)</CustomText>
+                        <CustomText style={[styles.optionDesc, { color: colors.icon, marginBottom: hp(0.3) }]}>{t("paybook.interest_rate_annual")}</CustomText>
                         <View style={[styles.field, { backgroundColor: colors.background, borderColor: colors.border, paddingVertical: hp(1.2) }]}>
                           <TextInput style={[styles.fieldInput, { color: colors.text }]} value={newFloatingRate} onChangeText={setNewFloatingRate} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={colors.icon} />
                           <CustomText style={[styles.unitTag, { color: colors.icon }]}>%</CustomText>
@@ -1048,10 +1016,10 @@ const CreatePaybookScreen = () => {
                     </View>
                     <View style={{ flexDirection: "row", gap: wp(2) }}>
                       <TouchableOpacity style={[styles.cancelBtn, { borderColor: colors.border }]} onPress={() => setShowAddFloating(false)} activeOpacity={0.7}>
-                        <CustomText style={[styles.cancelText, { color: colors.icon }]}>Huỷ</CustomText>
+                        <CustomText style={[styles.cancelText, { color: colors.icon }]}>{t("common.cancel")}</CustomText>
                       </TouchableOpacity>
                       <TouchableOpacity style={[styles.addFloatingConfirm, { backgroundColor: accentColor }]} onPress={addFloatingPeriod} activeOpacity={0.7}>
-                        <CustomText style={{ color: "#fff", fontSize: normalize(13), fontFamily: Fonts.semiBold }}>Thêm</CustomText>
+                        <CustomText style={{ color: "#fff", fontSize: normalize(13), fontFamily: Fonts.semiBold }}>{t("common.add")}</CustomText>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -1072,7 +1040,7 @@ const CreatePaybookScreen = () => {
 
             {/* Phương pháp tính lãi */}
             <View style={styles.section}>
-              <CustomText style={[styles.label, { color: colors.text }]}>Phương pháp tính lãi</CustomText>
+              <CustomText style={[styles.label, { color: colors.text }]}>{t("paybook.interest_calc_method_label")}</CustomText>
               {INTEREST_CALC_METHODS.map((cm) => {
                 const isActive = interestCalcMethod === cm.key;
                 return (
@@ -1098,11 +1066,11 @@ const CreatePaybookScreen = () => {
             </View>
           </CollapsibleSection>
 
-          <SectionHeader title="Thời hạn" />
+          <SectionHeader title={t("paybook.timeline")} />
           <View style={[styles.section, { flexDirection: "row", gap: wp(3) }]}>
             <View style={{ flex: 1 }}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                Ngày bắt đầu <CustomText style={{ color: "#EF4444" }}>*</CustomText>
+                {t("paybook.start_date_label")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
               </CustomText>
               <TouchableOpacity
                 style={[styles.dateField, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -1116,7 +1084,7 @@ const CreatePaybookScreen = () => {
 
             <View style={{ flex: 1 }}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                Đáo hạn <CustomText style={{ color: "#EF4444" }}>*</CustomText>
+                {t("paybook.maturity_date_label")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
               </CustomText>
               <TouchableOpacity
                 style={[
@@ -1138,7 +1106,7 @@ const CreatePaybookScreen = () => {
                   style={{ marginRight: wp(2), opacity: paymentType === "INSTALLMENT" ? 0.5 : 1 }}
                 />
                 <CustomText style={[styles.dateText, { color: maturityDate ? colors.text : colors.icon, opacity: paymentType === "INSTALLMENT" ? 0.5 : 1 }]}>
-                  {maturityDate ? formatDate(maturityDate) : "Chọn ngày"}
+                  {maturityDate ? formatDate(maturityDate) : t("paybook.select_date_placeholder")}
                 </CustomText>
               </TouchableOpacity>
             </View>
@@ -1147,11 +1115,11 @@ const CreatePaybookScreen = () => {
           {/* ════════════════════════════════════════════════════════════════
               6. GHI CHÚ
           ════════════════════════════════════════════════════════════════ */}
-          <SectionHeader title="Ghi chú" />
+          <SectionHeader title={t("paybook.note")} />
           <View style={styles.section}>
             <TextInput
               style={[styles.noteInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-              placeholder="Thêm ghi chú (tùy chọn)"
+              placeholder={t("paybook.note_placeholder")}
               placeholderTextColor={colors.icon}
               multiline
               numberOfLines={3}
@@ -1191,7 +1159,7 @@ const CreatePaybookScreen = () => {
         {Platform.OS === "ios" && (showStartPicker || showMaturityPicker) && (
           <View style={[styles.pickerToolbar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
             <TouchableOpacity onPress={() => { setShowStartPicker(false); setShowMaturityPicker(false); }} style={styles.pickerButton}>
-              <CustomText style={[styles.pickerButtonText, { color: colors.tint }]}>Xong</CustomText>
+              <CustomText style={[styles.pickerButtonText, { color: colors.tint }]}>{t("common.close")}</CustomText>
             </TouchableOpacity>
           </View>
         )}
@@ -1204,7 +1172,7 @@ const CreatePaybookScreen = () => {
             disabled={loading}
             activeOpacity={0.7}
           >
-            <CustomText style={[styles.cancelText, { color: colors.tint }]}>Huỷ</CustomText>
+            <CustomText style={[styles.cancelText, { color: colors.tint }]}>{t("common.cancel")}</CustomText>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -1221,7 +1189,7 @@ const CreatePaybookScreen = () => {
             ) : (
               <>
                 <FontAwesome6 name="floppy-disk" size={normalize(15)} color="#fff" style={{ marginRight: wp(1.5) }} solid />
-                <CustomText style={styles.createText}>Lưu sổ nợ</CustomText>
+                <CustomText style={styles.createText}>{t("paybook.save_paybook")}</CustomText>
               </>
             )}
           </TouchableOpacity>

@@ -4,7 +4,6 @@ import BottomRecurringModal, {
   RecurringResult,
   RecurringType,
 } from "@/components/modals/BottomRecurringModal";
-import BottomSelectModal, { BottomSelectOption } from "@/components/modals/SelectModal";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
@@ -71,9 +70,21 @@ const CreateRecurringInvoiceScreen = () => {
   const { appInfo } = React.useContext(GlobalContext);
   const { createInvoice, updateInvoice, deleteInvoice, loading: creating } = useInvoice();
   const { showNotification } = useNotification();
-  const { t } = useTranslation();
-  const { parseCurrencyName, currencies } = useCurrency({ autoFetch: true });
+  const { t, i18n } = useTranslation();
+  const { currencies } = useCurrency({ autoFetch: true });
   const { convert } = useExchangeRate();
+
+  const parseCurrencyName = useCallback((currency: any) => {
+    try {
+      const name = currency.currency_name;
+      if (!name) return "";
+      if (!name.startsWith("{")) return name;
+      const parsed = JSON.parse(name);
+      return parsed[i18n.language] || parsed.vi || parsed.en || name;
+    } catch {
+      return currency.currency_name || "";
+    }
+  }, [i18n.language]);
 
   const selectedType = "expense";
 
@@ -83,8 +94,8 @@ const CreateRecurringInvoiceScreen = () => {
 
   // Get title from params or use default based on mode
   const screenTitle = isEditMode
-    ? "Chỉnh sửa giao dịch định kỳ"
-    : (params.title as string) || "Tạo hóa đơn định kỳ";
+    ? t("invoice.edit_recurring")
+    : (params.title as string) || t("invoice.create_recurring");
 
   // Form states
   const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
@@ -107,7 +118,32 @@ const CreateRecurringInvoiceScreen = () => {
   const [recurringCount, setRecurringCount] = useState<number | null>(12);
   const [isForever, setIsForever] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([1]);
-  const [recurringLabel, setRecurringLabel] = useState("Hàng Tháng - 12 lần");
+  const [recurringLabel, setRecurringLabel] = useState("");
+
+  const getLocalizedRecurringLabel = useCallback((type: RecurringType, count: number | null, isForever: boolean) => {
+    const labelMap: Record<string, string> = {
+      daily: t("invoice.rec_daily"),
+      weekly: t("invoice.rec_weekly"),
+      monthly: t("invoice.rec_monthly"),
+      yearly: t("invoice.rec_yearly"),
+    };
+
+    let label = labelMap[type] || t("invoice.rec_monthly");
+
+    if (count && !isForever) {
+      label += ` - ${count} ${t("invoice.times")}`;
+    } else if (isForever) {
+      label += ` - ${t("invoice.forever")}`;
+    }
+    return label;
+  }, [t]);
+
+  // Initial label set
+  useEffect(() => {
+    if (!recurringLabel) {
+      setRecurringLabel(getLocalizedRecurringLabel(recurringType, recurringCount, isForever));
+    }
+  }, [recurringType, recurringCount, isForever, getLocalizedRecurringLabel]);
 
   // Process autofill data from params
   useEffect(() => {
@@ -154,24 +190,11 @@ const CreateRecurringInvoiceScreen = () => {
         if (autofillData.recurring) {
           if (autofillData.recurring.type) {
             setRecurringType(autofillData.recurring.type);
-
-            // Update label based on type
-            const labelMap: Record<string, string> = {
-              daily: "Hàng ngày",
-              weekly: "Hàng tuần",
-              monthly: "Hàng tháng",
-              yearly: "Hàng năm",
-            };
-
-            let label = labelMap[autofillData.recurring.type] || "Hàng tháng";
-
-            if (autofillData.recurring.count && !autofillData.recurring.isForever) {
-              label += ` - ${autofillData.recurring.count} lần`;
-            } else if (autofillData.recurring.isForever) {
-              label += " - Mãi mãi";
-            }
-
-            setRecurringLabel(label);
+            setRecurringLabel(getLocalizedRecurringLabel(
+              autofillData.recurring.type,
+              autofillData.recurring.count || null,
+              autofillData.recurring.isForever || false
+            ));
           }
 
           if (autofillData.recurring.count !== undefined) {
@@ -190,7 +213,7 @@ const CreateRecurringInvoiceScreen = () => {
         console.error("[CreateInvoice] Failed to parse autofill data:", error);
       }
     }
-  }, [params.autofillData]);
+  }, [params.autofillData, getLocalizedRecurringLabel]);
 
   // Update selectedType based on category if it changes
   useEffect(() => {
@@ -233,20 +256,7 @@ const CreateRecurringInvoiceScreen = () => {
           setRecurringType(typeKey);
           setIsForever(bill.recurring.is_forever ?? false);
           setRecurringCount(bill.recurring.count ?? 12);
-
-          const labelMap: Record<string, string> = {
-            daily: "Hàng ngày",
-            weekly: "Hàng tuần",
-            monthly: "Hàng tháng",
-            yearly: "Hàng năm",
-          };
-          let label = labelMap[typeKey] ?? "Hàng tháng";
-          if (bill.recurring.is_forever) {
-            label += " - Mãi mãi";
-          } else if (bill.recurring.count) {
-            label += ` - ${bill.recurring.count} lần`;
-          }
-          setRecurringLabel(label);
+          setRecurringLabel(getLocalizedRecurringLabel(typeKey, bill.recurring.count, bill.recurring.is_forever));
         }
       } catch (err) {
         console.error("[CreateInvoiceScreen] loadBillData error:", err);
@@ -254,7 +264,7 @@ const CreateRecurringInvoiceScreen = () => {
     };
 
     loadBillData();
-  }, [isEditMode, editId]);
+  }, [isEditMode, editId, getLocalizedRecurringLabel]);
 
 
   const selectedWallet = useMemo(
@@ -267,7 +277,7 @@ const CreateRecurringInvoiceScreen = () => {
       return {
         currencyId: "VND",
         symbol: "đ",
-        name: "Việt Nam Đồng",
+        name: i18n.language === "vi" ? "Việt Nam Đồng" : "Vietnamese Dong",
       };
     }
 
@@ -286,9 +296,9 @@ const CreateRecurringInvoiceScreen = () => {
     return {
       currencyId: selectedWallet.currency || "VND",
       symbol: selectedWallet.currency === "USD" ? "$" : "đ",
-      name: selectedWallet.currency || "Việt Nam Đồng",
+      name: selectedWallet.currency || (i18n.language === "vi" ? "Việt Nam Đồng" : "Vietnamese Dong"),
     };
-  }, [selectedWallet, currencies, parseCurrencyName]);
+  }, [selectedWallet, currencies, parseCurrencyName, i18n.language]);
 
   const needsConversion = useMemo(
     () => inputCurrency.currencyId !== walletCurrency.currencyId,
@@ -431,21 +441,22 @@ const CreateRecurringInvoiceScreen = () => {
   );
 
   const parseCategoryName = useCallback((nameJson: string) => {
+    if (!nameJson) return t("invoice.select_group");
     try {
       const parsed = JSON.parse(nameJson);
-      return parsed.vi || parsed.en || "Chọn nhóm";
+      return parsed[i18n.language] || parsed.vi || parsed.en || nameJson;
     } catch {
-      return "Chọn nhóm";
+      return nameJson || t("invoice.select_group");
     }
-  }, []);
+  }, [t, i18n.language]);
 
   const formatDate = useCallback((date: Date) => {
-    return date.toLocaleDateString("vi-VN", {
+    return date.toLocaleDateString(i18n.language === "vi" ? "vi-VN" : "en-US", {
       day: "numeric",
       month: "long",
       year: "numeric",
     });
-  }, []);
+  }, [i18n.language]);
 
   const handleRecurringSelect = useCallback((result: RecurringResult) => {
     setRecurringType(result.type);
@@ -459,7 +470,7 @@ const CreateRecurringInvoiceScreen = () => {
     if (!isValid || !selectedWallet || !selectedCategoryData || !appInfo) return;
 
     const primaryAccount = selectedWallet.accounts?.find(acc => acc.isPrimary) || selectedWallet.accounts?.[0];
-    const accountNumber = primaryAccount?.accountNumber || "";
+    const accountNumber = primaryAccount?.accountNumber || primaryAccount?.accountNumber || "";
 
     const finalAmount = needsConversion
       ? convertedAmount
@@ -486,41 +497,25 @@ const CreateRecurringInvoiceScreen = () => {
     };
 
     if (isEditMode) {
-      const payload = {
+      const editPayload = {
+        ...payload,
         id: parseInt(editId || "0"),
-        wallet_id: selectedWallet?.walletId ?? null,
-        account_number: accountNumber,
-        category_id: selectedCategoryData.id,
-        payment_transaction_type: selectedCategoryData.category_type === "INCOME" ? "01" : "02",
-        bill_name: parseCategoryName(selectedCategoryData.category_name),
-        business_type: null,
-        recurring: {
-          type: (recurringType.charAt(0).toUpperCase() + recurringType.slice(1)) as any,
-          count: isForever ? null : recurringCount,
-          is_forever: isForever,
-          selected_days: recurringType === "weekly" ? selectedDays : null,
-        },
-        amount: finalAmount || 0,
-        currency_code: walletCurrency.currencyId,
-        due_at_utc: selectedDate.toISOString(),
-        note,
-        contract_number: appInfo.contract_number || "",
       };
-      const success = await updateInvoice(payload);
+      const success = await updateInvoice(editPayload);
       if (success) {
-        showNotification("Đã cập nhật hóa đơn định kỳ thành công", "success");
+        showNotification(t("invoice.success_update"), "success");
         router.back();
       } else {
-        showNotification("Không thể cập nhật hóa đơn. Vui lòng thử lại.", "error");
+        showNotification(t("invoice.error_update"), "error");
       }
     } else {
       console.log("Create recurring invoice", payload);
       const success = await createInvoice(payload);
       if (success) {
-        showNotification("Đã tạo hóa đơn định kỳ thành công", "success");
+        showNotification(t("invoice.success_create"), "success");
         router.back();
       } else {
-        showNotification("Không thể tạo hóa đơn định kỳ. Vui lòng thử lại.", "error");
+        showNotification(t("invoice.error_create"), "error");
       }
     }
   }, [
@@ -538,16 +533,19 @@ const CreateRecurringInvoiceScreen = () => {
     isForever,
     appInfo,
     createInvoice,
+    updateInvoice,
     parseCategoryName,
     needsConversion,
     convertedAmount,
     walletCurrency.currencyId,
+    showNotification,
+    t
   ]);
 
   // Delete handler (only in edit mode)
   const handleDelete = useCallback(() => {
     showNotification(
-      "Bạn có chắc muốn xóa giao dịch định kỳ này không?",
+      t("invoice.confirm_delete"),
       "warning",
       undefined,
       undefined,
@@ -556,11 +554,11 @@ const CreateRecurringInvoiceScreen = () => {
         if (success) {
           router.back();
         } else {
-          showNotification("Không thể xóa hóa đơn. Vui lòng thử lại.", "error");
+          showNotification(t("invoice.error_delete"), "error");
         }
       }
     );
-  }, [editId, deleteInvoice, showNotification]);
+  }, [editId, deleteInvoice, showNotification, t]);
 
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -705,7 +703,7 @@ const CreateRecurringInvoiceScreen = () => {
           {/* Recurring Period - REQUIRED */}
           <View style={styles.section}>
             <CustomText style={styles.label}>
-              Chu kỳ lặp lại <CustomText style={{ color: "red" }}>*</CustomText>
+              {t("invoice.recurring_cycle")} <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
               style={styles.field}
@@ -737,7 +735,7 @@ const CreateRecurringInvoiceScreen = () => {
 
           {/* Start Date */}
           <View style={styles.section}>
-            <CustomText style={styles.label}>Ngày bắt đầu</CustomText>
+            <CustomText style={styles.label}>{t("invoice.start_date", "Ngày bắt đầu")}</CustomText>
             <View style={styles.datePicker}>
               <TouchableOpacity
                 onPress={() => {
@@ -775,10 +773,10 @@ const CreateRecurringInvoiceScreen = () => {
 
           {/* Note - Optional */}
           <View style={styles.section}>
-            <CustomText style={styles.label}>Ghi chú</CustomText>
+            <CustomText style={styles.label}>{t("transaction.note")}</CustomText>
             <TextInput
               style={styles.noteInput}
-              placeholder="Thêm ghi chú (tùy chọn)"
+              placeholder={t("transaction.note_placeholder_optional")}
               placeholderTextColor={colors.icon}
               multiline
               numberOfLines={3}
@@ -799,16 +797,18 @@ const CreateRecurringInvoiceScreen = () => {
               />
               <View style={styles.infoTextContainer}>
                 <CustomText style={styles.infoText}>
-                  Hóa đơn định kỳ sẽ tự động tạo giao dịch theo chu kỳ đã chọn.
+                  {t("invoice.info_auto_create")}
                 </CustomText>
                 {recurringType === "weekly" && selectedDays.length > 0 && (
                   <CustomText
                     style={[styles.infoText, { marginTop: normalize(4) }]}
                   >
-                    Giao dịch sẽ được tạo vào:{" "}
+                    {t("invoice.info_created_on")}{" "}
                     {selectedDays
                       .map((d) => {
-                        const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+                        const days = i18n.language === "vi"
+                          ? ["CN", "T2", "T3", "T4", "T5", "T6", "T7"]
+                          : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
                         return days[d];
                       })
                       .join(", ")}
@@ -834,14 +834,14 @@ const CreateRecurringInvoiceScreen = () => {
                 color="#EF4444"
                 solid
               />
-              <CustomText style={styles.deleteText}>Xóa</CustomText>
+              <CustomText style={styles.deleteText}>{t("invoice.delete")}</CustomText>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
               style={styles.cancelBtn}
               onPress={() => router.back()}
             >
-              <CustomText style={styles.cancelText}>Hủy</CustomText>
+              <CustomText style={styles.cancelText}>{t("invoice.cancel")}</CustomText>
             </TouchableOpacity>
           )}
 
@@ -854,7 +854,7 @@ const CreateRecurringInvoiceScreen = () => {
             disabled={!isValid || creating}
           >
             <CustomText style={styles.createText}>
-              {creating ? "Đang xử lý..." : (isEditMode ? "Lưu" : "Tạo")}
+              {creating ? t("invoice.processing") : (isEditMode ? t("invoice.save") : t("invoice.create"))}
             </CustomText>
           </TouchableOpacity>
         </View>
@@ -863,7 +863,7 @@ const CreateRecurringInvoiceScreen = () => {
       {/* Recurring Modal */}
       <BottomRecurringModal
         visible={showRecurringModal}
-        title="Chu kỳ lặp lại"
+        title={t("invoice.recurring_cycle")}
         initialRecurringType={recurringType}
         initialRecurringCount={recurringCount || 1}
         initialIsForever={isForever}

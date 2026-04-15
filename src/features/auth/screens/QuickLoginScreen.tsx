@@ -213,7 +213,7 @@ const QuickLoginScreen = () => {
 
               <View style={styles.body}>
                 <ThemedText style={styles.description}>
-                  Vui lòng đăng nhập để sử dụng ứng dụng quản lý tài chính W4S.
+                  {t("auth.description")}
                 </ThemedText>
 
                 <View style={styles.userInfoRow}>
@@ -226,7 +226,7 @@ const QuickLoginScreen = () => {
                     style={styles.avatar}
                   />
                   <ThemedText style={styles.username}>
-                    Xin chào, {appInfo?.name || appInfo?.login_name || "Avatar"}
+                    {t("common.hello")}, {appInfo?.name || appInfo?.login_name || "Avatar"}
                   </ThemedText>
                 </View>
 
@@ -322,7 +322,7 @@ const QuickLoginScreen = () => {
                 </TouchableOpacity>
 
                 <View style={styles.registerRow}>
-                  <ThemedText style={styles.registerText}>hoặc </ThemedText>
+                  <ThemedText style={styles.registerText}>{t("auth.or")}{" "}</ThemedText>
                   <TouchableOpacity
                     onPress={handleCreateAccount}
                     disabled={isLoadingAny}

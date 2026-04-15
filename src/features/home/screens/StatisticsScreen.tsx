@@ -15,6 +15,7 @@ import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
+import { t } from "i18next";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
@@ -516,9 +517,9 @@ const WALLET_CARD_PEEK = normalize(54);
 
 /** Map wallet type sang label hiển thị tiếng Việt */
 const WALLET_TYPE_LABEL: Record<string, string> = {
-  FIAT: "Ví tiền mặt",
-  TRACKER: "Ví theo dõi",
-  DEFI: "Ví thẻ",
+  FIAT: t("wallet.type_fiat_name"),
+  TRACKER: t("wallet.type_tracking_name"),
+  DEFI: t("wallet.type_defi_name"),
 };
 
 /* ================= STYLES ================= */

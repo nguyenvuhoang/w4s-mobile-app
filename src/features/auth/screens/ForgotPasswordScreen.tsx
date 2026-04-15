@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -252,17 +254,23 @@ const ForgotPasswordScreen = () => {
             onPress={handleConfirm}
             style={[
               styles.confirmButton,
-              { backgroundColor: colors.tint },
               isLoading && styles.disabledButton,
             ]}
             activeOpacity={0.9}
             disabled={isLoading}
           >
-            {isLoading ? (
-              <ActivityIndicator color={Tokens.colors.main.white} />
-            ) : (
-              <ThemedText style={styles.confirmButtonText}>{t('common.confirm')}</ThemedText>
-            )}
+            <LinearGradient
+              colors={colors.gradianBase}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.gradient}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={Tokens.colors.main.white} />
+              ) : (
+                <ThemedText style={styles.confirmButtonText}>{t('common.confirm')}</ThemedText>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -387,13 +395,19 @@ const styles = StyleSheet.create({
     flex: 1,
     height: normalize(52),
     borderRadius: normalize(100),
-    justifyContent: 'center',
-    alignItems: 'center',
+    overflow: 'hidden',
     shadowColor: Tokens.colors.main.black,
     shadowOffset: { width: 0, height: normalize(4) },
     shadowOpacity: 0.15,
     shadowRadius: normalize(8),
     elevation: 4,
+  },
+  gradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
   },
   confirmButtonText: {
     fontSize: normalize(18),

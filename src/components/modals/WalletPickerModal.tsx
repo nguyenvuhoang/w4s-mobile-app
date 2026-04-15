@@ -15,6 +15,7 @@ import { Fonts } from '@/core/theme/font';
 import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { t } from 'i18next';
 import React, { useMemo } from 'react';
 import {
     FlatList,
@@ -60,7 +61,7 @@ const WalletPickerModal: React.FC<WalletPickerModalProps> = ({
     const data = useMemo<WalletPickerItem[]>(() => {
         const allOption: WalletPickerItem = {
             walletId: 'all',
-            name: 'Tất cả các ví',
+            name: t("wallet.all_wallets"),
             icon: 'layer-group',
             color: colors.tint,
         };

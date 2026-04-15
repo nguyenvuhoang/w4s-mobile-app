@@ -193,7 +193,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                 color={selectedWalletId === 'all' ? colors.tint : (selectedWallet?.color || colors.tint)}
               />
               <CustomText style={styles.cashText}>
-                {selectedWalletId === 'all' ? 'Tất cả các ví' : (selectedWallet?.name || t('wallet.select_wallet'))}
+                {selectedWalletId === 'all' ? t('wallet.all_wallets') : (selectedWallet?.name || t('wallet.select_wallet'))}
               </CustomText>
             </View>
             <View style={[styles.dividerVertical, { backgroundColor: colors.border }]} />

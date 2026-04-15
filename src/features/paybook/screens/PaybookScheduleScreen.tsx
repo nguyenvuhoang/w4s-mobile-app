@@ -10,6 +10,7 @@ import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
@@ -22,32 +23,34 @@ import { usePaybookDetail } from "../hooks/usePaybook";
 
 type FilterStatus = "ALL" | ScheduleStatus;
 
-const SCHEDULE_STATUS_CONFIG: Record<
-  ScheduleStatus,
-  { label: string; color: string; bgColor: string; icon: string }
-> = {
-  PENDING: { label: "Chờ thanh toán", color: "#B45309", bgColor: "#FEF3C7", icon: "clock" },
-  PAID: { label: "Đã thanh toán", color: "#15803D", bgColor: "#DCFCE7", icon: "check" },
-  OVERDUE: { label: "Quá hạn", color: "#DC2626", bgColor: "#FEE2E2", icon: "triangle-exclamation" },
-  PARTIAL: { label: "Thanh toán 1 phần", color: "#7C3AED", bgColor: "#EDE9FE", icon: "circle-half-stroke" },
-};
-
-const FILTER_TABS: { key: FilterStatus; label: string }[] = [
-  { key: "ALL", label: "Tất cả" },
-  { key: "PENDING", label: "Chờ trả" },
-  { key: "PAID", label: "Đã trả" },
-  { key: "OVERDUE", label: "Quá hạn" },
-];
+const getScheduleStatusConfig = (
+  t: ReturnType<typeof useTranslation>["t"]
+): Record<ScheduleStatus, { label: string; color: string; bgColor: string; icon: string }> => ({
+  PENDING: { label: t("paybookSchedule.status.PENDING"), color: "#B45309", bgColor: "#FEF3C7", icon: "clock" },
+  PAID: { label: t("paybookSchedule.status.PAID"), color: "#15803D", bgColor: "#DCFCE7", icon: "check" },
+  OVERDUE: { label: t("paybookSchedule.status.OVERDUE"), color: "#DC2626", bgColor: "#FEE2E2", icon: "triangle-exclamation" },
+  PARTIAL: { label: t("paybookSchedule.status.PARTIAL"), color: "#7C3AED", bgColor: "#EDE9FE", icon: "circle-half-stroke" },
+});
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 const PaybookScheduleScreen = () => {
+  const { t } = useTranslation();
   const { colors } = useAppTheme();
   const params = useLocalSearchParams<{ loanId: string }>();
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("ALL");
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const SCHEDULE_STATUS_CONFIG = useMemo(() => getScheduleStatusConfig(t), [t]);
+
+  const FILTER_TABS: { key: FilterStatus; label: string }[] = useMemo(() => [
+    { key: "ALL", label: t("paybookSchedule.filter.all") },
+    { key: "PENDING", label: t("paybookSchedule.filter.pending") },
+    { key: "PAID", label: t("paybookSchedule.filter.paid") },
+    { key: "OVERDUE", label: t("paybookSchedule.filter.overdue") },
+  ], [t]);
 
   const { loading, loanDetail, getLoanDetail } = usePaybookDetail();
 
@@ -57,8 +60,6 @@ const PaybookScheduleScreen = () => {
     }
   }, [params.loanId, getLoanDetail]);
 
-  // TODO: Replace with mock data when needed
-  // const schedules = MOCK_SCHEDULES;
   const schedules = loanDetail?.schedules ?? [];
 
   // ── Derived ─────────────────────────────────────────────────────────────────
@@ -122,28 +123,28 @@ const PaybookScheduleScreen = () => {
       <View style={styles.summaryRow}>
         <View style={styles.summaryItem}>
           <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>
-            Tổng gốc
+            {t("paybookSchedule.summary.totalPrincipal")}
           </CustomText>
           <CustomText style={[styles.summaryValue, { color: colors.text }]}>
-            {formatCurrencyShort(totalPrincipal)} đ
+            {formatCurrencyShort(totalPrincipal)} {t("paybookSchedule.currency")}
           </CustomText>
         </View>
         <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
         <View style={styles.summaryItem}>
           <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>
-            Tổng lãi
+            {t("paybookSchedule.summary.totalInterest")}
           </CustomText>
           <CustomText style={[styles.summaryValue, { color: colors.text }]}>
-            {formatCurrencyShort(totalInterest)} đ
+            {formatCurrencyShort(totalInterest)} {t("paybookSchedule.currency")}
           </CustomText>
         </View>
         <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
         <View style={styles.summaryItem}>
           <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>
-            Tổng phải trả
+            {t("paybookSchedule.summary.totalDue")}
           </CustomText>
           <CustomText style={[styles.summaryValue, { color: colors.text }]}>
-            {formatCurrencyShort(totalPrincipal + totalInterest)} đ
+            {formatCurrencyShort(totalPrincipal + totalInterest)} {t("paybookSchedule.currency")}
           </CustomText>
         </View>
       </View>
@@ -232,17 +233,17 @@ const PaybookScheduleScreen = () => {
             </View>
             <View style={styles.scheduleHeaderMeta}>
               <CustomText style={[styles.scheduleKy, { color: colors.text }]}>
-                Kỳ {item.installment_no}
+                {t("paybookSchedule.card.installment", { no: item.installment_no })}
               </CustomText>
               <CustomText style={[styles.scheduleDate, { color: colors.icon }]}>
-                Hạn: {formatDate(item.due_date)}
+                {t("paybookSchedule.card.dueDate", { date: formatDate(item.due_date) })}
               </CustomText>
             </View>
           </View>
 
           <View style={styles.scheduleHeaderRight}>
             <CustomText style={[styles.scheduleTotal, { color: colors.text }]}>
-              {formatCurrency(totalDue)} đ
+              {formatCurrency(totalDue)} {t("paybookSchedule.currency")}
             </CustomText>
             <View style={[styles.scheduleStatusBadge, { backgroundColor: statusCfg.bgColor }]}>
               <CustomText style={[styles.scheduleStatusText, { color: statusCfg.color }]}>
@@ -269,8 +270,8 @@ const PaybookScheduleScreen = () => {
               { color: isPastDue ? "#DC2626" : "#B45309" },
             ]}>
               {isPastDue
-                ? `Đã quá hạn ${Math.abs(daysUntilDue)} ngày`
-                : `Còn ${daysUntilDue} ngày đến hạn`}
+                ? t("paybookSchedule.card.overdueDays", { days: Math.abs(daysUntilDue) })
+                : t("paybookSchedule.card.daysLeft", { days: daysUntilDue })}
             </CustomText>
           </View>
         )}
@@ -280,45 +281,26 @@ const PaybookScheduleScreen = () => {
           <View style={[styles.expandedSection, { borderTopColor: colors.border }]}>
             <View style={styles.detailRow}>
               <CustomText style={[styles.detailLabel, { color: colors.icon }]}>
-                Dư nợ đầu kỳ
+                {t("paybookSchedule.card.openingBalance")}
               </CustomText>
               <CustomText style={[styles.detailValue, { color: colors.text }]}>
-                {formatCurrency(item.opening_balance)} đ
+                {formatCurrency(item.opening_balance)} {t("paybookSchedule.currency")}
               </CustomText>
             </View>
             <View style={styles.detailRow}>
               <CustomText style={[styles.detailLabel, { color: colors.icon }]}>
-                Gốc cần trả
+                {t("paybookSchedule.card.principalDue")}
               </CustomText>
               <CustomText style={[styles.detailValue, { color: colors.text }]}>
-                {formatCurrency(item.principal_due_amount)} đ
+                {formatCurrency(item.principal_due_amount)} {t("paybookSchedule.currency")}
               </CustomText>
             </View>
             <View style={styles.detailRow}>
               <CustomText style={[styles.detailLabel, { color: colors.icon }]}>
-                Lãi cần trả
+                {t("paybookSchedule.card.interestDue")}
               </CustomText>
               <CustomText style={[styles.detailValue, { color: colors.text }]}>
-                {formatCurrency(item.interest_due_amount)} đ
-              </CustomText>
-            </View>
-
-            <View style={[styles.detailSeparator, { backgroundColor: colors.border }]} />
-
-            <View style={styles.detailRow}>
-              <CustomText style={[styles.detailLabel, { color: colors.icon }]}>
-                Gốc đã trả
-              </CustomText>
-              <CustomText style={[styles.detailValue, { color: colors.text }]}>
-                {formatCurrency(item.paid_principal_amount)} đ
-              </CustomText>
-            </View>
-            <View style={styles.detailRow}>
-              <CustomText style={[styles.detailLabel, { color: colors.icon }]}>
-                Lãi đã trả
-              </CustomText>
-              <CustomText style={[styles.detailValue, { color: colors.text }]}>
-                {formatCurrency(item.paid_interest_amount)} đ
+                {formatCurrency(item.interest_due_amount)} {t("paybookSchedule.currency")}
               </CustomText>
             </View>
 
@@ -326,15 +308,34 @@ const PaybookScheduleScreen = () => {
 
             <View style={styles.detailRow}>
               <CustomText style={[styles.detailLabel, { color: colors.icon }]}>
-                Dư nợ cuối kỳ
+                {t("paybookSchedule.card.paidPrincipal")}
               </CustomText>
               <CustomText style={[styles.detailValue, { color: colors.text }]}>
-                {formatCurrency(item.closing_balance)} đ
+                {formatCurrency(item.paid_principal_amount)} {t("paybookSchedule.currency")}
               </CustomText>
             </View>
             <View style={styles.detailRow}>
               <CustomText style={[styles.detailLabel, { color: colors.icon }]}>
-                Kỳ từ → đến
+                {t("paybookSchedule.card.paidInterest")}
+              </CustomText>
+              <CustomText style={[styles.detailValue, { color: colors.text }]}>
+                {formatCurrency(item.paid_interest_amount)} {t("paybookSchedule.currency")}
+              </CustomText>
+            </View>
+
+            <View style={[styles.detailSeparator, { backgroundColor: colors.border }]} />
+
+            <View style={styles.detailRow}>
+              <CustomText style={[styles.detailLabel, { color: colors.icon }]}>
+                {t("paybookSchedule.card.closingBalance")}
+              </CustomText>
+              <CustomText style={[styles.detailValue, { color: colors.text }]}>
+                {formatCurrency(item.closing_balance)} {t("paybookSchedule.currency")}
+              </CustomText>
+            </View>
+            <View style={styles.detailRow}>
+              <CustomText style={[styles.detailLabel, { color: colors.icon }]}>
+                {t("paybookSchedule.card.period")}
               </CustomText>
               <CustomText style={[styles.detailValue, { color: colors.text }]}>
                 {formatDate(item.from_date)} → {formatDate(item.to_date)}
@@ -343,7 +344,7 @@ const PaybookScheduleScreen = () => {
             {item.paid_date && (
               <View style={styles.detailRow}>
                 <CustomText style={[styles.detailLabel, { color: colors.icon }]}>
-                  Ngày thanh toán
+                  {t("paybookSchedule.card.paidDate")}
                 </CustomText>
                 <CustomText style={[styles.detailValue, { color: "#15803D" }]}>
                   {formatDate(item.paid_date)}
@@ -353,7 +354,7 @@ const PaybookScheduleScreen = () => {
             {item.payment_ref_no && (
               <View style={styles.detailRow}>
                 <CustomText style={[styles.detailLabel, { color: colors.icon }]}>
-                  Mã tham chiếu
+                  {t("paybookSchedule.card.paymentRef")}
                 </CustomText>
                 <CustomText style={[styles.detailValue, { color: colors.text }]}>
                   {item.payment_ref_no}
@@ -379,7 +380,7 @@ const PaybookScheduleScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-        <AppHeader title="Lịch thanh toán" />
+        <AppHeader title={t("paybookSchedule.title")} />
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color={colors.tint} />
         </View>
@@ -389,7 +390,7 @@ const PaybookScheduleScreen = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <AppHeader title="Lịch thanh toán" />
+      <AppHeader title={t("paybookSchedule.title")} />
 
       <FlatList
         data={filteredSchedules}
@@ -412,7 +413,7 @@ const PaybookScheduleScreen = () => {
               style={{ opacity: 0.4 }}
             />
             <CustomText style={[styles.emptyText, { color: colors.icon }]}>
-              Không có kỳ thanh toán nào
+              {t("paybookSchedule.empty")}
             </CustomText>
           </View>
         }

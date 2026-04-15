@@ -6,6 +6,7 @@ import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     Alert,
     Image,
@@ -95,6 +96,7 @@ const scanLineStyles = StyleSheet.create({
 // ─── Main screen ──────────────────────────────────────────────────────────────
 const ScanInvoiceScreen = () => {
     const { colors } = useAppTheme();
+    const { t } = useTranslation();
     const styles = React.useMemo(() => createStyles(colors), [colors]);
 
     const { hasPermission, requestPermission } = useCameraPermission();
@@ -145,7 +147,7 @@ const ScanInvoiceScreen = () => {
                             walletId: 86,
                             category: {
                                 category_id: "cat_001",
-                                category_name: JSON.stringify({ vi: "Tiền điện" }),
+                                category_name: JSON.stringify({ vi: "Tiền điện", en: "Electricity" }),
                                 category_type: "EXPENSE",
                                 icon: "bolt",
                                 color: "#FFB800"
@@ -168,22 +170,22 @@ const ScanInvoiceScreen = () => {
             setScanState("error");
             setIsCameraActive(true);
             Alert.alert(
-                "Lỗi scan",
-                err?.message || "Không thể scan hóa đơn. Vui lòng thử lại.",
+                t("invoice.scan_error"),
+                err?.message || t("invoice.scan_failed_desc"),
                 [
                     {
-                        text: "Thử lại",
+                        text: t("common.retry"),
                         onPress: () => {
                             setCapturedUri(null);
                             setScanState("idle");
                             setIsCameraActive(true);
                         },
                     },
-                    { text: "Đóng", style: "cancel", onPress: () => router.back() },
+                    { text: t("common.close"), style: "cancel", onPress: () => router.back() },
                 ]
             );
         }
-    }, [scanState, flashOn]);
+    }, [scanState, flashOn, t]);
 
     // ── Retry ──────────────────────────────────────────────────────────────────
     const handleRetry = useCallback(() => {
@@ -204,13 +206,13 @@ const ScanInvoiceScreen = () => {
                     solid
                 />
                 <CustomText style={styles.permissionTitle}>
-                    Cần quyền truy cập Camera
+                    {t("invoice.camera_permission_title")}
                 </CustomText>
                 <CustomText style={styles.permissionDesc}>
-                    Ứng dụng cần quyền camera để scan hóa đơn.
+                    {t("invoice.camera_permission_desc")}
                 </CustomText>
                 <CustomButton
-                    title="Cấp quyền"
+                    title={t("invoice.grant_permission")}
                     onPress={requestPermission}
                     useGradient
                     style={styles.actionBtn}
@@ -224,7 +226,7 @@ const ScanInvoiceScreen = () => {
         return (
             <SafeAreaView style={[styles.container, styles.center]} edges={["top", "bottom"]}>
                 <CustomText style={styles.permissionDesc}>
-                    Đang khởi động camera...
+                    {t("invoice.starting_camera")}
                 </CustomText>
             </SafeAreaView>
         );
@@ -268,7 +270,7 @@ const ScanInvoiceScreen = () => {
                         <FontAwesome6 name="xmark" size={normalize(22)} color="#fff" />
                     </TouchableOpacity>
                     <CustomText style={[styles.headerTitle, { color: "#fff" }]}>
-                        {scanState === "scanning" ? "Đang phân tích..." : "Scan hóa đơn"}
+                        {scanState === "scanning" ? t("invoice.analyzing") : t("invoice.scan_title")}
                     </CustomText>
                     {scanState === "idle" ? (
                         <TouchableOpacity
@@ -304,8 +306,8 @@ const ScanInvoiceScreen = () => {
 
                     <CustomText style={styles.frameHint}>
                         {scanState === "scanning"
-                            ? "AI đang đọc hóa đơn của bạn..."
-                            : "Đặt hóa đơn vào khung để scan"}
+                            ? t("invoice.ai_reading")
+                            : t("invoice.frame_hint")}
                     </CustomText>
                 </View>
 
@@ -324,7 +326,7 @@ const ScanInvoiceScreen = () => {
                         <View style={styles.scanningBadge}>
                             <View style={styles.pulsingDot} />
                             <CustomText style={styles.scanningText}>
-                                Đang xử lý, vui lòng chờ...
+                                {t("invoice.processing_wait")}
                             </CustomText>
                         </View>
                     )}

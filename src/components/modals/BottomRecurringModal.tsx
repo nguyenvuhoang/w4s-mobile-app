@@ -16,6 +16,8 @@ import React, {
 } from "react";
 import {
   Dimensions,
+  Keyboard,
+  KeyboardEvent,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -86,6 +88,21 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
   const [isForever, setIsForever] = useState(initialIsForever);
   const [selectedDays, setSelectedDays] =
     useState<number[]>(initialSelectedDays);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Keyboard listener — đẩy modal lên khi bàn phím xuất hiện
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", (e: KeyboardEvent) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hide = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   // Initialize state when modal opens
   useEffect(() => {
@@ -219,7 +236,7 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
       handleIndicatorStyle={{ backgroundColor: colors.border }}
       maxDynamicContentSize={SCREEN_HEIGHT * 0.8}
     >
-      <BottomSheetView>
+      <BottomSheetView style={{ paddingBottom: keyboardHeight }}>
         {/* Modal Header */}
         <View
           style={[styles.modalHeader, { borderBottomColor: colors.border }]}
@@ -436,7 +453,7 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
           )}
         </ScrollView>
 
-        {/* Modal Footer - BÂY GIỜ Ở TRONG BottomSheetView */}
+        {/* Modal Footer */}
         <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
           <TouchableOpacity
             style={[styles.confirmBtn, { backgroundColor: colors.tint }]}

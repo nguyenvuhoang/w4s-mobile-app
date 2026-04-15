@@ -17,6 +17,7 @@ import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
+import { t } from "i18next";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -438,7 +439,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
 
 const getWalletTypeLabel = (type: string): string => {
   const typeMap: Record<string, string> = {
-    TWCR: "Ví theo dõi",
+    TWCR: t("wallet.type_tracking_name"),
   };
   return typeMap[type] || type;
 };

@@ -14,6 +14,7 @@ import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -47,60 +48,12 @@ export interface BillItem {
 }
 
 // ---- Helpers ----
-const RECURRING_TYPE_LABELS: Record<string, string> = {
-  Monthly: "Hàng tháng",
-  Weekly: "Hàng tuần",
-  Daily: "Hàng ngày",
-  Yearly: "Hàng năm",
-};
-
-const DAY_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-
-function formatDueDate(utcStr: string): string {
-  try {
-    const d = new Date(utcStr);
-    return d.toLocaleDateString("vi-VN");
-  } catch {
-    return utcStr;
-  }
-}
-
-/** Main recurring label e.g. "Hàng tuần · 12 lần" or "Hàng tháng" */
-function getRecurringLabel(recurring: RecurringInfo): string {
-  const base = RECURRING_TYPE_LABELS[recurring.type] ?? recurring.type;
-  if (recurring.is_forever) return base;
-  return `${base} · ${recurring.count} lần`;
-}
-
-/** Returns day abbreviation array for weekly bills, e.g. ["T2","T4","T5","T6"] */
-function getWeeklyDays(recurring: RecurringInfo): string[] {
-  if (
-    recurring.type !== "Weekly" ||
-    !recurring.selected_days ||
-    recurring.selected_days.length === 0
-  ) return [];
-  return recurring.selected_days
-    .map((d) => DAY_LABELS[Number(d)] ?? String(d))
-    .sort();
-}
-
-/** Parses multi-language category name JSON e.g. {"vi": "...", "en": "..."} */
-function parseCategoryName(nameStr: string): string {
-  if (!nameStr) return "";
-  if (!nameStr.startsWith("{")) return nameStr; // Not JSON
-  try {
-    const parsed = JSON.parse(nameStr);
-    return parsed.vi || parsed.en || nameStr;
-  } catch {
-    return nameStr;
-  }
-}
-
 const DEFAULT_ICON = "receipt";
 const DEFAULT_COLOR = "#6B7280";
 
 const RecurringTransactionListScreen = () => {
   const { colors } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const { showNotification, showNotificationAPI } = useNotification();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -108,28 +61,79 @@ const RecurringTransactionListScreen = () => {
   const [selectedBill, setSelectedBill] = useState<BillItem | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
 
+  // ---- Localized helpers ----
+  const RECURRING_TYPE_LABELS: Record<string, string> = useMemo(() => ({
+    Monthly: t("invoice.rec_monthly"),
+    Weekly: t("invoice.rec_weekly"),
+    Daily: t("invoice.rec_daily"),
+    Yearly: t("invoice.rec_yearly"),
+  }), [t]);
+
+  const DAY_LABELS = i18n.language === "vi" 
+    ? ["CN", "T2", "T3", "T4", "T5", "T6", "T7"]
+    : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  /** Parses multi-language JSON string e.g. {"vi": "...", "en": "..."} */
+  const parseLocalizedName = useCallback((nameStr: string): string => {
+    if (!nameStr) return "";
+    if (!nameStr.startsWith("{")) return nameStr; // Not JSON
+    try {
+      const parsed = JSON.parse(nameStr);
+      return parsed[i18n.language] || parsed.vi || parsed.en || nameStr;
+    } catch {
+      return nameStr;
+    }
+  }, [i18n.language]);
+
+  const formatDueDate = useCallback((utcStr: string): string => {
+    try {
+      const d = new Date(utcStr);
+      return d.toLocaleDateString(i18n.language === "vi" ? "vi-VN" : "en-US");
+    } catch {
+      return utcStr;
+    }
+  }, [i18n.language]);
+
+  /** Main recurring label e.g. "Hàng tuần · 12 lần" or "Hàng tháng" */
+  const getRecurringLabel = useCallback((recurring: RecurringInfo): string => {
+    const base = RECURRING_TYPE_LABELS[recurring.type] ?? recurring.type;
+    if (recurring.is_forever) return base;
+    return t("invoice.rec_count", { base, count: recurring.count });
+  }, [t, RECURRING_TYPE_LABELS]);
+
+  /** Returns day abbreviation array for weekly bills, e.g. ["T2","T4","T5","T6"] */
+  const getWeeklyDays = useCallback((recurring: RecurringInfo): string[] => {
+    if (
+      recurring.type !== "Weekly" ||
+      !recurring.selected_days ||
+      recurring.selected_days.length === 0
+    ) return [];
+    return recurring.selected_days
+      .map((d) => DAY_LABELS[Number(d)] ?? String(d))
+      .sort();
+  }, [DAY_LABELS]);
+
   // Load category cache (uses session cache, no extra network cost if already fetched)
   const { categories } = useCategory({ autoFetch: true });
 
   // Build a fast lookup map: category id → { icon, color, name }
-  // Normalize key to Number — API may return ids as strings
   const categoryMap = useMemo(() => {
     const map = new Map<number, { icon: string; color: string; name: string }>();
     categories.forEach((cat) => {
       map.set(Number(cat.id), {
         icon: cat.icon ?? DEFAULT_ICON,
         color: cat.color ?? DEFAULT_COLOR,
-        name: parseCategoryName(cat.category_name ?? ""),
+        name: parseLocalizedName(cat.category_name ?? ""),
       });
     });
     return map;
-  }, [categories]);
+  }, [categories, parseLocalizedName]);
 
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const formatCurrency = useCallback((amount: number) => {
-    return new Intl.NumberFormat("vi-VN").format(Math.abs(amount));
-  }, []);
+    return new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : "en-US").format(Math.abs(amount));
+  }, [i18n.language]);
 
   // ---- Fetch data ----
   const fetchBills = useCallback(async (isRefresh = false) => {
@@ -151,13 +155,7 @@ const RecurringTransactionListScreen = () => {
       });
 
       if (res?.success && res?.data?.items) {
-        const items = res.data.items as BillItem[];
-        // 🔍 Debug: check category_id in API response
-        if (items.length > 0) {
-          console.log("[DEBUG] First bill category_id:", items[0].category_id, "type:", typeof items[0].category_id);
-          console.log("[DEBUG] bills sample:", JSON.stringify(items[0], null, 2));
-        }
-        setBills(items);
+        setBills(res.data.items as BillItem[]);
       }
     } catch (error) {
       console.error("[RecurringTransactionListScreen] fetchBills error:", error);
@@ -167,7 +165,7 @@ const RecurringTransactionListScreen = () => {
     }
   }, []);
 
-  // Re-fetch whenever this screen comes into focus (handles post-edit/delete refresh)
+  // Re-fetch whenever this screen comes into focus
   useFocusEffect(
     useCallback(() => {
       fetchBills();
@@ -214,9 +212,10 @@ const RecurringTransactionListScreen = () => {
   const handleDeleteBill = useCallback(() => {
     if (!selectedBill) return;
     setShowActionModal(false);
+    const localizedBillName = parseLocalizedName(selectedBill.bill_name);
     setTimeout(() => {
       showNotification(
-        `Bạn có chắc muốn xóa "${selectedBill.bill_name}"?`,
+        t("invoice.confirm_delete", { name: localizedBillName }),
         "warning",
         undefined,
         undefined,
@@ -228,37 +227,37 @@ const RecurringTransactionListScreen = () => {
             );
           } catch (err) {
             console.error("[RecurringTransactionListScreen] delete error:", err);
-            showNotification("Có lỗi xảy ra khi xóa hóa đơn", "error");
+            showNotification(t("invoice.error_delete"), "error");
           }
           setSelectedBill(null);
         }
       );
     }, 300);
-  }, [selectedBill, showNotification]);
+  }, [selectedBill, showNotification, t, parseLocalizedName]);
 
   const billActions: ActionItem[] = useMemo(
     () => [
       {
         id: "history",
         icon: "receipt-outline",
-        label: "Lịch sử giao dịch",
+        label: t("paybook.transaction_history"),
         onPress: handleViewHistory,
       },
       {
         id: "edit",
         icon: "create-outline",
-        label: "Chỉnh sửa",
+        label: t("common.edit"),
         onPress: handleEditBill,
       },
       {
         id: "delete",
         icon: "trash-outline",
-        label: "Xóa giao dịch",
+        label: t("invoice.delete"),
         onPress: handleDeleteBill,
         destructive: true,
       },
     ],
-    [handleEditBill, handleDeleteBill, handleViewHistory],
+    [handleEditBill, handleDeleteBill, handleViewHistory, t],
   );
 
   const handleCreateRecurringTransaction = useCallback(() => {
@@ -268,14 +267,12 @@ const RecurringTransactionListScreen = () => {
   // ---- Render card ----
   const renderBillCard = useCallback(
     (bill: BillItem) => {
-      // Normalize to Number in case API returns category_id as string
       const cat = categoryMap.get(Number(bill.category_id));
       const iconName = cat?.icon ?? DEFAULT_ICON;
       const iconColor = cat?.color ?? DEFAULT_COLOR;
-      // Use parsed category name, fallback to parsed bill_name
-      const categoryName = cat?.name || parseCategoryName(bill.bill_name);
-      const amountColor = "#EF4444"; // Always expense color
-      const amountPrefix = "-";      // Always negative prefix
+      const categoryName = cat?.name || parseLocalizedName(bill.bill_name);
+      const amountColor = "#EF4444"; 
+      const amountPrefix = "-";      
       const recurringLabel = getRecurringLabel(bill.recurring);
       const weeklyDays = getWeeklyDays(bill.recurring);
       const dueDate = formatDueDate(bill.due_at_utc);
@@ -287,30 +284,20 @@ const RecurringTransactionListScreen = () => {
           onPress={() => handleBillPress(bill)}
           activeOpacity={0.72}
         >
-          {/* Left accent bar */}
           <View style={[styles.accentBar, { backgroundColor: iconColor }]} />
-
-          {/* Icon */}
           <View style={[styles.iconWrapper, { backgroundColor: iconColor + "22" }]}>
             <FontAwesome6 name={iconName} size={normalize(22)} color={iconColor} solid />
           </View>
-
-          {/* Info */}
           <View style={styles.infoBlock}>
-            {/* Category name is now the main title */}
             <CustomText style={styles.billName} numberOfLines={1}>
               {categoryName}
             </CustomText>
-
-            {/* Recurring chip */}
             <View style={[styles.recurringChip, { backgroundColor: iconColor + "18" }]}>
               <FontAwesome6 name="repeat" size={normalize(9)} color={iconColor} />
               <CustomText style={[styles.recurringLabel, { color: iconColor }]}>
                 {recurringLabel}
               </CustomText>
             </View>
-
-            {/* Weekly day pills */}
             {weeklyDays.length > 0 && (
               <View style={styles.dayPillRow}>
                 {weeklyDays.map((day) => (
@@ -326,8 +313,6 @@ const RecurringTransactionListScreen = () => {
               </View>
             )}
           </View>
-
-          {/* Right: amount + due date */}
           <View style={styles.rightBlock}>
             <View style={styles.amountRow}>
               <CustomText style={[styles.amountText, { color: amountColor }]}>
@@ -347,14 +332,19 @@ const RecurringTransactionListScreen = () => {
         </TouchableOpacity>
       );
     },
-    [styles, formatCurrency, categoryMap, handleBillPress, colors.icon],
+    [styles, formatCurrency, categoryMap, handleBillPress, colors.icon, parseLocalizedName, getRecurringLabel, getWeeklyDays, formatDueDate],
   );
 
   const selectedCat = selectedBill ? categoryMap.get(selectedBill.category_id) : null;
+  const modalTitle = useMemo(() => {
+    if (!selectedBill) return "";
+    const cat = categoryMap.get(selectedBill.category_id);
+    return cat?.name || parseLocalizedName(selectedBill.bill_name);
+  }, [selectedBill, categoryMap, parseLocalizedName]);
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <AppHeader title="Giao dịch định kỳ" />
+      <AppHeader title={t("settings.recurring_transaction")} />
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -382,7 +372,7 @@ const RecurringTransactionListScreen = () => {
                 style={{ opacity: 0.3 }}
               />
               <CustomText style={styles.emptyText}>
-                Chưa có giao dịch định kỳ nào
+                {t("invoice.empty_unpaid")}
               </CustomText>
             </View>
           )}
@@ -398,7 +388,7 @@ const RecurringTransactionListScreen = () => {
           activeOpacity={0.8}
         >
           <FontAwesome6 name="plus" size={normalize(15)} color="#fff" />
-          <CustomText style={styles.createButtonText}>Tạo giao dịch định kỳ</CustomText>
+          <CustomText style={styles.createButtonText}>{t("invoice.create_recurring")}</CustomText>
         </TouchableOpacity>
       </View>
 
@@ -406,15 +396,15 @@ const RecurringTransactionListScreen = () => {
       <BottomActionModal
         visible={showActionModal}
         onClose={() => setShowActionModal(false)}
-        title={selectedBill?.bill_name}
+        title={modalTitle}
         subtitle={
           selectedBill
-            ? `${selectedCat?.name ? selectedCat.name + " · " : ""}${getRecurringLabel(selectedBill.recurring)} · Hạn: ${formatDueDate(selectedBill.due_at_utc)}`
+            ? `${getRecurringLabel(selectedBill.recurring)} · ${t("paybook.dueDate")}: ${formatDueDate(selectedBill.due_at_utc)}`
             : ""
         }
         actions={billActions}
         colors={colors}
-        cancelText="Hủy"
+        cancelText={t("common.cancel")}
       />
     </SafeAreaView>
   );
@@ -437,7 +427,6 @@ const createStyles = (colors: any) =>
       paddingTop: hp(2),
       gap: hp(1.5),
     },
-    // ---- Card ----
     card: {
       backgroundColor: colors.card,
       borderRadius: normalize(16),
@@ -501,7 +490,6 @@ const createStyles = (colors: any) =>
       fontSize: normalize(9),
       fontFamily: Fonts.semiBold,
     },
-    // ---- Right block ----
     rightBlock: {
       alignItems: "flex-end",
       paddingRight: wp(4),
@@ -537,7 +525,6 @@ const createStyles = (colors: any) =>
       color: colors.icon,
       fontFamily: Fonts.regular,
     },
-    // ---- Bottom ----
     bottomContainer: {
       paddingHorizontal: wp(4),
       paddingVertical: hp(2),
@@ -564,7 +551,6 @@ const createStyles = (colors: any) =>
       color: "#fff",
       fontFamily: Fonts.semiBold,
     },
-    // ---- States ----
     loadingContainer: {
       flex: 1,
       alignItems: "center",

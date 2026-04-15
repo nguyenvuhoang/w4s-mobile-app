@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
+import i18n from "@/core/i18n/i18n";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useCategory } from "@/hooks/useCategory";
 import { Category } from "@/services/repositories/category.repository";
@@ -152,6 +153,15 @@ const CategorySelectionScreen: React.FC = () => {
       return { vi: "", en: "" };
     }
   };
+
+  const getCategoryName = useCallback(
+    (nameJson: string): string => {
+      const parsed = parseCategoryName(nameJson);
+      const lang = i18n.language?.startsWith("vi") ? "vi" : "en";
+      return parsed[lang] || parsed.vi || parsed.en || "";
+    },
+    [i18n.language]
+  );
 
   /* =====================
      Group categories
@@ -398,7 +408,7 @@ const CategorySelectionScreen: React.FC = () => {
                       { color: colors.text, flex: 1 },
                     ]}
                   >
-                    {parentName.vi}
+                    {getCategoryName(parent.category_name)}
                   </CustomText>
 
                   {isEdit && !isSelectParent && (
@@ -441,7 +451,7 @@ const CategorySelectionScreen: React.FC = () => {
                               { color: colors.text, flex: 1 },
                             ]}
                           >
-                            {childName.vi}
+                            {getCategoryName(child.category_name)}
                           </CustomText>
 
                           {isEdit && (
