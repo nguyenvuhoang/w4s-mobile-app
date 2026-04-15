@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { paybookRepository } from "@/services/repositories/paybook.repository";
-import type { LoanDetail } from "@/features/paybook/types";
+import type { Loan, LoanDetail } from "@/features/paybook/types";
 
 export const usePaybookDetail = () => {
   const [loading, setLoading] = useState(false);
@@ -51,6 +51,44 @@ export const usePaybookDetail = () => {
       setError(message);
       console.error("[usePaybookDetail] getLoanDetail failed", err);
       return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const getLoans = useCallback(async (): Promise<Loan[]> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await paybookRepository.getLoans();
+
+      if (!response.isSuccess()) {
+        throw new Error(response.getError?.() || "Failed to fetch loans");
+      }
+
+      const rawData =
+        typeof response.getData === "function"
+          ? response.getData()
+          : response.data || [];
+
+      // API có thể trả về array trực tiếp, hoặc object phân trang { items: [...] }
+      const rawItems: any[] = Array.isArray(rawData)
+        ? rawData
+        : rawData.items ?? rawData.loans ?? rawData.data ?? [];
+
+      // Normalize: API dùng `id` (number) và `balance`, Loan type dùng `loan_id` (string) và `remaining_amount`
+      const list: Loan[] = rawItems.map((item: any) => ({
+        ...item,
+        loan_id: item.loan_id ?? String(item.id),
+        remaining_amount: item.remaining_amount ?? item.balance ?? 0,
+      }));
+
+      return list;
+    } catch (err: any) {
+      const message = err.message || "Lỗi khi lấy danh sách khoản vay";
+      setError(message);
+      console.error("[usePaybookDetail] getLoans failed", err);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -112,6 +150,7 @@ export const usePaybookDetail = () => {
     loading,
     error,
     loanDetail,
+    getLoans,
     getLoanDetail,
     createLoan,
     updateLoan,

@@ -62,10 +62,10 @@ const StatisticsScreen = () => {
       // Year and Month of now
       const year = now.getFullYear();
       const month = now.getMonth(); // 0-indexed
-      
+
       // Local 1st of current month
       const fromDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-      
+
       // Local last day of current month
       const lastDay = new Date(year, month + 1, 0).getDate();
       const toDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
@@ -78,13 +78,13 @@ const StatisticsScreen = () => {
       });
 
       const list = Array.isArray(result) ? result : (result?.items ?? result?.data ?? []);
-      
+
       const sorted = list
         .filter((t: any) => {
           // Normalize type and amount from multiple possible fields
           const type = String(t.name || t.type || t.transaction_type || t.transaction_code || t.tran_code || '').toUpperCase();
           const amount = Number(t.amount ?? t.nu_m01 ?? 0);
-          
+
           const isExpense = type === 'EXPENSE' || type === '02' || amount < 0 || (t.name === 'Expense' && amount > 0);
           return isExpense;
         })
@@ -106,7 +106,7 @@ const StatisticsScreen = () => {
       const findId = item.category_id || item.cat_id;
       // Match with c.id from useCategory
       const cat = allCategories.find(c => Number(c.id) === Number(findId));
-      
+
       const rawTitle = item.title || item.trandesc || item.tran_name || t("home.transaction_default_name");
       const mappedName = cat ? parseCategoryName(cat.category_name, i18n.language) : parseCategoryName(rawTitle, i18n.language);
 
@@ -301,10 +301,10 @@ const StatisticsScreen = () => {
                     />
                   </View>
                   <CustomText type="semiBold" size={14} style={styles.walletStackLabel} numberOfLines={1}>
-                    {WALLET_TYPE_LABEL[w.type] || w.name}
+                    {WALLET_TYPE_LABEL["TRACKER"]}
                   </CustomText>
                   <CustomText type="bold" size={14} style={styles.walletStackCurrency} numberOfLines={1}>
-                    {w.currency || w.name}
+                    {w.name}
                   </CustomText>
                 </View>
 
@@ -444,7 +444,7 @@ const StatisticsScreen = () => {
               const title = item.displayName;
               const date = item.occurred_at || item.transaction_date || item.created_at;
               const iconColor = item.color;
-              
+
               return (
                 <TouchableOpacity
                   key={item.transaction_id || item.id}
@@ -486,8 +486,8 @@ const StatisticsScreen = () => {
                       {new Date(date).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
                     </CustomText>
                   </View>
-                  <CustomText 
-                    type="bold" 
+                  <CustomText
+                    type="bold"
                     size={16}
                     style={{ color: "#FF6B6B" }}
                   >

@@ -5,6 +5,8 @@ import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import { usePaybookDetail } from "@/features/paybook/hooks/usePaybook";
+import type { Loan } from "@/features/paybook/types";
 import TransactionAmountInput from "@/features/transaction/components/TransactionAmountInput";
 import { useTransaction } from "@/features/transaction/hooks/useTransaction";
 import { styles } from "@/features/transaction/style/AddTransactionScreen.Styles";
@@ -27,8 +29,10 @@ import React, {
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
+  FlatList,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   Switch,
@@ -117,6 +121,7 @@ const AddTransactionScreen = () => {
   const { t } = useTranslation();
   const { appInfo } = useContext(GlobalContext);
   const { fetchLimits, checkTransactionLimit } = useSpendingLimit();
+  const { getLoans } = usePaybookDetail();
 
   const [selectedType, setSelectedType] = useState<TransactionType>("expense");
   const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
@@ -131,6 +136,12 @@ const AddTransactionScreen = () => {
   const [borrowToPayExpense, setBorrowToPayExpense] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [location, setLocation] = useState("");
+
+  // Loan picker state
+  const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
+  const [showLoanPicker, setShowLoanPicker] = useState(false);
+  const [loanList, setLoanList] = useState<Loan[]>([]);
+  const [loadingLoans, setLoadingLoans] = useState(false);
 
   // Spending limit warning state
   const [exceededLimits, setExceededLimits] = useState<any[]>([]);
@@ -255,8 +266,28 @@ const AddTransactionScreen = () => {
     convert,
   ]);
 
+  const isLoanCategory = useMemo(
+    () =>
+      selectedType === "inout" &&
+      (selectedCategoryData?.category_type === "LOAN_COLLECT" ||
+        selectedCategoryData?.category_type === "LOAN_REPAY"),
+    [selectedType, selectedCategoryData],
+  );
+
+  /**
+   * LOAN_COLLECT (Thu nợ) → người dùng đang thu tiền về từ khoản đã cho vay → filter loan_type = LEND
+   * LOAN_REPAY  (Trả nợ) → người dùng đang trả khoản đã đi vay       → filter loan_type = BORROW
+   */
+  const filteredLoanList = useMemo(() => {
+    if (loanList.length === 0) return loanList;
+    const targetType =
+      selectedCategoryData?.category_type === "LOAN_COLLECT" ? "LEND" : "BORROW";
+    return loanList.filter((loan) => loan.loan_type === targetType);
+  }, [loanList, selectedCategoryData?.category_type]);
+
   const isValid =
-    selectedWallet && selectedCategoryData && amount.trim() !== "";
+    selectedWallet && selectedCategoryData && amount.trim() !== "" &&
+    (!isLoanCategory || selectedLoan !== null);
 
   // Tính inline warning label từ exceeded limits
   const exceededLabel = useMemo(() => {
@@ -488,6 +519,7 @@ const AddTransactionScreen = () => {
 
   const handleTypeChange = (newType: TransactionType) => {
     setSelectedType(newType);
+    setSelectedLoan(null);
 
     if (selectedCategoryData) {
       const typeMap = {
@@ -502,6 +534,19 @@ const AddTransactionScreen = () => {
       }
     }
   };
+
+  const handleOpenLoanPicker = useCallback(async () => {
+    setShowLoanPicker(true);
+    if (loanList.length === 0) {
+      setLoadingLoans(true);
+      try {
+        const loans = await getLoans();
+        setLoanList(loans);
+      } finally {
+        setLoadingLoans(false);
+      }
+    }
+  }, [getLoans, loanList.length]);
 
   const handlePickImage = async () => {
     const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -589,6 +634,7 @@ const AddTransactionScreen = () => {
         currency: walletCurrency.currencyId,
         categoryId: selectedCategoryData?.id || 0,
         eventId: sourceEventId,
+        loanId: selectedLoan ? ((selectedLoan as any).id ?? parseInt(selectedLoan.loan_id, 10)) : null,
         description: note,
         location: location,
         recordedAt: selectedDate,
@@ -853,6 +899,50 @@ const AddTransactionScreen = () => {
               </View>
             </TouchableOpacity>
           </View>
+
+          {/* Loan Selector - chỉ hiện khi LOAN + LOAN_COLLECT/LOAN_REPAY */}
+          {isLoanCategory && (
+            <View style={styles.section}>
+              <CustomText style={[styles.label, { color: colors.text }]}>
+                {t("transaction.select_paybook", { defaultValue: "Sổ nợ" })}{" "}
+                <CustomText style={{ color: "red" }}>*</CustomText>
+              </CustomText>
+              <TouchableOpacity
+                style={[
+                  styles.field,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+                onPress={handleOpenLoanPicker}
+              >
+                <View style={styles.fieldLeft}>
+                  <FontAwesome6
+                    name="book"
+                    size={normalize(18)}
+                    color={selectedLoan ? colors.tint : colors.icon}
+                    solid
+                  />
+                  <CustomText
+                    style={[
+                      styles.fieldText,
+                      { color: selectedLoan ? colors.text : colors.icon },
+                    ]}
+                  >
+                    {selectedLoan
+                      ? `${selectedLoan.counterparty_name} — ${selectedLoan.remaining_amount?.toLocaleString("vi-VN")} ${selectedLoan.currency_code}`
+                      : t("transaction.select_paybook_placeholder", { defaultValue: "Chọn sổ nợ" })}
+                  </CustomText>
+                </View>
+                {selectedLoan && (
+                  <TouchableOpacity
+                    onPress={() => setSelectedLoan(null)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <FontAwesome6 name="xmark" size={normalize(14)} color={colors.icon} />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
 
           <TransactionAmountInput
             amount={amount}
@@ -1184,6 +1274,139 @@ const AddTransactionScreen = () => {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Loan Picker Modal */}
+        <Modal
+          visible={showLoanPicker}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowLoanPicker(false)}
+        >
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.45)",
+              justifyContent: "flex-end",
+            }}
+            activeOpacity={1}
+            onPress={() => setShowLoanPicker(false)}
+          >
+            <View
+              style={{
+                backgroundColor: colors.background,
+                borderTopLeftRadius: normalize(20),
+                borderTopRightRadius: normalize(20),
+                paddingTop: normalize(12),
+                maxHeight: "65%",
+              }}
+            >
+              {/* Handle */}
+              <View
+                style={{
+                  width: normalize(40),
+                  height: normalize(4),
+                  borderRadius: normalize(2),
+                  backgroundColor: colors.border,
+                  alignSelf: "center",
+                  marginBottom: normalize(12),
+                }}
+              />
+
+              <CustomText
+                style={{
+                  fontSize: normalize(16),
+                  fontFamily: Fonts.semiBold,
+                  color: colors.text,
+                  paddingHorizontal: normalize(20),
+                  marginBottom: normalize(12),
+                }}
+              >
+                {t("transaction.select_paybook", { defaultValue: "Chọn sổ nợ" })}
+              </CustomText>
+
+              {loadingLoans ? (
+                <View style={{ padding: normalize(32), alignItems: "center" }}>
+                  <ActivityIndicator size="large" color={colors.tint} />
+                </View>
+              ) : filteredLoanList.length === 0 ? (
+                <View style={{ padding: normalize(32), alignItems: "center" }}>
+                  <CustomText style={{ color: colors.icon, textAlign: "center" }}>
+                    {loanList.length === 0
+                      ? t("transaction.no_paybook", { defaultValue: "Không có sổ nợ nào" })
+                      : selectedCategoryData?.category_type === "LOAN_COLLECT"
+                        ? "Không có khoản cho vay nào phù hợp"
+                        : "Không có khoản vay nào phù hợp"}
+                  </CustomText>
+                </View>
+              ) : (
+                <FlatList
+                  data={filteredLoanList}
+                  keyExtractor={(item) => item.loan_id}
+                  contentContainerStyle={{ paddingHorizontal: normalize(16), paddingBottom: normalize(32) }}
+                  ItemSeparatorComponent={() => (
+                    <View style={{ height: 1, backgroundColor: colors.border }} />
+                  )}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        paddingVertical: normalize(14),
+                        gap: normalize(12),
+                      }}
+                      onPress={() => {
+                        setSelectedLoan(item);
+                        setShowLoanPicker(false);
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: normalize(44),
+                          height: normalize(44),
+                          borderRadius: normalize(12),
+                          backgroundColor:
+                            item.loan_type === "LEND" ? "#4CAF5022" : "#F4433622",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <FontAwesome6
+                          name={item.loan_type === "LEND" ? "hand-holding-dollar" : "money-bill-wave"}
+                          size={normalize(18)}
+                          color={item.loan_type === "LEND" ? "#4CAF50" : "#F44336"}
+                          solid
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <CustomText
+                          style={{
+                            fontSize: normalize(15),
+                            fontFamily: Fonts.semiBold,
+                            color: colors.text,
+                          }}
+                        >
+                          {item.counterparty_name}
+                        </CustomText>
+                        <CustomText
+                          style={{ fontSize: normalize(13), color: colors.icon, marginTop: normalize(2) }}
+                        >
+                          {item.loan_type === "LEND"
+                            ? t("transaction.loan_type_lend", { defaultValue: "Cho vay" })
+                            : t("transaction.loan_type_borrow", { defaultValue: "Vay" })}
+                          {" • "}
+                          {item.remaining_amount?.toLocaleString("vi-VN")} {item.currency_code}
+                        </CustomText>
+                      </View>
+                      {selectedLoan?.loan_id === item.loan_id && (
+                        <FontAwesome6 name="check" size={normalize(16)} color={colors.tint} />
+                      )}
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
         {/* Bottom Buttons */}
         <View

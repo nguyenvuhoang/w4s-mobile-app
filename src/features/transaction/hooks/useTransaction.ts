@@ -11,6 +11,7 @@ export interface CreateTransactionData {
   currency: string;
   categoryId: number;
   eventId?: number | null;
+  loanId?: number | null;
   description?: string;
   location?: string;
   recordedAt: Date;
@@ -108,6 +109,7 @@ export const useTransaction = () => {
         currency: data.currency,
         category_id: data.categoryId,
         event_id: data.eventId || null,
+        loan_id: data.loanId || null,
         transaction_description: data.description || "",
         location: data.location || "",
         recorded_at: data.recordedAt.toISOString(),

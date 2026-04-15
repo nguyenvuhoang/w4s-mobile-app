@@ -221,7 +221,10 @@
     "total_spent": "Total Spent",
     "days_left": "Time Left",
     "days": "Days",
-    "percent_used": "% used"
+    "percent_used": "% used",
+    "no_budget_created": "No budget has been created yet.",
+    "create_budget_prompt": "You haven't created any budget. Create one to start managing your expenses.",
+    "create_now": "Create now"
   },
   "navigation": {
     "home": "Home",

@@ -23,6 +23,7 @@ export interface CreateTransactionPayload {
   currency: string;
   category_id: number;
   event_id?: number | null;
+  loan_id?: number | null;
   transaction_description?: string;
   location?: string;
   recorded_at: string;
@@ -66,6 +67,8 @@ export interface AdvancedSearchTransactionPayload {
   wallet_id?: number;
   category_id?: number;
   event_id?: number;
+  loan_id?: number;
+  bill_id?: number;
   wallet_budget_id?: number;
   from_transaction_date?: string;
   to_transaction_date?: string;
@@ -102,6 +105,7 @@ export const transactionRepository = {
           currency: data.currency,
           category_id: data.category_id,
           event_id: data.event_id || null,
+          loan_id: data.loan_id || null,
           transaction_description: data.transaction_description || "",
           location: data.location || "",
           recorded_at: data.recorded_at,
@@ -259,6 +263,8 @@ export const transactionRepository = {
           wallet_id: data.wallet_id || 0,
           category_id: data.category_id || 0,
           event_id: data.event_id || 0,
+          loan_id: data.loan_id || 0,
+          bill_id: data.bill_id || 0,
           wallet_budget_id: data.wallet_budget_id || 0,
           from_transaction_date: data.from_transaction_date || "",
           to_transaction_date: data.to_transaction_date || "",

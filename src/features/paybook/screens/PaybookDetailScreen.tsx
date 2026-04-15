@@ -156,6 +156,14 @@ const PaybookDetailScreen = () => {
     });
   };
 
+  // ── Navigate to history screen ─────────────────────────────────────────────
+  const handleViewHistory = () => {
+    router.push({
+      pathname: "/(protected)/paybook/transaction-history",
+      params: { loanId: String(loan.id) },
+    });
+  };
+
   const handleShare = async () => {
     try {
       const shareMessage = [
@@ -211,12 +219,13 @@ const PaybookDetailScreen = () => {
   );
 
   // --- Menu Dropdown ---
-  const MenuDropdown = ({ visible, onClose, onEdit, onDelete, onShare }: any) => {
+  const MenuDropdown = ({ visible, onClose, onEdit, onDelete, onShare, onViewHistory }: any) => {
     if (!visible) return null;
     return (
       <View style={[styles.menuDropdown, { backgroundColor: colors.card, shadowColor: colors.text }]}>
         {[
           { icon: 'share-nodes', label: 'Chia sẻ', onPress: onShare, color: colors.text },
+          { icon: 'receipt', label: 'Lịch sử giao dịch', onPress: onViewHistory, color: colors.text },
           { icon: 'pen-to-square', label: 'Chỉnh sửa', onPress: onEdit, color: colors.text },
           { icon: 'trash-can', label: 'Xoá sổ nợ', onPress: onDelete, color: '#EF4444' },
         ].map((item, i, arr) => (
@@ -256,6 +265,7 @@ const PaybookDetailScreen = () => {
           console.log("Delete loan", loan.id);
         }}
         onShare={handleShare}
+        onViewHistory={handleViewHistory}
       />
 
       <ScrollView

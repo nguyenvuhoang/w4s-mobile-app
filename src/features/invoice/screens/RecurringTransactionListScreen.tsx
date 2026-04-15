@@ -198,6 +198,19 @@ const RecurringTransactionListScreen = () => {
     }, 300);
   }, [selectedBill]);
 
+  const handleViewHistory = useCallback(() => {
+    setShowActionModal(false);
+    if (!selectedBill) return;
+    setTimeout(() => {
+      router.push({
+        pathname: "/(protected)/invoice/transaction-history",
+        params: {
+          billId: selectedBill.bill_id.toString(),
+        },
+      });
+    }, 300);
+  }, [selectedBill]);
+
   const handleDeleteBill = useCallback(() => {
     if (!selectedBill) return;
     setShowActionModal(false);
@@ -226,6 +239,12 @@ const RecurringTransactionListScreen = () => {
   const billActions: ActionItem[] = useMemo(
     () => [
       {
+        id: "history",
+        icon: "receipt-outline",
+        label: "Lịch sử giao dịch",
+        onPress: handleViewHistory,
+      },
+      {
         id: "edit",
         icon: "create-outline",
         label: "Chỉnh sửa",
@@ -239,7 +258,7 @@ const RecurringTransactionListScreen = () => {
         destructive: true,
       },
     ],
-    [handleEditBill, handleDeleteBill],
+    [handleEditBill, handleDeleteBill, handleViewHistory],
   );
 
   const handleCreateRecurringTransaction = useCallback(() => {

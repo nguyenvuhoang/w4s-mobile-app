@@ -221,7 +221,10 @@
     "total_spent": "Tổng đã chi",
     "days_left": "Thời gian còn lại",
     "days": "Ngày",
-    "percent_used": "% đã sử dụng"
+    "percent_used": "% đã sử dụng",
+    "no_budget_created": "Bạn chưa tạo ngân sách nào.",
+    "create_budget_prompt": "Bạn chưa tạo ngân sách. Hãy tạo ngay để bắt đầu quản lý chi tiêu.",
+    "create_now": "Tạo ngay"
   },
   "navigation": {
     "home": "Trang Chủ",
@@ -265,7 +268,13 @@
     "set_reminder_optional": "Đặt nhắc nhở (tùy chọn)",
     "image": "Hình ảnh",
     "upload": "Tải lên",
-    "include_in_report": "Tính vào báo cáo"
+    "include_in_report": "Tính vào báo cáo",
+    "limit_exceeded_warning": "Vượt hạn mức: {{periods}}",
+    "select_paybook": "Sổ nợ",
+    "select_paybook_placeholder": "Chọn sổ nợ",
+    "no_paybook": "Không có sổ nợ nào",
+    "loan_type_lend": "Cho vay",
+    "loan_type_borrow": "Vay"
   },
   "category": {
     "title": "Chọn nhóm",
