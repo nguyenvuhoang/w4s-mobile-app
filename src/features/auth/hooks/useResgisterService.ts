@@ -91,16 +91,23 @@ export const useRegisterService = () => {
       const response = await authRepository.register(payload);
 
       if (response.isSuccess()) {
+        setIsRegistering(false);
         showNotification(
           t('auth.register_success'),
-          'success'
+          'success',
+          undefined,
+          undefined,
+          undefined,
+          () => {
+            router.dismissAll();
+            router.replace('/(auth)/login' as any);
+          }
         );
-        
-        router.replace('/(auth)/login' as any);
         return true;
       } else {
         const errorMessage = response.getError() || t('auth.register_failed');
         showNotification(errorMessage, 'error');
+        setIsRegistering(false);
         return false;
       }
     } catch (error: any) {
@@ -109,9 +116,8 @@ export const useRegisterService = () => {
         error.message || t('common.network_error'),
         'error'
       );
-      return false;
-    } finally {
       setIsRegistering(false);
+      return false;
     }
   }, [
     fullName,
