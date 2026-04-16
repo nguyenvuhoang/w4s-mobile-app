@@ -150,11 +150,18 @@
     "flat_desc": "Lãi tính theo số gốc ban đầu",
     "bullet_desc": "Trả toàn bộ cuối kỳ",
     "installment_desc": "Trả theo nhiều kỳ",
-    "day": "Ngày",
     "week": "Tuần",
     "month": "Tháng",
     "quarter": "Quý",
-    "year_unit": "Năm"
+    "year_unit": "Năm",
+    "history": {
+      "title": "Lịch sử giao dịch sổ nợ",
+      "empty": "Chưa có giao dịch cho sổ nợ này",
+      "other": "Khác",
+      "income": "Khoản thu",
+      "expense": "Khoản chi",
+      "summary": "Tổng kết"
+    }
   },
   "paybookSchedule": {
     "title": "Lịch thanh toán",
@@ -234,7 +241,14 @@
     "rec_daily": "Hàng ngày",
     "rec_yearly": "Hàng năm",
     "rec_none": "Một lần",
-    "rec_count": "{{base}} · {{count}} lần"
+    "rec_count": "{{base}} · {{count}} lần",
+    "days": ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
+    "rec_type": "Loại chu kỳ",
+    "rec_days_select": "Chọn ngày trong tuần",
+    "rec_count_label": "Số lần lặp",
+    "rec_forever": "Lặp vĩnh viễn",
+    "rec_preview": "Xem trước:",
+    "rec_repeat_on": "Lặp lại vào:"
   },
   "event": {
     "title": "Sự kiện",
@@ -461,7 +475,50 @@
     "percent_used": "% đã sử dụng",
     "no_budget_created": "Bạn chưa tạo ngân sách nào.",
     "create_budget_prompt": "Bạn chưa tạo ngân sách. Hãy tạo ngay để bắt đầu quản lý chi tiêu.",
-    "create_now": "Tạo ngay"
+    "create_now": "Tạo ngay",
+    "detail": {
+      "title": "Chi tiết Ngân sách",
+      "not_found": "Không tìm thấy thông tin ngân sách",
+      "all_wallets": "Tất cả các ví",
+      "wallet_prefix": "Ví #",
+      "default_budget_name": "Ngân sách",
+      "over_limit": "Vượt!",
+      "used_label": "% đã sử dụng",
+      "remaining": "Còn lại",
+      "info_title": "Thông tin ngân sách",
+      "start_date": "Ngày bắt đầu",
+      "end_date": "Ngày kết thúc",
+      "days_remaining_label": "Thời gian còn lại",
+      "days_unit": "ngày",
+      "wallet": "Ví",
+      "spending_trend": "Xu hướng chi tiêu",
+      "actual": "Thực tế",
+      "prediction": "Dự đoán",
+      "limit": "Giới hạn",
+      "start_period": "Đầu kì",
+      "today_dot": "● Hôm nay",
+      "end_period": "Cuối kì",
+      "daily_recommended": "Mức chi tiêu khuyến nghị",
+      "per_day": "/ ngày",
+      "days_left_prefix": "Để không vượt quá ngân sách trong",
+      "days_left_suffix": "ngày còn lại",
+      "status_summary": "Tóm tắt trạng thái",
+      "estimated_spending": "Chi tiêu dự kiến",
+      "current_pace": "Tốc độ hiện tại",
+      "actual_spending": "Chi tiêu thực tế",
+      "remaining_budget_label": "Ngân sách còn lại",
+      "over_budget": "Đã vượt",
+      "safe": "An toàn",
+      "transaction_list": "Danh sách giao dịch",
+      "no_data": "Chưa có dữ liệu chi tiêu"
+    },
+    "history": {
+      "title": "Giao dịch: {{category}}",
+      "total_spending": "Tổng chi tiêu trong kỳ",
+      "empty": "Chưa có giao dịch nào",
+      "income": "Thu nhập",
+      "expense": "Chi tiêu"
+    }
   },
   "navigation": {
     "home": "Trang Chủ",

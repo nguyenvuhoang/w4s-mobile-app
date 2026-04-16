@@ -69,9 +69,7 @@ const RecurringTransactionListScreen = () => {
     Yearly: t("invoice.rec_yearly"),
   }), [t]);
 
-  const DAY_LABELS = i18n.language === "vi" 
-    ? ["CN", "T2", "T3", "T4", "T5", "T6", "T7"]
-    : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const DAY_LABELS = t("invoice.days", { returnObjects: true }) as string[];
 
   /** Parses multi-language JSON string e.g. {"vi": "...", "en": "..."} */
   const parseLocalizedName = useCallback((nameStr: string): string => {

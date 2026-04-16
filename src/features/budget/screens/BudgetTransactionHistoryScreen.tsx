@@ -82,12 +82,12 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
 
     const formatDateTime = (dateString: string) => {
         const date = new Date(dateString);
-        const day = date.toLocaleDateString("vi-VN", {
+        const day = date.toLocaleDateString(i18n.language === "vi" ? "vi-VN" : "en-US", {
             day: "2-digit",
             month: "short",
             year: "numeric",
         });
-        const time = date.toLocaleTimeString("vi-VN", {
+        const time = date.toLocaleTimeString(i18n.language === "vi" ? "vi-VN" : "en-US", {
             hour: "2-digit",
             minute: "2-digit",
             hour12: true,
@@ -127,7 +127,7 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
         // Nếu tên lấy ra trùng với "Expense" hoặc "Income" hoặc rỗng, dùng fallback "Chi tiêu"/"Thu nhập"
         const upperName = String(parsed || '').toUpperCase();
         if (!parsed || upperName === 'EXPENSE' || upperName === 'INCOME') {
-            return Number(transaction.amount || 0) < 0 ? "Chi tiêu" : "Thu nhập";
+            return Number(transaction.amount || 0) < 0 ? t('budget.history.expense') : t('budget.history.income');
         }
         return parsed;
     };
@@ -227,7 +227,7 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
         return (
             <View style={[localStyles.summaryCard, { backgroundColor: colors.card, alignItems: 'center' }]}>
                 <CustomText style={[localStyles.summaryLabel, { color: colors.icon, marginBottom: normalize(8) }]}>
-                    Tổng chi tiêu trong kỳ
+                    {t('budget.history.total_spending')}
                 </CustomText>
                 <CustomText style={[localStyles.summaryValue, { color: "#FF3B30", fontSize: normalize(24) }]} type="bold">
                     -{formatCurrency(totalExpense)}
@@ -239,7 +239,7 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
     return (
         <SafeAreaView style={[localStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
             <AppHeader 
-                title={`Giao dịch: ${categoryName || 'Ngân sách'}`} 
+                title={t('budget.history.title', { category: categoryName || t('budget.detail.default_budget_name') })} 
                 showBackButton
             />
             
@@ -263,7 +263,7 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
                     !loading ? (
                         <View style={localStyles.emptyContainer}>
                              <Ionicons name="receipt-outline" size={60} color={colors.icon} />
-                             <CustomText style={{ color: colors.icon, marginTop: 10 }}>Chưa có giao dịch nào</CustomText>
+                             <CustomText style={{ color: colors.icon, marginTop: 10 }}>{t('budget.history.empty')}</CustomText>
                         </View>
                     ) : null
                 }

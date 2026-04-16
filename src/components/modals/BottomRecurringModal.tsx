@@ -14,6 +14,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dimensions,
   Keyboard,
@@ -24,6 +25,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -48,27 +50,9 @@ interface BottomRecurringModalProps {
   onClose: () => void;
 }
 
-const RECURRING_TYPES = [
-  { value: "none" as RecurringType, label: "Không lặp lại", defaultCount: 0 },
-  { value: "daily" as RecurringType, label: "Hàng Ngày", defaultCount: 30 },
-  { value: "weekly" as RecurringType, label: "Hàng Tuần", defaultCount: 12 },
-  { value: "monthly" as RecurringType, label: "Hàng Tháng", defaultCount: 12 },
-  { value: "yearly" as RecurringType, label: "Hàng Năm", defaultCount: 5 },
-];
-
-const WEEK_DAYS = [
-  { value: 0, label: "CN" },
-  { value: 1, label: "T2" },
-  { value: 2, label: "T3" },
-  { value: 3, label: "T4" },
-  { value: 4, label: "T5" },
-  { value: 5, label: "T6" },
-  { value: 6, label: "T7" },
-];
-
 const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
   visible,
-  title = "Chu kỳ lặp lại",
+  title,
   initialRecurringType = "monthly",
   initialRecurringCount = 1,
   initialIsForever = false,
@@ -76,8 +60,25 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
   onSelect,
   onClose,
 }) => {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const bottomSheetRef = useRef<BottomSheet>(null);
+
+  const RECURRING_TYPES = useMemo(() => [
+    { value: "none" as RecurringType, label: t("invoice.rec_none"), defaultCount: 0 },
+    { value: "daily" as RecurringType, label: t("invoice.rec_daily"), defaultCount: 30 },
+    { value: "weekly" as RecurringType, label: t("invoice.rec_weekly"), defaultCount: 12 },
+    { value: "monthly" as RecurringType, label: t("invoice.rec_monthly"), defaultCount: 12 },
+    { value: "yearly" as RecurringType, label: t("invoice.rec_yearly"), defaultCount: 5 },
+  ], [t]);
+
+  const WEEK_DAYS = useMemo(() => {
+    const days = t("invoice.days", { returnObjects: true }) as string[];
+    return days.map((label, index) => ({ value: index, label }));
+  }, [t]);
+
+  const modalTitle = title || t("invoice.recurring_cycle");
 
   // States
   const [recurringType, setRecurringType] =
@@ -172,7 +173,7 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
   // Get recurring label for preview
   const getRecurringLabel = useMemo(() => {
     if (recurringType === "none") {
-      return "Không lặp lại";
+      return t("invoice.rec_none");
     }
 
     const typeLabel =
@@ -184,9 +185,9 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
           .map((d) => WEEK_DAYS.find((day) => day.value === d)?.label)
           .filter(Boolean)
           .join(", ");
-        return `${typeLabel} (${dayLabels}) - Vĩnh viễn`;
+        return `${typeLabel} (${dayLabels}) - ${t("invoice.forever")}`;
       }
-      return `${typeLabel} - Vĩnh viễn`;
+      return `${typeLabel} - ${t("invoice.forever")}`;
     }
 
     const count = recurringCount || "0";
@@ -195,11 +196,11 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
         .map((d) => WEEK_DAYS.find((day) => day.value === d)?.label)
         .filter(Boolean)
         .join(", ");
-      return `${typeLabel} (${dayLabels}) - ${count} lần`;
+      return `${typeLabel} (${dayLabels}) - ${count} ${t("invoice.times")}`;
     }
 
-    return `${typeLabel} - ${count} lần`;
-  }, [recurringType, recurringCount, selectedDays, isForever]);
+    return `${typeLabel} - ${count} ${t("invoice.times")}`;
+  }, [recurringType, recurringCount, selectedDays, isForever, t, RECURRING_TYPES, WEEK_DAYS]);
 
   // Handle confirm
   const handleConfirm = useCallback(() => {
@@ -242,7 +243,7 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
           style={[styles.modalHeader, { borderBottomColor: colors.border }]}
         >
           <CustomText style={[styles.modalTitle, { color: colors.text }]}>
-            {title}
+            {modalTitle}
           </CustomText>
           <TouchableOpacity onPress={onClose}>
             <FontAwesome6
@@ -262,7 +263,7 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
         >
           {/* Recurring Type Selection */}
           <CustomText style={[styles.modalLabel, { color: colors.text }]}>
-            Loại chu kỳ
+            {t("invoice.rec_type")}
           </CustomText>
           <View style={styles.typeContainer}>
             {RECURRING_TYPES.map((type) => {
@@ -299,7 +300,7 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
           {recurringType === "weekly" && (
             <View style={styles.weeklySection}>
               <CustomText style={[styles.modalLabel, { color: colors.text }]}>
-                Chọn ngày trong tuần
+                {t("invoice.rec_days_select")}
               </CustomText>
               <View style={styles.weekDaysContainer}>
                 {WEEK_DAYS.map((day) => {
@@ -342,7 +343,7 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
           {recurringType !== "none" && (
             <>
               <CustomText style={[styles.modalLabel, { color: colors.text }]}>
-                Số lần lặp
+                {t("invoice.rec_count_label")}
               </CustomText>
 
               {/* Forever Toggle */}
@@ -366,7 +367,7 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
                   <CustomText
                     style={[styles.foreverText, { color: colors.text }]}
                   >
-                    Lặp vĩnh viễn
+                    {t("invoice.rec_forever")}
                   </CustomText>
                 </View>
                 <View
@@ -410,7 +411,7 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
                   <CustomText
                     style={[styles.countUnit, { color: colors.icon }]}
                   >
-                    lần
+                    {t("invoice.times")}
                   </CustomText>
                 </View>
               )}
@@ -428,7 +429,7 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
                 <CustomText
                   style={[styles.previewLabel, { color: colors.icon }]}
                 >
-                  Xem trước:
+                  {t("invoice.rec_preview")}
                 </CustomText>
                 <CustomText
                   style={[styles.previewText, { color: colors.text }]}
@@ -439,7 +440,7 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
                   <CustomText
                     style={[styles.previewDays, { color: colors.icon }]}
                   >
-                    Lặp lại vào:{" "}
+                    {t("invoice.rec_repeat_on")}{" "}
                     {selectedDays
                       .map(
                         (d) => WEEK_DAYS.find((day) => day.value === d)?.label,
@@ -454,12 +455,20 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
         </ScrollView>
 
         {/* Modal Footer */}
-        <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
+        <View
+          style={[
+            styles.modalFooter,
+            {
+              borderTopColor: colors.border,
+              paddingBottom: Math.max(insets.bottom, normalize(16)),
+            },
+          ]}
+        >
           <TouchableOpacity
             style={[styles.confirmBtn, { backgroundColor: colors.tint }]}
             onPress={handleConfirm}
           >
-            <CustomText style={styles.confirmText}>Xác nhận</CustomText>
+            <CustomText style={styles.confirmText}>{t("common.confirm")}</CustomText>
           </TouchableOpacity>
         </View>
       </BottomSheetView>

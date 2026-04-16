@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
@@ -55,6 +56,7 @@ const SparklineChart: React.FC<SparklineProps> = ({
   maxDay: propMaxDay,
   projectionAmount,
 }) => {
+  const { t } = useTranslation();
   const CHART_W = SCREEN_WIDTH - wp(10) - normalize(32);
   const CHART_H = normalize(170);
   const PAD_TOP = normalize(12);
@@ -69,7 +71,7 @@ const SparklineChart: React.FC<SparklineProps> = ({
     return (
       <View style={{ height: CHART_H, alignItems: 'center', justifyContent: 'center' }}>
         <CustomText style={{ color: '#888', fontSize: normalize(13) }}>
-          Chưa có dữ liệu chi tiêu
+          {t('budget.detail.no_data')}
         </CustomText>
       </View>
     );
@@ -267,6 +269,7 @@ const SummaryBlock: React.FC<SummaryBlockProps> = ({ label, value, icon, iconBg,
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────────
 const BudgetDetailScreen = () => {
+  const { t } = useTranslation();
   const { colors } = useAppTheme();
   const params = useLocalSearchParams();
   const { getWalletById } = useWallet();
@@ -286,9 +289,9 @@ const BudgetDetailScreen = () => {
   if (!budget) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <AppHeader title="Chi tiết Ngân sách" />
+        <AppHeader title={t('budget.detail.title')} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <CustomText style={{ color: colors.icon }}>Không tìm thấy thông tin ngân sách</CustomText>
+          <CustomText style={{ color: colors.icon }}>{t('budget.detail.not_found')}</CustomText>
         </View>
       </SafeAreaView>
     );
@@ -323,10 +326,10 @@ const BudgetDetailScreen = () => {
     budget.wallet_name ||
     walletObj?.name ||
     (budget.wallet_id === 'all'
-      ? 'Tất cả các ví'
+      ? t('budget.detail.all_wallets')
       : budget.wallet_id
-        ? `Ví #${budget.wallet_id}`
-        : 'Tất cả các ví');
+        ? `${t('budget.detail.wallet_prefix')}${budget.wallet_id}`
+        : t('budget.detail.all_wallets'));
 
   // ─── Fetch transactions & build real sparkline ──────────────────────────────
   useEffect(() => {
@@ -409,7 +412,7 @@ const BudgetDetailScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader title="Chi tiết Ngân sách" />
+      <AppHeader title={t('budget.detail.title')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
         {/* ── 1. Budget Header Card ─────────────────────────────────────────────── */}
@@ -420,7 +423,7 @@ const BudgetDetailScreen = () => {
             </View>
             <View style={{ flex: 1 }}>
               <CustomText style={[styles.categoryName, { color: colors.text }]}>
-                {budget.categoryName || 'Ngân sách'}
+                {budget.categoryName || t('budget.detail.default_budget_name')}
               </CustomText>
               {budget.note ? (
                 <CustomText style={[styles.noteText, { color: colors.icon }]} numberOfLines={1}>
@@ -430,7 +433,7 @@ const BudgetDetailScreen = () => {
             </View>
             {isOverBudget && (
               <View style={styles.overBadge}>
-                <CustomText style={styles.overBadgeText}>Vượt!</CustomText>
+                <CustomText style={styles.overBadgeText}>{t('budget.detail.over_limit')}</CustomText>
               </View>
             )}
           </View>
@@ -439,24 +442,24 @@ const BudgetDetailScreen = () => {
             <View style={[styles.progressBarFill, { width: `${percentage}%`, backgroundColor: progressFillColor }]} />
           </View>
           <CustomText style={[styles.progressPercent, { color: colors.icon }]}>
-            {percentage.toFixed(1)}% đã sử dụng
+            {percentage.toFixed(1)}{t('budget.detail.used_label')}
           </CustomText>
 
           <View style={[styles.amountRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <View style={styles.amountBlock}>
-              <CustomText style={[styles.amountLabel, { color: colors.icon }]}>Tổng ngân sách</CustomText>
+              <CustomText style={[styles.amountLabel, { color: colors.icon }]}>{t('budget.total_budget')}</CustomText>
               <CustomText style={[styles.amountValue, { color: colors.text }]}>{formatMoney(total, currency)}</CustomText>
             </View>
             <View style={[styles.amountDivider, { backgroundColor: colors.border }]} />
             <View style={styles.amountBlock}>
-              <CustomText style={[styles.amountLabel, { color: colors.icon }]}>Đã chi</CustomText>
+              <CustomText style={[styles.amountLabel, { color: colors.icon }]}>{t('budget.total_spent')}</CustomText>
               <CustomText style={[styles.amountValue, { color: isOverBudget ? '#FF6B6B' : colors.text }]}>
                 {formatMoney(spent, currency)}
               </CustomText>
             </View>
             <View style={[styles.amountDivider, { backgroundColor: colors.border }]} />
             <View style={styles.amountBlock}>
-              <CustomText style={[styles.amountLabel, { color: colors.icon }]}>Còn lại</CustomText>
+              <CustomText style={[styles.amountLabel, { color: colors.icon }]}>{t('budget.detail.remaining')}</CustomText>
               <CustomText style={[styles.amountValue, { color: remaining >= 0 ? '#27AE60' : '#FF6B6B' }]}>
                 {formatMoney(remaining, currency)}
               </CustomText>
@@ -466,22 +469,22 @@ const BudgetDetailScreen = () => {
 
         {/* ── 2. Budget Info Card ───────────────────────────────────────────────── */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <CustomText style={[styles.sectionTitle, { color: colors.text }]}>Thông tin ngân sách</CustomText>
+          <CustomText style={[styles.sectionTitle, { color: colors.text }]}>{t('budget.detail.info_title')}</CustomText>
           <View style={styles.infoGrid}>
-            <InfoRow icon="calendar-day" label="Ngày bắt đầu"
+            <InfoRow icon="calendar-day" label={t('budget.detail.start_date')}
               value={startDate ? formatDate(budget.start_date) : '—'}
               iconBg={colors.tint + '18'} iconColor={colors.tint}
               textColor={colors.text} subColor={colors.icon} />
-            <InfoRow icon="calendar-check" label="Ngày kết thúc"
+            <InfoRow icon="calendar-check" label={t('budget.detail.end_date')}
               value={endDate ? formatDate(budget.end_date) : '—'}
               iconBg={colors.tint + '18'} iconColor={colors.tint}
               textColor={colors.text} subColor={colors.icon} />
-            <InfoRow icon="hourglass-half" label="Thời gian còn lại"
-              value={`${daysLeft} ngày`}
+            <InfoRow icon="hourglass-half" label={t('budget.detail.days_remaining_label')}
+              value={`${daysLeft} ${t('budget.detail.days_unit')}`}
               iconBg={daysLeft <= 3 ? '#FF6B6B18' : colors.tint + '18'}
               iconColor={daysLeft <= 3 ? '#FF6B6B' : colors.tint}
               textColor={colors.text} subColor={colors.icon} />
-            <InfoRow icon={walletObj?.icon || 'wallet'} label="Ví"
+            <InfoRow icon={walletObj?.icon || 'wallet'} label={t('budget.detail.wallet')}
               value={displayWalletName}
               iconBg={colors.tint + '18'} iconColor={colors.tint}
               textColor={colors.text} subColor={colors.icon} />
@@ -492,21 +495,21 @@ const BudgetDetailScreen = () => {
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {/* Header + legend */}
           <View style={styles.chartHeader}>
-            <CustomText style={[styles.sectionTitle, { color: colors.text }]}>Xu hướng chi tiêu</CustomText>
+            <CustomText style={[styles.sectionTitle, { color: colors.text }]}>{t('budget.detail.spending_trend')}</CustomText>
             <View style={styles.legendRow}>
               {/* Solid line legend */}
               <View style={[styles.legendLine, { backgroundColor: colors.tint }]} />
-              <CustomText style={[styles.legendLabel, { color: colors.icon }]}>Thực tế</CustomText>
+              <CustomText style={[styles.legendLabel, { color: colors.icon }]}>{t('budget.detail.actual')}</CustomText>
               {/* Dashed line legend */}
               <View style={styles.legendDashedContainer}>
                 <View style={[styles.legendDash, { backgroundColor: colors.tint }]} />
                 <View style={[styles.legendDashGap]} />
                 <View style={[styles.legendDash, { backgroundColor: colors.tint }]} />
               </View>
-              <CustomText style={[styles.legendLabel, { color: colors.icon }]}>Dự đoán</CustomText>
+              <CustomText style={[styles.legendLabel, { color: colors.icon }]}>{t('budget.detail.prediction')}</CustomText>
               {/* Budget limit legend */}
               <View style={[styles.legendLine, { backgroundColor: '#FF6B6B' }]} />
-              <CustomText style={[styles.legendLabel, { color: colors.icon }]}>Giới hạn</CustomText>
+              <CustomText style={[styles.legendLabel, { color: colors.icon }]}>{t('budget.detail.limit')}</CustomText>
             </View>
           </View>
 
@@ -530,13 +533,13 @@ const BudgetDetailScreen = () => {
           {/* X-axis labels: Đầu kì — Hôm nay — Cuối kì */}
           <View style={styles.chartAxisRow}>
             <CustomText style={[styles.axisLabel, { color: colors.icon }]}>
-              {startDate ? formatDate(budget.start_date) : 'Đầu kì'}
+              {startDate ? formatDate(budget.start_date) : t('budget.detail.start_period')}
             </CustomText>
             <CustomText style={[styles.axisLabelToday, { color: colors.tint }]}>
-              ● Hôm nay
+              {t('budget.detail.today_dot')}
             </CustomText>
             <CustomText style={[styles.axisLabel, { color: colors.icon }]}>
-              {endDate ? formatDate(budget.end_date) : 'Cuối kì'}
+              {endDate ? formatDate(budget.end_date) : t('budget.detail.end_period')}
             </CustomText>
           </View>
         </View>
@@ -549,13 +552,13 @@ const BudgetDetailScreen = () => {
             </View>
             <View style={{ flex: 1 }}>
               <CustomText style={[styles.recommendTitle, { color: colors.icon }]}>
-                Mức chi tiêu khuyến nghị
+                {t('budget.detail.daily_recommended')}
               </CustomText>
               <CustomText style={[styles.recommendAmount, { color: colors.text }]}>
-                <CustomText style={{ color: colors.tint }}>{formatMoney(Math.round(dailyRecommended), currency)}</CustomText> / ngày
+                <CustomText style={{ color: colors.tint }}>{formatMoney(Math.round(dailyRecommended), currency)}</CustomText>{t('budget.detail.per_day')}
               </CustomText>
               <CustomText style={[styles.recommendSub, { color: colors.icon }]}>
-                Để không vượt quá ngân sách trong {daysLeft} ngày còn lại
+                {t('budget.detail.days_left_prefix')} {daysLeft} {t('budget.detail.days_left_suffix')}
               </CustomText>
             </View>
           </View>
@@ -563,22 +566,22 @@ const BudgetDetailScreen = () => {
 
         {/* ── 5. Status Summary ─────────────────────────────────────────────────── */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <CustomText style={[styles.sectionTitle, { color: colors.text }]}>Tóm tắt trạng thái</CustomText>
+          <CustomText style={[styles.sectionTitle, { color: colors.text }]}>{t('budget.detail.status_summary')}</CustomText>
           <View style={styles.summaryGrid}>
-            <SummaryBlock label="Chi tiêu dự kiến"
+            <SummaryBlock label={t('budget.detail.estimated_spending')}
               value={formatMoney(Math.round(estimatedTotal), currency)} icon="chart-line"
               iconBg="#F39C1218" iconColor="#F39C12"
-              textColor={colors.text} subColor={colors.icon} note="Tốc độ hiện tại" />
-            <SummaryBlock label="Chi tiêu thực tế"
+              textColor={colors.text} subColor={colors.icon} note={t('budget.detail.current_pace')} />
+            <SummaryBlock label={t('budget.detail.actual_spending')}
               value={formatMoney(spent, currency)} icon="receipt"
               iconBg={isOverBudget ? '#FF6B6B18' : colors.tint + '18'}
               iconColor={isOverBudget ? '#FF6B6B' : colors.tint}
               textColor={colors.text} subColor={colors.icon} note={`${percentage.toFixed(1)}%`} />
-            <SummaryBlock label="Ngân sách còn lại"
+            <SummaryBlock label={t('budget.detail.remaining_budget_label')}
               value={formatMoney(Math.abs(remaining), currency)} icon="piggy-bank"
               iconBg={remaining >= 0 ? '#27AE6018' : '#FF6B6B18'}
               iconColor={remaining >= 0 ? '#27AE60' : '#FF6B6B'}
-              textColor={colors.text} subColor={colors.icon} note={remaining < 0 ? 'Đã vượt' : 'An toàn'} />
+              textColor={colors.text} subColor={colors.icon} note={remaining < 0 ? t('budget.detail.over_budget') : t('budget.detail.safe')} />
           </View>
         </View>
 
@@ -591,7 +594,7 @@ const BudgetDetailScreen = () => {
               params: {
                 budgetId: budget.id || budget.budget_id,
                 walletId: budget.wallet_id,
-                categoryName: budget.categoryName || budget.category_name || 'Ngân sách',
+                categoryName: budget.categoryName || budget.category_name || t('budget.detail.default_budget_name'),
                 fromDate: budget.start_date,
                 toDate: budget.end_date,
               },
@@ -600,7 +603,7 @@ const BudgetDetailScreen = () => {
           activeOpacity={0.85}
         >
           <FontAwesome6 name="list" size={normalize(18)} color="#fff" />
-          <CustomText style={styles.transactionBtnText}>Danh sách giao dịch</CustomText>
+          <CustomText style={styles.transactionBtnText}>{t('budget.detail.transaction_list')}</CustomText>
           <FontAwesome6 name="chevron-right" size={normalize(14)} color="rgba(255,255,255,0.7)" />
         </TouchableOpacity>
 

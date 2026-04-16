@@ -68,12 +68,12 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
     // Format transaction date/time
     const formatDateTime = (dateString: string) => {
         const date = new Date(dateString);
-        const day = date.toLocaleDateString("vi-VN", {
+        const day = date.toLocaleDateString(i18n.language === "vi" ? "vi-VN" : "en-US", {
             day: "2-digit",
             month: "short",
             year: "numeric",
         });
-        const time = date.toLocaleTimeString("vi-VN", {
+        const time = date.toLocaleTimeString(i18n.language === "vi" ? "vi-VN" : "en-US", {
             hour: "2-digit",
             minute: "2-digit",
             hour12: true,
@@ -158,7 +158,7 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
                     </View>
                     <View style={localStyles.transactionInfo}>
                         <CustomText style={[localStyles.transactionTitle, { color: colors.text }]} type="bold" numberOfLines={1}>
-                            {parseName(item.category_name) || "Khác"}
+                            {parseName(item.category_name) || t('paybook.history.other')}
                         </CustomText>
                         {item.description ? (
                             <CustomText style={[localStyles.transactionCategory, { color: colors.icon }]} numberOfLines={1}>
@@ -197,20 +197,20 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
         return (
             <View style={[localStyles.summaryCard, { backgroundColor: colors.card }]}>
                 <View style={localStyles.summaryRow}>
-                    <CustomText style={[localStyles.summaryLabel, { color: colors.text }]}>Khoản thu</CustomText>
+                    <CustomText style={[localStyles.summaryLabel, { color: colors.text }]}>{t('paybook.history.income')}</CustomText>
                     <CustomText style={[localStyles.summaryValue, { color: "#4CAF50" }]} type="semiBold">
                         +{formatCurrency(totalIncome)}
                     </CustomText>
                 </View>
                 <View style={localStyles.summaryRow}>
-                    <CustomText style={[localStyles.summaryLabel, { color: colors.text }]}>Khoản chi</CustomText>
+                    <CustomText style={[localStyles.summaryLabel, { color: colors.text }]}>{t('paybook.history.expense')}</CustomText>
                     <CustomText style={[localStyles.summaryValue, { color: "#FF3B30" }]} type="semiBold">
                         -{formatCurrency(totalExpense)}
                     </CustomText>
                 </View>
                 <View style={localStyles.summaryDivider} />
                 <View style={localStyles.summaryRow}>
-                    <CustomText style={[localStyles.summaryLabel, { color: colors.text }]} type="bold">Tổng kết</CustomText>
+                    <CustomText style={[localStyles.summaryLabel, { color: colors.text }]} type="bold">{t('paybook.history.summary')}</CustomText>
                     <CustomText style={[localStyles.summaryValue, { color: total >= 0 ? "#4CAF50" : "#FF3B30" }]} type="bold">
                         {total >= 0 ? "+" : ""}{formatCurrency(total)}
                     </CustomText>
@@ -222,7 +222,7 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
     const renderHeader = () => (
         <View style={localStyles.headerContainer}>
              <AppHeader 
-                title={"Lịch sử giao dịch sổ nợ"} 
+                title={t('paybook.history.title')} 
                 showBackButton
                 titleStyle={localStyles.headerTitle as any}
             />
@@ -253,7 +253,7 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
                     !loading ? (
                         <View style={localStyles.emptyContainer}>
                              <Ionicons name="receipt-outline" size={60} color={colors.icon} />
-                             <CustomText style={{ color: colors.icon, marginTop: 10 }}>Chưa có giao dịch cho sổ nợ này</CustomText>
+                             <CustomText style={{ color: colors.icon, marginTop: 10 }}>{t('paybook.history.empty')}</CustomText>
                         </View>
                     ) : null
                 }
