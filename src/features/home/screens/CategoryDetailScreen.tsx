@@ -84,7 +84,7 @@ const CategoryDetailScreen: React.FC = () => {
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
 
-        const timeStr = date.toLocaleTimeString('vi-VN', {
+        const timeStr = date.toLocaleTimeString(i18n.language === 'vi' ? 'vi-VN' : 'en-US', {
             hour: '2-digit',
             minute: '2-digit',
         });
@@ -94,7 +94,7 @@ const CategoryDetailScreen: React.FC = () => {
         } else if (date >= yesterday) {
             return `${t('home.yesterday')}, ${timeStr}`;
         } else {
-            return `${date.toLocaleDateString('vi-VN', {
+            return `${date.toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
@@ -180,10 +180,10 @@ const CategoryDetailScreen: React.FC = () => {
     if (!category) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-                <AppHeader title={t('home.category_detail_title') || 'Chi tiết Nhóm'} showBackButton />
+                <AppHeader title={t('home.category_detail_title')} showBackButton />
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <CustomText style={{ color: colors.text }}>
-                        {t('home.category_not_found') || 'Không tìm thấy danh mục'}
+                        {t('home.category_not_found')}
                     </CustomText>
                 </View>
             </SafeAreaView>
@@ -196,7 +196,7 @@ const CategoryDetailScreen: React.FC = () => {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             <AppHeader
-                title={t('home.category_detail_title') || 'Chi tiết Nhóm'}
+                title={t('home.category_detail_title')}
                 showBackButton
                 showBorder={false}
             />
@@ -222,11 +222,11 @@ const CategoryDetailScreen: React.FC = () => {
                                 {categoryName}
                             </CustomText>
                             <CustomText style={[styles.categoryMeta, { color: colors.icon }]}>
-                                {category.transaction_count} {t('home.transactions_count') || 'Giao dịch'} - Chiếm{' '}
+                                {category.transaction_count} {t('home.transactions_count')} - {t('home.occupied')}{' '}
                                 <CustomText style={[styles.categoryMetaBold, { color: colors.text }]}>
                                     {percentDisplay}%
                                 </CustomText>
-                                {' '}tổng chi tiêu
+                                {' '}{t('home.total_spending')}
                             </CustomText>
                         </View>
                     </View>
@@ -258,17 +258,17 @@ const CategoryDetailScreen: React.FC = () => {
                 {/* Transaction List Section */}
                 <View style={styles.transactionSection}>
                     <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
-                        {t('home.category_transactions') || 'Các giao dịch'}
+                        {t('home.category_transactions')}
                     </CustomText>
 
                     <View style={styles.transactionList}>
                         {loadingTransactions ? (
                             <View style={{ padding: 20, alignItems: 'center' }}>
-                                <CustomText style={{ color: colors.icon }}>{t('home.loading_transactions') || 'Đang tải giao dịch...'}</CustomText>
+                                <CustomText style={{ color: colors.icon }}>{t('home.loading_transactions')}</CustomText>
                             </View>
                         ) : transactions.length === 0 ? (
                             <View style={{ padding: 20, alignItems: 'center' }}>
-                                <CustomText style={{ color: colors.icon }}>{t('home.no_transactions') || 'Không có giao dịch nào'}</CustomText>
+                                <CustomText style={{ color: colors.icon }}>{t('home.no_transactions')}</CustomText>
                             </View>
                         ) : (
                             transactions.map((transaction) => (
