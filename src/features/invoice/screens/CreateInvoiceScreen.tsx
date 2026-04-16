@@ -114,21 +114,22 @@ const CreateRecurringInvoiceScreen = () => {
 
   // Recurring states
   const [showRecurringModal, setShowRecurringModal] = useState(false);
-  const [recurringType, setRecurringType] = useState<RecurringType>("monthly");
-  const [recurringCount, setRecurringCount] = useState<number | null>(12);
+  const [recurringType, setRecurringType] = useState<RecurringType>("none");
+  const [recurringCount, setRecurringCount] = useState<number | null>(null);
   const [isForever, setIsForever] = useState(false);
-  const [selectedDays, setSelectedDays] = useState<number[]>([1]);
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [recurringLabel, setRecurringLabel] = useState("");
 
   const getLocalizedRecurringLabel = useCallback((type: RecurringType, count: number | null, isForever: boolean) => {
     const labelMap: Record<string, string> = {
+      none: t("invoice.rec_none"),
       daily: t("invoice.rec_daily"),
       weekly: t("invoice.rec_weekly"),
       monthly: t("invoice.rec_monthly"),
       yearly: t("invoice.rec_yearly"),
     };
 
-    let label = labelMap[type] || t("invoice.rec_monthly");
+    let label = labelMap[type] || t("invoice.rec_none");
 
     if (count && !isForever) {
       label += ` - ${count} ${t("invoice.times")}`;
