@@ -45,20 +45,23 @@ const StatisticsScreen = () => {
   const { t, i18n } = useTranslation();
   const { defaultCurrency } = useDefaultCurrency();
   const [balanceVisible, setBalanceVisible] = useState(true);
-  const { wallets, loading: walletsLoading } = useWallet();
-  const { data: financeSummary, loading: summaryLoading } = useFinanceSummary();
+  const { wallets, loading: walletsLoading, error: walletsError, refresh: refreshWallets } = useWallet();
+  const { data: financeSummary, loading: summaryLoading, error: summaryError, refresh: refreshSummary } = useFinanceSummary();
   const {
     categories: topCategories,
     loading: categoriesLoading,
+    error: categoriesError,
     refresh: refreshCategories,
   } = useTopSpendingCategories("M", 100);
 
   const { advancedSearchTransactions, loading: searchLoading } = useTransaction();
   const { categories: allCategories } = useCategory();
   const [topRecentExpenses, setTopRecentExpenses] = useState<any[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const fetchTopExpenses = useCallback(async () => {
     try {
+      setSearchError(null);
       const now = new Date();
       // Year and Month of now
       const year = now.getFullYear();
@@ -97,8 +100,9 @@ const StatisticsScreen = () => {
         .slice(0, 5);
 
       setTopRecentExpenses(sorted);
-    } catch (error) {
+    } catch (error: any) {
       console.error("[StatisticsScreen] fetchTopExpenses error:", error);
+      setSearchError(error?.message || "Failed to fetch top expenses");
     }
   }, [advancedSearchTransactions]);
 
@@ -145,6 +149,8 @@ const StatisticsScreen = () => {
     expenses: monthlyExpenses,
     incomes: monthlyIncomes,
     loading: chartLoading,
+    error: chartError,
+    refresh: refreshCharts,
   } = useMonthlyChartData();
   const [openingBalance, setOpeningBalance] = useState<number | null>(null);
 
@@ -223,6 +229,37 @@ const StatisticsScreen = () => {
     }, [])
   );
 
+  const ErrorSection = ({ error, onRetry }: { error: string, onRetry: () => void }) => (
+    <View style={{
+      padding: normalize(20),
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      marginHorizontal: wp(5),
+      borderRadius: normalize(16),
+      marginVertical: normalize(10),
+      borderWidth: 1,
+      borderColor: colors.border
+    }}>
+      <FontAwesome6 name="circle-exclamation" size={normalize(24)} color="#FF6B6B" style={{ marginBottom: normalize(10) }} />
+      <CustomText size={14} style={{ color: colors.icon, textAlign: 'center', marginBottom: normalize(12) }}>
+        {error}
+      </CustomText>
+      <TouchableOpacity
+        onPress={onRetry}
+        style={{
+          paddingHorizontal: normalize(24),
+          paddingVertical: normalize(10),
+          backgroundColor: colors.tint,
+          borderRadius: normalize(20)
+        }}
+      >
+        <CustomText size={14} type="bold" style={{ color: '#fff' }}>
+          {t("common.reload")}
+        </CustomText>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -256,6 +293,8 @@ const StatisticsScreen = () => {
           </CustomText>
         </LinearGradient>
 
+        {summaryError && <ErrorSection error={summaryError} onRetry={refreshSummary} />}
+
         {/* ===== WALLETS ===== */}
         <SectionHeader
           title={t("statistics.my_wallets")}
@@ -270,54 +309,58 @@ const StatisticsScreen = () => {
             { height: (displayWallets.length - 1) * WALLET_CARD_PEEK + WALLET_CARD_H + WALLET_CARD_PEEK },
           ]}
         >
-          {displayWallets.map((w, index) => {
-            const isLast = index === displayWallets.length - 1;
-            const cardColor = w.color || WALLET_FALLBACK_COLORS[index % WALLET_FALLBACK_COLORS.length];
-            return (
-              <TouchableOpacity
-                key={w.walletId}
-                activeOpacity={0.85}
-                onPress={() => handleWalletPress(w.walletId)}
-                style={[
-                  styles.walletStackCard,
-                  {
-                    backgroundColor: cardColor,
-                    top: index * WALLET_CARD_PEEK,
-                    zIndex: index + 1,
-                    height: isLast
-                      ? WALLET_CARD_H + WALLET_CARD_PEEK
-                      : WALLET_CARD_H,
-                    borderBottomLeftRadius: isLast ? undefined : 0,
-                    borderBottomRightRadius: isLast ? undefined : 0,
-                  },
-                ]}
-              >
-                {/* Top row: icon + type label + currency/name */}
-                <View style={styles.walletStackRow}>
-                  <View style={styles.walletStackIconWrap}>
-                    <FontAwesome6
-                      name={(w.icon as any) || "wallet"}
-                      size={normalize(16)}
-                      color="#fff"
-                    />
+          {walletsError ? (
+            <ErrorSection error={walletsError} onRetry={refreshWallets} />
+          ) : (
+            displayWallets.map((w, index) => {
+              const isLast = index === displayWallets.length - 1;
+              const cardColor = w.color || WALLET_FALLBACK_COLORS[index % WALLET_FALLBACK_COLORS.length];
+              return (
+                <TouchableOpacity
+                  key={w.walletId}
+                  activeOpacity={0.85}
+                  onPress={() => handleWalletPress(w.walletId)}
+                  style={[
+                    styles.walletStackCard,
+                    {
+                      backgroundColor: cardColor,
+                      top: index * WALLET_CARD_PEEK,
+                      zIndex: index + 1,
+                      height: isLast
+                        ? WALLET_CARD_H + WALLET_CARD_PEEK
+                        : WALLET_CARD_H,
+                      borderBottomLeftRadius: isLast ? undefined : 0,
+                      borderBottomRightRadius: isLast ? undefined : 0,
+                    },
+                  ]}
+                >
+                  {/* Top row: icon + type label + currency/name */}
+                  <View style={styles.walletStackRow}>
+                    <View style={styles.walletStackIconWrap}>
+                      <FontAwesome6
+                        name={(w.icon as any) || "wallet"}
+                        size={normalize(16)}
+                        color="#fff"
+                      />
+                    </View>
+                    <CustomText type="semiBold" size={14} style={styles.walletStackLabel} numberOfLines={1}>
+                      {WALLET_TYPE_LABEL["TRACKER"]}
+                    </CustomText>
+                    <CustomText type="bold" size={14} style={styles.walletStackCurrency} numberOfLines={1}>
+                      {w.name}
+                    </CustomText>
                   </View>
-                  <CustomText type="semiBold" size={14} style={styles.walletStackLabel} numberOfLines={1}>
-                    {WALLET_TYPE_LABEL["TRACKER"]}
-                  </CustomText>
-                  <CustomText type="bold" size={14} style={styles.walletStackCurrency} numberOfLines={1}>
-                    {w.name}
-                  </CustomText>
-                </View>
 
-                {/* Last card: show balance at bottom-right */}
-                {isLast && (
-                  <CustomText type="bold" size={22} style={styles.walletStackBalance}>
-                    {balanceVisible ? formatCurrency(w.balance, w.currency) : "••••••••"}
-                  </CustomText>
-                )}
-              </TouchableOpacity>
-            );
-          })}
+                  {/* Last card: show balance at bottom-right */}
+                  {isLast && (
+                    <CustomText type="bold" size={22} style={styles.walletStackBalance}>
+                      {balanceVisible ? formatCurrency(w.balance, w.currency) : "••••••••"}
+                    </CustomText>
+                  )}
+                </TouchableOpacity>
+              );
+            })
+          )}
         </View>
 
         {/* ===== CHARTS ===== */}
@@ -332,6 +375,8 @@ const StatisticsScreen = () => {
           <View style={{ paddingVertical: normalize(24), alignItems: 'center' }}>
             <ActivityIndicator color={colors.tint} />
           </View>
+        ) : chartError ? (
+          <ErrorSection error={chartError} onRetry={refreshCharts} />
         ) : (
           <>
             <LineChartCard
@@ -357,6 +402,8 @@ const StatisticsScreen = () => {
           <View style={{ paddingVertical: normalize(24), alignItems: 'center' }}>
             <ActivityIndicator color={colors.tint} />
           </View>
+        ) : categoriesError ? (
+          <ErrorSection error={categoriesError} onRetry={refreshCategories} />
         ) : topCategories.length === 0 ? (
           <View style={{ paddingVertical: normalize(20), alignItems: 'center' }}>
             <CustomText size={14} style={{ color: colors.icon }}>
@@ -435,6 +482,8 @@ const StatisticsScreen = () => {
         <View style={styles.frequentList}>
           {searchLoading && topRecentExpenses.length === 0 ? (
             <ActivityIndicator color={colors.tint} />
+          ) : searchError ? (
+            <ErrorSection error={searchError} onRetry={fetchTopExpenses} />
           ) : enhancedTopExpenses.length === 0 ? (
             <View style={{ paddingVertical: normalize(20), alignItems: 'center' }}>
               <CustomText style={{ color: colors.icon }}>{t("home.no_transactions")}</CustomText>

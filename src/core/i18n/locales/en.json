@@ -458,7 +458,12 @@
     "no_transactions": "No transactions yet",
     "today": "Today",
     "yesterday": "Yesterday",
-    "transaction_default_name": "Transaction"
+    "transaction_default_name": "Transaction",
+    "category_detail_title": "Category Details",
+    "category_not_found": "Category not found",
+    "occupied": "Accounts for",
+    "total_spending": "total spending",
+    "category_transactions": "Transactions"
   },
   "transaction_history": {
     "title": "Transaction History"
