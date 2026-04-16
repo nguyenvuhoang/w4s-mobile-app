@@ -29,6 +29,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface SelectedCategoryData {
@@ -88,6 +89,7 @@ const formatDateRange = (start: Date, end: Date) => {
 };
 
 const CreateBudgetScreen = () => {
+    const { t } = useTranslation();
     const { colors } = useAppTheme();
     const params = useLocalSearchParams();
     const { wallets, defaultWallet } = useWallet();
@@ -129,7 +131,7 @@ const CreateBudgetScreen = () => {
         if (sourceWalletId === 0) {
             return {
                 walletId: 0,
-                name: "Tất cả các ví",
+                name: t("budget.all_wallets", { defaultValue: "Tất cả các ví" }),
                 icon: "layer-group",
                 color: colors.tint,
             };
@@ -246,7 +248,7 @@ const CreateBudgetScreen = () => {
                         case "THIS_MONTH":
                             s = new Date(y, m, 1);
                             e = new Date(y, m + 1, 0);
-                            label = `Tháng này (${formatDateRange(s, e)})`;
+                            label = t("budget.label_this_month", { range: formatDateRange(s, e), defaultValue: `Tháng này (${formatDateRange(s, e)})` });
                             pType = "MONTH";
                             break;
                         case "THIS_WEEK": {
@@ -256,28 +258,29 @@ const CreateBudgetScreen = () => {
                             s.setHours(0, 0, 0, 0);
                             e = new Date(s);
                             e.setDate(s.getDate() + 6);
-                            label = `Tuần này (${formatDateRange(s, e)})`;
+                            label = t("budget.label_this_week", { range: formatDateRange(s, e), defaultValue: `Tuần này (${formatDateRange(s, e)})` });
                             pType = "WEEK";
                             break;
                         }
                         case "THIS_YEAR":
                             s = new Date(y, 0, 1);
                             e = new Date(y, 11, 31);
-                            label = `Năm ${y} (${formatDateRange(s, e)})`;
+                            label = t("budget.label_this_year", { year: y, range: formatDateRange(s, e), defaultValue: `Năm ${y} (${formatDateRange(s, e)})` });
                             pType = "YEAR";
                             break;
                         case "THIS_QUARTER": {
                             const q = Math.floor(m / 3);
                             s = new Date(y, q * 3, 1);
                             e = new Date(y, q * 3 + 3, 0);
-                            label = `Quý ${q + 1}/${y} (${formatDateRange(s, e)})`;
+                            const quarterNum = q + 1;
+                            label = t("budget.label_this_quarter", { quarter: quarterNum, year: y, range: formatDateRange(s, e), defaultValue: `Quý ${quarterNum}/${y} (${formatDateRange(s, e)})` });
                             pType = "MONTH";
                             break;
                         }
                         default:
                             s = new Date(y, m, 1);
                             e = new Date(y, m + 1, 0);
-                            label = `Tháng này (${formatDateRange(s, e)})`;
+                            label = t("budget.label_this_month", { range: formatDateRange(s, e), defaultValue: `Tháng này (${formatDateRange(s, e)})` });
                             pType = "MONTH";
                     }
 
@@ -320,7 +323,7 @@ const CreateBudgetScreen = () => {
                         const monthEnd = new Date(y, m + 1, 0);
                         setStartDate(monthStart);
                         setEndDate(monthEnd);
-                        setDateRangeLabel(`Tháng này (${formatDateRange(monthStart, monthEnd)})`);
+                        setDateRangeLabel(t("budget.label_this_month", { range: formatDateRange(monthStart, monthEnd), defaultValue: `Tháng này (${formatDateRange(monthStart, monthEnd)})` }));
                     }
                 }
 
@@ -345,7 +348,7 @@ const CreateBudgetScreen = () => {
                 const monthEnd = new Date(y, m + 1, 0);
                 setStartDate(monthStart);
                 setEndDate(monthEnd);
-                setDateRangeLabel(`Tháng này (${formatDateRange(monthStart, monthEnd)})`);
+                setDateRangeLabel(t("budget.label_this_month", { range: formatDateRange(monthStart, monthEnd), defaultValue: `Tháng này (${formatDateRange(monthStart, monthEnd)})` }));
             }
         } else {
             // No autofill data -> set default date range (this month)
@@ -353,7 +356,7 @@ const CreateBudgetScreen = () => {
             const monthEnd = new Date(y, m + 1, 0);
             setStartDate(monthStart);
             setEndDate(monthEnd);
-            setDateRangeLabel(`Tháng này (${formatDateRange(monthStart, monthEnd)})`);
+            setDateRangeLabel(t("budget.label_this_month", { range: formatDateRange(monthStart, monthEnd), defaultValue: `Tháng này (${formatDateRange(monthStart, monthEnd)})` }));
         }
     }, [params.autofillData]);
 
@@ -501,10 +504,10 @@ const CreateBudgetScreen = () => {
         const success = await createBudget(payload);
 
         if (success) {
-            showNotification("Ngân sách đã được tạo thành công!", "success");
+            showNotification(t("budget.success_create", { defaultValue: "Ngân sách đã được tạo thành công!" }), "success");
             router.back();
         } else {
-            showNotification("Không thể tạo ngân sách. Vui lòng thử lại.", "error");
+            showNotification(t("budget.error_create", { defaultValue: "Không thể tạo ngân sách. Vui lòng thử lại." }), "error");
         }
     }, [
         isValid,
@@ -524,9 +527,9 @@ const CreateBudgetScreen = () => {
     const parseCategoryName = (nameJson: string) => {
         try {
             const parsed = JSON.parse(nameJson);
-            return parsed.vi || parsed.en || "Chọn nhóm";
+            return parsed.vi || parsed.en || t("budget.select_group", { defaultValue: "Chọn nhóm" });
         } catch {
-            return "Chọn nhóm";
+            return t("budget.select_group", { defaultValue: "Chọn nhóm" });
         }
     };
 
@@ -538,7 +541,7 @@ const CreateBudgetScreen = () => {
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 style={styles.flex}
             >
-                <AppHeader title="Tạo ngân sách" />
+                <AppHeader title={t("budget.create_budget", { defaultValue: "Tạo ngân sách" })} />
 
                 <ScrollView
                     style={styles.flex}
@@ -549,7 +552,7 @@ const CreateBudgetScreen = () => {
                     {/* Source Wallet - REQUIRED */}
                     <View style={styles.section}>
                         <CustomText style={[styles.label, { color: colors.text }]}>
-                            Nguồn tiền <CustomText style={{ color: "red" }}>*</CustomText>
+                            {t("budget.source_wallet", { defaultValue: "Nguồn tiền" })} <CustomText style={{ color: "red" }}>*</CustomText>
                         </CustomText>
                         <TouchableOpacity
                             style={[
@@ -568,7 +571,7 @@ const CreateBudgetScreen = () => {
                                     solid
                                 />
                                 <CustomText style={[styles.fieldText, { color: colors.text }]}>
-                                    {selectedWallet?.name || "Chọn ví"}
+                                    {selectedWallet?.name || t("budget.select_wallet", { defaultValue: "Chọn ví" })}
                                 </CustomText>
                             </View>
                         </TouchableOpacity>
@@ -577,7 +580,7 @@ const CreateBudgetScreen = () => {
                     {/* Category - REQUIRED */}
                     <View style={styles.section}>
                         <CustomText style={[styles.label, { color: colors.text }]}>
-                            Nhóm <CustomText style={{ color: "red" }}>*</CustomText>
+                            {t("budget.group", { defaultValue: "Nhóm" })} <CustomText style={{ color: "red" }}>*</CustomText>
                         </CustomText>
                         <TouchableOpacity
                             style={[
@@ -623,7 +626,7 @@ const CreateBudgetScreen = () => {
                                         <CustomText
                                             style={[styles.fieldText, { color: colors.icon }]}
                                         >
-                                            Chọn nhóm
+                                            {t("budget.select_group", { defaultValue: "Chọn nhóm" })}
                                         </CustomText>
                                     </>
                                 )}
@@ -650,7 +653,7 @@ const CreateBudgetScreen = () => {
                     {/* Time Range */}
                     <View style={styles.section}>
                         <CustomText style={[styles.label, { color: colors.text }]}>
-                            Khoảng thời gian
+                            {t("budget.period", { defaultValue: "Khoảng thời gian" })}
                         </CustomText>
                         <TouchableOpacity
                             style={[
@@ -660,7 +663,7 @@ const CreateBudgetScreen = () => {
                             onPress={() => setShowDateModal(true)}
                         >
                             <CustomText style={[styles.fieldText, { color: colors.text }]}>
-                                {dateRangeLabel || "Chọn khoảng thời gian"}
+                                {dateRangeLabel || t("budget.select_period", { defaultValue: "Chọn khoảng thời gian" })}
                             </CustomText>
                             <FontAwesome6
                                 name="chevron-down"
@@ -673,7 +676,7 @@ const CreateBudgetScreen = () => {
                     {/* Note - Optional */}
                     <View style={styles.section}>
                         <CustomText style={[styles.label, { color: colors.text }]}>
-                            Ghi chú
+                            {t("budget.note", { defaultValue: "Ghi chú" })}
                         </CustomText>
                         <TextInput
                             style={[
@@ -684,7 +687,7 @@ const CreateBudgetScreen = () => {
                                     color: colors.text,
                                 },
                             ]}
-                            placeholder="Thêm ghi chú (tùy chọn)"
+                            placeholder={t("budget.note_placeholder", { defaultValue: "Thêm ghi chú (tùy chọn)" })}
                             placeholderTextColor={colors.icon}
                             multiline
                             numberOfLines={4}
@@ -700,7 +703,7 @@ const CreateBudgetScreen = () => {
                     >
                         <View style={styles.toggleRow}>
                             <CustomText style={[styles.toggleLabel, { color: colors.text }]}>
-                                Tính vào báo cáo
+                                {t("budget.include_in_report", { defaultValue: "Tính vào báo cáo" })}
                             </CustomText>
                             <Switch
                                 value={includeInReport}
@@ -716,7 +719,7 @@ const CreateBudgetScreen = () => {
 
                         <View style={styles.toggleRow}>
                             <CustomText style={[styles.toggleLabel, { color: colors.text }]}>
-                                Tự động lặp lại
+                                {t("budget.auto_repeat", { defaultValue: "Tự động lặp lại" })}
                             </CustomText>
                             <Switch
                                 value={autoRepeat}
@@ -745,7 +748,7 @@ const CreateBudgetScreen = () => {
                         onPress={() => router.back()}
                     >
                         <CustomText style={[styles.cancelText, { color: colors.tint }]}>
-                            Hủy
+                            {t("common.cancel", { defaultValue: "Hủy" })}
                         </CustomText>
                     </TouchableOpacity>
 
@@ -758,7 +761,7 @@ const CreateBudgetScreen = () => {
                         disabled={!isValid || creating}
                     >
                         <CustomText style={styles.createText}>
-                            {creating ? "Đang tạo..." : "Tạo"}
+                            {creating ? t("budget.creating", { defaultValue: "Đang tạo..." }) : t("budget.create", { defaultValue: "Tạo" })}
                         </CustomText>
                     </TouchableOpacity>
                 </View>
@@ -766,7 +769,7 @@ const CreateBudgetScreen = () => {
                 {/* Date Range Modal */}
                 <BottomDateRangeModal
                     visible={showDateModal}
-                    title="Khoảng thời gian"
+                    title={t("budget.period", { defaultValue: "Khoảng thời gian" })}
                     initialStartDate={startDate}
                     initialEndDate={endDate}
                     initialPeriodType={periodType}

@@ -14,6 +14,7 @@ import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useSpendingLimit } from "@/hooks/useSpendingLimit";
+import { apiService } from "@/core/api/ApiService";
 import StorageService from "@/services/StorageService";
 import { hp, normalize } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
@@ -35,6 +36,7 @@ import {
   Modal,
   Platform,
   ScrollView,
+  StyleSheet,
   Switch,
   TextInput,
   TouchableOpacity,
@@ -132,6 +134,9 @@ const AddTransactionScreen = () => {
   const [note, setNote] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageRatio, setImageRatio] = useState<number | null>(null);
   const [includeInReport, setIncludeInReport] = useState(true);
   const [borrowToPayExpense, setBorrowToPayExpense] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -286,8 +291,7 @@ const AddTransactionScreen = () => {
   }, [loanList, selectedCategoryData?.category_type]);
 
   const isValid =
-    selectedWallet && selectedCategoryData && amount.trim() !== "" &&
-    (!isLoanCategory || selectedLoan !== null);
+    selectedWallet && selectedCategoryData && amount.trim() !== "";
 
   // Tính inline warning label từ exceeded limits
   const exceededLabel = useMemo(() => {
@@ -554,12 +558,39 @@ const AddTransactionScreen = () => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [16, 9],
+      allowsEditing: false,
       quality: 0.8,
     });
 
-    if (!result.canceled) setImageUri(result.assets[0].uri);
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      setImageUri(asset.uri);
+      if (asset.width && asset.height) {
+        setImageRatio(asset.width / asset.height);
+      }
+
+      // Upload ngay khi chọn xong
+      setIsUploadingImage(true);
+      try {
+        const userCode = appInfo?.user_code || "";
+        const uploadRes = await apiService.uploadImage(
+          asset.uri,
+          "transactions",
+          userCode,
+          false // Tắt loading toàn màn hình để hiện loading tại chỗ
+        );
+
+        const url = uploadRes?.file_url || uploadRes?.data?.file_url;
+        if (url) {
+          setUploadedImageUrl(url);
+        }
+      } catch (error) {
+        console.error("[AddTransaction] Upload image failed:", error);
+        showNotification(t("transaction.upload_error", { defaultValue: "Lỗi khi tải ảnh lên" }), "error");
+      } finally {
+        setIsUploadingImage(false);
+      }
+    }
   };
 
   const onDateChange = (event: any, selectedDate?: Date) => {
@@ -606,6 +637,12 @@ const AddTransactionScreen = () => {
   const handleCreate = async () => {
     if (!isValid) return;
 
+    // Ngăn lưu nếu đang upload dở
+    if (isUploadingImage) {
+      showNotification(t("transaction.uploading_wait", { defaultValue: "Vui lòng đợi ảnh upload xong" }), "warning");
+      return;
+    }
+
     try {
       const finalAmount = needsConversion
         ? convertedAmount
@@ -640,7 +677,7 @@ const AddTransactionScreen = () => {
         recordedAt: selectedDate,
         reminderAt: reminderDate,
         isCalculateReport: includeInReport,
-        images: imageUri ? [imageUri] : [],
+        images: uploadedImageUrl ? [uploadedImageUrl] : [],
         participants: participantsData,
         isLoanForFund: borrowToPayExpense,
         categoryGroup: selectedCategoryData?.category_group,
@@ -904,8 +941,7 @@ const AddTransactionScreen = () => {
           {isLoanCategory && (
             <View style={styles.section}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                {t("transaction.select_paybook", { defaultValue: "Sổ nợ" })}{" "}
-                <CustomText style={{ color: "red" }}>*</CustomText>
+                {t("transaction.select_paybook", { defaultValue: "Sổ nợ" })}
               </CustomText>
               <TouchableOpacity
                 style={[
@@ -1177,10 +1213,28 @@ const AddTransactionScreen = () => {
                   { backgroundColor: colors.card, borderColor: colors.border },
                 ]}
               >
-                <Image source={{ uri: imageUri }} style={styles.image} />
+                <Image
+                  source={{ uri: imageUri }}
+                  style={[
+                    styles.image,
+                    imageRatio ? { aspectRatio: imageRatio, height: undefined, maxHeight: normalize(300) } : {}
+                  ]}
+                  resizeMode="contain"
+                />
+                
+                {isUploadingImage && (
+                  <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "center", alignItems: "center" }]}>
+                    <ActivityIndicator color="#fff" size="small" />
+                  </View>
+                )}
+                
                 <TouchableOpacity
                   style={[styles.removeBtn, { backgroundColor: colors.background }]}
-                  onPress={() => setImageUri(null)}
+                  onPress={() => {
+                    setImageUri(null);
+                    setUploadedImageUrl(null);
+                    setIsUploadingImage(false);
+                  }}
                 >
                   <FontAwesome6 name="xmark" size={normalize(12)} color={colors.text} />
                 </TouchableOpacity>
