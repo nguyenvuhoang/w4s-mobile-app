@@ -53,7 +53,7 @@ interface BottomRecurringModalProps {
 const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
   visible,
   title,
-  initialRecurringType = "monthly",
+  initialRecurringType = "none",
   initialRecurringCount = 1,
   initialIsForever = false,
   initialSelectedDays = [1],
