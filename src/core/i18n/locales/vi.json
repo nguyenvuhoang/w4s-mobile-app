@@ -347,8 +347,7 @@
     "user_not_found": "Không tìm thấy thông tin tài khoản hợp lệ",
     "reset_password_success_email": "Mật khẩu mới đã được gửi về Email của bạn.",
     "reset_password_failed": "Reset mật khẩu thất bại",
-    "description": "Vui lòng đăng nhập để sử dụng ứng dụng quản lý tài chính W4S.",
-    "or": "hoặc"
+    "description": "Vui lòng đăng nhập để sử dụng ứng dụng quản lý tài chính W4S."
   },
   "settings": {
     "title": "Cài đặt",

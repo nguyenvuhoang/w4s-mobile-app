@@ -358,8 +358,7 @@
     "user_not_found": "Valid account information not found",
     "reset_password_success_email": "New password has been sent to your email.",
     "reset_password_failed": "Password reset failed",
-    "description": "Please log in to use the W4S financial management application.",
-    "or": "or"
+    "description": "Please log in to use the W4S financial management application."
   },
   "settings": {
     "title": "Settings",
