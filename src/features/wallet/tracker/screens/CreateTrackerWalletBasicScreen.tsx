@@ -8,7 +8,7 @@ import { useWalletTracker } from '@/features/wallet/hooks/useWalletTracker';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
-import { FontAwesome6 } from '@expo/vector-icons';
+import AppIcon from '@/components/base/AppIcon';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -142,6 +142,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
       pathname: '/(protected)/select-icon',
       params: {
         color: iconColor,
+        category: 'WALLET',
       }
     });
   };
@@ -192,8 +193,8 @@ const CreateWalletDetailsScreen: React.FC = () => {
             >
               <CustomText style={[styles.selectorLabel, { color: colors.text }]}>Icon</CustomText>
               <View style={styles.selectorValue}>
-                <FontAwesome6 name={icon as any} size={normalize(20)} color={colors.text} />
-                <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
+                <AppIcon name={icon as any} size={normalize(20)} color={colors.text} />
+                <AppIcon name="chevron-right" size={normalize(14)} color={colors.icon} />
               </View>
             </TouchableOpacity>
 
@@ -204,7 +205,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
               <CustomText style={[styles.selectorLabel, { color: colors.text }]}>{t('wallet.color')}</CustomText>
               <View style={styles.selectorValue}>
                 <View style={[styles.colorDot, { backgroundColor: iconColor }]} />
-                <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
+                <AppIcon name="chevron-right" size={normalize(14)} color={colors.icon} />
               </View>
             </TouchableOpacity>
           </View>
@@ -249,7 +250,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
                   </CustomText>
                 </View>
               </View>
-              <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
+              <AppIcon name="chevron-right" size={normalize(14)} color={colors.icon} />
             </TouchableOpacity>
           </View>
 

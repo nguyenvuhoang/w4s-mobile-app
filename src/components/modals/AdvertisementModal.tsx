@@ -1,4 +1,4 @@
-import { FontAwesome as Icon } from '@expo/vector-icons';
+import AppIcon from '@/components/base/AppIcon';
 import React, { useEffect } from 'react';
 import { Dimensions, Image, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, {
@@ -58,7 +58,7 @@ const AdvertisementModal: React.FC<AdvertisementModalProps> = ({ visible, imageU
       <View style={styles.centeredView}>
         <Animated.View style={[styles.modalView, animatedStyle]}>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Icon name="close" size={30} color="#fff" />
+            <AppIcon name="xmark" size={30} color="#fff" />
           </TouchableOpacity>
           <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="contain" />
         </Animated.View>

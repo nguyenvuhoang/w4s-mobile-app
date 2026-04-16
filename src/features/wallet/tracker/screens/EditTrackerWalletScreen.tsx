@@ -7,7 +7,7 @@ import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { useWalletTracker } from '@/features/wallet/hooks/useWalletTracker';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
-import { FontAwesome6 } from '@expo/vector-icons';
+import AppIcon from '@/components/base/AppIcon';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -116,7 +116,7 @@ const EditTrackerWalletScreen: React.FC = () => {
   const handleSelectIcon = () => {
     router.push({
       pathname: '/(protected)/select-icon',
-      params: { color: iconColor },
+      params: { color: iconColor, category: 'WALLET' },
     });
   };
 
@@ -163,8 +163,8 @@ const EditTrackerWalletScreen: React.FC = () => {
             >
               <CustomText style={[styles.selectorLabel, { color: colors.text }]}>Icon</CustomText>
               <View style={styles.selectorValue}>
-                <FontAwesome6 name={icon as any} size={normalize(20)} color={colors.text} />
-                <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
+                <AppIcon name={icon as any} size={normalize(20)} color={colors.text} />
+                <AppIcon name="chevron-right" size={normalize(14)} color={colors.icon} />
               </View>
             </TouchableOpacity>
 
@@ -177,7 +177,7 @@ const EditTrackerWalletScreen: React.FC = () => {
               </CustomText>
               <View style={styles.selectorValue}>
                 <View style={[styles.colorDot, { backgroundColor: iconColor }]} />
-                <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
+                <AppIcon name="chevron-right" size={normalize(14)} color={colors.icon} />
               </View>
             </TouchableOpacity>
           </View>
@@ -226,7 +226,7 @@ const EditTrackerWalletScreen: React.FC = () => {
                   </CustomText>
                 </View>
               </View>
-              <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
+              <AppIcon name="chevron-right" size={normalize(14)} color={colors.icon} />
             </TouchableOpacity>
           </View>
 

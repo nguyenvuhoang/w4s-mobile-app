@@ -3,7 +3,7 @@ import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
 import { hp, normalize, wp } from "@/utils/layout";
-import { FontAwesome6 } from "@expo/vector-icons";
+import AppIcon from "@/components/base/AppIcon";
 import { router } from "expo-router";
 import React from "react";
 import { StyleSheet, TouchableOpacity, View, ViewStyle } from "react-native";
@@ -68,7 +68,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             style={styles.backButton}
             activeOpacity={0.7}
           >
-            <FontAwesome6
+            <AppIcon
               name={backIconName}
               size={backIconSize || normalize(20)}
               color={backIconColor || colors.text}

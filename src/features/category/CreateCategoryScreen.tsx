@@ -7,7 +7,7 @@ import { useCategory } from '@/hooks/useCategory';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
 import { createMultilingualCategoryName, translateText } from '@/utils/translation';
-import { FontAwesome6, Ionicons } from '@expo/vector-icons';
+import AppIcon from '@/components/base/AppIcon';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -309,7 +309,7 @@ const CreateCategoryScreen: React.FC = () => {
                     {/* Preview Icon */}
                     <View style={styles.iconPreview}>
                         <View style={[styles.iconCircle, { backgroundColor: iconColor }]}>
-                            <FontAwesome6 name={icon as any} size={normalize(33)} color="#fff" />
+                            <AppIcon name={icon as any} size={normalize(33)} color="#fff" />
                         </View>
                     </View>
 
@@ -321,8 +321,8 @@ const CreateCategoryScreen: React.FC = () => {
                         >
                             <CustomText style={[styles.selectorLabel, { color: colors.text }]}>{t('category.icon')}</CustomText>
                             <View style={styles.selectorValue}>
-                                <FontAwesome6 name={icon as any} size={normalize(20)} color={colors.text} />
-                                <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
+                                <AppIcon name={icon as any} size={normalize(20)} color={colors.text} />
+                                <AppIcon name="chevron-right" size={normalize(14)} color={colors.icon} />
                             </View>
                         </TouchableOpacity>
 
@@ -333,7 +333,7 @@ const CreateCategoryScreen: React.FC = () => {
                             <CustomText style={[styles.selectorLabel, { color: colors.text }]}>{t('category.color')}</CustomText>
                             <View style={styles.selectorValue}>
                                 <View style={[styles.colorDot, { backgroundColor: iconColor }]} />
-                                <FontAwesome6 name="chevron-right" size={normalize(14)} color={colors.icon} />
+                                <AppIcon name="chevron-right" size={normalize(14)} color={colors.icon} />
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -423,7 +423,7 @@ const CreateCategoryScreen: React.FC = () => {
                                     style={styles.autoTranslateTag}
                                     onPress={handleRetryTranslation}
                                 >
-                                    <Ionicons name="language" size={normalize(14)} color={colors.tint} />
+                                    <AppIcon name="language" size={normalize(14)} color={colors.tint} type="Ionicons" />
                                     <CustomText style={[styles.autoTranslateText, { color: colors.tint }]}>
                                         {t('category.auto_translated')}
                                     </CustomText>
@@ -448,7 +448,7 @@ const CreateCategoryScreen: React.FC = () => {
                                         onPress={handleRetryTranslation}
                                         style={styles.refreshButton}
                                     >
-                                        <Ionicons name="refresh" size={normalize(18)} color={colors.tint} />
+                                        <AppIcon name="refresh" size={normalize(18)} color={colors.tint} type="Ionicons" />
                                     </TouchableOpacity>
                                 )}
                             </View>
@@ -479,7 +479,7 @@ const CreateCategoryScreen: React.FC = () => {
                                                 { backgroundColor: parentCategory.color },
                                             ]}
                                         >
-                                            <FontAwesome6
+                                            <AppIcon
                                                 name={parentCategory.icon as any}
                                                 size={normalize(18)}
                                                 color="#fff"

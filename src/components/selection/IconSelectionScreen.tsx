@@ -1,11 +1,12 @@
 import AppHeader from '@/components/base/AppHeader';
+import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
-import { WALLET_ICONS } from '@/constants/IconNameList';
+import { WALLET_ICONS as VECTOR_WALLET_ICONS } from '@/constants/IconNameList';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import StorageService from '@/services/StorageService';
+import * as LocalIcons from '@/utils/Icons';
 import { hp, normalize, wp } from '@/utils/layout';
-import { FontAwesome6 } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -20,19 +21,34 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const INITIAL_LOAD = 50; // Load 50 icons initially
-const LOAD_MORE_BATCH = 30; // Load 30 more icons each time
+const INITIAL_LOAD = 50;
+const LOAD_MORE_BATCH = 30;
 
 // ================= SCREEN =================
 const SelectWalletIconScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
+  const params = useLocalSearchParams();
+  const categoryParam = params.category as string;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('wallet');
   const [displayCount, setDisplayCount] = useState(INITIAL_LOAD);
 
   const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+  const baseIcons = useMemo(() => {
+    if (categoryParam === 'WALLET') {
+      return Object.keys(LocalIcons.WALLET_ICONS || {});
+    }
+
+    const allLocalIconKeys = Object.keys(LocalIcons.LOCAL_ICONS);
+    const walletKeys = new Set(Object.keys(LocalIcons.WALLET_ICONS || {}));
+
+    const nonWalletLocalIcons = allLocalIconKeys.filter(key => !walletKeys.has(key));
+
+    return [...VECTOR_WALLET_ICONS, ...nonWalletLocalIcons];
+  }, [categoryParam]);
 
   // ===== Column calculation =====
   const numColumns = useMemo(() => {
@@ -57,10 +73,10 @@ const SelectWalletIconScreen: React.FC = () => {
 
   // ===== Filter icons =====
   const filteredIcons = useMemo(() => {
-    return WALLET_ICONS.filter(icon =>
+    return baseIcons.filter(icon =>
       icon.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery]);
+  }, [searchQuery, baseIcons]);
 
   // Reset display count when search changes
   useEffect(() => {
@@ -135,7 +151,7 @@ const SelectWalletIconScreen: React.FC = () => {
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
         >
-          <FontAwesome6 name="magnifying-glass" size={normalize(16)} color={colors.icon} />
+          <AppIcon name="magnifying-glass" size={normalize(16)} color={colors.icon} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
             placeholder={t('selection.search_icon_placeholder')}
@@ -145,7 +161,7 @@ const SelectWalletIconScreen: React.FC = () => {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <FontAwesome6 name="xmark" size={normalize(16)} color={colors.icon} />
+              <AppIcon name="xmark" size={normalize(16)} color={colors.icon} />
             </TouchableOpacity>
           )}
         </View>
@@ -185,7 +201,7 @@ const SelectWalletIconScreen: React.FC = () => {
                 ]}
                 onPress={() => setSelectedIcon(icon)}
               >
-                <FontAwesome6
+                <AppIcon
                   name={icon as any}
                   size={normalize(24)}
                   color={selectedIcon === icon ? colors.tint : colors.text}

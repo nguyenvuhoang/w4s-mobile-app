@@ -15,7 +15,7 @@ import { styles } from "@/features/home/styles/HomeScreen.Style";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { getValidIconName } from "@/utils/iconMapper";
 import { hp, normalize } from "@/utils/layout";
-import { FontAwesome6, Ionicons } from "@expo/vector-icons";
+import AppIcon from "@/components/base/AppIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useCallback, useContext, useMemo } from "react";
@@ -337,7 +337,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           onPress={() => setSearchVisible(true)}
           activeOpacity={0.7}
         >
-          <Ionicons name="search" size={normalize(20)} color={colors.text} style={{ opacity: 0.5 }} />
+          <AppIcon name="search" size={normalize(20)} color={colors.text} style={{ opacity: 0.5 }} type="Ionicons" />
           <CustomText style={[styles.searchPlaceholder, { color: colors.text }]}>
             {t("common.search") || "Search"}
           </CustomText>
@@ -354,10 +354,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             alignItems: 'center',
           }}
         >
-          <Ionicons
+          <AppIcon
             name="notifications-outline"
             size={normalize(22)}
             color={colors.text}
+            type="Ionicons"
           />
         </TouchableOpacity>
       </View>
@@ -462,7 +463,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               end={{ x: 1, y: 1 }}
               style={styles.actionIcon}
             >
-              <Ionicons name="arrow-up" size={normalize(24)} color="#fff" />
+              <AppIcon name="arrow-up" size={normalize(24)} color="#fff" type="Ionicons" />
             </LinearGradient>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
               {t("home.send")}
@@ -474,10 +475,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             onPress={handleFeatureDeveloping}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
-              <Ionicons
+              <AppIcon
                 name="arrow-down"
                 size={normalize(24)}
                 color={colors.tint}
+                type="Ionicons"
               />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
@@ -490,10 +492,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             onPress={handleFeatureDeveloping}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
-              <Ionicons
+              <AppIcon
                 name="card-outline"
                 size={normalize(24)}
                 color={colors.tint}
+                type="Ionicons"
               />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
@@ -506,10 +509,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             onPress={handleFeatureDeveloping}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
-              <Ionicons
+              <AppIcon
                 name="ellipsis-horizontal"
                 size={normalize(24)}
                 color={colors.tint}
+                type="Ionicons"
               />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
@@ -555,10 +559,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   alignItems: "center",
                 }}
               >
-                <Ionicons
+                <AppIcon
                   name="folder-outline"
                   size={normalize(40)}
                   color={colors.icon}
+                  type="Ionicons"
                 />
                 <CustomText
                   style={{ color: colors.icon, marginTop: 8, fontSize: 14 }}
@@ -622,10 +627,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   alignItems: "center",
                 }}
               >
-                <Ionicons
+                <AppIcon
                   name="receipt-outline"
                   size={normalize(40)}
                   color={colors.icon}
+                  type="Ionicons"
                 />
                 <CustomText
                   style={{ color: colors.icon, marginTop: 8, fontSize: 14 }}
@@ -681,7 +687,7 @@ const CategoryItem = React.memo(({
   >
     <View style={styles.categoryLeft}>
       <View style={[styles.categoryIcon, { backgroundColor: iconColor }]}>
-        <FontAwesome6 name={icon} size={normalize(24)} color="#fff" />
+        <AppIcon name={icon} size={normalize(24)} color="#fff" />
       </View>
       <View>
         <CustomText style={[styles.categoryName, { color: colors.text }]}>
@@ -732,7 +738,7 @@ const TransactionItem = React.memo(({
     <View
       style={[styles.transactionIcon, { backgroundColor: iconColor + "1A" }]}
     >
-      <FontAwesome6 name={icon} size={normalize(24)} color={iconColor} />
+      <AppIcon name={icon} size={normalize(24)} color={iconColor} />
     </View>
     <View style={styles.transactionInfo}>
       <CustomText style={[styles.transactionName, { color: colors.text }]}>

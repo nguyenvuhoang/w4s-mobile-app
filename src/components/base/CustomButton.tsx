@@ -1,7 +1,7 @@
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Tokens } from '@/core/theme/theme';
 import { normalize } from "@/utils/layout";
-import { FontAwesome6 } from '@expo/vector-icons';
+import AppIcon from './AppIcon';
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import {
@@ -65,7 +65,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   const buttonContent = (
     <View style={styles.contentContainer}>
       {showIcon && !isLoading && (
-        <FontAwesome6
+        <AppIcon
           name={iconName}
           size={normalize(16)}
           color={getTextColor()}

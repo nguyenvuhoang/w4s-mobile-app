@@ -14,7 +14,7 @@ import StorageService from "@/services/StorageService";
 import { WalletSummary } from "@/types/wallet";
 import { lightenColor } from "@/utils/colorsHepper";
 import { hp, normalize, wp } from "@/utils/layout";
-import { FontAwesome6 } from "@expo/vector-icons";
+import AppIcon from "@/components/base/AppIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { t } from "i18next";
@@ -397,7 +397,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
                 return (
                   <View key={idx} style={[styles.transactionItemPreview, { borderBottomColor: colors.border }]}>
                     <View style={[styles.transactionPreviewIcon, { backgroundColor: `${category?.color || colors.tint}15` }]}>
-                      <FontAwesome6 name={category?.icon as any || "file-invoice-dollar"} size={normalize(18)} color={category?.color || colors.tint} />
+                      <AppIcon name={category?.icon as any || "file-invoice-dollar"} size={normalize(18)} color={category?.color || colors.tint} />
                     </View>
 
                     <View style={styles.transactionPreviewInfo}>
@@ -482,7 +482,7 @@ const WalletItem: React.FC<WalletItemProps> = ({
         {/* TOP ROW */}
         <View style={styles.topRow}>
           <View style={styles.leftTop}>
-            <FontAwesome6
+            <AppIcon
               name={(wallet.icon as any) || "wallet"}
               size={normalize(14)}
               color="#fff"
@@ -503,7 +503,7 @@ const WalletItem: React.FC<WalletItemProps> = ({
           <View>
             {isDefault && (
               <View style={styles.primaryBadge}>
-                <FontAwesome6 name="star" size={10} color="#E53935" solid />
+                <AppIcon name="star" size={10} color="#E53935" forceVector />
                 <CustomText style={styles.primaryText}>
                   Ví chính
                 </CustomText>
