@@ -2997,6 +2997,28 @@ export const WEATHER_ICONS = {
  * Main registry for all local icons.
  * Usage: <AppIcon name="icon_key" />
  */
+// Setting Screen
+export const SETTING_SCREEN_ICONS = {
+  'setting_screen_app_info': require('@assets/IconInApp/SettingScreen/app_info.svg'),
+  'setting_screen_biomatric': require('@assets/IconInApp/SettingScreen/biomatric.svg'),
+  'setting_screen_change_pass': require('@assets/IconInApp/SettingScreen/change_pass.svg'),
+  'setting_screen_currency': require('@assets/IconInApp/SettingScreen/currency.svg'),
+  'setting_screen_dark_mode': require('@assets/IconInApp/SettingScreen/dark mode.svg'),
+  'setting_screen_event': require('@assets/IconInApp/SettingScreen/event.svg'),
+  'setting_screen_group': require('@assets/IconInApp/SettingScreen/group.svg'),
+  'setting_screen_invoice': require('@assets/IconInApp/SettingScreen/invoice.svg'),
+  'setting_screen_language': require('@assets/IconInApp/SettingScreen/language.svg'),
+  'setting_screen_login_info': require('@assets/IconInApp/SettingScreen/login_info.svg'),
+  'setting_screen_my_wallet': require('@assets/IconInApp/SettingScreen/my_wallet.svg'),
+  'setting_screen_notification': require('@assets/IconInApp/SettingScreen/notification.svg'),
+  'setting_screen_pay_book': require('@assets/IconInApp/SettingScreen/pay-book.svg'),
+  'setting_screen_privacy': require('@assets/IconInApp/SettingScreen/privacy.svg'),
+  'setting_screen_recurring_invoice': require('@assets/IconInApp/SettingScreen/recurring_invoice.svg'),
+  'setting_screen_tool': require('@assets/IconInApp/SettingScreen/tool.svg'),
+  'setting_screen_transaction_reminder': require('@assets/IconInApp/SettingScreen/transaction reminder.svg'),
+  'setting_screen_user_info': require('@assets/IconInApp/SettingScreen/user_info.svg'),
+};
+
 export const LOCAL_ICONS: Record<string, any> = {
   ...ARROWS_ICONS,
   ...ARROWS_ACTION_ICONS,
@@ -3036,6 +3058,7 @@ export const LOCAL_ICONS: Record<string, any> = {
   ...VIDEO_AUDIO_SOUND_ICONS,
   ...WALLET_ICONS,
   ...WEATHER_ICONS,
+  ...SETTING_SCREEN_ICONS,
 };
 
 /**

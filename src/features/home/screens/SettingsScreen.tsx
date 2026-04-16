@@ -1,3 +1,4 @@
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import BottomActionModal, { ActionItem } from "@/components/modals/BottomActionModal";
 import { GlobalContext } from "@/contexts/GlobalContext";
@@ -237,7 +238,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           </CustomText>
           <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
             <SettingItem
-              icon="person-outline"
+              icon="setting_screen_user_info"
               title={t("settings.personal_info")}
               onPress={() => {
                 router.push("/(protected)/profile");
@@ -245,7 +246,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
-              icon="wallet-outline"
+              icon="setting_screen_my_wallet"
               title={t("settings.my_wallet")}
               onPress={() => {
                 router.push({
@@ -256,7 +257,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
-              icon="cube-outline"
+              icon="setting_screen_group"
               title={t("settings.group")}
               onPress={() => {
                 router.push({
@@ -269,7 +270,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
-              icon="receipt-outline"
+              icon="setting_screen_pay_book"
               title={t("settings.paybook")}
               onPress={() => {
                 router.push("/(protected)/paybook");
@@ -277,7 +278,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
-              icon="document-text-outline"
+              icon="setting_screen_invoice"
               title={t("settings.invoice")}
               onPress={() => {
                 router.push({
@@ -287,7 +288,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
-              icon="briefcase-outline"
+              icon="setting_screen_event"
               title={t("settings.event")}
               onPress={() => {
                 router.push({
@@ -300,7 +301,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
-              icon="calendar-outline"
+              icon="setting_screen_recurring_invoice"
               title={t("settings.recurring_transaction")}
               onPress={() => {
                 router.push({
@@ -310,7 +311,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
-              icon="construct-outline"
+              icon="setting_screen_tool"
               title={t("settings.tools")}
               onPress={() => {
                 router.push("/(protected)/tools");
@@ -327,21 +328,21 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           </CustomText>
           <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
             <SettingItemWithSwitch
-              icon="notifications-outline"
+              icon="setting_screen_notification"
               title={t("settings.notifications")}
               value={notificationsEnabled}
               onValueChange={setNotificationsEnabled}
               colors={colors}
             />
             <SettingItem
-              icon="time-outline"
+              icon="setting_screen_transaction_reminder"
               title={t("settings.transaction_reminder")}
               value="OFF"
               onPress={() => { }}
               colors={colors}
             />
             <SettingItem
-              icon="alert-circle-outline"
+              icon="setting_screen_notification"
               title={t("settings.spending_warning")}
               subtitle={t("settings.spending_warning_subtitle")}
               onPress={() => {
@@ -350,7 +351,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItemWithSwitch
-              icon="finger-print-outline"
+              icon="setting_screen_biomatric"
               title={t("settings.biometrics")}
               subtitle={t("settings.biometrics_subtitle")}
               value={isUsingTouchID}
@@ -358,7 +359,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItemWithSwitch
-              icon="moon-outline"
+              icon="setting_screen_dark_mode"
               title={t("settings.dark_mode")}
               value={isDark}
               onValueChange={(val: boolean) => {
@@ -368,14 +369,14 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             {/* ✅ Thay đổi chỗ này - mở modal thay vì Alert */}
             <SettingItem
-              icon="language-outline"
+              icon="setting_screen_language"
               title={t("common.language")}
               value={languageMap[i18n.language] || i18n.language}
               onPress={() => setShowLanguageModal(true)}
               colors={colors}
             />
             <SettingItem
-              icon="cash-outline"
+              icon="setting_screen_currency"
               title={t("settings.currency")}
               value={getCurrencyDisplayText()}
               onPress={() => {
@@ -398,7 +399,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           </CustomText>
           <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
             <SettingItem
-              icon="lock-closed-outline"
+              icon="setting_screen_change_pass"
               title={t("settings.change_password")}
               onPress={() => {
                 router.push("/(protected)/change-password");
@@ -406,7 +407,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
-              icon="document-text-outline"
+              icon="setting_screen_privacy"
               title={t("settings.privacy_policy")}
               onPress={() => {
                 router.push("/(protected)/privacy-policy");
@@ -414,7 +415,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
-              icon="phone-portrait-outline"
+              icon="setting_screen_login_info"
               title={t("settings.login_info")}
               onPress={() => {
                 router.push("/(protected)/login-info");
@@ -422,7 +423,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               colors={colors}
             />
             <SettingItem
-              icon="information-circle-outline"
+              icon="setting_screen_app_info"
               title={t("settings.app_info")}
               value={`v${Constants.expoConfig?.version || "1.0.0"}`}
               onPress={() => {
@@ -490,13 +491,8 @@ const SettingItem = ({
     onPress={onPress}
   >
     <View style={styles.settingLeft}>
-      <View
-        style={[
-          styles.settingIconContainer,
-          { backgroundColor: Tokens.colors.foundation.primary["primary-1"] },
-        ]}
-      >
-        <Ionicons name={icon} size={normalize(22)} color={colors.tint} />
+      <View style={styles.settingIconContainer}>
+        <AppIcon name={icon} size={normalize(26)} color={colors.tint} type="Ionicons" />
       </View>
       <View style={styles.settingInfo}>
         <CustomText style={[styles.settingTitle, { color: colors.text }]}>
@@ -524,10 +520,11 @@ const SettingItem = ({
           {value}
         </CustomText>
       )}
-      <Ionicons
+      <AppIcon
         name="chevron-forward"
         size={normalize(20)}
         color={colors.border}
+        type="Ionicons"
       />
     </View>
   </TouchableOpacity>
@@ -544,13 +541,8 @@ const SettingItemWithSwitch = ({
 }: any) => (
   <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
     <View style={styles.settingLeft}>
-      <View
-        style={[
-          styles.settingIconContainer,
-          { backgroundColor: Tokens.colors.foundation.primary["primary-1"] },
-        ]}
-      >
-        <Ionicons name={icon} size={normalize(22)} color={colors.tint} />
+      <View style={styles.settingIconContainer}>
+        <AppIcon name={icon} size={normalize(26)} color={colors.tint} type="Ionicons" />
       </View>
       <View style={styles.settingInfo}>
         <CustomText style={[styles.settingTitle, { color: colors.text }]}>

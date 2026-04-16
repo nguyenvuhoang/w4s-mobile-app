@@ -4,13 +4,13 @@ import { useCurrency } from "@/hooks/useCurrency";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import {
-    Currency,
-    currencyRepository,
+  Currency,
+  currencyRepository,
 } from "@/services/repositories/currency.repository";
 import {
-    detectLocale,
-    detectSymbolPosition,
-    getDecimalPlaces,
+  detectLocale,
+  detectSymbolPosition,
+  getDecimalPlaces,
 } from "@/utils/currencyLocaleDetector";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -327,10 +327,6 @@ export const useCurrencyConverter = () => {
         defaultCurrency.currencyId === "VND" ||
         defaultCurrency.currencyId === "VNĐ"
       ) {
-        console.log(
-          "[useCurrencyConverter] convertFromVND: No conversion needed (VND)",
-          amountInVND,
-        );
         return amountInVND;
       }
 
@@ -343,13 +339,6 @@ export const useCurrencyConverter = () => {
       }
 
       const result = convert(amountInVND, "VND", defaultCurrency.currencyId);
-
-      console.log("[useCurrencyConverter] convertFromVND:", {
-        input: amountInVND,
-        from: "VND",
-        to: defaultCurrency.currencyId,
-        result,
-      });
 
       if (result === null) {
         console.warn(

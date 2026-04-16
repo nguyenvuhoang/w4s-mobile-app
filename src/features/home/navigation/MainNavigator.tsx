@@ -1,8 +1,9 @@
+import AppIcon from "@/components/base/AppIcon";
 import { useAppTheme } from "@/core/theme/ThemeContext";
-import { LinearGradient } from "expo-linear-gradient";
 import { getBottomSpace, hp, normalize } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Platform, StyleSheet, TouchableOpacity, View } from "react-native";
@@ -162,11 +163,10 @@ export default function MainNavigator() {
         options={{
           tabBarLabel: t("navigation.home"),
           tabBarIcon: ({ color, focused }) => (
-            <FontAwesome6
-              name="house"
-              size={normalize(20)}
+            <AppIcon
+              name="essentional__ui_home_angle"
+              size={normalize(22)}
               color={color}
-              solid={focused}
             />
           ),
         }}
@@ -178,11 +178,10 @@ export default function MainNavigator() {
         options={{
           tabBarLabel: t("navigation.statistics"),
           tabBarIcon: ({ color, focused }) => (
-            <FontAwesome6
-              name="chart-simple"
-              size={normalize(20)}
+            <AppIcon
+              name="business__statistic_pie_chart_2"
+              size={normalize(22)}
               color={color}
-              solid={focused}
             />
           ),
         }}
@@ -216,11 +215,10 @@ export default function MainNavigator() {
         options={{
           tabBarLabel: t("navigation.budget"),
           tabBarIcon: ({ color, focused }) => (
-            <FontAwesome6
-              name="wallet"
-              size={normalize(20)}
+            <AppIcon
+              name="wallet_wallet"
+              size={normalize(22)}
               color={color}
-              solid={focused}
             />
           ),
         }}
@@ -232,11 +230,10 @@ export default function MainNavigator() {
         options={{
           tabBarLabel: t("navigation.settings"),
           tabBarIcon: ({ color, focused }) => (
-            <FontAwesome6
-              name="gear"
-              size={normalize(20)}
+            <AppIcon
+              name="settings__fine_tuning_local_settings_fine_tuning_settings"
+              size={normalize(22)}
               color={color}
-              solid={focused}
             />
           ),
         }}
