@@ -6,6 +6,7 @@ import type {
   LoanStatus,
   ScheduleStatus
 } from "@/features/paybook/types";
+import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -32,6 +33,7 @@ const PaybookDetailScreen = () => {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const { loading, loanDetail, getLoanDetail } = usePaybookDetail();
+  const { convertFromVND, formatAmount, currencyFormatter } = useCurrencyConverter();
 
   // ─── Status configs (moved inside component to use 't') ────────────────────
 
@@ -79,23 +81,25 @@ const PaybookDetailScreen = () => {
 
   // ── Formatters (must be before any early return — Rules of Hooks) ────────────
   const formatCurrency = useCallback((amount: number) => {
-    return new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : "en-US").format(Math.round(amount));
-  }, [i18n.language]);
+    return formatAmount(convertFromVND(amount));
+  }, [convertFromVND, formatAmount]);
 
   const formatCurrencyShort = useCallback((amount: number) => {
+    const convertedAmount = convertFromVND(amount);
+
     if (i18n.language === "vi") {
-      if (amount >= 1_000_000_000)
-        return `${(amount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")} Tỷ`;
-      if (amount >= 1_000_000)
-        return `${(amount / 1_000_000).toFixed(1).replace(/\.0$/, "")} Tr`;
+      if (convertedAmount >= 1_000_000_000)
+        return `${(convertedAmount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")} Tỷ ${currencyFormatter.symbol}`;
+      if (convertedAmount >= 1_000_000)
+        return `${(convertedAmount / 1_000_000).toFixed(1).replace(/\.0$/, "")} Tr ${currencyFormatter.symbol}`;
     } else {
-      if (amount >= 1_000_000_000)
-        return `${(amount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")} B`;
-      if (amount >= 1_000_000)
-        return `${(amount / 1_000_000).toFixed(1).replace(/\.0$/, "")} M`;
+      if (convertedAmount >= 1_000_000_000)
+        return `${currencyFormatter.symbol}${(convertedAmount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")}B`;
+      if (convertedAmount >= 1_000_000)
+        return `${currencyFormatter.symbol}${(convertedAmount / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
     }
-    return new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : "en-US").format(Math.round(amount));
-  }, [i18n.language]);
+    return formatAmount(convertedAmount);
+  }, [i18n.language, convertFromVND, formatAmount, currencyFormatter]);
 
   // ── Early return: loading / no data ─────────────────────────────────────────
   if (loading || !loan) {
@@ -175,14 +179,13 @@ const PaybookDetailScreen = () => {
 
   const handleShare = async () => {
     try {
-      const currencySymbol = i18n.language === "vi" ? "đ" : "$";
       const shareMessage = [
         t("paybook.share_message_header"),
         `-------------------------`,
         `${t("paybook.partner")}: ${loan.counterparty_name}`,
         `${t("paybook.type")}: ${isLend ? t("paybook.lend") : t("paybook.borrow")}`,
-        `${t("paybook.originalPrincipal")}: ${formatCurrency(loan.principal_amount)} ${currencySymbol}`,
-        `${t("paybook.remaining")}: ${formatCurrency(loan.balance)} ${currencySymbol}`,
+        `${t("paybook.originalPrincipal")}: ${formatCurrency(loan.principal_amount)}`,
+        `${t("paybook.remaining")}: ${formatCurrency(loan.balance)}`,
         `${t("paybook.maturity_date")}: ${formatDate(loan.maturity_date)}`,
         `${t("paybook.note")}: ${loan.note || t("paybook.no_note")}`,
         `-------------------------`,
@@ -340,7 +343,7 @@ const PaybookDetailScreen = () => {
                 {t("paybook.currentBalance")}
               </CustomText>
               <CustomText style={[styles.amountBoxValue, { color: accentColor }]} numberOfLines={1} adjustsFontSizeToFit>
-                {formatCurrency(loan.balance)} {i18n.language === "vi" ? "đ" : "$"}
+                {formatCurrency(loan.balance)}
               </CustomText>
             </View>
             <View style={[styles.amountBox, { backgroundColor: `${colors.border}40` }]}>
@@ -348,7 +351,7 @@ const PaybookDetailScreen = () => {
                 {t("paybook.originalPrincipal")}
               </CustomText>
               <CustomText style={[styles.amountBoxValue, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>
-                {formatCurrency(loan.principal_amount)} {i18n.language === "vi" ? "đ" : "$"}
+                {formatCurrency(loan.principal_amount)}
               </CustomText>
             </View>
           </View>
@@ -376,7 +379,7 @@ const PaybookDetailScreen = () => {
             </View>
             <View style={styles.progressFooter}>
               <CustomText style={[styles.progressFooterText, { color: colors.icon }]}>
-                {t("paybook.paid")}: {formatCurrencyShort(paidAmount)} {i18n.language === "vi" ? "đ" : "$"}
+                {t("paybook.paid")}: {formatCurrencyShort(paidAmount)}
               </CustomText>
               <CustomText style={[styles.progressFooterText, { color: colors.icon }]}>
                 {isInstallment && loan.total_installments
@@ -413,7 +416,7 @@ const PaybookDetailScreen = () => {
                   {t("paybook.totalDue")}
                 </CustomText>
                 <CustomText style={[styles.nextPaymentAmountVal, { color: accentColor }]}>
-                  {formatCurrency(nextSchedule.principal_due_amount + nextSchedule.interest_due_amount)} {i18n.language === "vi" ? "đ" : "$"}
+                  {formatCurrency(nextSchedule.principal_due_amount + nextSchedule.interest_due_amount)}
                 </CustomText>
                 <View style={styles.nextPaymentBreakdown}>
                   <View style={styles.nextPaymentBreakdownItem}>
@@ -421,7 +424,7 @@ const PaybookDetailScreen = () => {
                       {t("paybook.principal")}
                     </CustomText>
                     <CustomText style={[styles.breakdownValue, { color: colors.text }]}>
-                      {formatCurrency(nextSchedule.principal_due_amount)} {i18n.language === "vi" ? "đ" : "$"}
+                      {formatCurrency(nextSchedule.principal_due_amount)}
                     </CustomText>
                   </View>
                   <View style={[styles.breakdownDivider, { backgroundColor: colors.border }]} />
@@ -430,7 +433,7 @@ const PaybookDetailScreen = () => {
                       {t("paybook.interest")}
                     </CustomText>
                     <CustomText style={[styles.breakdownValue, { color: colors.text }]}>
-                      {formatCurrency(nextSchedule.interest_due_amount)} {i18n.language === "vi" ? "đ" : "$"}
+                      {formatCurrency(nextSchedule.interest_due_amount)}
                     </CustomText>
                   </View>
                 </View>
@@ -533,7 +536,7 @@ const PaybookDetailScreen = () => {
                 <InfoRow
                   icon="money-bill-wave"
                   label={t("paybook.totalInterest")}
-                  value={`${formatCurrency(totalInterest)} ${i18n.language === "vi" ? "đ" : "$"}`}
+                  value={formatCurrency(totalInterest)}
                 />
               </>
             ) : (
@@ -648,7 +651,7 @@ const PaybookDetailScreen = () => {
                           {t("paybook.dueDate")}: {formatDate(schedule.due_date)}
                         </CustomText>
                         <CustomText style={[styles.timelineAmount, { color: colors.text }]}>
-                          {formatCurrencyShort(totalDue)} {i18n.language === "vi" ? "đ" : "$"}
+                          {formatCurrencyShort(totalDue)}
                         </CustomText>
                       </View>
                     </View>
@@ -701,7 +704,7 @@ const PaybookDetailScreen = () => {
                 {t("paybook.paidPrincipal")}
               </CustomText>
               <CustomText style={[styles.summaryGridValue, { color: colors.text }]}>
-                {formatCurrencyShort(paidAmount)} {i18n.language === "vi" ? "đ" : "$"}
+                {formatCurrencyShort(paidAmount)}
               </CustomText>
             </View>
 
@@ -715,7 +718,7 @@ const PaybookDetailScreen = () => {
                   {t("paybook.totalInterest")}
                 </CustomText>
                 <CustomText style={[styles.summaryGridValue, { color: colors.text }]}>
-                  {formatCurrencyShort(totalInterest)} {i18n.language === "vi" ? "đ" : "$"}
+                  {formatCurrencyShort(totalInterest)}
                 </CustomText>
               </View>
             ) : (
@@ -741,7 +744,7 @@ const PaybookDetailScreen = () => {
                 {t("paybook.totalPayment")}
               </CustomText>
               <CustomText style={[styles.summaryGridValue, { color: colors.text }]}>
-                {formatCurrencyShort(loan.principal_amount + totalInterest)} {i18n.language === "vi" ? "đ" : "$"}
+                {formatCurrencyShort(loan.principal_amount + totalInterest)}
               </CustomText>
             </View>
 

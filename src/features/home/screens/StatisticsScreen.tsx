@@ -9,6 +9,7 @@ import { useTransaction } from "@/features/transaction/hooks/useTransaction";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCategory } from "@/hooks/useCategory";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
+import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
 import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { hp, normalize, wp } from "@/utils/layout";
@@ -56,6 +57,7 @@ const StatisticsScreen = () => {
 
   const { advancedSearchTransactions, loading: searchLoading } = useTransaction();
   const { categories: allCategories } = useCategory();
+  const { convertBetween, formatAmount, isReady: converterReady } = useCurrencyConverter();
   const [topRecentExpenses, setTopRecentExpenses] = useState<any[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
 
@@ -93,8 +95,8 @@ const StatisticsScreen = () => {
           return isExpense;
         })
         .sort((a: any, b: any) => {
-          const amountA = Math.abs(Number(a.amount ?? a.nu_m01 ?? 0));
-          const amountB = Math.abs(Number(b.amount ?? b.nu_m01 ?? 0));
+          const amountA = Math.abs(Number(a.amountbase ?? a.nu_m02 ?? a.amount ?? a.nu_m01 ?? 0));
+          const amountB = Math.abs(Number(b.amountbase ?? b.nu_m02 ?? b.amount ?? b.nu_m01 ?? 0));
           return amountB - amountA;
         })
         .slice(0, 5);
@@ -184,8 +186,24 @@ const StatisticsScreen = () => {
     [wallets]
   );
 
-  const formatCurrency = (v: number, currency: string = "đ") =>
-    v.toLocaleString("vi-VN") + " " + currency;
+  const formatCurrency = (amount: number, currencyCode?: string) => {
+    // If we have currency metadata from useCurrencyConverter, use its formatAmount
+    if (converterReady && (!currencyCode || currencyCode === defaultCurrency.currencyId)) {
+        return formatAmount(amount);
+    }
+    
+    // Fallback or specific currency formatting
+    const code = currencyCode || defaultCurrency.currencyId || "VND";
+    const symbol = code === defaultCurrency.currencyId ? defaultCurrency.symbol : code;
+
+    if (code === "VND") {
+      return `${amount.toLocaleString("vi-VN")} ${symbol}`;
+    }
+    return `${symbol}${amount.toLocaleString("en-US", {
+      minimumFractionDigits: code === "VND" ? 0 : 2,
+      maximumFractionDigits: code === "VND" ? 0 : 2,
+    })}`;
+  };
 
   const formatYLabel = (value: string) => {
     const num = Number(value);
@@ -490,7 +508,7 @@ const StatisticsScreen = () => {
             </View>
           ) : (
             enhancedTopExpenses.map((item) => {
-              const amount = Math.abs(Number(item.amount ?? item.nu_m01 ?? 0));
+              const amount = Math.abs(Number(item.amountbase ?? item.nu_m02 ?? item.amount ?? item.nu_m01 ?? 0));
               const title = item.displayName;
               const date = item.occurred_at || item.transaction_date || item.created_at;
               const iconColor = item.color;
@@ -541,7 +559,15 @@ const StatisticsScreen = () => {
                     size={16}
                     style={{ color: "#FF6B6B" }}
                   >
-                    -{amount.toLocaleString()} {defaultCurrency.symbol}
+                    -{(() => {
+                        const itemCurrency = item.currency || item.ccyid || "VND";
+                        let finalAmount = amount;
+                        if (itemCurrency !== defaultCurrency.currencyId) {
+                            const converted = convertBetween(amount, itemCurrency, defaultCurrency.currencyId);
+                            if (converted !== null) finalAmount = converted;
+                        }
+                        return formatAmount(finalAmount);
+                    })()}
                   </CustomText>
                 </TouchableOpacity>
               );

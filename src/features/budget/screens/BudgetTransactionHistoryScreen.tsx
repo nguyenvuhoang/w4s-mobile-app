@@ -3,6 +3,7 @@ import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
+import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
 import { getValidIconName } from "@/utils/iconMapper";
 import { normalize, wp, hp } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
@@ -25,6 +26,7 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
     const { colors } = useAppTheme();
     const { t, i18n } = useTranslation();
     const { defaultCurrency } = useDefaultCurrency();
+    const { convertBetween, formatAmount } = useCurrencyConverter();
     const { categories } = useCategory();
     const params = useLocalSearchParams();
     
@@ -69,15 +71,31 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
     }, [hasMore, loadingMore, loading, loadMore]);
 
     const formatCurrency = (amount: number) => {
-        return `${amount.toLocaleString("vi-VN")} ${defaultCurrency.symbol}`;
+        let finalAmount = amount;
+        // Budget totals from server are typically in the base currency (VND) or budget currency.
+        // Assuming VND for totals unless specified otherwise by the hook.
+        const sourceCurrency = "VND"; 
+        if (sourceCurrency !== defaultCurrency.currencyId) {
+            const converted = convertBetween(amount, sourceCurrency, defaultCurrency.currencyId);
+            if (converted !== null) finalAmount = converted;
+        }
+        return formatAmount(finalAmount);
     };
 
     const formatTransactionAmount = (transaction: any) => {
         const amount = Number(transaction.amount || 0);
         const isExpense = amount < 0 || transaction.type === "02" || transaction.name === "Expense" || transaction.transaction_type === "EXPENSE";
         const sign = isExpense ? "-" : "+";
-        const formatted = Math.abs(amount).toLocaleString("vi-VN");
-        return `${sign}${formatted} ${defaultCurrency.symbol}`;
+        
+        const itemCurrency = transaction.currency || "VND";
+        let finalAmount = Math.abs(amount);
+        
+        if (itemCurrency !== defaultCurrency.currencyId) {
+            const converted = convertBetween(finalAmount, itemCurrency, defaultCurrency.currencyId);
+            if (converted !== null) finalAmount = converted;
+        }
+        
+        return `${sign}${formatAmount(finalAmount)}`;
     };
 
     const formatDateTime = (dateString: string) => {

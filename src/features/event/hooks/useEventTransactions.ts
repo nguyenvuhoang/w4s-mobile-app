@@ -132,12 +132,15 @@ export const useEventTransactions = (
                     setTotalIncome(response.data.summary.total_income || 0);
                     setTotalExpense(response.data.summary.total_expense || 0);
                 } else {
-                    // Fallback to manual calculation from current transactions list
                     let income = 0;
                     let expense = 0;
-                    mappedTransactions.forEach((t: RecentTransaction) => {
-                        if (t.type === "INCOME") income += t.amount;
-                        else if (t.type === "EXPENSE") expense += Math.abs(t.amount);
+                    transactionList.forEach((item: any) => {
+                        const amountVND = Math.abs(Number(item.amountbase || item.nu_m02 || item.amount || 0));
+                        const rawType = String(item.type || item.transaction_type || "").toUpperCase();
+                        const isIncome = rawType === "INCOME" || rawType === "01" || (!["EXPENSE", "02", "LOAN", "03"].includes(rawType) && Number(item.amount || 0) >= 0);
+                        
+                        if (isIncome) income += amountVND;
+                        else expense += amountVND;
                     });
                     
                     if (!append) {

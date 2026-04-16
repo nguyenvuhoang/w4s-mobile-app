@@ -248,7 +248,9 @@
     "rec_count_label": "Số lần lặp",
     "rec_forever": "Lặp vĩnh viễn",
     "rec_preview": "Xem trước:",
-    "rec_repeat_on": "Lặp lại vào:"
+    "rec_repeat_on": "Lặp lại vào:",
+    "history_title_bill": "Lịch sử hóa đơn",
+    "history_title_recurring": "Lịch sử giao dịch định kỳ"
   },
   "event": {
     "title": "Sự kiện",

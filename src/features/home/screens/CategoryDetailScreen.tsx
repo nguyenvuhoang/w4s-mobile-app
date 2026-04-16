@@ -37,6 +37,7 @@ interface CategoryTransaction {
 
 import { useTransaction } from '@/features/transaction/hooks/useTransaction';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
+import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
 import { useEffect, useState } from 'react';
 
 const CategoryDetailScreen: React.FC = () => {
@@ -45,6 +46,7 @@ const CategoryDetailScreen: React.FC = () => {
     const params = useLocalSearchParams();
     const { defaultCurrency } = useDefaultCurrency();
     const { advancedSearchTransactions } = useTransaction();
+    const { convertBetween, formatAmount, convertFromVND, isReady: converterReady } = useCurrencyConverter();
     const [transactions, setTransactions] = useState<any[]>([]);
     const [loadingTransactions, setLoadingTransactions] = useState(false);
 
@@ -72,9 +74,20 @@ const CategoryDetailScreen: React.FC = () => {
         }
     };
 
-    // Format currency
+    // Format currency using hook
     const formatCurrency = (amount: number, currencyCode?: string) => {
-        return `${amount.toLocaleString()} ${currencyCode || defaultCurrency?.symbol || ''}`;
+        let finalAmount = amount;
+        const targetCurrency = defaultCurrency.currencyId;
+        
+        if (converterReady && currencyCode && currencyCode !== targetCurrency) {
+            const converted = convertBetween(amount, currencyCode, targetCurrency);
+            if (converted !== null) finalAmount = converted;
+        } else if (converterReady && !currencyCode) {
+            // Assume VND if no currency code provided for summary totals
+            finalAmount = convertFromVND(amount);
+        }
+        
+        return formatAmount(finalAmount);
     };
 
     // Format transaction time
@@ -157,7 +170,7 @@ const CategoryDetailScreen: React.FC = () => {
                         iconColor: tx.color || category.color || '#9E9E9E',
                         date: tx.occurred_at || tx.recorded_at || tx.transaction_date,
                         amount: tx.amount,
-                        currency: tx.currency,
+                        currency: tx.currency || 'VND',
                     }));
                     setTransactions(mappedTransactions);
                 }
@@ -171,11 +184,29 @@ const CategoryDetailScreen: React.FC = () => {
         fetchTransactions();
     }, [category, i18n.language]);
 
-    // Calculate total budget (mock: use total_amount / percentage)
-    const totalBudget = useMemo(() => {
-        if (!category || category.percentage === 0) return category?.total_amount || 0;
-        return Math.round(category.total_amount / category.percentage);
-    }, [category]);
+    // Calculate a precise converted total by summing individually converted transaction amounts
+    const { displayTotal, displayBudget } = useMemo(() => {
+        if (!converterReady || transactions.length === 0) {
+            // Fallback to converting the static total if no transactions are loaded yet
+            const fallbackTotal = converterReady ? convertFromVND(category?.total_amount || 0) : (category?.total_amount || 0);
+            const fallbackBudget = category?.percentage && category.percentage > 0 
+                ? fallbackTotal / category.percentage 
+                : fallbackTotal;
+            return { displayTotal: fallbackTotal, displayBudget: fallbackBudget };
+        }
+
+        let sum = 0;
+        transactions.forEach(tx => {
+            const converted = convertBetween(tx.amount, tx.currency, defaultCurrency.currencyId);
+            sum += (converted !== null ? converted : tx.amount);
+        });
+
+        const budget = category?.percentage && category.percentage > 0 
+            ? sum / category.percentage 
+            : sum;
+
+        return { displayTotal: sum, displayBudget: budget };
+    }, [transactions, converterReady, defaultCurrency.currencyId, category?.percentage]);
 
     if (!category) {
         return (
@@ -233,7 +264,7 @@ const CategoryDetailScreen: React.FC = () => {
 
                     {/* Total Amount */}
                     <CustomText style={[styles.totalAmount, { color: colors.text }]}>
-                        {formatCurrency(category.total_amount)}
+                        {formatAmount(displayTotal)}
                     </CustomText>
 
                     {/* Progress Bar */}
@@ -251,7 +282,7 @@ const CategoryDetailScreen: React.FC = () => {
 
                     {/* Budget Text */}
                     <CustomText style={[styles.budgetText, { color: colors.icon }]}>
-                        {category.total_amount.toLocaleString()} / {totalBudget.toLocaleString()}
+                        {formatAmount(displayTotal)} / {formatAmount(displayBudget)}
                     </CustomText>
                 </View>
 

@@ -4,13 +4,13 @@ import { useCurrency } from "@/hooks/useCurrency";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import {
-  Currency,
-  currencyRepository,
+    Currency,
+    currencyRepository,
 } from "@/services/repositories/currency.repository";
 import {
-  detectLocale,
-  detectSymbolPosition,
-  getDecimalPlaces,
+    detectLocale,
+    detectSymbolPosition,
+    getDecimalPlaces,
 } from "@/utils/currencyLocaleDetector";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -391,7 +391,7 @@ export const useCurrencyConverter = () => {
           style: "currency",
           currency: defaultCurrency.currencyId,
           minimumFractionDigits: decimalPlaces,
-          maximumFractionDigits: decimalPlaces,
+          maximumFractionDigits: Math.max(decimalPlaces, amount > 0 && amount < 1 ? 4 : decimalPlaces),
         });
 
         const result = formatter.format(amount);
@@ -405,7 +405,7 @@ export const useCurrencyConverter = () => {
 
         const formattedNumber = amount.toLocaleString(locale, {
           minimumFractionDigits: decimalPlaces,
-          maximumFractionDigits: decimalPlaces,
+          maximumFractionDigits: Math.max(decimalPlaces, amount > 0 && amount < 1 ? 4 : decimalPlaces),
         });
 
         const result =

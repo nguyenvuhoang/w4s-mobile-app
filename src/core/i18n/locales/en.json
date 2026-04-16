@@ -249,6 +249,8 @@
     "rec_forever": "Repeat forever",
     "rec_preview": "Preview:",
     "rec_repeat_on": "Repeat on:",
+    "history_title_bill": "Invoice History",
+    "history_title_recurring": "Recurring Transaction History",
     "scan_title": "Scan Invoice",
     "analyzing": "Analyzing...",
     "ai_reading": "AI is reading your invoice...",

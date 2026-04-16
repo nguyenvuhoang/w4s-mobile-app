@@ -228,7 +228,15 @@ export default function InvoiceListScreen() {
       const payable = isPayable(bill);
 
       return (
-        <View key={bill.bill_id} style={styles.card}>
+        <TouchableOpacity
+          key={bill.bill_id}
+          style={styles.card}
+          activeOpacity={0.7}
+          onPress={() => router.push({
+            pathname: "/(protected)/invoice/transaction-history",
+            params: { billId: String(bill.bill_id), type: 'bill' },
+          })}
+        >
           {/* Accent bar */}
           <View style={[styles.accentBar, { backgroundColor: color }]} />
 
@@ -293,7 +301,7 @@ export default function InvoiceListScreen() {
               </TouchableOpacity>
             )}
           </View>
-        </View>
+        </TouchableOpacity>
       );
     },
     [styles, fmt, catMap, openPay, colors.icon, colors.tint, STATUS_MAP, DEFAULT_STATUS, fmtDate, parseName, recurringLabel, t],

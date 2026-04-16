@@ -4,6 +4,7 @@ import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useBudget } from '@/features/budget/hooks/useBudget';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { useCategory } from '@/hooks/useCategory';
+import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
 import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -44,6 +45,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 
   const { categories, loading: categoryLoading, refetch: fetchCategories } = useCategory({ autoFetch: false });
   const { fetchBudgetSummary, budgetSummary, summaryLoading, advancedSearchBudgets } = useBudget();
+  const { convertBetween, formatAmount, convertFromVND, isReady: converterReady, defaultCurrency } = useCurrencyConverter();
   const [budgetList, setBudgetList] = useState<any[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [firstLoaded, setFirstLoaded] = useState(false);
@@ -108,15 +110,27 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         // ignore
       }
 
+      const itemCurrency = item.currency || item.ccyid || 'VND';
+      let spent = item.used_amount || 0;
+      let total = item.amount || Math.max(item.used_amount || 0, 1);
+
+      if (converterReady && itemCurrency !== defaultCurrency.currencyId) {
+          const convSpent = convertBetween(spent, itemCurrency, defaultCurrency.currencyId);
+          const convTotal = convertBetween(total, itemCurrency, defaultCurrency.currencyId);
+          if (convSpent !== null) spent = convSpent;
+          if (convTotal !== null) total = convTotal;
+      }
+
       return {
         id: item.id?.toString() || Math.random().toString(),
         categoryName,
         note: item.note || '',
         icon: cat?.icon || 'wallet',
         iconColor: cat?.color || colors.tint,
-        spent: item.used_amount || 0,
-        total: item.amount || Math.max(item.used_amount || 0, 1),
+        spent,
+        total,
         todayProgress,
+        currency: itemCurrency,
         // raw fields for detail screen
         start_date: item.start_date,
         end_date: item.end_date,
@@ -128,10 +142,14 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
     });
   }, [budgetList, categories, colors.tint, t, i18n.language]);
 
-  const totalBudget = budgetSummary?.total_budget ?? 0;
-  const totalSpent = budgetSummary?.total_spent ?? 0;
-  const remaining = budgetSummary?.remaining ?? 0;
+  const rawTotalBudget = budgetSummary?.total_budget ?? 0;
+  const rawTotalSpent = budgetSummary?.total_spent ?? 0;
+  const rawRemaining = budgetSummary?.remaining ?? 0;
   const daysLeft = budgetSummary?.days_left ?? 0;
+
+  const totalBudget = converterReady ? convertFromVND(rawTotalBudget) : rawTotalBudget;
+  const totalSpent = converterReady ? convertFromVND(rawTotalSpent) : rawTotalSpent;
+  const remaining = converterReady ? convertFromVND(rawRemaining) : rawRemaining;
 
   // Calculate semi-circle progress
   const percentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
@@ -342,7 +360,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                     {t("budget.remaining_budget")}
                   </CustomText>
                   <CustomText style={[styles.circleAmount, { color: colors.text }]}>
-                    {remaining.toLocaleString('vi-VN')} {budgetSummary?.currency || "đ"}
+                    {formatAmount(remaining)}
                   </CustomText>
                 </View>
               </View>
@@ -354,7 +372,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                     {t("budget.total_budget")}
                   </CustomText>
                   <CustomText style={[styles.statValue, { color: colors.text }]}>
-                    {totalBudget.toLocaleString('vi-VN')} {budgetSummary?.currency || "đ"}
+                    {formatAmount(totalBudget)}
                   </CustomText>
                 </View>
 
@@ -365,7 +383,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                     {t("budget.total_spent")}
                   </CustomText>
                   <CustomText style={[styles.statValue, { color: colors.text }]}>
-                    {totalSpent.toLocaleString('vi-VN')} {budgetSummary?.currency || "đ"}
+                    {formatAmount(totalSpent)}
                   </CustomText>
                 </View>
 
@@ -390,6 +408,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                   budget={budget}
                   colors={colors}
                   onPress={() => handleBudgetItemPress(budget)}
+                  formatAmount={formatAmount}
                 />
               ))}
             </View>
@@ -404,7 +423,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 };
 
 // Budget Item Component
-const BudgetItem = ({ budget, colors, onPress }: any) => {
+const BudgetItem = ({ budget, colors, onPress, formatAmount }: any) => {
   const { t } = useTranslation();
   const percentage = (budget.spent / budget.total) * 100;
 
@@ -438,7 +457,7 @@ const BudgetItem = ({ budget, colors, onPress }: any) => {
         </View>
 
         <CustomText style={[styles.budgetAmount, { color: colors.text }]}>
-          {budget.spent.toLocaleString('vi-VN')} đ
+          {formatAmount(budget.spent)}
         </CustomText>
       </View>
 

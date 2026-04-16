@@ -4,6 +4,7 @@ import { useAppTheme } from "@/core/theme/ThemeContext";
 import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
 import { styles as homeStyles } from "@/features/home/styles/HomeScreen.Style";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
+import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
 import { getValidIconName } from "@/utils/iconMapper";
 import { normalize, wp, hp } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
@@ -25,6 +26,7 @@ const EventTransactionHistoryScreen: React.FC = () => {
     const { colors } = useAppTheme();
     const { t, i18n } = useTranslation();
     const { defaultCurrency } = useDefaultCurrency();
+    const { convertBetween, formatAmount } = useCurrencyConverter();
     const params = useLocalSearchParams();
     const eventId = Number(params.id);
 
@@ -55,15 +57,29 @@ const EventTransactionHistoryScreen: React.FC = () => {
 
     // Format currency
     const formatCurrency = (amount: number) => {
-        return `${amount.toLocaleString("vi-VN")} ${defaultCurrency.symbol}`;
+        let finalAmount = amount;
+        const sourceCurrency = "VND"; 
+        if (sourceCurrency !== defaultCurrency.currencyId) {
+            const converted = convertBetween(amount, sourceCurrency, defaultCurrency.currencyId);
+            if (converted !== null) finalAmount = converted;
+        }
+        return formatAmount(finalAmount);
     };
 
     // Format transaction amount with sign
     const formatTransactionAmount = (transaction: RecentTransaction) => {
         const isExpense = transaction.type === "EXPENSE";
         const sign = isExpense ? "-" : "+";
-        const formatted = Math.abs(transaction.amount).toLocaleString("vi-VN");
-        return `${sign}${formatted} ${defaultCurrency.symbol}`;
+        
+        const itemCurrency = transaction.currency || "VND";
+        let finalAmount = Math.abs(transaction.amount);
+        
+        if (itemCurrency !== defaultCurrency.currencyId) {
+            const converted = convertBetween(finalAmount, itemCurrency, defaultCurrency.currencyId);
+            if (converted !== null) finalAmount = converted;
+        }
+        
+        return `${sign}${formatAmount(finalAmount)}`;
     };
 
     // Format transaction date/time

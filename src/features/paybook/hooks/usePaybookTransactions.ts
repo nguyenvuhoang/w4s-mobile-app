@@ -128,9 +128,13 @@ export const usePaybookTransactions = (
                 } else {
                     let income = 0;
                     let expense = 0;
-                    mappedTransactions.forEach((t: RecentTransaction) => {
-                        if (t.type === "INCOME") income += t.amount;
-                        else if (t.type === "EXPENSE") expense += Math.abs(t.amount);
+                    transactionList.forEach((item: any) => {
+                        const amountVND = Math.abs(Number(item.amountbase || item.nu_m02 || item.amount || 0));
+                        const rawType = String(item.type || item.transaction_type || "").toUpperCase();
+                        const isIncome = rawType === "INCOME" || rawType === "01" || (!["EXPENSE", "02", "LOAN", "03"].includes(rawType) && Number(item.amount || 0) >= 0);
+                        
+                        if (isIncome) income += amountVND;
+                        else expense += amountVND;
                     });
                     
                     if (!append) {

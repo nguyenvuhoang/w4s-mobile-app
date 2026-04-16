@@ -36,10 +36,12 @@ export const useBudgetTransactions = (budgetId: number, walletId?: number, fromD
         let income = 0;
         let expense = 0;
         newItems.forEach((t: any) => {
-          const amount = Number(t.amount || 0);
-          const isExpense = amount < 0 || t.type === "02" || t.name === "Expense" || t.transaction_type === "EXPENSE";
-          if (isExpense) expense += Math.abs(amount);
-          else income += amount;
+          // Use amountbase (VND) for the total sum to ensure correct multi-currency calculation
+          const amountVND = Math.abs(Number(t.amountbase || t.nu_m02 || t.amount || 0));
+          const isExpense = t.type === "02" || t.name === "Expense" || t.transaction_type === "EXPENSE" || Number(t.amount || 0) < 0;
+          
+          if (isExpense) expense += amountVND;
+          else income += amountVND;
         });
 
         if (isRefresh) {

@@ -202,6 +202,7 @@ const RecurringTransactionListScreen = () => {
         pathname: "/(protected)/invoice/transaction-history",
         params: {
           billId: selectedBill.bill_id.toString(),
+          type: 'recurring'
         },
       });
     }, 300);

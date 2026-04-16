@@ -5,6 +5,7 @@ import { useInfiniteTransactions } from "@/features/home/hooks/useInfiniteTransa
 import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
 import { styles as homeStyles } from "@/features/home/styles/HomeScreen.Style";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
+import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
 import { getValidIconName } from "@/utils/iconMapper";
 import { normalize, wp } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
@@ -30,6 +31,7 @@ const TransactionHistoryScreen: React.FC = () => {
     const { colors } = useAppTheme();
     const { t, i18n } = useTranslation();
     const { defaultCurrency } = useDefaultCurrency();
+    const { convertBetween, formatAmount } = useCurrencyConverter();
 
     const {
         transactions,
@@ -59,8 +61,16 @@ const TransactionHistoryScreen: React.FC = () => {
     const formatTransactionAmount = (transaction: RecentTransaction) => {
         const isExpense = transaction.type === "EXPENSE";
         const sign = isExpense ? "-" : "+";
-        const formatted = transaction.amount.toLocaleString();
-        return `${sign}${formatted} ${defaultCurrency.symbol}`;
+        
+        const itemCurrency = transaction.currency || "VND";
+        let finalAmount = transaction.amount;
+        
+        if (itemCurrency !== defaultCurrency.currencyId) {
+            const converted = convertBetween(transaction.amount, itemCurrency, defaultCurrency.currencyId);
+            if (converted !== null) finalAmount = converted;
+        }
+        
+        return `${sign}${formatAmount(finalAmount)}`;
     };
 
     // Format transaction time (time only, since we group by date)
