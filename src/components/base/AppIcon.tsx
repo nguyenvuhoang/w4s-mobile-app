@@ -2,6 +2,7 @@ import { FontAwesome, FontAwesome6, Ionicons, MaterialIcons, MaterialCommunityIc
 import { Image } from 'expo-image';
 import React from 'react';
 import { View } from 'react-native';
+import { SvgXml } from 'react-native-svg';
 import { LOCAL_ICONS } from '@/utils/Icons';
 import { getValidIconName } from '@/utils/iconMapper';
 
@@ -26,9 +27,25 @@ const AppIcon: React.FC<AppIconProps> = ({
 }) => {
   // 1. Kiểm tra Icon Local
   if (!forceVector && LOCAL_ICONS[name]) {
+    const iconData = LOCAL_ICONS[name];
+
+    // Nếu là SVG XML string (đã chuyển sang code)
+    if (typeof iconData === 'string') {
+      return (
+        <SvgXml
+          xml={iconData}
+          width={size}
+          height={size}
+          color={color}
+          style={style}
+        />
+      );
+    }
+
+    // Nếu vẫn là require (PNG/JPG)
     return (
       <Image
-        source={LOCAL_ICONS[name]}
+        source={iconData}
         style={[
           {
             width: size,

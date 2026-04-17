@@ -16,6 +16,8 @@ function toIconKey(filename) {
     return filename
         .replace(/\.svg$/, '')
         .replace(/\.png$/, '')
+        // Add underscore before uppercase letters (camelCase)
+        .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
         .toLowerCase()
         .replace(/ /g, '_')
         .replace(/-/g, '_')
@@ -80,8 +82,27 @@ function generateIcons() {
             seenKeys.add(finalKey);
 
             // Use @assets alias for the require path
-            const requirePath = `@assets/IconInApp/${cat}/${file}`;
-            fileContent += `  '${finalKey}': require('${requirePath}'),\n`;
+            // Read SVG content and minify it safely
+            let svgContent = '';
+            if (file.endsWith('.svg')) {
+                svgContent = fs.readFileSync(fullPath, 'utf8')
+                    .replace(/<\?xml.*?\?>/g, '') // Remove xml header
+                    .replace(/<!DOCTYPE.*?>/g, '') // Remove doctype
+                    // Force currentColor for tinting compatibility
+                    .replace(/fill="(?!none|currentColor)[^"]*"/g, 'fill="currentColor"')
+                    .replace(/stroke="(?!none|currentColor)[^"]*"/g, 'stroke="currentColor"')
+                    .replace(/\s+/g, ' ') // Minify whitespace
+                    .trim();
+            }
+
+            if (file.endsWith('.svg')) {
+                // Use JSON.stringify for absolute safety against special characters
+                fileContent += `  '${finalKey}': ${JSON.stringify(svgContent)},\n`;
+            } else {
+                // For PNG/JPG, keep require (hopefully these are few)
+                const requirePath = `@assets/IconInApp/${cat}/${file}`;
+                fileContent += `  '${finalKey}': require('${requirePath}'),\n`;
+            }
         });
 
         fileContent += `};\n\n`;
