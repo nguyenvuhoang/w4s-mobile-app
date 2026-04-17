@@ -195,59 +195,59 @@ export const useLoginService = () => {
     }
   }, [setAppInfoGlobal, showNotification, t]);
 
-  const handleVerifyForgotPassword = useCallback(
-    async (
-      usernameforgotpassword: string,
-      idcard: string,
-      phone: string,
-      email: string
-    ): Promise<{ success: boolean; userCode?: string }> => {
-      try {
-        console.log("==========Start Verify Forgot Password================");
+  // const handleVerifyForgotPassword = useCallback(
+  //   async (
+  //     usernameforgotpassword: string,
+  //     idcard: string,
+  //     phone: string,
+  //     email: string
+  //   ): Promise<{ success: boolean; userCode?: string }> => {
+  //     try {
+  //       console.log("==========Start Verify Forgot Password================");
 
-        if (!usernameforgotpassword || !idcard) {
-          showNotification(t("warning.login.emptyUsernamePassword"), "warning");
-          return { success: false };
-        }
+  //       if (!usernameforgotpassword || !idcard) {
+  //         showNotification(t("warning.login.emptyUsernamePassword"), "warning");
+  //         return { success: false };
+  //       }
 
-        setIsLoading(true);
-        const response = await authRepository.verifyForgotPassword(
-          usernameforgotpassword,
-          idcard,
-          phone,
-          email
-        );
+  //       setIsLoading(true);
+  //       const response = await authRepository.verifyForgotPassword(
+  //         usernameforgotpassword,
+  //         idcard,
+  //         phone,
+  //         email
+  //       );
         
-        if (response.isSuccess()) {
-          const isvalid = response.getValue("data");
-          if (!isvalid) {
-            showNotification(t("forgotPassword1.incorrectinformation"), "error");
-            return { success: false };
-          }
+  //       if (response.isSuccess()) {
+  //         const isvalid = response.getValue("data");
+  //         if (!isvalid) {
+  //           showNotification(t("forgotPassword1.incorrectinformation"), "error");
+  //           return { success: false };
+  //         }
 
-          const userCode = response.getValue("user_code");
-          return {
-            success: true,
-            userCode: typeof userCode === "string" ? userCode : undefined,
-          };
-        } else {
-          showNotification(
-            t("forgotPassword1.incorrectinformation") + " " + response.getError(),
-            "error"
-          );
-          console.error("handleVerifyForgotPassword failed:", response.getError());
-          return { success: false };
-        }
-      } catch (error) {
-        console.error("Verify failed", error);
-        showNotification(t("errors.login.loginFailed"), "error");
-        return { success: false };
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [showNotification, t],
-  );
+  //         const userCode = response.getValue("user_code");
+  //         return {
+  //           success: true,
+  //           userCode: typeof userCode === "string" ? userCode : undefined,
+  //         };
+  //       } else {
+  //         showNotification(
+  //           t("forgotPassword1.incorrectinformation") + " " + response.getError(),
+  //           "error"
+  //         );
+  //         console.error("handleVerifyForgotPassword failed:", response.getError());
+  //         return { success: false };
+  //       }
+  //     } catch (error) {
+  //       console.error("Verify failed", error);
+  //       showNotification(t("errors.login.loginFailed"), "error");
+  //       return { success: false };
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   },
+  //   [showNotification, t],
+  // );
 
   const handleVerifyOTPAndGetAppInfo = useCallback(
     async (
@@ -666,7 +666,7 @@ export const useLoginService = () => {
     handleBiometricLogin,
     handleForgotPassword,
     handleGetAppInfo,
-    handleVerifyForgotPassword,
+    // handleVerifyForgotPassword,
     handleVerifyOTPAndGetAppInfo,
     handleVerifyOTPForChangeDeviceAndGetAppInfo,
     handleGenerateOTP,

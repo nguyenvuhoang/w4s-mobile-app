@@ -729,7 +729,10 @@
     "nationality_placeholder": "Nhập quốc tịch",
     "place_of_origin_placeholder": "Nhập quê quán",
     "place_of_residence_placeholder": "Nhập nơi thường trú",
-    "date_of_birth_placeholder": "Chọn ngày sinh"
+    "date_of_birth_placeholder": "Chọn ngày sinh",
+    "male": "Nam",
+    "female": "Nữ",
+    "other": "Khác"
   },
   "otpModal": {
     "title": "Xác thực Zalo OTP",

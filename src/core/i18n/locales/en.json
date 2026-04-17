@@ -734,7 +734,10 @@
     "nationality_placeholder": "Enter nationality",
     "place_of_origin_placeholder": "Enter place of origin",
     "place_of_residence_placeholder": "Enter place of residence",
-    "date_of_birth_placeholder": "Select date of birth"
+    "date_of_birth_placeholder": "Select date of birth",
+    "male": "Male",
+    "female": "Female",
+    "other": "Other"
   },
   "otpModal": {
     "title": "Zalo OTP Verification",

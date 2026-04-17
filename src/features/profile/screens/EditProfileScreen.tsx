@@ -277,8 +277,9 @@ const EditProfileScreen: React.FC = () => {
                 </CustomText>
                 <View style={styles.genderContainer}>
                   {[
-                    { label: "Nam", value: "1" },
-                    { label: "Nữ", value: "0" },
+                    { label: t("profile.male", "Nam"), value: "1" },
+                    { label: t("profile.female", "Nữ"), value: "2" },
+                    { label: t("profile.other", "Khác"), value: "3" },
                   ].map((option) => {
                     const isSelected = String(formData.gender) === option.value;
                     return (

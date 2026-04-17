@@ -22,7 +22,7 @@ export const useRegisterService = () => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
-  const [gender, setGender] = useState<number>(1); // 1: Nam, 2: Nữ
+  const [gender, setGender] = useState<number>(1);
   const [birthday, setBirthday] = useState('');
   const [currency, setCurrency] = useState('VND');
   const [initialBalance, setInitialBalance] = useState('');

@@ -50,7 +50,8 @@ const ProfileScreen = () => {
 
         let genderStr = "N/A";
         if (profile.gender === 1 || profile.gender === "1" || profile.gender === "M") genderStr = t("profile.male", "Nam");
-        else if (profile.gender === 0 || profile.gender === "0" || profile.gender === "F") genderStr = t("profile.female", "Nữ");
+        else if (profile.gender === 2 || profile.gender === "2" || profile.gender === "F" || profile.gender === 0 || profile.gender === "0") genderStr = t("profile.female", "Nữ");
+        else if (profile.gender === 3 || profile.gender === "3") genderStr = t("profile.other", "Khác");
         else if (profile.gender) genderStr = String(profile.gender);
 
         let dob = profile.date_of_birth || "N/A";
