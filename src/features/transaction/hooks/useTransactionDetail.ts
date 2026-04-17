@@ -21,6 +21,25 @@ export interface WalletProfile {
     user_code: string;
 }
 
+export interface WalletEvent {
+    id: number;
+    wallet_id: number;
+    title: string;
+    description: string | null;
+    location: string | null;
+    color: string;
+    icon: string;
+    start_on_utc: string;
+    end_on_utc: string;
+    is_all_day: boolean;
+    event_type: string;
+    status: string;
+    planned_amount: number;
+    currency_code: string;
+    category_id: number;
+    budget_id: number;
+}
+
 export interface TransactionDetailData {
     accountnumber: string;
     accounttype: string;
@@ -53,6 +72,8 @@ export interface TransactionDetailData {
     walletid: string;
     walletcategory?: WalletCategory;
     walletprofile?: WalletProfile;
+    walletevent?: WalletEvent;
+    imageurl?: string;
     fee?: number;
 }
 

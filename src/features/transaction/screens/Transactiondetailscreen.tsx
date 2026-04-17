@@ -302,7 +302,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
 
     const categoryName = parseName(transaction.walletcategory?.category_name || null, i18n.language) || visuals.type;
     const walletName = transaction.walletprofile?.wallet_name;
-    const hasImage = !!(transaction as any).imageUrl;
+    const hasImage = !!transaction.imageurl;
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: '#EEF2F7' }]}>
@@ -379,6 +379,20 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                     </>
                 )}
 
+                {/* === Sự kiện === */}
+                {transaction.walletevent && transaction.walletevent.id !== 0 && (
+                    <>
+                        <SectionLabel label={t('Event') || 'Sự kiện'} />
+                        <ItemCard
+                            icon={transaction.walletevent.icon || 'calendar-day'}
+                            iconBg={transaction.walletevent.color ? transaction.walletevent.color + '25' : '#DBEAFE'}
+                            iconColor={transaction.walletevent.color || '#3B82F6'}
+                            label={transaction.walletevent.title}
+                            colors={colors}
+                        />
+                    </>
+                )}
+
                 {/* === Ghi chú === */}
                 <SectionLabel label={t('Note') || 'Ghi chú'} />
                 <View style={[styles.noteCard, { backgroundColor: colors.card }]}>
@@ -403,7 +417,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                 <View style={[styles.imageCard, { backgroundColor: colors.card }]}>
                     {hasImage ? (
                         <Image
-                            source={{ uri: (transaction as any).imageUrl }}
+                            source={{ uri: transaction.imageurl }}
                             style={styles.transactionImage}
                             resizeMode="contain"
                         />
