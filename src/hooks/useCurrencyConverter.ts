@@ -23,7 +23,7 @@ export const useCurrencyConverter = () => {
   const { currencies, loading: currenciesLoading } = useCurrency({
     autoFetch: true,
   });
-  const { convert } = useExchangeRate();
+  const { convert, loading: ratesLoading, rates } = useExchangeRate();
 
   const [additionalCurrency, setAdditionalCurrency] = useState<Currency | null>(
     null,
@@ -265,11 +265,12 @@ export const useCurrencyConverter = () => {
       defaultCurrency.currencyId === "VNĐ";
 
     if (isVND) {
-      const ready = !currencyLoading && !currenciesLoading;
+      const ready = !currencyLoading && !currenciesLoading && !ratesLoading;
 
       console.log("[useCurrencyConverter] ✓ isReady check (VND):", {
         currencyLoading,
         currenciesLoading,
+        ratesLoading,
         result: ready,
       });
 
@@ -280,13 +281,17 @@ export const useCurrencyConverter = () => {
       !currencyLoading &&
       !currenciesLoading &&
       !loadingAdditional &&
+      !ratesLoading &&
       allCurrencies.length > 0 &&
+      rates.length > 0 &&
       !!targetCurrencyObject;
 
     console.log("[useCurrencyConverter] ✓ isReady check:", {
       currencyLoading,
       currenciesLoading,
       loadingAdditional,
+      ratesLoading,
+      ratesCount: rates.length,
       currenciesLength: allCurrencies.length,
       hasTargetCurrencyObject: !!targetCurrencyObject,
       defaultCurrencyId: defaultCurrency.currencyId,
@@ -298,6 +303,8 @@ export const useCurrencyConverter = () => {
     currencyLoading,
     currenciesLoading,
     loadingAdditional,
+    ratesLoading,
+    rates.length,
     allCurrencies.length,
     targetCurrencyObject,
     defaultCurrency.currencyId,
@@ -367,14 +374,6 @@ export const useCurrencyConverter = () => {
       const { locale, symbolPosition, decimalPlaces, symbol } =
         currencyFormatter;
 
-      console.log("[useCurrencyConverter] formatAmount:", {
-        amount,
-        locale,
-        symbol,
-        symbolPosition,
-        decimalPlaces,
-      });
-
       try {
         const formatter = new Intl.NumberFormat(locale, {
           style: "currency",
@@ -384,10 +383,6 @@ export const useCurrencyConverter = () => {
         });
 
         const result = formatter.format(amount);
-        console.log(
-          "[useCurrencyConverter] formatAmount result (Intl):",
-          result,
-        );
         return result;
       } catch (error) {
         console.warn("[useCurrencyConverter] Intl failed, using fallback");
@@ -402,10 +397,6 @@ export const useCurrencyConverter = () => {
             ? `${formattedNumber} ${symbol}`
             : `${symbol}${formattedNumber}`;
 
-        console.log(
-          "[useCurrencyConverter] formatAmount result (fallback):",
-          result,
-        );
         return result;
       }
     },
@@ -417,19 +408,9 @@ export const useCurrencyConverter = () => {
    */
   const convertAndFormat = useCallback(
     (amountInVND: number): string => {
-      console.log("[useCurrencyConverter] 📊 convertAndFormat called:", {
-        amountInVND,
-        defaultCurrency: defaultCurrency.currencyId,
-        isReady,
-      });
-
       const convertedAmount = convertFromVND(amountInVND);
       const formatted = formatAmount(convertedAmount);
 
-      console.log(
-        "[useCurrencyConverter] 📊 convertAndFormat result:",
-        formatted,
-      );
       return formatted;
     },
     [convertFromVND, formatAmount, defaultCurrency.currencyId, isReady],
@@ -485,20 +466,12 @@ export const useCurrencyConverter = () => {
     [defaultCurrency, convert, isReady],
   );
 
-  // LOG: Return values
-  console.log("[useCurrencyConverter] 📤 Returning:", {
-    defaultCurrency: defaultCurrency.currencyId,
-    loading: currencyLoading || currenciesLoading || loadingAdditional,
-    isReady,
-    hasTargetCurrencyObject: !!targetCurrencyObject,
-  });
-
   return {
     defaultCurrency,
     targetCurrencyObject,
     currencyFormatter,
     currencies: allCurrencies,
-    loading: currencyLoading || currenciesLoading || loadingAdditional,
+    loading: currencyLoading || currenciesLoading || loadingAdditional || ratesLoading,
     isReady,
     convertFromVND,
     formatAmount,

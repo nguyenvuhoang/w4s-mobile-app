@@ -478,6 +478,8 @@
     "daily_expenses": "Top Expenses"
   },
   "budget": {
+    "limit": "Limit",
+    "used": "used",
     "create_budget": "Create Budget",
     "edit_budget": "Edit Budget",
     "source_wallet": "Source Wallet",

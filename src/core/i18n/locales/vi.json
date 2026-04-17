@@ -467,6 +467,8 @@
     "daily_expenses": "Chi phí hằng đầu"
   },
   "budget": {
+    "limit": "Hạn mức",
+    "used": "đã dùng",
     "create_budget": "Tạo ngân sách",
     "edit_budget": "Sửa ngân sách",
     "source_wallet": "Nguồn tiền",

@@ -1,13 +1,14 @@
-import { useTranslation } from 'react-i18next';
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useTransaction } from '@/features/transaction/hooks/useTransaction';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { hp, normalize, wp } from '@/utils/layout';
+import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Polyline, Stop, Text as SvgText } from 'react-native-svg';
@@ -15,7 +16,7 @@ import Svg, { Circle, Defs, Line, LinearGradient, Path, Polyline, Stop, Text as 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────────
-const formatMoney = (n: number, currency: string = 'đ') => `${n.toLocaleString('vi-VN')} ${currency}`;
+// Note: formatMoney removed, using formatAmount from useCurrencyConverter instead
 
 const formatMoneyShort = (n: number): string => {
   if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
@@ -274,6 +275,7 @@ const BudgetDetailScreen = () => {
   const params = useLocalSearchParams();
   const { getWalletById } = useWallet();
   const { advancedSearchTransactions } = useTransaction();
+  const { formatAmount } = useCurrencyConverter();
 
   const [transactions, setTransactions] = useState<any[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
@@ -320,7 +322,7 @@ const BudgetDetailScreen = () => {
   const progressFillColor = isOverBudget ? '#FF6B6B' : accentColor;
 
   const walletObj = budget.wallet_id ? getWalletById(Number(budget.wallet_id)) : null;
-  const currency = walletObj?.currency || 'đ';
+  // We use formatAmount which automatically uses the user's default currency
   const displayWalletName =
     budget.walletName ||
     budget.wallet_name ||
@@ -448,20 +450,20 @@ const BudgetDetailScreen = () => {
           <View style={[styles.amountRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <View style={styles.amountBlock}>
               <CustomText style={[styles.amountLabel, { color: colors.icon }]}>{t('budget.total_budget')}</CustomText>
-              <CustomText style={[styles.amountValue, { color: colors.text }]}>{formatMoney(total, currency)}</CustomText>
+              <CustomText style={[styles.amountValue, { color: colors.text }]}>{formatAmount(total)}</CustomText>
             </View>
             <View style={[styles.amountDivider, { backgroundColor: colors.border }]} />
             <View style={styles.amountBlock}>
               <CustomText style={[styles.amountLabel, { color: colors.icon }]}>{t('budget.total_spent')}</CustomText>
               <CustomText style={[styles.amountValue, { color: isOverBudget ? '#FF6B6B' : colors.text }]}>
-                {formatMoney(spent, currency)}
+                {formatAmount(spent)}
               </CustomText>
             </View>
             <View style={[styles.amountDivider, { backgroundColor: colors.border }]} />
             <View style={styles.amountBlock}>
               <CustomText style={[styles.amountLabel, { color: colors.icon }]}>{t('budget.detail.remaining')}</CustomText>
               <CustomText style={[styles.amountValue, { color: remaining >= 0 ? '#27AE60' : '#FF6B6B' }]}>
-                {formatMoney(remaining, currency)}
+                {formatAmount(remaining)}
               </CustomText>
             </View>
           </View>
@@ -555,7 +557,7 @@ const BudgetDetailScreen = () => {
                 {t('budget.detail.daily_recommended')}
               </CustomText>
               <CustomText style={[styles.recommendAmount, { color: colors.text }]}>
-                <CustomText style={{ color: colors.tint }}>{formatMoney(Math.round(dailyRecommended), currency)}</CustomText>{t('budget.detail.per_day')}
+                <CustomText style={{ color: colors.tint }}>{formatAmount(Math.round(dailyRecommended))}</CustomText>{t('budget.detail.per_day')}
               </CustomText>
               <CustomText style={[styles.recommendSub, { color: colors.icon }]}>
                 {t('budget.detail.days_left_prefix')} {daysLeft} {t('budget.detail.days_left_suffix')}
@@ -569,16 +571,16 @@ const BudgetDetailScreen = () => {
           <CustomText style={[styles.sectionTitle, { color: colors.text }]}>{t('budget.detail.status_summary')}</CustomText>
           <View style={styles.summaryGrid}>
             <SummaryBlock label={t('budget.detail.estimated_spending')}
-              value={formatMoney(Math.round(estimatedTotal), currency)} icon="chart-line"
+              value={formatAmount(Math.round(estimatedTotal))} icon="chart-line"
               iconBg="#F39C1218" iconColor="#F39C12"
               textColor={colors.text} subColor={colors.icon} note={t('budget.detail.current_pace')} />
             <SummaryBlock label={t('budget.detail.actual_spending')}
-              value={formatMoney(spent, currency)} icon="receipt"
+              value={formatAmount(spent)} icon="receipt"
               iconBg={isOverBudget ? '#FF6B6B18' : colors.tint + '18'}
               iconColor={isOverBudget ? '#FF6B6B' : colors.tint}
               textColor={colors.text} subColor={colors.icon} note={`${percentage.toFixed(1)}%`} />
             <SummaryBlock label={t('budget.detail.remaining_budget_label')}
-              value={formatMoney(Math.abs(remaining), currency)} icon="piggy-bank"
+              value={formatAmount(Math.abs(remaining))} icon="piggy-bank"
               iconBg={remaining >= 0 ? '#27AE6018' : '#FF6B6B18'}
               iconColor={remaining >= 0 ? '#27AE60' : '#FF6B6B'}
               textColor={colors.text} subColor={colors.icon} note={remaining < 0 ? t('budget.detail.over_budget') : t('budget.detail.safe')} />

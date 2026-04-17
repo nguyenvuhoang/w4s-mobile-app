@@ -13,12 +13,14 @@ import { useBudget } from "@/features/budget/hooks/useBudget";
 import TransactionAmountInput from "@/features/transaction/components/TransactionAmountInput";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCurrency } from "@/hooks/useCurrency";
+import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     KeyboardAvoidingView,
     Platform,
@@ -29,7 +31,6 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface SelectedCategoryData {
@@ -95,6 +96,7 @@ const CreateBudgetScreen = () => {
     const { wallets, defaultWallet } = useWallet();
     const { currencies, parseCurrencyName } = useCurrency({ autoFetch: true });
     const { convert } = useExchangeRate();
+    const { defaultCurrency: userDefaultCurrency } = useDefaultCurrency();
     const { createBudget, creating } = useBudget({ autoFetch: false });
     const { appInfo } = useContext(GlobalContext);
     const { showNotification } = useNotification();
@@ -109,11 +111,7 @@ const CreateBudgetScreen = () => {
         currencyId: string;
         symbol: string;
         name: string;
-    }>({
-        currencyId: "VND",
-        symbol: "đ",
-        name: "Việt Nam Đồng",
-    });
+    }>(userDefaultCurrency);
     const hasManuallySelectedCurrencyRef = useRef(false);
 
     // Date range states
@@ -141,7 +139,7 @@ const CreateBudgetScreen = () => {
 
     const walletCurrency = useMemo(() => {
         if (!selectedWallet || selectedWallet.walletId === 0) {
-            return { currencyId: "VND", symbol: "đ", name: "Việt Nam Đồng" };
+            return userDefaultCurrency;
         }
         const currency = currencies.find(
             (c) => c.currency_id === (selectedWallet as any).currency
@@ -274,7 +272,7 @@ const CreateBudgetScreen = () => {
                             e = new Date(y, q * 3 + 3, 0);
                             const quarterNum = q + 1;
                             label = t("budget.label_this_quarter", { quarter: quarterNum, year: y, range: formatDateRange(s, e), defaultValue: `Quý ${quarterNum}/${y} (${formatDateRange(s, e)})` });
-                            pType = "MONTH";
+                            pType = "QUARTER";
                             break;
                         }
                         default:
@@ -324,6 +322,7 @@ const CreateBudgetScreen = () => {
                         setStartDate(monthStart);
                         setEndDate(monthEnd);
                         setDateRangeLabel(t("budget.label_this_month", { range: formatDateRange(monthStart, monthEnd), defaultValue: `Tháng này (${formatDateRange(monthStart, monthEnd)})` }));
+                        setPeriodType("MONTH");
                     }
                 }
 
@@ -349,6 +348,7 @@ const CreateBudgetScreen = () => {
                 setStartDate(monthStart);
                 setEndDate(monthEnd);
                 setDateRangeLabel(t("budget.label_this_month", { range: formatDateRange(monthStart, monthEnd), defaultValue: `Tháng này (${formatDateRange(monthStart, monthEnd)})` }));
+                setPeriodType("MONTH");
             }
         } else {
             // No autofill data -> set default date range (this month)
@@ -357,22 +357,24 @@ const CreateBudgetScreen = () => {
             setStartDate(monthStart);
             setEndDate(monthEnd);
             setDateRangeLabel(t("budget.label_this_month", { range: formatDateRange(monthStart, monthEnd), defaultValue: `Tháng này (${formatDateRange(monthStart, monthEnd)})` }));
+            setPeriodType("MONTH");
         }
     }, [params.autofillData]);
 
-    // Init default wallet
     useEffect(() => {
         if (sourceWalletId === null && defaultWallet) {
             setSourceWalletId(defaultWallet.walletId);
         }
-    }, [defaultWallet, sourceWalletId]);
 
-    // Sync inputCurrency to wallet currency when wallet changes (if user hasn't manually overridden)
+        if (!hasManuallySelectedCurrencyRef.current && userDefaultCurrency) {
+            setInputCurrency(userDefaultCurrency);
+        }
+    }, [defaultWallet, sourceWalletId, userDefaultCurrency]);
+
     useEffect(() => {
         if (selectedWallet && currencies.length > 0 && !hasManuallySelectedCurrencyRef.current) {
             setInputCurrency(walletCurrency);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [(selectedWallet as any)?.walletId, walletCurrency.currencyId, currencies.length]);
 
     // Load selected data from storage
@@ -478,9 +480,7 @@ const CreateBudgetScreen = () => {
             ? Number(selectedCategoryData.id)
             : Number(selectedCategoryData.category_id);
 
-        const finalAmount = needsConversion
-            ? (convertedAmount ?? 0)
-            : parseFloat(amount.replace(/,/g, ""));
+        const finalAmount = parseFloat(amount.replace(/,/g, ""));
 
         const contractNumber = appInfo?.contract_number || "";
 
@@ -497,6 +497,7 @@ const CreateBudgetScreen = () => {
             include_in_report: includeInReport,
             is_auto_repeat: autoRepeat,
             contract_number: contractNumber.trim() || undefined,
+            currency_code: inputCurrency.currencyId,
         };
 
         console.log("[CreateBudget] Submitting payload:", payload);
@@ -522,6 +523,7 @@ const CreateBudgetScreen = () => {
         includeInReport,
         autoRepeat,
         createBudget,
+        walletCurrency,
     ]);
 
     const parseCategoryName = (nameJson: string) => {
@@ -775,6 +777,7 @@ const CreateBudgetScreen = () => {
                     initialPeriodType={periodType}
                     onSelect={handleDateRangeSelect}
                     onClose={() => setShowDateModal(false)}
+                    allowCustom={false}
                 />
             </KeyboardAvoidingView>
         </SafeAreaView>

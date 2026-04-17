@@ -33,6 +33,7 @@ interface BottomDateRangeModalProps {
   initialPeriodType?: PeriodType;
   onSelect: (result: DateRangeResult) => void;
   onClose: () => void;
+  allowCustom?: boolean;
 }
 
 const BottomDateRangeModal: React.FC<BottomDateRangeModalProps> = ({
@@ -43,6 +44,7 @@ const BottomDateRangeModal: React.FC<BottomDateRangeModalProps> = ({
   initialPeriodType,
   onSelect,
   onClose,
+  allowCustom = true,
 }) => {
   const { colors, mode } = useAppTheme();
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -111,10 +113,10 @@ const BottomDateRangeModal: React.FC<BottomDateRangeModalProps> = ({
       periodType: "YEAR" as PeriodType,
       ...dateRanges.this_year,
     },
-    {
+    ...(allowCustom ? [{
       label: "Tùy chỉnh",
       periodType: "CUSTOM" as PeriodType,
-    },
+    }] : []),
   ];
 
   const [showCustom, setShowCustom] = useState(false);

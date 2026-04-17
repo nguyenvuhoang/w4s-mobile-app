@@ -54,7 +54,7 @@ const useNotificationModal = () => {
     if (hasShown.current) return;
 
     setModalMessage(data.getError());
-    setModalType("error");
+    setModalType(data.isSuccess() ? "success" : "error");
     setErrorCode(data.getErrorCode() || "");
     setErrorDetails("");
     setNextAction(data.getNextAction() || "");

@@ -41,9 +41,11 @@ export interface Budget {
   is_auto_repeat?: boolean;
   status?: "ACTIVE" | "COMPLETED" | "INACTIVE";
   spent?: number;
+  currency_code?: string;
 }
 
 export interface BudgetSummary {
+  currency_code?: string;
   currency: string;
   total_budget: number;
   total_spent: number;

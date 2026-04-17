@@ -45,7 +45,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 
   const { categories, loading: categoryLoading, refetch: fetchCategories } = useCategory({ autoFetch: false });
   const { fetchBudgetSummary, budgetSummary, summaryLoading, advancedSearchBudgets } = useBudget();
-  const { convertBetween, formatAmount, convertFromVND, isReady: converterReady, defaultCurrency } = useCurrencyConverter();
+  const { convertBetween, formatAmount, isReady: converterReady, loading: converterLoading, defaultCurrency } = useCurrencyConverter();
   const [budgetList, setBudgetList] = useState<any[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [firstLoaded, setFirstLoaded] = useState(false);
@@ -110,15 +110,17 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         // ignore
       }
 
-      const itemCurrency = item.currency || item.ccyid || 'VND';
-      let spent = item.used_amount || 0;
-      let total = item.amount || Math.max(item.used_amount || 0, 1);
+      const itemCurrency = (item.currency_code || item.currency || item.ccyid || 'VND').toUpperCase();
+      const userCurrency = (defaultCurrency.currencyId || 'VND').toUpperCase();
 
-      if (converterReady && itemCurrency !== defaultCurrency.currencyId) {
-          const convSpent = convertBetween(spent, itemCurrency, defaultCurrency.currencyId);
-          const convTotal = convertBetween(total, itemCurrency, defaultCurrency.currencyId);
-          if (convSpent !== null) spent = convSpent;
-          if (convTotal !== null) total = convTotal;
+      let spent = item.used_amount ?? 0;
+      let total = item.amount ?? 0;
+
+      if (converterReady && itemCurrency !== userCurrency) {
+        const convSpent = convertBetween(spent, itemCurrency, userCurrency);
+        const convTotal = convertBetween(total, itemCurrency, userCurrency);
+        if (convSpent !== null && convSpent !== undefined) spent = convSpent;
+        if (convTotal !== null && convTotal !== undefined) total = convTotal;
       }
 
       return {
@@ -140,16 +142,19 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         source_tracker: item.source_tracker,
       };
     });
-  }, [budgetList, categories, colors.tint, t, i18n.language]);
+  }, [budgetList, categories, colors.tint, t, i18n.language, converterReady, defaultCurrency.currencyId, convertBetween]);
 
   const rawTotalBudget = budgetSummary?.total_budget ?? 0;
   const rawTotalSpent = budgetSummary?.total_spent ?? 0;
   const rawRemaining = budgetSummary?.remaining ?? 0;
   const daysLeft = budgetSummary?.days_left ?? 0;
 
-  const totalBudget = converterReady ? convertFromVND(rawTotalBudget) : rawTotalBudget;
-  const totalSpent = converterReady ? convertFromVND(rawTotalSpent) : rawTotalSpent;
-  const remaining = converterReady ? convertFromVND(rawRemaining) : rawRemaining;
+  const summaryCurrency = (budgetSummary?.currency_code || budgetSummary?.currency || 'VND').toUpperCase();
+  const userCurrency = (defaultCurrency.currencyId || 'VND').toUpperCase();
+
+  const totalBudget = converterReady ? (convertBetween(rawTotalBudget, summaryCurrency, userCurrency) ?? rawTotalBudget) : rawTotalBudget;
+  const totalSpent = converterReady ? (convertBetween(rawTotalSpent, summaryCurrency, userCurrency) ?? rawTotalSpent) : rawTotalSpent;
+  const remaining = converterReady ? (convertBetween(rawRemaining, summaryCurrency, userCurrency) ?? rawRemaining) : rawRemaining;
 
   // Calculate semi-circle progress
   const percentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
@@ -165,7 +170,22 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
   }, [selectedWalletId, wallets]);
 
   const handleCreateBudget = () => {
-    router.push('/(protected)/budget/create-budget');
+    const periodMap: Record<string, string> = {
+      'this_week': 'THIS_WEEK',
+      'this_month': 'THIS_MONTH',
+      'this_quarter': 'THIS_QUARTER',
+      'this_year': 'THIS_YEAR',
+    };
+
+    const autofillData = {
+      walletId: selectedWalletId === 'all' ? 0 : Number(selectedWalletId),
+      period: periodMap[selectedPeriod],
+    };
+
+    router.push({
+      pathname: '/(protected)/budget/create-budget',
+      params: { autofillData: JSON.stringify(autofillData) },
+    });
   };
 
   const handleBudgetItemPress = (budget: any) => {
@@ -196,7 +216,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
               end={{ x: 1, y: 0 }}
               style={styles.gradientBtn}
             >
-              <CustomText style={styles.createButtonText}>{t("budget.create_budget")}</CustomText>
+              <CustomText type="semiBold" style={styles.createButtonText}>{t("budget.create_budget")}</CustomText>
             </LinearGradient>
           </TouchableOpacity>
 
@@ -278,7 +298,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         </View>
 
         {/* Content Area Rendering Logic */}
-        {(!firstLoaded || summaryLoading || listLoading || categoryLoading) ? (
+        {(!firstLoaded || summaryLoading || listLoading || categoryLoading || converterLoading) ? (
           <>
             {/* Loading Skeletons */}
             <View style={[styles.circleCard, { backgroundColor: colors.card }]}>
@@ -294,7 +314,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
           </>
         ) : budgetList.length === 0 ? (
           <View style={[styles.emptyContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <CustomText style={[styles.emptyTitle, { color: colors.text }]}>
+            <CustomText type="bold" style={[styles.emptyTitle, { color: colors.text }]}>
               {t("budget.no_budget_created", "Chưa có Ngân sách nào được tạo")}
             </CustomText>
             <CustomText style={[styles.emptySubtitle, { color: colors.icon }]}>
@@ -311,7 +331,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                 end={{ x: 1, y: 0 }}
                 style={styles.emptyGradientBtn}
               >
-                <CustomText style={styles.emptyCreateButtonText}>{t("budget.create_now", "Tạo ngân sách ngay")}</CustomText>
+                <CustomText type="semiBold" style={styles.emptyCreateButtonText}>{t("budget.create_now", "Tạo ngân sách ngay")}</CustomText>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -359,7 +379,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                   <CustomText style={[styles.circleLabelSmall, { color: colors.icon }]}>
                     {t("budget.remaining_budget")}
                   </CustomText>
-                  <CustomText style={[styles.circleAmount, { color: colors.text }]}>
+                  <CustomText type="bold" style={[styles.circleAmount, { color: colors.text }]}>
                     {formatAmount(remaining)}
                   </CustomText>
                 </View>
@@ -371,7 +391,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                   <CustomText style={[styles.statLabel, { color: colors.icon }]}>
                     {t("budget.total_budget")}
                   </CustomText>
-                  <CustomText style={[styles.statValue, { color: colors.text }]}>
+                  <CustomText type="semiBold" style={[styles.statValue, { color: colors.text }]}>
                     {formatAmount(totalBudget)}
                   </CustomText>
                 </View>
@@ -382,7 +402,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                   <CustomText style={[styles.statLabel, { color: colors.icon }]}>
                     {t("budget.total_spent")}
                   </CustomText>
-                  <CustomText style={[styles.statValue, { color: colors.text }]}>
+                  <CustomText type="semiBold" style={[styles.statValue, { color: colors.text }]}>
                     {formatAmount(totalSpent)}
                   </CustomText>
                 </View>
@@ -393,7 +413,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                   <CustomText style={[styles.statLabel, { color: colors.icon }]}>
                     {t("budget.days_left")}
                   </CustomText>
-                  <CustomText style={[styles.statValue, { color: colors.text }]}>
+                  <CustomText type="semiBold" style={[styles.statValue, { color: colors.text }]}>
                     {daysLeft} {t("budget.days")}
                   </CustomText>
                 </View>
@@ -426,85 +446,101 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 const BudgetItem = ({ budget, colors, onPress, formatAmount }: any) => {
   const { t } = useTranslation();
   const percentage = (budget.spent / budget.total) * 100;
+  const isOverBudget = percentage > 100;
 
   return (
     <TouchableOpacity
-      activeOpacity={0.75}
+      activeOpacity={0.8}
       onPress={onPress}
-      style={[styles.budgetItem, { backgroundColor: colors.card }]}
+      style={[
+        styles.budgetItem,
+        {
+          backgroundColor: colors.card,
+          borderColor: isOverBudget ? '#EF444450' : colors.border,
+          borderWidth: 1,
+        }
+      ]}
     >
+      {/* Top section: Icon, Info and Amounts */}
       <View style={styles.budgetHeader}>
         <View style={styles.budgetLeft}>
           <View
             style={[
-              styles.budgetIconContainer,
-              { backgroundColor: budget.iconColor },
+              styles.budgetIconWrapper,
+              { backgroundColor: budget.iconColor + '15' },
             ]}
           >
-            <FontAwesome6 name={budget.icon as any} size={normalize(20)} color="#fff" />
+            <FontAwesome6 name={budget.icon as any} size={normalize(18)} color={budget.iconColor} />
           </View>
 
           <View style={styles.budgetInfo}>
-            <CustomText style={[styles.budgetCategory, { color: colors.text }]}>
+            <CustomText style={[styles.budgetCategory, { color: colors.text }]} numberOfLines={1}>
               {budget.categoryName}
             </CustomText>
-            {budget.note ? (
-              <CustomText style={[styles.budgetSubcategory, { color: colors.icon }]}>
-                {budget.note}
-              </CustomText>
-            ) : null}
+            <CustomText style={[styles.budgetSubcategory, { color: colors.icon }]} numberOfLines={1}>
+              {budget.note || t('common.no_note', 'Không có ghi chú')}
+            </CustomText>
           </View>
         </View>
 
-        <CustomText style={[styles.budgetAmount, { color: colors.text }]}>
-          {formatAmount(budget.spent)}
-        </CustomText>
+        <View style={styles.budgetRight}>
+          <CustomText style={[styles.budgetSpentText, { color: colors.text }]}>
+            {formatAmount(budget.spent)}
+          </CustomText>
+        </View>
       </View>
 
-      {/* Progress Bar Container with percentage */}
-      <View style={styles.progressWrapper}>
-        {/* Progress Bar with rounded ends */}
-        <View style={[styles.budgetProgressContainer, { backgroundColor: '#E8EAED' }]}>
+      {/* Middle section: Progress bar and Today marker */}
+      <View style={styles.progressSection}>
+        <View style={[styles.progressBarBase, { backgroundColor: colors.border + '40' }]}>
           <View
             style={[
-              styles.budgetProgress,
+              styles.progressBarFill,
               {
                 width: `${Math.min(percentage, 100)}%`,
-                backgroundColor: budget.iconColor,
+                backgroundColor: isOverBudget ? '#EF4444' : budget.iconColor,
               },
             ]}
           />
-          {percentage < 100 && (
-            <View
-              style={[
-                styles.budgetProgressRemaining,
-                {
-                  width: `${100 - percentage}%`,
-                  backgroundColor: '#2C3E50',
-                },
-              ]}
-            />
-          )}
         </View>
 
-        {/* "Hôm nay" marker overlapping the progress bar */}
+        {/* Today Marker */}
         <View
           style={[
-            styles.todayMarkerContainer,
-            { left: `${budget.todayProgress}%` }
+            styles.todayMarkerWrapper,
+            { left: `${Math.min(budget.todayProgress, 100)}%` }
           ]}
         >
-          <View style={[styles.timelineMarker, { backgroundColor: colors.text }]} />
-          <CustomText style={[styles.timelineLabel, { color: colors.text }]}>
+          <View style={[styles.todayMarkerLine, { backgroundColor: colors.text }]} />
+          <CustomText type="semiBold" style={[styles.todayMarkerLabel, { color: colors.text }]}>
             {t("home.today")}
           </CustomText>
         </View>
       </View>
 
-      {/* Percentage display */}
-      <CustomText style={[styles.percentageText, { color: colors.icon }]}>
-        {percentage.toFixed(0)}{t("budget.percent_used")}
-      </CustomText>
+      {/* Bottom section: Percentage and Limit */}
+      <View style={styles.budgetFooter}>
+        <View style={styles.footerLeft}>
+          <CustomText style={[styles.usagePercentage, { color: colors.icon }]}>
+            {percentage.toFixed(0)}% {t("budget.used")}
+          </CustomText>
+          {isOverBudget && (
+            <View style={styles.overBudgetBadge}>
+              <FontAwesome6 name="circle-exclamation" size={normalize(10)} color="#EF4444" />
+              <CustomText type="semiBold" style={styles.overBudgetText}>{t('budget.detail.over_limit')}</CustomText>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.footerRight}>
+          <CustomText style={[styles.budgetLimitLabel, { color: colors.icon }]}>
+            {t('budget.limit')}:
+          </CustomText>
+          <CustomText style={[styles.budgetLimitValue, { color: colors.text }]}>
+            {formatAmount(budget.total)}
+          </CustomText>
+        </View>
+      </View>
     </TouchableOpacity>
   );
 };
@@ -532,7 +568,6 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: '#fff',
     fontSize: normalize(14),
-    fontWeight: '600',
   },
   headerRightWrapper: {
     flexDirection: 'row',
@@ -620,8 +655,7 @@ const styles = StyleSheet.create({
     marginBottom: normalize(4),
   },
   circleAmount: {
-    fontSize: normalize(22),
-    fontWeight: 'bold',
+    fontSize: normalize(26),
   },
   statsRow: {
     flexDirection: 'row',
@@ -640,7 +674,6 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: normalize(13),
-    fontWeight: '600',
   },
   statDivider: {
     width: 1,
@@ -654,80 +687,127 @@ const styles = StyleSheet.create({
   budgetItem: {
     borderRadius: normalize(16),
     padding: normalize(16),
+    marginBottom: normalize(12),
   },
   budgetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: normalize(12),
   },
   budgetLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: normalize(12),
+    gap: normalize(10),
     flex: 1,
   },
-  budgetIconContainer: {
-    width: normalize(44),
-    height: normalize(44),
-    borderRadius: normalize(12),
+  budgetIconWrapper: {
+    width: normalize(40),
+    height: normalize(40),
+    borderRadius: normalize(10),
     alignItems: 'center',
     justifyContent: 'center',
   },
   budgetInfo: {
     flex: 1,
+    gap: normalize(2),
   },
   budgetCategory: {
     fontSize: normalize(15),
-    fontWeight: '600',
-    marginBottom: normalize(2),
+    fontWeight: 'bold',
   },
   budgetSubcategory: {
     fontSize: normalize(12),
+    opacity: 0.7,
   },
-  budgetAmount: {
-    fontSize: normalize(15),
-    fontWeight: '600',
+  budgetRight: {
+    alignItems: 'flex-end',
   },
-  progressWrapper: {
+  budgetSpentText: {
+    fontSize: normalize(16),
+    fontWeight: '700',
+  },
+  budgetLimitText: {
+    fontSize: normalize(11),
+    marginTop: normalize(1),
+  },
+  progressSection: {
+    height: normalize(28),
+    justifyContent: 'center',
     position: 'relative',
-    marginBottom: normalize(8),
+    marginVertical: normalize(4),
   },
-  budgetProgressContainer: {
+  progressBarBase: {
     height: normalize(6),
     borderRadius: normalize(3),
-    overflow: 'visible',
-    flexDirection: 'row',
+    width: '100%',
+    overflow: 'hidden',
   },
-  budgetProgress: {
+  progressBarFill: {
     height: '100%',
-    borderTopLeftRadius: normalize(3),
-    borderBottomLeftRadius: normalize(3),
-    borderTopRightRadius: normalize(3),
-    borderBottomRightRadius: normalize(3),
+    borderRadius: normalize(3),
   },
-  budgetProgressRemaining: {
-    height: '100%',
-    borderTopRightRadius: normalize(3),
-    borderBottomRightRadius: normalize(3),
-  },
-  todayMarkerContainer: {
+  todayMarkerWrapper: {
     position: 'absolute',
-    top: normalize(-8),
-    transform: [{ translateX: normalize(-1) }],
+    top: 0,
+    bottom: 0,
     alignItems: 'center',
+    width: normalize(40),
+    marginLeft: normalize(-20),
+    zIndex: 10,
   },
-  timelineMarker: {
-    width: normalize(2),
-    height: normalize(22),
-    marginBottom: normalize(2),
+  todayMarkerLine: {
+    width: normalize(1.5),
+    height: '100%',
+    opacity: 0.3,
   },
-  timelineLabel: {
-    fontSize: normalize(10),
+  todayMarkerLabel: {
+    position: 'absolute',
+    top: normalize(-12),
+    fontSize: normalize(8),
+    width: normalize(40),
+    textAlign: 'center',
   },
-  percentageText: {
-    fontSize: normalize(11),
+  budgetFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: normalize(4),
+  },
+  footerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: normalize(8),
+  },
+  footerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: normalize(4),
+  },
+  usagePercentage: {
+    fontSize: normalize(12),
+    fontWeight: '700',
+  },
+  budgetLimitLabel: {
+    fontSize: normalize(11),
+  },
+  budgetLimitValue: {
+    fontSize: normalize(12),
+    fontWeight: '700',
+  },
+  overBudgetBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: normalize(4),
+    backgroundColor: '#EF444415',
+    paddingHorizontal: normalize(8),
+    paddingVertical: normalize(2),
+    borderRadius: normalize(6),
+  },
+  overBudgetText: {
+    fontSize: normalize(10),
+    color: '#EF4444',
+    textTransform: 'uppercase',
   },
   emptyContainer: {
     marginHorizontal: wp(5),
@@ -748,7 +828,6 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: normalize(18),
-    fontWeight: 'bold',
     marginBottom: normalize(8),
     textAlign: 'center',
   },
@@ -771,7 +850,6 @@ const styles = StyleSheet.create({
   emptyCreateButtonText: {
     color: '#fff',
     fontSize: normalize(16),
-    fontWeight: '600',
   },
 });
 

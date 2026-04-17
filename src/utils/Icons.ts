@@ -3019,6 +3019,16 @@ export const SETTING_SCREEN_ICONS = {
   'setting_screen_user_info': require('@assets/IconInApp/SettingScreen/user_info.svg'),
 };
 
+// Tool Screen
+export const TOOL_SCREEN_ICONS = {
+  'tool_screen_atm_bank': require('@assets/IconInApp/ToolScreen/atm_bank.svg'),
+  'tool_screen_currency_change': require('@assets/IconInApp/ToolScreen/currency_change.svg'),
+  'tool_screen_export_local': require('@assets/IconInApp/ToolScreen/export-local.svg'),
+  'tool_screen_interes_caculate': require('@assets/IconInApp/ToolScreen/interes_caculate.svg'),
+  'tool_screen_tax_caculate': require('@assets/IconInApp/ToolScreen/tax_caculate.svg'),
+  'tool_screen_tip_caculate': require('@assets/IconInApp/ToolScreen/tip_caculate.svg'),
+};
+
 export const LOCAL_ICONS: Record<string, any> = {
   ...ARROWS_ICONS,
   ...ARROWS_ACTION_ICONS,
@@ -3059,6 +3069,7 @@ export const LOCAL_ICONS: Record<string, any> = {
   ...WALLET_ICONS,
   ...WEATHER_ICONS,
   ...SETTING_SCREEN_ICONS,
+  ...TOOL_SCREEN_ICONS,
 };
 
 /**

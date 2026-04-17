@@ -18,9 +18,9 @@ class ApiService {
       // ✅ Luôn dùng SimpleRequestModel
       const requestPayload = new SimpleRequestModel(workflowid || "", data);
       
-      // console.log("REQUEST == ", JSON.stringify(requestPayload));
+      console.log("REQUEST == ", JSON.stringify(requestPayload));
       const response = await apiClient.post1(requestPayload);
-      // console.log("RESPONSE == ", JSON.stringify(response));
+      console.log("RESPONSE == ", JSON.stringify(response));
 
       return response;
     } finally {
@@ -72,8 +72,10 @@ class ApiService {
     }
 
     const lang = i18n.language; // hoặc lấy từ config
+    console.log("UPLOAD IMAGE REQUEST == ", { uri, folderName, customerCode });
 
     const response = await apiClient.uploadImage(uri, lang, folderName, customerCode);
+    console.log("UPLOAD IMAGE RESPONSE == ", JSON.stringify(response));
 
     return response;
   } finally {
