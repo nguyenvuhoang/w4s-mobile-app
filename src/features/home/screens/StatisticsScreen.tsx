@@ -414,7 +414,12 @@ const StatisticsScreen = () => {
         )}
 
         {/* ===== CATEGORY ===== */}
-        <SectionHeader title={t("statistics.category_analysis")} />
+        <SectionHeader
+          title={t("statistics.category_analysis")}
+          showAction={true}
+          actionText={t("home.see_more")}
+          onPressAction={() => router.push("/(protected)/report/category-report-detail")}
+        />
 
         {categoriesLoading ? (
           <View style={{ paddingVertical: normalize(24), alignItems: 'center' }}>

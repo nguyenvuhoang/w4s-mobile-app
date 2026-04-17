@@ -115,13 +115,54 @@ const CategoryDetailScreen: React.FC = () => {
         }
     };
 
+    /**
+     * Helper to calculate the date range based on anchor_date and period_type
+     */
+    const getPeriodRange = (anchorDateStr: string, periodType: string) => {
+        const anchorDate = new Date(anchorDateStr);
+        const year = anchorDate.getFullYear();
+        const month = anchorDate.getMonth();
+        const day = anchorDate.getDate();
+
+        let fromDate = anchorDateStr;
+        let toDate = "";
+
+        switch (periodType) {
+            case 'W': {
+                const end = new Date(year, month, day + 7);
+                toDate = end.toISOString().split('T')[0];
+                break;
+            }
+            case 'M': {
+                const end = new Date(year, month + 1, 1);
+                toDate = end.toISOString().split('T')[0];
+                break;
+            }
+            case 'Q': {
+                const end = new Date(year, month + 3, 1);
+                toDate = end.toISOString().split('T')[0];
+                break;
+            }
+            case 'Y': {
+                const end = new Date(year + 1, 0, 1);
+                toDate = end.toISOString().split('T')[0];
+                break;
+            }
+            default: {
+                const end = new Date(year, month + 1, 1);
+                toDate = end.toISOString().split('T')[0];
+            }
+        }
+        return { fromDate, toDate };
+    };
+
     useEffect(() => {
         if (!category) return;
 
         const parseTransactionName = (name: string | null): string => {
             if (!name) return t('home.transaction_default_name');
             try {
-                if (!name.startsWith('{')) return name;
+                if (typeof name !== 'string' || !name.startsWith('{')) return name;
                 const parsed = JSON.parse(name);
                 return parsed[i18n.language] || parsed.vi || parsed.en || name;
             } catch {
@@ -132,20 +173,30 @@ const CategoryDetailScreen: React.FC = () => {
         const fetchTransactions = async () => {
             setLoadingTransactions(true);
             try {
-                const currentDate = new Date();
-                const currentMonthStartDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`;
-                const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-                const currentMonthEndDate = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`;
+                let fromDate = params.anchor_date as string;
+                let toDate = "";
+                const periodType = (params.period_type as string) || 'M';
+
+                if (fromDate) {
+                    const range = getPeriodRange(fromDate, periodType);
+                    fromDate = range.fromDate;
+                    toDate = range.toDate;
+                } else {
+                    // Fallback to current month if no dates provided
+                    const currentDate = new Date();
+                    fromDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`;
+                    const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+                    toDate = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`;
+                }
 
                 const data = await advancedSearchTransactions({
                     category_id: category.category_id,
-                    from_transaction_date: currentMonthStartDate,
-                    to_transaction_date: currentMonthEndDate,
+                    wallet_id: params.wallet_id ? Number(params.wallet_id) : undefined,
+                    from_transaction_date: fromDate,
+                    to_transaction_date: toDate,
                     page_index: 0,
                     page_size: 100
                 });
-
-                console.log("data ===========", JSON.stringify(data));
 
                 let txArray: any[] = [];
                 const anyData = data as any;
@@ -182,7 +233,7 @@ const CategoryDetailScreen: React.FC = () => {
         };
 
         fetchTransactions();
-    }, [category, i18n.language]);
+    }, [category, i18n.language, params.anchor_date, params.period_type, params.wallet_id]);
 
     // Calculate a precise converted total by summing individually converted transaction amounts
     const { displayTotal, displayBudget } = useMemo(() => {

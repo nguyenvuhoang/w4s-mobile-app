@@ -6,7 +6,7 @@ import { CategoryAnalyzeItem, useCategory } from '@/hooks/useCategory';
 import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -321,6 +321,25 @@ const CategoryReportDetailScreen = () => {
                   currency={currency}
                   colors={colors}
                   rank={index + 1}
+                  onPress={() => {
+                    router.push({
+                      pathname: '/(protected)/category-detail',
+                      params: {
+                        category: JSON.stringify({
+                          category_id: item.id,
+                          name: item.category_name,
+                          icon: item.icon,
+                          color: item.color,
+                          transaction_count: 0,
+                          total_amount: item.total_amount,
+                          percentage: item.percentage / 100
+                        }),
+                        anchor_date: selectedPeriod.anchor_date,
+                        period_type: periodType,
+                        wallet_id: selectedWallet?.walletId
+                      }
+                    });
+                  }}
                 />
               ))}
             </View>
@@ -435,17 +454,23 @@ const CategoryItem = ({
   currency,
   colors,
   rank,
+  onPress,
 }: {
   item: CategoryAnalyzeItem;
   currency: string;
   colors: any;
   rank: number;
+  onPress: () => void;
 }) => {
   const name = parseCategoryName(item.category_name);
   const formatCurrency = (v: number) => v.toLocaleString('vi-VN') + ' ' + currency;
 
   return (
-    <View style={[styles.categoryCard, { backgroundColor: colors.card }]}>
+    <TouchableOpacity
+      style={[styles.categoryCard, { backgroundColor: colors.card }]}
+      activeOpacity={0.7}
+      onPress={onPress}
+    >
       <View style={styles.categoryHeaderRow}>
         <View style={styles.categoryLeft}>
           <View style={[styles.categoryIconWrap, { backgroundColor: item.color + '22' }]}>
@@ -481,7 +506,7 @@ const CategoryItem = ({
           ]}
         />
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
