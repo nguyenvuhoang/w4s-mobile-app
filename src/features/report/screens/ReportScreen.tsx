@@ -13,7 +13,7 @@ import { useReport } from '../hooks/useReport';
 
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   ScrollView,
@@ -140,6 +140,23 @@ const ReportScreen = () => {
     }, [wallets]),
   );
 
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Tự động cuộn đến phần tử đang chọn
+  useEffect(() => {
+    if (selectedPeriod && scrollRef.current) {
+      const index = TIME_PERIODS.findIndex(p => p.id === selectedPeriod.id);
+      if (index !== -1) {
+        // Một cách đơn giản để cuộn đến vị trí gần đúng (với 4-5 phần tử)
+        // Nếu cần chính xác hơn có thể dùng onLayout của từng item
+        scrollRef.current.scrollTo({
+          x: index * normalize(100), // xấp xỉ chiều rộng mỗi tab
+          animated: true
+        });
+      }
+    }
+  }, [selectedPeriod?.id]);
+
   const getBalanceValue = (key: 'opening' | 'closing') => {
     if (balanceData?.net_balance?.details) {
       const detail = balanceData.net_balance.details.find(d =>
@@ -218,7 +235,13 @@ const ReportScreen = () => {
         </TouchableOpacity>
 
         {/* ===== TIME PERIOD TABS ===== */}
-        <View style={styles.periodTabs}>
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.periodTabsContainer}
+          style={styles.periodTabsScroll}
+        >
           {TIME_PERIODS.map(period => (
             <TouchableOpacity
               key={period.id}
@@ -242,7 +265,7 @@ const ReportScreen = () => {
               </CustomText>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
 
         {/* ===== INCOME/EXPENSE SUMMARY ===== */}
         <SectionHeader title="Thu nhập ròng" />
@@ -407,11 +430,14 @@ const styles = StyleSheet.create({
     gap: normalize(8),
   },
 
-  periodTabs: {
-    flexDirection: 'row',
-    paddingHorizontal: wp(5),
+  periodTabsScroll: {
     marginVertical: hp(2),
+  },
+  periodTabsContainer: {
+    paddingHorizontal: wp(5),
     gap: normalize(8),
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   periodTab: {
     paddingHorizontal: normalize(16),
