@@ -10,6 +10,7 @@ import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useBudget } from "@/features/budget/hooks/useBudget";
 import { useEvent } from "@/features/event/hooks/useEvent";
 import { useProfile } from "@/features/profile/hooks/useProfile";
+import { useLoginService } from "@/features/auth/hooks/useLoginService";
 import { useSettingService } from "@/features/settings/hooks/useSettingService";
 import { useCategory } from "@/hooks/useCategory";
 import { useCurrency } from "@/hooks/useCurrency";
@@ -49,6 +50,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     useDefaultCurrency();
   const { profile, getUserProfile, loading: profileLoading } = useProfile();
   const { uploadAvatar } = useProfile();
+  const { handleGetAppInfo } = useLoginService();
 
   const { clearCache: clearCategoryCache } = useCategory({ autoFetch: false });
   const { clearCache: clearCurrencyCache } = useCurrency({ autoFetch: false });
@@ -129,8 +131,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
 
       showNotification(t("settings.avatar_updated") || "Cập nhật ảnh đại diện thành công!", "success");
 
-      // Bước 3: Refresh profile để UI cập nhật
+      // Bước 3: Refresh profile và AppInfo để UI cập nhật
       await getUserProfile();
+      await handleGetAppInfo();
     } catch (error: any) {
       console.error("[SettingsScreen] handlePickAvatar failed:", error);
       showNotification(

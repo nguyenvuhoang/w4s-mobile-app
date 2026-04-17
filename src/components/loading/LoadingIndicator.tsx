@@ -5,9 +5,8 @@ import React, { useEffect, useRef } from "react";
 import {
   Animated,
   Easing,
-  Image,
   StyleSheet,
-  View,
+  View
 } from "react-native";
 
 type LoadingIndicatorProps = {
@@ -24,7 +23,7 @@ const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
   const translateY = useRef(new Animated.Value(50)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const clipHeight = useRef(new Animated.Value(0)).current;
-  
+
   // Lấy bộ màu từ Context
   const { colors } = useAppTheme();
 
@@ -70,11 +69,11 @@ const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
             { transform: [{ translateY }], opacity },
           ]}
         >
-          <Image
+          {/* <Image
             source={require("@assets/images/emilogo.gif")}
             style={styles.logo}
             resizeMode="contain"
-          />
+          /> */}
         </Animated.View>
       </Animated.View>
 
@@ -82,9 +81,9 @@ const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
         <Animated.Text
           style={[
             styles.logoText,
-            { 
-                color: colors.tint, 
-                opacity 
+            {
+              color: colors.tint,
+              opacity
             },
           ]}
         >

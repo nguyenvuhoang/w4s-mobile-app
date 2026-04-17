@@ -1,26 +1,31 @@
 import AppHeader from "@/components/base/AppHeader";
 import { ThemedText } from "@/components/themed-text";
 import { GlobalContext } from "@/contexts/GlobalContext";
+import { useNotification } from "@/contexts/NotificationContext";
+import { apiService } from "@/core/api/ApiService";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import { useLoginService } from "@/features/auth/hooks/useLoginService";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { Images } from "@/utils/images";
 import { hp, normalize, wp } from "@/utils/layout";
+import { requestMediaLibraryPermission } from "@/utils/permissionHelper";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useContext, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as ImagePicker from "expo-image-picker";
-import { requestMediaLibraryPermission } from "@/utils/permissionHelper";
 
 const ProfileScreen = () => {
     const { colors } = useAppTheme();
     const { t } = useTranslation();
     const { appInfo } = useContext(GlobalContext);
 
-    const { profile, loading, getUserProfile } = useProfile();
+    const { profile, loading, getUserProfile, uploadAvatar } = useProfile();
+    const { handleGetAppInfo } = useLoginService();
+    const { showNotification } = useNotification();
     const [localAvatar, setLocalAvatar] = useState<string | null>(null);
 
     useFocusEffect(
@@ -118,16 +123,33 @@ const ProfileScreen = () => {
                 quality: 0.8,
             });
 
-            if (!result.canceled) {
+            if (!result.canceled && result.assets?.length) {
                 const uri = result.assets[0].uri;
                 setLocalAvatar(uri);
-                
-                // --- TODO: Tự xử lý phần upload ảnh lên server ---
-                // api.uploadImage(uri).then(url => updateUserProfile({ avatar: url }))
-                console.log("Đã lưu tạm URI của avatar:", uri);
+
+                const userCode = appInfo?.user_code || "";
+
+                // 1. Upload ảnh
+                const uploadResponse = await apiService.uploadImage(uri, "avatars", userCode, true);
+                const avatarUrl = uploadResponse?.file_url || uploadResponse?.data?.file_url;
+
+                if (!avatarUrl) {
+                    showNotification(t("profile.upload_failed", "Lỗi khi upload ảnh"), "error");
+                    return;
+                }
+
+                // 2. Cập nhật profile
+                await uploadAvatar(avatarUrl);
+
+                // 3. Refresh
+                await getUserProfile();
+                await handleGetAppInfo();
+
+                showNotification(t("profile.avatar_updated", "Cập nhật ảnh đại diện thành công"), "success");
             }
         } catch (error) {
-            console.error("Lỗi khi mở thư viện ảnh:", error);
+            console.error("Lỗi khi đổi avatar:", error);
+            showNotification(t("profile.avatar_update_failed", "Cập nhật ảnh đại diện thất bại"), "error");
         }
     };
 

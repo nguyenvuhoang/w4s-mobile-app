@@ -21,6 +21,7 @@ import { hasNotch, normalize } from '@/utils/layout';
 import { useForgotPasswordService } from '@/features/auth/hooks/useForgotPasswordService';
 import { ActivityIndicator, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import LoadingIndicator from '@/components/loading/LoadingIndicator';
 
 const ForgotPasswordScreen = () => {
   const router = useRouter();
@@ -274,6 +275,12 @@ const ForgotPasswordScreen = () => {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+
+      <LoadingIndicator 
+        visible={isLoading} 
+        overlay={true} 
+        text={t('auth.processing')} 
+      />
     </View>
   );
 };

@@ -23,17 +23,23 @@ export const useForgotPasswordService = () => {
 
   const handleResetPassword = useCallback(async (userCode: string, userEmail: string) => {
     try {
+      setIsLoading(true);
       const response = await authRepository.resetPassword(userCode, userEmail);
 
       if (response.isSuccess()) {
         showNotification(t('auth.reset_password_success_email'), 'success');
         router.replace('/(auth)/login' as any);
+        return true;
       } else {
         showNotification(response.getError() || t('auth.reset_password_failed'), 'error');
+        return false;
       }
     } catch (error: any) {
       console.error('Reset password error:', error);
       showNotification(error.message || t('common.network_error'), 'error');
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   }, [showNotification, t, router]);
 
@@ -77,14 +83,18 @@ export const useForgotPasswordService = () => {
               },
               handleVerifyOTP: async (otpCode: string) => {
                 const isValid = await handleVerifySMSOTP(phone, otpCode, transactionId, OTPTYPE.RESETPASSWORD);
-                if (isValid) {
-                  return { success: true };
+                if (!isValid) {
+                  return { success: false, error: t('otpNote.invalidOTP') };
                 }
-                return { success: false, error: t('otpNote.invalidOTP') };
+
+                const resetSuccess = await handleResetPassword(userCode, email);
+                if (resetSuccess) {
+                  return { success: true };
+                } else {
+                  return { success: false, error: t('auth.reset_password_failed') };
+                }
               },
               onSuccess: () => {
-                // 4. Reset Password after successful OTP
-                handleResetPassword(userCode, email);
               }
             });
           }
