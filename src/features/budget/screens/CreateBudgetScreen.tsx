@@ -502,13 +502,13 @@ const CreateBudgetScreen = () => {
 
         console.log("[CreateBudget] Submitting payload:", payload);
 
-        const success = await createBudget(payload);
+        const response = await createBudget(payload);
 
-        if (success) {
+        if (response.isSuccess()) {
             showNotification(t("budget.success_create", { defaultValue: "Ngân sách đã được tạo thành công!" }), "success");
             router.back();
         } else {
-            showNotification(t("budget.error_create", { defaultValue: "Không thể tạo ngân sách. Vui lòng thử lại." }), "error");
+            showNotification(response.getError() || t("budget.error_create", { defaultValue: "Không thể tạo ngân sách. Vui lòng thử lại." }), "error");
         }
     }, [
         isValid,

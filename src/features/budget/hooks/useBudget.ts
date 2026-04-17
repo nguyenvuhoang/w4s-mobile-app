@@ -8,6 +8,7 @@ import {
   AdvancedSearchBudgetParams,
 } from "@/services/repositories/budget.repository";
 import StorageService from "@/services/StorageService";
+import { BaseResponseModel } from "@/core/api/models/ClientModel";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const PAGE_SIZE = 9999;
@@ -147,7 +148,7 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
    * Create a new budget
    */
   const createBudget = useCallback(
-    async (payload: CreateBudgetPayload): Promise<boolean> => {
+    async (payload: CreateBudgetPayload): Promise<BaseResponseModel> => {
       try {
         setError(null);
         setCreating(true);
@@ -155,22 +156,30 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
 
         const response = await budgetRepository.createBudget(payload);
 
-        if (!response.isSuccess()) {
-          throw new Error(response.message || "Tạo ngân sách thất bại");
+        if (response.isSuccess()) {
+          // Clear cache và refresh lại sau khi tạo
+          console.log("[useBudget] Budget created, clearing cache and refreshing");
+          sessionCache = null;
+          await fetchAllBudgets(true);
+        } else {
+          setError(response.getError() || "Tạo ngân sách thất bại");
         }
 
-        // Clear cache và refresh lại sau khi tạo
-        console.log("[useBudget] Budget created, clearing cache and refreshing");
-        sessionCache = null;
-        await fetchAllBudgets(true);
-
-        return true;
+        return response;
       } catch (err) {
-        console.error("[useBudget] Create budget failed:", err);
-        setError(
-          err instanceof Error ? err.message : "Không thể tạo ngân sách"
-        );
-        return false;
+        console.error("[useBudget] Create budget network/unexpected error:", err);
+        const errorMessage = err instanceof Error ? err.message : "Không thể tạo ngân sách";
+        setError(errorMessage);
+        return new BaseResponseModel({
+          success: false,
+          message: errorMessage,
+          code: "ERROR",
+          data: null,
+          execution_id: "",
+          timestamp: new Date().toISOString(),
+          errors: [],
+          metadata: {}
+        });
       } finally {
         setCreating(false);
       }
@@ -182,7 +191,7 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
    * Update an existing budget
    */
   const updateBudget = useCallback(
-    async (payload: UpdateBudgetPayload): Promise<boolean> => {
+    async (payload: UpdateBudgetPayload): Promise<BaseResponseModel> => {
       try {
         setError(null);
         setCreating(true);
@@ -190,22 +199,30 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
 
         const response = await budgetRepository.updateBudget(payload);
 
-        if (!response.isSuccess()) {
-          throw new Error(response.message || "Cập nhật ngân sách thất bại");
+        if (response.isSuccess()) {
+          // Clear cache và refresh lại sau khi update
+          console.log("[useBudget] Budget updated, clearing cache and refreshing");
+          sessionCache = null;
+          await fetchAllBudgets(true);
+        } else {
+          setError(response.getError() || "Cập nhật ngân sách thất bại");
         }
 
-        // Clear cache và refresh lại sau khi update
-        console.log("[useBudget] Budget updated, clearing cache and refreshing");
-        sessionCache = null;
-        await fetchAllBudgets(true);
-
-        return true;
+        return response;
       } catch (err) {
-        console.error("[useBudget] Update budget failed:", err);
-        setError(
-          err instanceof Error ? err.message : "Không thể cập nhật ngân sách"
-        );
-        return false;
+        console.error("[useBudget] Update budget network/unexpected error:", err);
+        const errorMessage = err instanceof Error ? err.message : "Không thể cập nhật ngân sách";
+        setError(errorMessage);
+        return new BaseResponseModel({
+          success: false,
+          message: errorMessage,
+          code: "ERROR",
+          data: null,
+          execution_id: "",
+          timestamp: new Date().toISOString(),
+          errors: [],
+          metadata: {}
+        });
       } finally {
         setCreating(false);
       }

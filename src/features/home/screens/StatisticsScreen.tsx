@@ -418,7 +418,14 @@ const StatisticsScreen = () => {
           title={t("statistics.category_analysis")}
           showAction={true}
           actionText={t("home.see_more")}
-          onPressAction={() => router.push("/(protected)/report/category-report-detail")}
+          onPressAction={() => router.push({
+            pathname: "/(protected)/report/category-report-detail",
+            params: {
+              wallet_id: "0",
+              period_type: "M",
+              anchor_date: new Date().toISOString().split('T')[0]
+            }
+          })}
         />
 
         {categoriesLoading ? (

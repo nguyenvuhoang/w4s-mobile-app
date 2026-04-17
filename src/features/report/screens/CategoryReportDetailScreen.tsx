@@ -119,6 +119,19 @@ const buildPeriodOptions = (periodType: PeriodType): PeriodOption[] => {
 const CategoryReportDetailScreen = () => {
   const { colors } = useAppTheme();
   const { wallets, defaultWallet } = useWallet();
+
+  // Đối tượng "Tất cả ví"
+  const allWalletOption = useMemo(() => ({
+    walletId: 0,
+    name: 'Tất cả ví',
+    icon: 'layer-group',
+    color: colors.tint,
+    balance: wallets.reduce((acc, w) => acc + (w.balance || 0), 0),
+    currency: '',
+  } as WalletSummary), [wallets, colors.tint]);
+
+  const walletOptions = useMemo(() => [allWalletOption, ...wallets], [allWalletOption, wallets]);
+
   const params = useLocalSearchParams<{
     wallet_id: string;
     anchor_date: string;
@@ -130,11 +143,11 @@ const CategoryReportDetailScreen = () => {
   const { analyzeCategory, categoryAnalysis, analyzing } = useCategory({ autoFetch: false });
 
   // ---- Filter state ----
-  const initWallet =
-    wallets.find(w => w.walletId === Number(params.wallet_id)) ||
-    defaultWallet ||
-    wallets[0] ||
-    null;
+  const initWallet = useMemo(() => {
+    if (params.wallet_id === '0') return allWalletOption;
+    const found = wallets.find(w => w.walletId === Number(params.wallet_id));
+    return found || defaultWallet || wallets[0] || allWalletOption;
+  }, [params.wallet_id, wallets, defaultWallet, allWalletOption]);
 
   const [selectedWallet, setSelectedWallet] = useState<WalletSummary | null>(initWallet);
   const [periodType, setPeriodType] = useState<PeriodType>(
@@ -152,10 +165,14 @@ const CategoryReportDetailScreen = () => {
   // When wallets loaded, sync initial wallet from params
   useEffect(() => {
     if (wallets.length > 0 && !selectedWallet) {
-      const found = wallets.find(w => w.walletId === Number(params.wallet_id));
-      setSelectedWallet(found || defaultWallet || wallets[0]);
+      if (params.wallet_id === '0') {
+        setSelectedWallet(allWalletOption);
+      } else {
+        const found = wallets.find(w => w.walletId === Number(params.wallet_id));
+        setSelectedWallet(found || defaultWallet || wallets[0] || allWalletOption);
+      }
     }
-  }, [wallets]);
+  }, [wallets, params.wallet_id, allWalletOption]);
 
   // Fetch data whenever filters change
   useEffect(() => {
@@ -356,7 +373,7 @@ const CategoryReportDetailScreen = () => {
         title="Chọn ví"
         colors={colors}
       >
-        {wallets.map(w => (
+        {walletOptions.map(w => (
           <TouchableOpacity
             key={w.walletId}
             style={[
@@ -377,7 +394,9 @@ const CategoryReportDetailScreen = () => {
             <View style={{ flex: 1 }}>
               <CustomText type="medium" size={14}>{w.name}</CustomText>
               <CustomText size={12} style={{ color: colors.text }}>
-                {w.balance?.toLocaleString('vi-VN')} {w.currency}
+                {w.walletId === 0 
+                  ? 'Tổng số dư các ví' 
+                  : `${w.balance?.toLocaleString('vi-VN')} ${w.currency}`}
               </CustomText>
             </View>
             {selectedWallet?.walletId === w.walletId && (
