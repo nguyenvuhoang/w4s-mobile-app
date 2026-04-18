@@ -1,15 +1,16 @@
 import { AppConfig } from "@/config/AppConfig";
 import StorageKey from "@/constants/StorageKey";
+import { BaseResponseModel } from "@/core/api/models/ClientModel";
 import {
+  AdvancedSearchBudgetParams,
   budgetRepository,
   BudgetSearchParams,
   CreateBudgetPayload,
   UpdateBudgetPayload,
-  AdvancedSearchBudgetParams,
 } from "@/services/repositories/budget.repository";
 import StorageService from "@/services/StorageService";
-import { BaseResponseModel } from "@/core/api/models/ClientModel";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useContext } from "react";
+import { GlobalContext } from "@/contexts/GlobalContext";
 
 const PAGE_SIZE = 9999;
 
@@ -62,6 +63,7 @@ let sessionCache: {
 
 export const useBudget = (options: UseBudgetOptions = {}) => {
   const { autoFetch = true, forceRefresh = false } = options;
+  const { appInfo } = useContext(GlobalContext);
 
   const [allBudgets, setAllBudgets] = useState<Budget[]>([]);
   const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
@@ -244,6 +246,7 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
 
         const params = {
           wallet_id: walletId || 0,
+          contract_number: appInfo?.contract_number || "",
           period_type: periodType,
         };
 
@@ -269,7 +272,7 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
         setSummaryLoading(false);
       }
     },
-    []
+    [appInfo?.contract_number]
   );
 
   /**
@@ -281,9 +284,9 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
         setLoading(true);
         setError(null);
         console.log("[useBudget] Advanced search budgets:", params);
-        
+
         const response = await budgetRepository.advancedSearchBudget(params);
-        
+
         if (response.isSuccess() && response.data) {
           return response.data.items || [];
         } else {

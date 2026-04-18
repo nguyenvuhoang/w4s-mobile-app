@@ -22,6 +22,7 @@ export interface BudgetSearchParams {
 export interface BudgetSummaryParams {
   wallet_id: number;
   period_type: string;
+  contract_number: string;
 }
 
 export interface AdvancedSearchBudgetParams {
@@ -110,6 +111,7 @@ export const budgetRepository = {
         WORKFLOWCODE.WF_MB_GET_BUDGET_SUMMARY,
         {
           wallet_id: params.wallet_id,
+          contract_number: params.contract_number,
           period_type: params.period_type,
         },
         false,
