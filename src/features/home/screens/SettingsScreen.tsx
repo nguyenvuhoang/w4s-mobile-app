@@ -105,8 +105,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       // Mở thư viện ảnh
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],      // crop vuông cho avatar
+        allowsEditing: false,
         quality: 0.8,
       });
 

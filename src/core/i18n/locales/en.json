@@ -421,7 +421,10 @@
     "rate_app": "Rate App",
     "rate_app_desc": "Leave feedback on app stores",
     "clear_cache": "Clear Cache",
-    "cache_cleared": "Cache cleared successfully!"
+    "cache_cleared": "Cache cleared successfully!",
+    "avatar_updated": "Avatar updated successfully!",
+    "avatar_update_failed": "Failed to update avatar!",
+    "photo_permission_denied": "Photo library access required"
   },
   "validation": {
     "invalid_email": "Invalid Email",
@@ -720,6 +723,11 @@
     "error_invalid_phone": "Invalid Phone Number",
     "update_success": "Update successful",
     "update_failed": "Update failed",
+    "avatar_updated": "Avatar updated successfully!",
+    "avatar_update_failed": "Failed to update avatar!",
+    "upload_failed": "Failed to upload image",
+    "permission_denied": "Permission Denied",
+    "need_permission_gallery": "Please grant gallery access to change your Avatar!",
     "select_dob": "Select Date of Birth",
     "select_issued_date": "Select Issued Date",
     "last_name_placeholder": "Enter last name",

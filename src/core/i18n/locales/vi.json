@@ -410,7 +410,10 @@
     "rate_app": "Đánh giá ứng dụng",
     "rate_app_desc": "Để lại phản hồi trên các chợ ứng dụng",
     "clear_cache": "Xóa bộ nhớ đệm",
-    "cache_cleared": "Xóa dữ liệu bộ đệm thành công!"
+    "cache_cleared": "Xóa dữ liệu bộ đệm thành công!",
+    "avatar_updated": "Cập nhật ảnh đại diện thành công!",
+    "avatar_update_failed": "Cập nhật ảnh đại diện thất bại!",
+    "photo_permission_denied": "Cần quyền truy cập thư viện ảnh"
   },
   "validation": {
     "invalid_email": "Email không hợp lệ",
@@ -715,6 +718,11 @@
     "error_invalid_phone": "Số điện thoại không hợp lệ",
     "update_success": "Cập nhật thành công",
     "update_failed": "Cập nhật thất bại",
+    "avatar_updated": "Cập nhật ảnh đại diện thành công!",
+    "avatar_update_failed": "Cập nhật ảnh đại diện thất bại!",
+    "upload_failed": "Lỗi khi tải ảnh lên",
+    "permission_denied": "Từ chối truy cập",
+    "need_permission_gallery": "Vui lòng cấp quyền truy cập thư viện ảnh để đổi Avatar!",
     "select_dob": "Chọn ngày sinh",
     "select_issued_date": "Chọn ngày cấp",
     "last_name_placeholder": "Nhập họ",
