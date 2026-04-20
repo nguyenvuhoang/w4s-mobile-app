@@ -115,11 +115,11 @@ const AppInfoScreen = () => {
     }, []);
 
     const openWebsite = () => {
-        Linking.openURL('https://w4s.vn');
+        Linking.openURL('https://wealth4s.vn/');
     };
 
     const openSupport = () => {
-        Linking.openURL('mailto:support@w4s.vn');
+        Linking.openURL('mailto:support@wealth4s.vn');
     };
 
     const logoScale = logoAnim.interpolate({

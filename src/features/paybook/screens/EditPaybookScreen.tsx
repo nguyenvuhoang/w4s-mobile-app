@@ -1,20 +1,24 @@
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
+import STORAGE_KEY from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
 import { Fonts } from "@/core/theme/font";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { usePaybookDetail } from "@/features/paybook/hooks/usePaybook";
 import type { LoanStatus } from "@/features/paybook/types";
+import TransactionAmountInput from "@/features/transaction/components/TransactionAmountInput";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
+import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import type {
   InterestCalcMethod,
   InterestRateType,
   PaymentType,
 } from "@/services/repositories/paybook.repository";
+import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, {
   useCallback,
   useEffect,
@@ -35,6 +39,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+interface SelectedCurrency {
+  currencyId: string;
+  symbol: string;
+  name: string;
+}
 
 // ─── Option configs ───────────────────────────────────────────────────────────
 
@@ -195,9 +205,18 @@ const EditPaybookScreen = () => {
   const { wallets } = useWallet();
   const { loanId } = useLocalSearchParams<{ loanId: string }>();
   const { getLoanDetail, updateLoan, loading } = usePaybookDetail();
+  const { defaultCurrency } = useDefaultCurrency();
+  const hasManuallySelectedCurrencyRef = useRef(false);
 
   const [dataLoaded, setDataLoaded] = useState(false);
   const [interestEnabled, setInterestEnabled] = useState(false);
+
+  // Currency state
+  const [inputCurrency, setInputCurrency] = useState<SelectedCurrency>({
+    currencyId: defaultCurrency.currencyId,
+    symbol: defaultCurrency.symbol,
+    name: defaultCurrency.name,
+  });
 
   // Read-only fields (displayed but not editable)
   const [loanType, setLoanType] = useState<string>("LEND");
@@ -273,6 +292,25 @@ const EditPaybookScreen = () => {
       }
     }
   }, [startDate, paymentType, totalInstallments, dataLoaded]);
+
+  // ── Load selected currency từ select-currency screen ─────────────────────
+  useFocusEffect(
+    useCallback(() => {
+      const loadCurrency = async () => {
+        try {
+          const stored = await StorageService.getItem(STORAGE_KEY.TEMP_CURRENCY_STORAGE);
+          if (!stored) return;
+          const currency: SelectedCurrency = JSON.parse(stored);
+          setInputCurrency(currency);
+          hasManuallySelectedCurrencyRef.current = true;
+          await StorageService.removeItem(STORAGE_KEY.TEMP_CURRENCY_STORAGE);
+        } catch (err) {
+          console.error("[EditPaybook] Load currency failed:", err);
+        }
+      };
+      loadCurrency();
+    }, [])
+  );
 
   // ── Helpers ─────────────────────────────────────────────────────────────
   const parseNumber = (val: string) => {
@@ -496,23 +534,18 @@ const EditPaybookScreen = () => {
             </View>
           </View>
 
-          {/* Số tiền vay */}
-          <View style={styles.section}>
-            <CustomText style={[styles.label, { color: colors.text }]}>
-              Số tiền gốc <CustomText style={{ color: "#EF4444" }}>*</CustomText>
-            </CustomText>
-            <View style={[styles.amountWrapper, { backgroundColor: colors.card, borderColor: parsedPrincipal > 0 ? accentColor : colors.border }]}>
-              <TextInput
-                style={[styles.amountInputSm, { color: parsedPrincipal > 0 ? accentColor : colors.text, fontFamily: parsedPrincipal > 0 ? Fonts.semiBold : Fonts.regular }]}
-                placeholder="0"
-                placeholderTextColor={colors.icon}
-                value={principalAmount}
-                onChangeText={(t) => setPrincipalAmount(formatNum(t))}
-                keyboardType="numeric"
-              />
-              <CustomText style={[styles.currencyTag, { color: accentColor }]}>đ</CustomText>
-            </View>
-          </View>
+          {/* Số tiền gốc — dùng TransactionAmountInput để có thể đổi currency */}
+          <TransactionAmountInput
+            amount={principalAmount}
+            onAmountChange={(val) => setPrincipalAmount(val)}
+            inputCurrency={inputCurrency}
+            walletCurrency={inputCurrency}
+            onCurrencyPress={() => {
+              hasManuallySelectedCurrencyRef.current = true;
+              router.push("/(protected)/select-currency");
+            }}
+            label="Số tiền gốc *"
+          />
 
           {/* ══════════════════════════════════════════════════════════════
               5. HÌNH THỨC THANH TOÁN (Disabled in Edit)

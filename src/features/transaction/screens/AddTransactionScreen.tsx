@@ -3,6 +3,7 @@ import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
+import { apiService } from "@/core/api/ApiService";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
 import { usePaybookDetail } from "@/features/paybook/hooks/usePaybook";
@@ -12,9 +13,9 @@ import { useTransaction } from "@/features/transaction/hooks/useTransaction";
 import { styles } from "@/features/transaction/style/AddTransactionScreen.Styles";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCurrency } from "@/hooks/useCurrency";
+import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useSpendingLimit } from "@/hooks/useSpendingLimit";
-import { apiService } from "@/core/api/ApiService";
 import StorageService from "@/services/StorageService";
 import { hp, normalize } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
@@ -118,6 +119,7 @@ const AddTransactionScreen = () => {
   const { wallets, defaultWallet, refresh } = useWallet();
   const { currencies, parseCurrencyName } = useCurrency({ autoFetch: true });
   const { convert } = useExchangeRate();
+  const { defaultCurrency } = useDefaultCurrency();
   const { createTransaction, loading: creatingTransaction } = useTransaction();
   const { showNotification } = useNotification();
   const { t } = useTranslation();
@@ -211,65 +213,21 @@ const AddTransactionScreen = () => {
     };
   }, [selectedWallet, currencies, parseCurrencyName]);
 
-  const needsConversion = useMemo(
+  // ── Submission conversion: so với walletCurrency (API cần số tiền theo đơn vị của ví) ─
+  const walletConversionNeeded = useMemo(
     () => inputCurrency.currencyId !== walletCurrency.currencyId,
     [inputCurrency.currencyId, walletCurrency.currencyId],
   );
 
-  const exchangeRate = useMemo(() => {
-    if (!needsConversion) return null;
-
-    const rate = convert(
-      1,
-      inputCurrency.currencyId,
-      walletCurrency.currencyId,
-    );
-    if (rate === null) return null;
-
-    if (
-      walletCurrency.currencyId === "VND" ||
-      walletCurrency.currencyId === "VNĐ"
-    ) {
-      return Math.round(rate);
-    } else {
-      return Math.round(rate * 10000) / 10000;
-    }
-  }, [
-    needsConversion,
-    inputCurrency.currencyId,
-    walletCurrency.currencyId,
-    convert,
-  ]);
-
-  const convertedAmount = useMemo(() => {
-    if (!needsConversion || !amount || amount === "0") return null;
-
+  const walletConvertedAmount = useMemo(() => {
+    if (!walletConversionNeeded || !amount || amount === "0") return null;
     const numAmount = parseFloat(amount.replace(/,/g, ""));
     if (isNaN(numAmount)) return null;
-
-    const result = convert(
-      numAmount,
-      inputCurrency.currencyId,
-      walletCurrency.currencyId,
-    );
-
+    const result = convert(numAmount, inputCurrency.currencyId, walletCurrency.currencyId);
     if (result === null) return null;
-
-    if (
-      walletCurrency.currencyId === "VND" ||
-      walletCurrency.currencyId === "VNĐ"
-    ) {
-      return Math.round(result);
-    } else {
-      return Math.round(result * 100) / 100;
-    }
-  }, [
-    amount,
-    needsConversion,
-    inputCurrency.currencyId,
-    walletCurrency.currencyId,
-    convert,
-  ]);
+    const isVND = walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ";
+    return isVND ? Math.round(result) : Math.round(result * 100) / 100;
+  }, [amount, walletConversionNeeded, inputCurrency.currencyId, walletCurrency.currencyId, convert]);
 
   const isLoanCategory = useMemo(
     () =>
@@ -434,6 +392,7 @@ const AddTransactionScreen = () => {
       }
     }
   }, [selectedWallet?.walletId, walletCurrency.currencyId, currencies.length]);
+
 
   useFocusEffect(
     useCallback(() => {
@@ -644,8 +603,8 @@ const AddTransactionScreen = () => {
     }
 
     try {
-      const finalAmount = needsConversion
-        ? convertedAmount
+      const finalAmount = walletConversionNeeded
+        ? walletConvertedAmount
         : parseFloat(amount.replace(/,/g, ""));
 
       const participantsData = participants.map((p) => {
@@ -984,16 +943,16 @@ const AddTransactionScreen = () => {
             amount={amount}
             onAmountChange={handleAmountChange}
             inputCurrency={inputCurrency}
-            walletCurrency={walletCurrency}
+            walletCurrency={{
+              currencyId: defaultCurrency.currencyId,
+              symbol: defaultCurrency.symbol,
+            }}
             onCurrencyPress={() => {
               hasManuallySelectedCurrencyRef.current = true;
               router.push("/(protected)/select-currency");
             }}
             hasExceededLimit={exceededLimits.length > 0}
             exceededLabel={exceededLabel}
-            needsConversion={needsConversion}
-            convertedAmount={convertedAmount}
-            exchangeRate={exchangeRate}
             selectedType={selectedType}
           />
 
@@ -1221,13 +1180,13 @@ const AddTransactionScreen = () => {
                   ]}
                   resizeMode="contain"
                 />
-                
+
                 {isUploadingImage && (
                   <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "center", alignItems: "center" }]}>
                     <ActivityIndicator color="#fff" size="small" />
                   </View>
                 )}
-                
+
                 <TouchableOpacity
                   style={[styles.removeBtn, { backgroundColor: colors.background }]}
                   onPress={() => {

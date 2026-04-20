@@ -689,14 +689,14 @@ const CreateRecurringInvoiceScreen = () => {
             amount={amount}
             onAmountChange={setAmount}
             inputCurrency={inputCurrency}
-            walletCurrency={walletCurrency}
+            walletCurrency={{
+              currencyId: appInfo?.currency_code || "VND",
+              symbol: appInfo?.currency_code === "USD" ? "$" : "đ",
+            }}
             onCurrencyPress={() => {
               hasManuallySelectedCurrencyRef.current = true;
               router.push("/(protected)/select-currency");
             }}
-            needsConversion={needsConversion}
-            convertedAmount={convertedAmount}
-            exchangeRate={exchangeRate}
             selectedType={selectedType}
             label={t("transaction.amount")}
           />

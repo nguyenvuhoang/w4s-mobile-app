@@ -6,7 +6,10 @@ import { Fonts } from "@/core/theme/font";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { FloatingSchedulePreview } from "@/features/paybook/components/FloatingSchedulePreview";
 import { usePaybookDetail } from "@/features/paybook/hooks/usePaybook";
+import TransactionAmountInput from "@/features/transaction/components/TransactionAmountInput";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
+import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
+import { useCurrencyPicker } from "@/hooks/useCurrencyPicker";
 import {
   type CounterpartyType,
   type FloatingRatePeriod,
@@ -43,6 +46,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+interface SelectedCurrency {
+  currencyId: string;
+  symbol: string;
+  name: string;
+}
 
 // ─── Local types ─────────────────────────────────────────────────────────────
 
@@ -280,7 +289,9 @@ const CreatePaybookScreen = () => {
   const { t, i18n } = useTranslation();
   const { showNotification } = useNotification();
   const { wallets, defaultWallet, refresh } = useWallet();
+  const { defaultCurrency } = useDefaultCurrency();
   const sessionIdRef = useRef<string>(Date.now().toString());
+
 
   // ─── Localized option configs ────────────────────────────────────────────────
 
@@ -319,7 +330,6 @@ const CreatePaybookScreen = () => {
   const [counterpartyType, setCounterpartyType] = useState<CounterpartyType>("INDIVIDUAL");
   const [selectedContact, setSelectedContact] = useState<SelectedContact | null>(null);
   const [loanDescription, setLoanDescription] = useState("");
-  const [currencyCode] = useState("VND");
   const [loanLimit, setLoanLimit] = useState("");
   const [principalAmount, setPrincipalAmount] = useState("");
   const [interestRate, setInterestRate] = useState("");
@@ -340,8 +350,20 @@ const CreatePaybookScreen = () => {
   const [note, setNote] = useState("");
   const { createLoan, loading } = usePaybookDetail();
 
+  // ── Currency picker (shared hook) ─────────────────────────────────────────
+  // baseCurrency = defaultCurrency: khi user chọn currency khác, hiển thị
+  // số tiền tương đương theo đơn vị mặc định bên dưới input.
+  const {
+    inputCurrency,
+    onCurrencyPress,
+    needsConversion,
+    exchangeRate,
+    convertedAmount,
+  } = useCurrencyPicker({ amount: principalAmount });
+
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showMaturityPicker, setShowMaturityPicker] = useState(false);
+
 
   // Auto-reset interestRateType khi chuyển sang BULLET (FLOATING chỉ dành cho INSTALLMENT)
   useEffect(() => {
@@ -378,7 +400,7 @@ const CreatePaybookScreen = () => {
     }
   }, [startDate, paymentType, totalInstallments, periodValue, periodUnit]);
 
-  // ── Default wallet ────────────────────────────────────────────────────────
+  // ── Default wallet ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!walletId && defaultWallet) {
       setWalletId(defaultWallet.walletId);
@@ -436,6 +458,7 @@ const CreatePaybookScreen = () => {
       loadSelectedWallet();
     }, [wallets, refresh])
   );
+
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const parseNumber = (val: string) => {
@@ -544,7 +567,7 @@ const CreatePaybookScreen = () => {
         counterparty_name: counterpartyName.trim(),
         counterparty_type: counterpartyType,
         loan_description: loanDescription.trim(),
-        currency_code: currencyCode,
+        currency_code: inputCurrency.currencyId,
         loan_limit: parsedLimit,
         principal_amount: parsedPrincipal,
         interest_rate: effectiveInterestRate,
@@ -753,42 +776,36 @@ const CreatePaybookScreen = () => {
             </View>
           </View>
 
-          {/* Hạn mức & Số tiền thực */}
-          <View style={[styles.section, { flexDirection: "row", gap: wp(3) }]}>
-            <View style={{ flex: 1 }}>
-              <CustomText style={[styles.label, { color: colors.text }]}>
-                {t("paybook.limit")}
-              </CustomText>
-              <View style={[styles.amountWrapper, { backgroundColor: colors.card, borderColor: parsedLimit > 0 ? accentColor : colors.border }]}>
-                <TextInput
-                  style={[styles.amountInputSm, { color: parsedLimit > 0 ? accentColor : colors.text, fontFamily: parsedLimit > 0 ? Fonts.semiBold : Fonts.regular }]}
-                  placeholder="0"
-                  placeholderTextColor={colors.icon}
-                  value={loanLimit}
-                  onChangeText={(t) => setLoanLimit(formatNum(t))}
-                  keyboardType="numeric"
-                />
-                <CustomText style={[styles.currencyTag, { color: accentColor }]}>{i18n.language === "vi" ? "đ" : "$"}</CustomText>
-              </View>
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <CustomText style={[styles.label, { color: colors.text }]}>
-                {t("paybook.loan_amount")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
-              </CustomText>
-              <View style={[styles.amountWrapper, { backgroundColor: colors.card, borderColor: parsedPrincipal > 0 ? accentColor : colors.border }]}>
-                <TextInput
-                  style={[styles.amountInputSm, { color: parsedPrincipal > 0 ? accentColor : colors.text, fontFamily: parsedPrincipal > 0 ? Fonts.semiBold : Fonts.regular }]}
-                  placeholder="0"
-                  placeholderTextColor={colors.icon}
-                  value={principalAmount}
-                  onChangeText={(t) => setPrincipalAmount(formatNum(t))}
-                  keyboardType="numeric"
-                />
-                <CustomText style={[styles.currencyTag, { color: accentColor }]}>{i18n.language === "vi" ? "đ" : "$"}</CustomText>
-              </View>
+          {/* Hạn mức tín dụng (optional) */}
+          <View style={styles.section}>
+            <CustomText style={[styles.label, { color: colors.text }]}>
+              {t("paybook.limit")}
+            </CustomText>
+            <View style={[styles.amountWrapper, { backgroundColor: colors.card, borderColor: parsedLimit > 0 ? accentColor : colors.border }]}>
+              <TextInput
+                style={[styles.amountInputSm, { color: parsedLimit > 0 ? accentColor : colors.text, fontFamily: parsedLimit > 0 ? Fonts.semiBold : Fonts.regular }]}
+                placeholder="0"
+                placeholderTextColor={colors.icon}
+                value={loanLimit}
+                onChangeText={(val) => setLoanLimit(formatNum(val))}
+                keyboardType="numeric"
+              />
+              <CustomText style={[styles.currencyTag, { color: accentColor }]}>{inputCurrency.symbol}</CustomText>
             </View>
           </View>
+
+          {/* Số tiền gốc — dùng TransactionAmountInput với currency picker + conversion */}
+          <TransactionAmountInput
+            amount={principalAmount}
+            onAmountChange={setPrincipalAmount}
+            inputCurrency={inputCurrency}
+            walletCurrency={{
+              currencyId: defaultCurrency.currencyId,
+              symbol: defaultCurrency.symbol,
+            }}
+            onCurrencyPress={onCurrencyPress}
+            label={`${t("paybook.loan_amount")} *`}
+          />
 
           {parsedLimit > 0 && parsedPrincipal > parsedLimit && (
             <View style={styles.section}>

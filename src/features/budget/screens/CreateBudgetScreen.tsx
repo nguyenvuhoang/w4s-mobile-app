@@ -158,31 +158,6 @@ const CreateBudgetScreen = () => {
         };
     }, [selectedWallet, currencies, parseCurrencyName]);
 
-    const needsConversion = useMemo(
-        () => inputCurrency.currencyId !== walletCurrency.currencyId,
-        [inputCurrency.currencyId, walletCurrency.currencyId]
-    );
-
-    const exchangeRate = useMemo(() => {
-        if (!needsConversion) return null;
-        const rate = convert(1, inputCurrency.currencyId, walletCurrency.currencyId);
-        if (rate === null) return null;
-        return walletCurrency.currencyId === "VND"
-            ? Math.round(rate)
-            : Math.round(rate * 10000) / 10000;
-    }, [needsConversion, inputCurrency.currencyId, walletCurrency.currencyId, convert]);
-
-    const convertedAmount = useMemo(() => {
-        if (!needsConversion || !amount || amount === "0") return null;
-        const num = parseFloat(amount.replace(/,/g, ""));
-        if (isNaN(num)) return null;
-        const result = convert(num, inputCurrency.currencyId, walletCurrency.currencyId);
-        if (result === null) return null;
-        return walletCurrency.currencyId === "VND"
-            ? Math.round(result)
-            : Math.round(result * 100) / 100;
-    }, [amount, needsConversion, inputCurrency.currencyId, walletCurrency.currencyId, convert]);
-
     const handleAmountChange = useCallback((text: string) => {
         setAmount(text);
     }, []);
@@ -641,14 +616,11 @@ const CreateBudgetScreen = () => {
                         amount={amount}
                         onAmountChange={handleAmountChange}
                         inputCurrency={inputCurrency}
-                        walletCurrency={walletCurrency}
+                        walletCurrency={userDefaultCurrency}
                         onCurrencyPress={() => {
                             hasManuallySelectedCurrencyRef.current = true;
                             router.push("/(protected)/select-currency");
                         }}
-                        needsConversion={needsConversion}
-                        convertedAmount={convertedAmount}
-                        exchangeRate={exchangeRate}
                         selectedType={selectedType}
                     />
 

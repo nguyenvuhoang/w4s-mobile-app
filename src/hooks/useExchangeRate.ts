@@ -28,7 +28,11 @@ export const useExchangeRate = (options: UseExchangeRateOptions = {}) => {
   
   const isFetchingRef = useRef(false);
   const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const rateMapRef = useRef<Map<string, ExchangeRate>>(new Map());
+  // Khởi tạo rateMapRef từ sessionCache ngay lập tức (nếu có), tránh việc convert()
+  // trả null trong lần render đầu tiên khi đang chờ useEffect async chạy.
+  const rateMapRef = useRef<Map<string, ExchangeRate>>(
+    sessionCache?.rateMap ?? new Map()
+  );
 
   const shouldUpdateRate = (): boolean => {
     if (!sessionCache) return true;

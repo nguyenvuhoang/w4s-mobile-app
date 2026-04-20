@@ -3,6 +3,9 @@ import CustomText from '@/components/base/CustomText';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
+import TransactionAmountInput from '@/features/transaction/components/TransactionAmountInput';
+import { useCurrency } from '@/hooks/useCurrency';
+import { useCurrencyPicker } from '@/hooks/useCurrencyPicker';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -96,18 +99,53 @@ const EditTransactionScreen: React.FC = () => {
     const [location, setLocation] = useState('');
     const [dateStr, setDateStr] = useState('');
     const [isCalculateReport, setIsCalculateReport] = useState(true);
+
+    const [walletCurrency, setWalletCurrency] = useState({ currencyId: 'VND', symbol: 'đ' });
+
+    const { currencies } = useCurrency();
+
+    // ── Currency picker (shared hook) ───────────────────────────────────────────
+    // walletCurrency = walletCurrency state (fixed from transaction)
+    const {
+        inputCurrency,
+        onCurrencyPress,
+        needsConversion,
+        exchangeRate,
+        convertedAmount,
+    } = useCurrencyPicker({
+        baseCurrency: walletCurrency,
+        amount,
+    });
+
+    const amountNum = parseFloat(amount.replace(/[^0-9.]/g, '')) || 0;
+
     const initialized = useRef(false);
 
     useEffect(() => {
         if (transaction && !initialized.current) {
             initialized.current = true;
-            setAmount(String(transaction.amount || ''));
+
+            // Format initial amount with commas
+            const rawAmount = String(transaction.amount || '0');
+            const parts = rawAmount.split('.');
+            const formattedInt = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            const formattedAmount = formattedInt + (parts.length > 1 ? "." + parts[1].substring(0, 2) : "");
+
+            setAmount(formattedAmount);
             setDescription(transaction.trandesc || '');
             setLocation((transaction as any).location || '');
             setDateStr(isoToDateInput(transaction.transactiondate || ''));
             setIsCalculateReport(true);
+
+            // Set initial currency
+            if (transaction.ccyid) {
+                const ccy = { currencyId: transaction.ccyid, symbol: transaction.ccyid === 'VND' ? 'đ' : '$' };
+                setWalletCurrency(ccy); // walletCurrency fixed from transaction; inputCurrency managed by hook
+            }
         }
     }, [transaction]);
+
+    // Handle currency selection is now managed by useCurrencyPicker hook
 
     // ── Computed data ──────────────────────────────────────────────────────────
     const categoryName = useMemo(() =>
@@ -119,22 +157,21 @@ const EditTransactionScreen: React.FC = () => {
     const typeColor = isIncome ? '#10B981' : '#EF4444';
     const typeLabel = isIncome ? (t('Income') || 'Thu nhập') : (t('Expense') || 'Khoản chi');
 
-    const amountNum = useMemo(() => {
-        const raw = amount.replace(/[^0-9.]/g, '');
-        return parseFloat(raw) || 0;
-    }, [amount]);
-
     const isValid = amountNum > 0 && dateStr.length === 10;
 
     // ── Submit ─────────────────────────────────────────────────────────────────
     const handleSave = useCallback(async () => {
         if (!transactionId || !transaction) return;
         try {
+            const finalAmount = needsConversion && convertedAmount !== null
+                ? convertedAmount
+                : amountNum;
+
             const isoDate = rebuildIso(dateStr, transaction.transactiondate);
             await updateTransaction({
                 transactionId,
-                amount: amountNum,
-                currency: transaction.ccyid || 'VND',
+                amount: finalAmount,
+                currency: inputCurrency.currencyId,
                 categoryId: (transaction.walletcategory as any)?.id || 0,
                 description,
                 location,
@@ -152,12 +189,26 @@ const EditTransactionScreen: React.FC = () => {
                 'error',
             );
         }
-    }, [transactionId, transaction, amountNum, description, location, dateStr, isCalculateReport, updateTransaction]);
+    }, [
+        transactionId,
+        transaction,
+        amountNum,
+        description,
+        location,
+        dateStr,
+        isCalculateReport,
+        updateTransaction,
+        inputCurrency,
+        needsConversion,
+        convertedAmount,
+        showNotification,
+        t
+    ]);
 
     // ── Loading / Error states ─────────────────────────────────────────────────
     if (fetching) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
                 <AppHeader title={t('Edit Transaction') || 'Sửa giao dịch'} showBackButton />
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={colors.tint} />
@@ -168,7 +219,7 @@ const EditTransactionScreen: React.FC = () => {
 
     if (!transaction) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
                 <AppHeader title={t('Edit Transaction') || 'Sửa giao dịch'} showBackButton />
                 <View style={styles.center}>
                     <FontAwesome6 name="circle-exclamation" size={normalize(40)} color="#EF4444" />
@@ -182,7 +233,7 @@ const EditTransactionScreen: React.FC = () => {
 
     // ── Render ─────────────────────────────────────────────────────────────────
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
             <AppHeader title={t('Edit Transaction') || 'Sửa giao dịch'} showBackButton />
 
             <KeyboardAvoidingView
@@ -195,36 +246,18 @@ const EditTransactionScreen: React.FC = () => {
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                 >
-                    {/* ── Hero gradient card ── */}
-                    <LinearGradient
-                        colors={['#2563EB', '#1DA1F2']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.heroCard}
-                    >
-                        <View style={styles.heroRow}>
-                            <View style={styles.heroIconWrap}>
-                                <FontAwesome6
-                                    name={isIncome ? 'arrow-up' : 'arrow-down'}
-                                    size={normalize(16)}
-                                    color={typeColor}
-                                    solid
-                                />
-                            </View>
-                            <CustomText style={styles.heroType}>{typeLabel}</CustomText>
-                        </View>
-
-                        <TextInput
-                            style={styles.heroAmountInput}
-                            value={amount}
-                            onChangeText={setAmount}
-                            keyboardType="numeric"
-                            placeholder="0"
-                            placeholderTextColor="rgba(255,255,255,0.4)"
-                            selectionColor="#fff"
-                        />
-                        <CustomText style={styles.heroCurrency}>{transaction.ccyid || 'VND'}</CustomText>
-                    </LinearGradient>
+                    <TransactionAmountInput
+                        amount={amount}
+                        onAmountChange={setAmount}
+                        inputCurrency={inputCurrency}
+                        walletCurrency={walletCurrency}
+                        onCurrencyPress={onCurrencyPress}
+                        needsConversion={needsConversion}
+                        convertedAmount={convertedAmount}
+                        exchangeRate={exchangeRate}
+                        selectedType={isIncome ? 'income' : 'expense'}
+                        label={t('Amount') || 'Số tiền'}
+                    />
 
                     {/* ── Nhóm (readonly) ── */}
                     {transaction.walletcategory && (
@@ -368,35 +401,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: wp(4),
         paddingTop: hp(1.5),
         paddingBottom: hp(6),
-    },
-
-    // Hero
-    heroCard: {
-        borderRadius: normalize(18),
-        paddingHorizontal: normalize(20),
-        paddingTop: normalize(18),
-        paddingBottom: normalize(22),
-    },
-    heroRow: {
-        flexDirection: 'row', alignItems: 'center',
-        gap: normalize(10), marginBottom: normalize(12),
-    },
-    heroIconWrap: {
-        width: normalize(34), height: normalize(34), borderRadius: normalize(17),
-        backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
-    },
-    heroType: { fontSize: normalize(14), fontFamily: Fonts.semiBold, color: '#fff' },
-    heroAmountInput: {
-        fontSize: normalize(36),
-        fontFamily: Fonts.bold,
-        color: '#fff',
-        letterSpacing: -1,
-        paddingVertical: 0,
-        minHeight: normalize(44),
-    },
-    heroCurrency: {
-        fontSize: normalize(13), fontFamily: Fonts.medium,
-        color: 'rgba(255,255,255,0.65)', marginTop: normalize(2),
     },
 
     // Section
