@@ -12,7 +12,7 @@ import {
   detectSymbolPosition,
   getDecimalPlaces,
 } from "@/utils/currencyLocaleDetector";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 /**
  * Hook để chuyển đổi tiền tệ từ VND (server response) sang đơn vị mặc định của user
@@ -30,26 +30,8 @@ export const useCurrencyConverter = () => {
   );
   const [loadingAdditional, setLoadingAdditional] = useState(false);
 
-  // Counter để track renders
-  const renderCountRef = useRef(0);
-  renderCountRef.current++;
-
-  // LOG: Hook render
-  console.log(`[useCurrencyConverter] 🔄 Render #${renderCountRef.current}`, {
-    defaultCurrencyId: defaultCurrency.currencyId,
-    currencyLoading,
-    currenciesLoading,
-    loadingAdditional,
-    currenciesCount: currencies.length,
-  });
-
   // Reset additional currency khi default currency thay đổi
   useEffect(() => {
-    console.log("[useCurrencyConverter] 🔔 Default currency CHANGED:", {
-      newCurrency: defaultCurrency.currencyId,
-      symbol: defaultCurrency.symbol,
-      name: defaultCurrency.name,
-    });
     setAdditionalCurrency(null);
   }, [defaultCurrency.currencyId]);
 
@@ -59,10 +41,6 @@ export const useCurrencyConverter = () => {
       additionalCurrency &&
       !currencies.find((c) => c.currency_id === additionalCurrency.currency_id)
     ) {
-      console.log(
-        "[useCurrencyConverter] Adding additional currency:",
-        additionalCurrency.currency_id,
-      );
       return [...currencies, additionalCurrency];
     }
     return currencies;
@@ -75,12 +53,6 @@ export const useCurrencyConverter = () => {
       map.set(currency.currency_id, currency);
     });
 
-    console.log("[useCurrencyConverter] Currency map updated:", {
-      size: map.size,
-      hasDefaultCurrency: map.has(defaultCurrency.currencyId),
-      defaultCurrencyId: defaultCurrency.currencyId,
-    });
-
     return map;
   }, [allCurrencies, defaultCurrency.currencyId]);
 
@@ -89,10 +61,6 @@ export const useCurrencyConverter = () => {
     const fetchDefaultCurrency = async () => {
       // Skip nếu đang loading
       if (currenciesLoading || loadingAdditional) {
-        console.log("[useCurrencyConverter] Skip fetch (loading):", {
-          currenciesLoading,
-          loadingAdditional,
-        });
         return;
       }
 
@@ -106,10 +74,6 @@ export const useCurrencyConverter = () => {
         );
 
         if (!hasVND && allCurrencies.length > 0) {
-          console.log(
-            "[useCurrencyConverter] VND not found, creating mock VND",
-          );
-
           const mockVND: Currency = {
             currency_id: "VND",
             short_currency_id: "VND",
@@ -124,16 +88,11 @@ export const useCurrencyConverter = () => {
           return;
         }
 
-        console.log("[useCurrencyConverter] VND check done:", {
-          hasVND,
-          currenciesLength: allCurrencies.length,
-        });
         return;
       }
 
       // Skip nếu chưa có currencies từ API
       if (allCurrencies.length === 0) {
-        console.log("[useCurrencyConverter] Skip fetch (no currencies yet)");
         return;
       }
 
@@ -143,11 +102,6 @@ export const useCurrencyConverter = () => {
       );
 
       if (!hasDefaultCurrency) {
-        console.log(
-          "[useCurrencyConverter] 📥 Fetching missing currency:",
-          defaultCurrency.currencyId,
-        );
-
         try {
           setLoadingAdditional(true);
 
@@ -159,10 +113,6 @@ export const useCurrencyConverter = () => {
 
           if (response.isSuccess() && response.data?.items?.length > 0) {
             const currency = response.data.items[0];
-            console.log("[useCurrencyConverter] ✅ Fetched currency:", {
-              currency_id: currency.currency_id,
-              symbol: currency.symbol,
-            });
             setAdditionalCurrency(currency);
           } else {
             console.warn(
@@ -175,11 +125,6 @@ export const useCurrencyConverter = () => {
         } finally {
           setLoadingAdditional(false);
         }
-      } else {
-        console.log(
-          "[useCurrencyConverter] Currency already in list:",
-          defaultCurrency.currencyId,
-        );
       }
     };
 
@@ -203,25 +148,12 @@ export const useCurrencyConverter = () => {
       found = currencyMap.get("VND");
     }
 
-    console.log("[useCurrencyConverter] Target currency lookup:", {
-      lookingFor: defaultCurrency.currencyId,
-      found: found ? "YES" : "NO",
-      foundData: found
-        ? { currency_id: found.currency_id, symbol: found.symbol }
-        : null,
-    });
-
     return found;
   }, [currencyMap, defaultCurrency.currencyId]);
 
   // Tạo formatter info cho default currency
   const currencyFormatter = useMemo(() => {
     if (!targetCurrencyObject) {
-      console.log(
-        "[useCurrencyConverter] Using fallback formatter for:",
-        defaultCurrency.currencyId,
-      );
-
       return {
         locale:
           defaultCurrency.currencyId === "VND" ||
@@ -247,14 +179,6 @@ export const useCurrencyConverter = () => {
       currencyId: targetCurrencyObject.currency_id,
     };
 
-    console.log("[useCurrencyConverter] Formatter created:", {
-      currencyId: formatter.currencyId,
-      locale: formatter.locale,
-      symbol: formatter.symbol,
-      symbolPosition: formatter.symbolPosition,
-      decimalPlaces: formatter.decimalPlaces,
-    });
-
     return formatter;
   }, [targetCurrencyObject, defaultCurrency]);
 
@@ -266,13 +190,6 @@ export const useCurrencyConverter = () => {
 
     if (isVND) {
       const ready = !currencyLoading && !currenciesLoading && !ratesLoading;
-
-      console.log("[useCurrencyConverter] ✓ isReady check (VND):", {
-        currencyLoading,
-        currenciesLoading,
-        ratesLoading,
-        result: ready,
-      });
 
       return ready;
     }
@@ -286,18 +203,6 @@ export const useCurrencyConverter = () => {
       rates.length > 0 &&
       !!targetCurrencyObject;
 
-    console.log("[useCurrencyConverter] ✓ isReady check:", {
-      currencyLoading,
-      currenciesLoading,
-      loadingAdditional,
-      ratesLoading,
-      ratesCount: rates.length,
-      currenciesLength: allCurrencies.length,
-      hasTargetCurrencyObject: !!targetCurrencyObject,
-      defaultCurrencyId: defaultCurrency.currencyId,
-      result: ready,
-    });
-
     return ready;
   }, [
     currencyLoading,
@@ -309,22 +214,6 @@ export const useCurrencyConverter = () => {
     targetCurrencyObject,
     defaultCurrency.currencyId,
   ]);
-
-  // LOG when isReady changes
-  useEffect(() => {
-    if (isReady) {
-      console.log("[useCurrencyConverter] ✅ READY!", {
-        defaultCurrency: defaultCurrency.currencyId,
-        symbol: currencyFormatter.symbol,
-        locale: currencyFormatter.locale,
-      });
-    } else {
-      console.log("[useCurrencyConverter] ⏳ NOT READY...", {
-        defaultCurrency: defaultCurrency.currencyId,
-      });
-    }
-  }, [isReady, defaultCurrency.currencyId]);
-
   /**
    * Chuyển đổi từ VND sang default currency
    */
@@ -352,13 +241,6 @@ export const useCurrencyConverter = () => {
           `[useCurrencyConverter] Conversion failed VND -> ${defaultCurrency.currencyId}`,
         );
         return amountInVND;
-      }
-
-      if (
-        defaultCurrency.currencyId === "VND" ||
-        defaultCurrency.currencyId === "VNĐ"
-      ) {
-        return Math.round(result);
       }
 
       return Math.round(result * 100) / 100;
