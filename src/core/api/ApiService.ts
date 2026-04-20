@@ -18,9 +18,9 @@ class ApiService {
       // ✅ Luôn dùng SimpleRequestModel
       const requestPayload = new SimpleRequestModel(workflowid || "", data);
       
-      console.log("REQUEST == ", JSON.stringify(requestPayload));
+      // console.log("REQUEST ============================= ", JSON.stringify(requestPayload));
       const response = await apiClient.post1(requestPayload);
-      console.log("RESPONSE == ", JSON.stringify(response));
+      // console.log("RESPONSE ============================ ", JSON.stringify(response));
 
       return response;
     } finally {

@@ -73,9 +73,8 @@ class ApiClient {
       }
 
       const token = userSession?.token ?? "";
-      console.log(`========Request token==============: ${token}`);
-
-      console.log(JSON.stringify(deviceInfo));
+      // console.log(`========Request token==============: ${token}`);
+      // console.log(JSON.stringify(deviceInfo));
       return {
         App: "MB",
         Uid: token,
