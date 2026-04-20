@@ -12,7 +12,6 @@ import { isValidEmail, isValidPhone } from '@/utils/validation';
 export const useForgotPasswordService = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [birthday, setBirthday] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const { t } = useTranslation();
@@ -44,7 +43,7 @@ export const useForgotPasswordService = () => {
   }, [showNotification, t, router]);
 
   const handleCheckUserAndSendOTP = useCallback(async () => {
-    if (!phone || !email || !birthday) {
+    if (!phone || !email) {
       showNotification(t('auth.forgot_password_fill_all_fields'), 'warning');
       return;
     }
@@ -62,7 +61,7 @@ export const useForgotPasswordService = () => {
     try {
       setIsLoading(true);
       // 1. Verify info and get UserCode
-      const response = await authRepository.verifyResetInfo(phone, email, birthday);
+      const response = await authRepository.verifyResetInfo(phone, email);
 
       if (response.isSuccess()) {
         const results = response.getValue<any[]>('data');
@@ -110,15 +109,13 @@ export const useForgotPasswordService = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [phone, email, birthday, showNotification, t, handleGenerateOTP, showOTP, handleResetPassword, handleVerifySMSOTP, handleResendOTP]);
+  }, [phone, email, showNotification, t, handleGenerateOTP, showOTP, handleResetPassword, handleVerifySMSOTP, handleResendOTP]);
 
   return {
     phone,
     setPhone,
     email,
     setEmail,
-    birthday,
-    setBirthday,
     isLoading,
     handleCheckUserAndSendOTP,
   };

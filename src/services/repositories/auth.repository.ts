@@ -88,8 +88,7 @@ export const authRepository = {
   // ===== Password =====
   async verifyResetInfo(
     phone: string,
-    email: string,
-    birthday: string
+    email: string
   ): Promise<BaseResponseModel> {
     return await apiService.executeWorkflow(
       WORKFLOWCODE.WF_MB_EXECUTE_SQL_FROM_CTH_WITHOUT_LOGIN,
@@ -98,7 +97,6 @@ export const authRepository = {
         parameters: {
           phonenumber: phone,
           email: email,
-          dob: birthday,
         },
       },
       false,

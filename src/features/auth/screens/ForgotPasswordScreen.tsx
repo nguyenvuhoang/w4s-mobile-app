@@ -20,7 +20,6 @@ import { Tokens } from '@/core/theme/theme';
 import { hasNotch, normalize } from '@/utils/layout';
 import { useForgotPasswordService } from '@/features/auth/hooks/useForgotPasswordService';
 import { ActivityIndicator, Platform } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import LoadingIndicator from '@/components/loading/LoadingIndicator';
 
 const ForgotPasswordScreen = () => {
@@ -33,13 +32,9 @@ const ForgotPasswordScreen = () => {
     setPhone,
     email,
     setEmail,
-    birthday,
-    setBirthday,
     isLoading,
     handleCheckUserAndSendOTP,
   } = useForgotPasswordService();
-
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleCancel = () => {
     router.back();
@@ -49,24 +44,7 @@ const ForgotPasswordScreen = () => {
     handleCheckUserAndSendOTP();
   };
 
-  const handleDateChange = (_event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      // Format as yyyy-MM-dd for the server
-      const day = selectedDate.getDate().toString().padStart(2, '0');
-      const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
-      const year = selectedDate.getFullYear();
-      setBirthday(`${year}-${month}-${day}`);
-    }
-  };
 
-  const getDateValue = (): Date => {
-    if (birthday) {
-      const [year, month, day] = birthday.split('-').map(Number);
-      return new Date(year, month - 1, day);
-    }
-    return new Date();
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -138,52 +116,7 @@ const ForgotPasswordScreen = () => {
               />
             </View>
 
-            {/* Birthday Input */}
-            <View style={styles.inputContainer}>
-              <ThemedText style={[styles.label, { color: colors.text }]}>
-                {t('auth.birthday')}
-              </ThemedText>
-              <TouchableOpacity
-                onPress={() => setShowDatePicker(true)}
-                activeOpacity={0.85}
-              >
-                <View
-                  style={[
-                    styles.input,
-                    styles.dateInput,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <ThemedText
-                    style={[
-                      styles.dateText,
-                      { color: birthday ? colors.text : colors.icon },
-                    ]}
-                  >
-                    {birthday ? birthday.split('-').reverse().join('/') : t('auth.select_birthday')}
-                  </ThemedText>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={normalize(20)}
-                    color={colors.icon}
-                  />
-                </View>
-              </TouchableOpacity>
 
-              {showDatePicker && (
-                <DateTimePicker
-                  value={getDateValue()}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleDateChange}
-                  maximumDate={new Date()}
-                  minimumDate={new Date(1900, 0, 1)}
-                />
-              )}
-            </View>
 
             {/* Agreement Checkbox */}
             {/* <TouchableOpacity
@@ -337,15 +270,6 @@ const styles = StyleSheet.create({
     lineHeight: normalize(22),
     paddingTop: normalize(15),
     paddingBottom: normalize(15),
-  },
-  dateInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  dateText: {
-    fontSize: normalize(16),
-    fontFamily: Fonts.regular,
   },
   checkboxContainer: {
     flexDirection: 'row',
