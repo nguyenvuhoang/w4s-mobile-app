@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
     Image,
+    Pressable,
     ScrollView,
     Share,
     StyleSheet,
@@ -110,9 +111,10 @@ const GradientHeroCard = ({ visuals, currencyFormatted, transactionCode }: any) 
 };
 
 // --- Section Label ---
-const SectionLabel = ({ label }: { label: string }) => (
-    <CustomText style={styles.sectionLabel}>{label}</CustomText>
-);
+const SectionLabel = ({ label }: { label: string }) => {
+    const { colors } = useAppTheme();
+    return <CustomText style={[styles.sectionLabel, { color: colors.icon }]}>{label}</CustomText>;
+};
 
 // --- Item Card (icon + label) ---
 const ItemCard = ({ icon, iconBg, iconColor, label, colors }: any) => (
@@ -264,7 +266,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
     // --- Loading ---
     if (loading) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: '#EEF2F7' }]}>
+            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
                 <AppHeader title={t('Transaction Details') || 'Chi tiết giao dịch'} showBackButton />
                 <View style={styles.centerContent}>
                     <ActivityIndicator size="large" color={colors.tint} />
@@ -279,7 +281,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
     // --- Error ---
     if (error || !transaction) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: '#EEF2F7' }]}>
+            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
                 <AppHeader title={t('Transaction Details') || 'Chi tiết giao dịch'} showBackButton />
                 <View style={styles.centerContent}>
                     <View style={[styles.errorIconWrap, { backgroundColor: colors.card }]}>
@@ -305,7 +307,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
     const hasImage = !!transaction.imageurl;
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: '#EEF2F7' }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             {/* Header giữ nguyên như code cũ */}
             <AppHeader
                 title={t('Transaction Details') || 'Chi tiết giao dịch'}
@@ -317,17 +319,6 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                 }
             />
 
-            <MenuDropdown
-                visible={showMenu}
-                onClose={() => setShowMenu(false)}
-                onShare={handleShare}
-                onEdit={handleEdit}
-                onDuplicate={handleDuplicate}
-                onDelete={handleDelete}
-                onRefund={handleRefund}
-                colors={colors}
-                t={t}
-            />
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
@@ -398,7 +389,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                 <View style={[styles.noteCard, { backgroundColor: colors.card }]}>
                     <CustomText style={[
                         styles.noteText,
-                        { color: transaction.trandesc ? colors.text : '#9CA3AF' }
+                        { color: transaction.trandesc ? colors.text : colors.icon }
                     ]}>
                         {transaction.trandesc || (t('No note') || 'Không có ghi chú')}
                     </CustomText>
@@ -414,7 +405,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
 
                 {/* === Hình ảnh === */}
                 <SectionLabel label={t('Image') || 'Hình ảnh'} />
-                <View style={[styles.imageCard, { backgroundColor: colors.card }]}>
+                <View style={[styles.imageCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     {hasImage ? (
                         <Image
                             source={{ uri: transaction.imageurl }}
@@ -431,6 +422,25 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                     )}
                 </View>
             </ScrollView>
+
+            {showMenu && (
+                <Pressable 
+                    style={[StyleSheet.absoluteFill, { zIndex: 999 }]} 
+                    onPress={() => setShowMenu(false)} 
+                />
+            )}
+
+            <MenuDropdown
+                visible={showMenu}
+                onClose={() => setShowMenu(false)}
+                onShare={handleShare}
+                onEdit={handleEdit}
+                onDuplicate={handleDuplicate}
+                onDelete={handleDelete}
+                onRefund={handleRefund}
+                colors={colors}
+                t={t}
+            />
         </SafeAreaView>
     );
 };

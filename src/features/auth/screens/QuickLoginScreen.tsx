@@ -172,6 +172,7 @@ const QuickLoginScreen = () => {
 
   const isFormValid = password.trim() !== "";
   const isLoadingAny = isLoggingIn || isFetchingAppInfo || isLoading;
+  const styles = createStyles(colors);
 
   return (
     <>
@@ -240,7 +241,7 @@ const QuickLoginScreen = () => {
                       <TextInput
                         style={styles.input}
                         placeholder={t("auth.password_placeholder")}
-                        placeholderTextColor="#A8ADB7"
+                        placeholderTextColor={colors.icon}
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry={!showPassword}
@@ -256,7 +257,7 @@ const QuickLoginScreen = () => {
                         <Ionicons
                           name={showPassword ? "eye-off-outline" : "eye-outline"}
                           size={normalize(20)}
-                          color="#98A2B3"
+                          color={colors.icon}
                         />
                       </TouchableOpacity>
                     </View>
@@ -267,15 +268,15 @@ const QuickLoginScreen = () => {
                       disabled={isLoadingAny}
                     >
                       {isAuthenticating ? (
-                        <ActivityIndicator size="small" color="#0D63E6" />
+                        <ActivityIndicator size="small" color={colors.tint} />
                       ) : (
                         <Ionicons
                           name={getBiometricIconName()}
                           size={normalize(24)}
                           color={
                             !isBiometricSupported || !appInfo?.is_biometric_supported
-                              ? "#9DB7E8"
-                              : "#0D63E6"
+                              ? colors.icon + '80'
+                              : colors.tint
                           }
                         />
                       )}
@@ -341,19 +342,19 @@ const QuickLoginScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   flex: {
     flex: 1,
   },
 
   safeArea: {
     flex: 1,
-    backgroundColor: "#0D63E6",
+    backgroundColor: colors.tint,
   },
 
   keyboardView: {
     flex: 1,
-    backgroundColor: "#E9EEF5",
+    backgroundColor: colors.background,
   },
 
   scrollContent: {
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
 
   header: {
     height: normalize(255),
-    backgroundColor: "#0D63E6",
+    backgroundColor: colors.tint,
     borderBottomLeftRadius: normalize(34),
     borderBottomRightRadius: normalize(34),
     alignItems: "center",
@@ -423,7 +424,7 @@ const styles = StyleSheet.create({
 
   description: {
     textAlign: "center",
-    color: "#5D6470",
+    color: colors.icon,
     fontSize: normalize(16),
     lineHeight: normalize(25),
     fontFamily: Fonts.regular,
@@ -445,7 +446,7 @@ const styles = StyleSheet.create({
 
   username: {
     flex: 1,
-    color: "#2B3040",
+    color: colors.text,
     fontSize: normalize(16),
     lineHeight: normalize(22),
     fontFamily: Fonts.bold,
@@ -458,7 +459,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: normalize(15),
     lineHeight: normalize(22),
-    color: "#303545",
+    color: colors.text,
     fontFamily: Fonts.medium,
     marginBottom: normalize(10),
   },
@@ -476,14 +477,14 @@ const styles = StyleSheet.create({
   input: {
     height: normalize(54),
     borderRadius: normalize(14),
-    backgroundColor: "#F4F4F5",
+    backgroundColor: colors.card,
     paddingHorizontal: normalize(16),
     paddingRight: normalize(44),
     fontSize: normalize(15),
     fontFamily: Fonts.regular,
-    color: "#1F2430",
+    color: colors.text,
     borderWidth: 1,
-    borderColor: "transparent",
+    borderColor: colors.border,
   },
 
   eyeButton: {
@@ -508,7 +509,7 @@ const styles = StyleSheet.create({
   },
 
   linkText: {
-    color: "#0D63E6",
+    color: colors.tint,
     fontSize: normalize(14),
     fontFamily: Fonts.semiBold,
   },
@@ -542,13 +543,13 @@ const styles = StyleSheet.create({
   },
 
   registerText: {
-    color: "#444B59",
+    color: colors.icon,
     fontSize: normalize(15),
     fontFamily: Fonts.regular,
   },
 
   registerLink: {
-    color: "#0D63E6",
+    color: colors.tint,
     fontSize: normalize(15),
     fontFamily: Fonts.semiBold,
   },

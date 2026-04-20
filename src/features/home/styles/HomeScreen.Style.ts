@@ -270,7 +270,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     // backgroundColor: "rgba(0,0,0,0.05)",
-    backgroundColor: "#fff",
+    // backgroundColor: "#fff",
     paddingHorizontal: normalize(12),
     paddingVertical: normalize(8),
     borderRadius: normalize(12),

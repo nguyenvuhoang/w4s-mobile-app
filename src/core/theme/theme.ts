@@ -8,6 +8,8 @@ export const Tokens = {
       neutral: "#a2aec1",
       onprimary: "#ffffff",
       bg_dark: "#0f172a",
+      bg_dark1: "#0D1426",
+      card_dark: "#1A2337",
       bg_light: "#EDF5F9",
       textgray: "#9ca3af",
       error: "#FF6551",
@@ -96,18 +98,19 @@ export const Colors = {
   },
   dark: {
     text: Tokens.colors.main.white,
-    background: Tokens.colors.main.bg_dark,
-    tint: Tokens.colors.main.white,
+    background: Tokens.colors.main.bg_dark1,
+    tint: Tokens.colors.main.primary,
 
     error: Tokens.colors.main.error,
     // UI Elements
     icon: Tokens.colors.main.textgray,
     tabIconDefault: Tokens.colors.main.textgray,
-    tabIconSelected: Tokens.colors.main.white,
+    tabIconSelected: Tokens.colors.main.primary,
     onprimary: Tokens.colors.main.onprimary,
 
     // Components
-    card: Tokens.colors.foundation.primary["primary-10"],
+    // card: Tokens.colors.foundation.primary["primary-10"],
+    card: Tokens.colors.main.card_dark,
     border: Tokens.colors.foundation.primary["primary-9"],
     notification: Tokens.colors.foundation.secondary["secondary-8"],
 

@@ -11,6 +11,7 @@ import {
 } from "@expo-google-fonts/quicksand";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 SplashScreen.preventAutoHideAsync();
@@ -51,21 +52,23 @@ export default function RootLayout() {
 }
 
 function RootStack() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
 
   return (
-    <Stack
-      initialRouteName="index"
-      screenOptions={{
-        headerShown: false,
-        animation: "slide_from_right",
-        animationDuration: 300,
+    <>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <Stack
+        initialRouteName="index"
+        screenOptions={{
+          headerShown: false,
+          animation: "slide_from_right",
+          animationDuration: 300,
 
-        contentStyle: {
-          backgroundColor: colors.background,
-        },
-      }}
-    >
+          contentStyle: {
+            backgroundColor: colors.background,
+          },
+        }}
+      >
       <Stack.Screen
         name="index"
         options={{
@@ -81,5 +84,6 @@ function RootStack() {
       />
       <Stack.Screen name="(protected)" />
     </Stack>
+    </>
   );
 }

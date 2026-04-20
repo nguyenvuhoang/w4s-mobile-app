@@ -29,7 +29,7 @@ const logoImg = Images.appLogoLight;
 
 const LoginScreen = () => {
   const router = useRouter();
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { t, i18n } = useTranslation();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
@@ -106,13 +106,15 @@ const LoginScreen = () => {
     },
   ];
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView
       edges={['top', 'bottom']}
       style={[styles.container, { backgroundColor: colors.brandBlue }]}
     >
       <LinearGradient
-        colors={colors.gradianLightest}
+        colors={isDark ? [colors.background, colors.background] : colors.gradianLightest}
         style={styles.flex}
       >
         <KeyboardAvoidingView
@@ -153,13 +155,13 @@ const LoginScreen = () => {
             </View>
 
             <View style={styles.body}>
-              <ThemedText style={[styles.description, { color: colors.brandTextSecondary }]}>
+              <ThemedText style={styles.description}>
                 {t('auth.login_description')}
               </ThemedText>
 
               <View style={styles.form}>
                 <View style={styles.inputGroup}>
-                  <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
+                  <ThemedText style={styles.label}>
                     {t('auth.phone')}
                   </ThemedText>
 
@@ -167,10 +169,9 @@ const LoginScreen = () => {
                     style={[
                       styles.input,
                       touched.username && errors.username ? styles.inputError : null,
-                      { color: colors.brandTextPrimary },
                     ]}
                     placeholder={t('auth.phone_placeholder')}
-                    placeholderTextColor="#A8ADB7"
+                    placeholderTextColor={colors.icon}
                     value={username}
                     onChangeText={handlePhoneChange}
                     onBlur={handleBlur}
@@ -187,15 +188,15 @@ const LoginScreen = () => {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
+                  <ThemedText style={styles.label}>
                     {t('auth.password')}
                   </ThemedText>
 
                   <View style={styles.passwordWrap}>
                     <TextInput
-                      style={[styles.input, styles.passwordInput, { color: colors.brandTextPrimary }]}
+                      style={[styles.input, styles.passwordInput]}
                       placeholder={t('auth.password_placeholder')}
-                      placeholderTextColor="#A8ADB7"
+                      placeholderTextColor={colors.icon}
                       value={password}
                       onChangeText={setPassword}
                       secureTextEntry={!showPassword}
@@ -212,7 +213,7 @@ const LoginScreen = () => {
                       <Ionicons
                         name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                         size={normalize(20)}
-                        color="#98A2B3"
+                        color={colors.icon}
                       />
                     </TouchableOpacity>
                   </View>
@@ -265,14 +266,14 @@ const LoginScreen = () => {
                 </TouchableOpacity>
 
                 <View style={styles.registerRow}>
-                  <ThemedText style={[styles.registerText, { color: colors.brandTextSecondary }]}>
+                  <ThemedText style={styles.registerText}>
                     {t('auth.or')}{' '}
                   </ThemedText>
                   <TouchableOpacity
                     onPress={handleCreateAccount}
                     disabled={isLoggingIn}
                   >
-                    <ThemedText style={[styles.registerLink, { color: colors.brandBlue }]}>
+                    <ThemedText style={styles.registerLink}>
                       {t('auth.create_account')}
                     </ThemedText>
                   </TouchableOpacity>
@@ -297,7 +298,7 @@ const LoginScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -313,7 +314,7 @@ const styles = StyleSheet.create({
 
   header: {
     height: normalize(255),
-    backgroundColor: '#0D63E6',
+    backgroundColor: colors.tint,
     borderBottomLeftRadius: normalize(34),
     borderBottomRightRadius: normalize(34),
     alignItems: 'center',
@@ -397,7 +398,7 @@ const styles = StyleSheet.create({
 
   description: {
     textAlign: 'center',
-    color: '#5D6470',
+    color: colors.icon,
     fontSize: normalize(16),
     lineHeight: normalize(25),
     fontFamily: Fonts.regular,
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: normalize(15),
     lineHeight: normalize(22),
-    color: '#303545',
+    color: colors.text,
     fontFamily: Fonts.medium,
     marginBottom: normalize(10),
   },
@@ -423,13 +424,13 @@ const styles = StyleSheet.create({
   input: {
     height: normalize(54),
     borderRadius: normalize(14),
-    backgroundColor: '#F4F4F5',
+    backgroundColor: colors.card,
     paddingHorizontal: normalize(16),
     fontSize: normalize(15),
     fontFamily: Fonts.regular,
-    color: '#1F2430',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: colors.border,
   },
 
   inputError: {
@@ -459,7 +460,7 @@ const styles = StyleSheet.create({
   },
 
   linkText: {
-    color: '#0D63E6',
+    color: colors.tint,
     fontSize: normalize(14),
     fontFamily: Fonts.semiBold,
   },
@@ -493,13 +494,13 @@ const styles = StyleSheet.create({
   },
 
   registerText: {
-    color: '#444B59',
+    color: colors.icon,
     fontSize: normalize(15),
     fontFamily: Fonts.regular,
   },
 
   registerLink: {
-    color: '#0D63E6',
+    color: colors.tint,
     fontSize: normalize(15),
     fontFamily: Fonts.semiBold,
   },

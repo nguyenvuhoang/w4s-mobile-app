@@ -118,7 +118,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
             </Text>
           )}
 
-          <Text style={styles.version}>
+          <Text style={[styles.version, { color: colors.text }]}>
             {appVersion} ({updateId})
           </Text>
 
@@ -128,11 +128,11 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
               <View style={styles.sideSpace} />
 
               <TouchableOpacity
-                style={[styles.button, styles.outlineButton]}
+                style={[styles.button, styles.outlineButton, { borderColor: colors.tint }]}
                 onPress={onClose}
                 activeOpacity={0.7}
               >
-                <Text style={styles.outlineText}>
+                <Text style={[styles.outlineText, { color: colors.tint }]}>
                   {t("common.reject")}
                 </Text>
               </TouchableOpacity>
@@ -140,7 +140,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
               <View style={styles.middleSpace} />
 
               <TouchableOpacity
-                style={[styles.button, styles.primaryButton]}
+                style={[styles.button, styles.primaryButton, { backgroundColor: colors.tint }]}
                 onPress={() => {
                   onClose();
                   onAgree?.();
@@ -161,6 +161,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                   styles.button,
                   styles.primaryButton,
                   styles.singleButton,
+                  { backgroundColor: colors.tint }
                 ]}
                 onPress={() => {
                   onClose();

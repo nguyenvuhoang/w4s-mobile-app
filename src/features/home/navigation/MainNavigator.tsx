@@ -13,6 +13,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
+import { Fonts } from "@/core/theme/font";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BudgetScreen from "../screens/BudgetScreen";
@@ -254,6 +255,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: normalize(10),
   },
   tabBarLabel: {
+    fontFamily: Fonts.medium,
     fontSize: normalize(11),
     marginTop: normalize(4),
   },

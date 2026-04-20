@@ -333,7 +333,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       {/* Fixed Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.searchBar}
+          style={[styles.searchBar, { backgroundColor: colors.card }]}
           onPress={() => setSearchVisible(true)}
           activeOpacity={0.7}
         >

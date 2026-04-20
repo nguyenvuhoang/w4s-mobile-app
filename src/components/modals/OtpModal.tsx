@@ -270,7 +270,7 @@ const OTPModal: React.FC<OTPModalProps> = memo(({
                           },
                         ]}
                       >
-                        <ThemedText style={styles.otpText}>
+                        <ThemedText style={[styles.otpText, { color: colors.text }]}>
                           {showOtpCode ? otp[index] || '' : otp[index] ? '●' : ''}
                         </ThemedText>
                         {isFocused && (
@@ -299,7 +299,7 @@ const OTPModal: React.FC<OTPModalProps> = memo(({
                       <ThemedText style={{ color: colors.tint, opacity: 0.5 }}>
                         {t('common.resend')}
                       </ThemedText>
-                      <ThemedText style={{ opacity: 0.6 }}> ({countdown}s)</ThemedText>
+                      <ThemedText style={[{ color: colors.text }, { opacity: 0.6 }]}> ({countdown}s)</ThemedText>
                     </ThemedText>
                   ) : (
                     <View style={styles.resendRow}>
