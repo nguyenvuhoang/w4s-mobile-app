@@ -144,24 +144,27 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
     });
   }, [budgetList, categories, colors.tint, t, i18n.language, converterReady, defaultCurrency.currencyId, convertBetween]);
 
-  const rawTotalBudget = budgetSummary?.total_budget ?? 0;
-  const rawTotalSpent = budgetSummary?.total_spent ?? 0;
-  const rawRemaining = budgetSummary?.remaining ?? 0;
-  const daysLeft = budgetSummary?.days_left ?? 0;
+  const { totalBudget, totalSpent, remaining, daysLeft } = useMemo(() => {
+    // Calculate total from displayBudgets which are already converted to userCurrency
+    const tBudget = displayBudgets.reduce((acc, b) => acc + b.total, 0);
+    const tSpent = displayBudgets.reduce((acc, b) => acc + b.spent, 0);
 
-  const summaryCurrency = (budgetSummary?.currency_code || budgetSummary?.currency || 'VND').toUpperCase();
-  const userCurrency = (defaultCurrency.currencyId || 'VND').toUpperCase();
-
-  const totalBudget = converterReady ? (convertBetween(rawTotalBudget, summaryCurrency, userCurrency) ?? rawTotalBudget) : rawTotalBudget;
-  const totalSpent = converterReady ? (convertBetween(rawTotalSpent, summaryCurrency, userCurrency) ?? rawTotalSpent) : rawTotalSpent;
-  const remaining = converterReady ? (convertBetween(rawRemaining, summaryCurrency, userCurrency) ?? rawRemaining) : rawRemaining;
+    return {
+      totalBudget: tBudget,
+      totalSpent: tSpent,
+      remaining: tBudget - tSpent,
+      daysLeft: budgetSummary?.days_left ?? 0,
+    };
+  }, [displayBudgets, budgetSummary]);
 
   // Calculate semi-circle progress
   const percentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+  const isOverBudget = percentage > 100;
+  const displayPercentage = Math.min(percentage, 100);
   const radius = wp(35);
   const strokeWidth = normalize(18);
   const circumference = Math.PI * radius;
-  const strokeDashoffset = circumference - (circumference * percentage) / 100;
+  const strokeDashoffset = circumference - (circumference * displayPercentage) / 100;
 
 
   const selectedWallet = useMemo<WalletSummary | null>(() => {
@@ -363,7 +366,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                     cx={radius + strokeWidth}
                     cy={radius + strokeWidth}
                     r={radius}
-                    stroke={colors.tint}
+                    stroke={isOverBudget ? "#EF4444" : colors.tint}
                     strokeWidth={strokeWidth}
                     fill="none"
                     strokeDasharray={`${circumference} ${circumference * 2}`}
@@ -379,7 +382,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                   <CustomText style={[styles.circleLabelSmall, { color: colors.icon }]}>
                     {t("budget.remaining_budget")}
                   </CustomText>
-                  <CustomText type="bold" style={[styles.circleAmount, { color: colors.text }]}>
+                  <CustomText type="bold" style={[styles.circleAmount, { color: isOverBudget ? "#EF4444" : colors.text }]}>
                     {formatAmount(remaining)}
                   </CustomText>
                 </View>

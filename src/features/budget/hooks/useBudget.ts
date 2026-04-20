@@ -255,8 +255,16 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
 
         if (response.isSuccess() && response.data) {
           let summaryData;
-          if (Array.isArray(response.data.items) && response.data.items.length > 0) {
-            summaryData = response.data.items[0];
+          const items = response.data.items;
+          if (Array.isArray(items) && items.length > 0) {
+            summaryData = items.reduce((acc: any, curr: any) => ({
+              total_budget: (acc.total_budget || 0) + (Number(curr.total_budget) || 0),
+              total_spent: (acc.total_spent || 0) + (Number(curr.total_spent) || 0),
+              remaining: (acc.remaining || 0) + (Number(curr.remaining) || 0),
+              days_left: Math.max(acc.days_left || 0, Number(curr.days_left) || 0),
+              currency: acc.currency || curr.currency || curr.currency_code || 'VND',
+              currency_code: acc.currency_code || curr.currency_code || curr.currency || 'VND',
+            }), { total_budget: 0, total_spent: 0, remaining: 0, days_left: 0 });
           } else {
             summaryData = response.data.summary || response.data;
           }

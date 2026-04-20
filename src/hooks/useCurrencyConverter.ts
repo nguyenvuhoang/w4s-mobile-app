@@ -21,7 +21,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 export const useCurrencyConverter = () => {
   const { defaultCurrency, loading: currencyLoading } = useDefaultCurrency();
   const { currencies, loading: currenciesLoading } = useCurrency({
-    autoFetch: true,
+    autoFetch: false,
   });
   const { convert, loading: ratesLoading, rates } = useExchangeRate();
 
@@ -72,8 +72,7 @@ export const useCurrencyConverter = () => {
         const hasVND = allCurrencies.some(
           (c) => c.currency_id === "VND" || c.currency_id === "VNĐ",
         );
-
-        if (!hasVND && allCurrencies.length > 0) {
+        if (!hasVND) {
           const mockVND: Currency = {
             currency_id: "VND",
             short_currency_id: "VND",
@@ -85,14 +84,7 @@ export const useCurrencyConverter = () => {
           };
 
           setAdditionalCurrency(mockVND);
-          return;
         }
-
-        return;
-      }
-
-      // Skip nếu chưa có currencies từ API
-      if (allCurrencies.length === 0) {
         return;
       }
 
