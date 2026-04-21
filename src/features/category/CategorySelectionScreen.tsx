@@ -332,12 +332,13 @@ const CategorySelectionScreen: React.FC = () => {
               key={tab}
               style={[
                 styles.tab,
+                { backgroundColor: colors.card },
                 selectedTab === tab && { backgroundColor: colors.tint },
               ]}
               onPress={() => setSelectedTab(tab)}
             >
               <CustomText
-                style={{ color: selectedTab === tab ? "#fff" : "#666" }}
+                style={{ color: selectedTab === tab ? "#fff" : colors.text }}
               >
                 {tab === "INCOME"
                   ? t("transaction.type_income")
@@ -514,7 +515,7 @@ const styles = StyleSheet.create({
     paddingVertical: normalize(10),
     borderRadius: normalize(100),
     alignItems: "center",
-    backgroundColor: "#eee",
+    backgroundColor: "#eee", // Will be overridden by inline styles
   },
 
   searchContainer: {
