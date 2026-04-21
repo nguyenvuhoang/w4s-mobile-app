@@ -36,8 +36,9 @@ const logoImg = Images.appLogoLight;
 
 const RegisterScreen = () => {
   const router = useRouter();
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { t } = useTranslation();
+  const styles = createStyles(colors, isDark);
 
   const {
     fullName,
@@ -353,7 +354,7 @@ const RegisterScreen = () => {
                           { color: colors.brandTextPrimary },
                         ]}
                         placeholder={t('auth.fullname_placeholder')}
-                        placeholderTextColor="#A8ADB7"
+                        placeholderTextColor={isDark ? "#636C77" : "#A8ADB7"}
                         value={fullName}
                         onChangeText={handleFullNameChange}
                         onBlur={() => handleBlur('fullName')}
@@ -376,7 +377,7 @@ const RegisterScreen = () => {
                           { color: colors.brandTextPrimary },
                         ]}
                         placeholder={t('auth.phone_placeholder')}
-                        placeholderTextColor="#A8ADB7"
+                        placeholderTextColor={isDark ? "#636C77" : "#A8ADB7"}
                         value={phone}
                         onChangeText={handlePhoneChange}
                         onBlur={() => handleBlur('phone')}
@@ -400,7 +401,7 @@ const RegisterScreen = () => {
                           { color: colors.brandTextPrimary },
                         ]}
                         placeholder={t('auth.email_placeholder')}
-                        placeholderTextColor="#A8ADB7"
+                        placeholderTextColor={isDark ? "#636C77" : "#A8ADB7"}
                         value={email}
                         onChangeText={handleEmailChange}
                         onBlur={() => handleBlur('email')}
@@ -425,7 +426,7 @@ const RegisterScreen = () => {
                           { color: colors.brandTextPrimary },
                         ]}
                         placeholder={t('auth.address_placeholder')}
-                        placeholderTextColor="#A8ADB7"
+                        placeholderTextColor={isDark ? "#636C77" : "#A8ADB7"}
                         value={address}
                         onChangeText={handleAddressChange}
                         onBlur={() => handleBlur('address')}
@@ -456,7 +457,7 @@ const RegisterScreen = () => {
                           <ThemedText
                             style={[
                               styles.dateText,
-                              { color: birthday ? colors.brandTextPrimary : '#A8ADB7' },
+                              { color: birthday ? colors.brandTextPrimary : (isDark ? "#636C77" : "#A8ADB7") },
                             ]}
                           >
                             {birthday
@@ -560,7 +561,7 @@ const RegisterScreen = () => {
                         activeOpacity={0.85}
                       >
                         <View style={styles.currencyLeft}>
-                          <View style={[styles.currencyIconWrapper, { backgroundColor: `rgba(${colors.brandBlue === '#0D63E6' ? '13,99,230' : '0,0,0'},0.08)` }]}>
+                          <View style={styles.currencyIconWrapper}>
                             <CustomText style={[styles.currencySymbolText, { color: colors.brandBlue }]} type="bold">
                               {currencySymbol}
                             </CustomText>
@@ -599,8 +600,8 @@ const RegisterScreen = () => {
                         currency={currencySymbol}
                         placeholder={`0 ${currencySymbol}`}
                         containerStyle={{
-                          backgroundColor: '#F4F4F5',
-                          borderColor: 'transparent',
+                          backgroundColor: isDark ? colors.card : '#F4F4F5',
+                          borderColor: isDark ? colors.border : 'transparent',
                           borderWidth: 1,
                           height: normalize(54),
                           paddingHorizontal: normalize(16),
@@ -657,7 +658,7 @@ const RegisterScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -795,12 +796,12 @@ const styles = StyleSheet.create({
   input: {
     height: normalize(54),
     borderRadius: normalize(14),
-    backgroundColor: '#F4F4F5',
     paddingHorizontal: normalize(16),
     fontSize: normalize(15),
     fontFamily: Fonts.regular,
+    backgroundColor: isDark ? colors.card : '#F4F4F5',
+    borderColor: isDark ? colors.border : 'transparent',
     borderWidth: 1,
-    borderColor: 'transparent',
   },
 
   inputError: {
@@ -830,12 +831,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F4F4F5',
+    backgroundColor: isDark ? colors.card : '#F4F4F5',
     paddingHorizontal: normalize(12),
     paddingVertical: normalize(6),
     borderRadius: normalize(14),
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: isDark ? colors.border : 'transparent',
     minHeight: normalize(54),
   },
 
@@ -852,7 +853,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: normalize(12),
-    backgroundColor: 'rgba(13,99,230,0.08)',
+    backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(13,99,230,0.08)',
   },
 
   currencySymbolText: {
@@ -871,7 +872,7 @@ const styles = StyleSheet.create({
 
   currencyNameText: {
     fontSize: normalize(13),
-    color: '#707684',
+    color: colors.brandTextSecondary,
     marginBottom: normalize(2),
   },
 
@@ -879,7 +880,7 @@ const styles = StyleSheet.create({
     fontSize: normalize(12),
     fontFamily: Fonts.regular,
     marginTop: normalize(6),
-    color: '#8A93A3',
+    color: colors.brandTextSecondary,
   },
 
   buttonWrap: {
@@ -917,7 +918,7 @@ const styles = StyleSheet.create({
     fontSize: normalize(15),
     fontFamily: Fonts.regular,
     lineHeight: normalize(22),
-    color: '#444B59',
+    color: colors.brandTextSecondary,
   },
 
   loginLink: {

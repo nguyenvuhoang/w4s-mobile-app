@@ -15,7 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import DatePicker from "react-native-date-picker";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -138,11 +138,21 @@ const ExportDataScreen = () => {
       edges={["top", "left", "right"]}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <AppHeader title={t("export_data.title")} onBack={handleBack} />
+      {/* Header */}
+      <AppHeader title={t("export_data.title")} onBack={handleBack} />
 
-        <View style={[styles.content, { paddingBottom: normalize(20) + insets.bottom }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: normalize(20) + insets.bottom },
+          ]}
+        >
           {/* Wallet */}
           <View style={styles.inputGroup}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -344,8 +354,8 @@ const ExportDataScreen = () => {
             style={{ marginTop: normalize(16), height: normalize(56), borderRadius: normalize(30) }}
             textStyle={{ fontWeight: "600", fontSize: normalize(16) }}
           />
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <DatePicker
         modal

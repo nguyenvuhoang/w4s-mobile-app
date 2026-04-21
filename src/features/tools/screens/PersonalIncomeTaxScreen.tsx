@@ -22,6 +22,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -146,13 +148,18 @@ const PersonalIncomeTaxScreen = () => {
     >
       <AppHeader title={t("pit.title")} showBackButton />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: hp(2) + insets.bottom },
-        ]}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: hp(2) + insets.bottom },
+          ]}
+        >
         {/* Subtitle */}
         <ThemedText style={[styles.subtitle, { color: colors.text, opacity: 0.7 }]}>
           {t("pit.subtitle")}
@@ -555,7 +562,8 @@ const PersonalIncomeTaxScreen = () => {
             </ThemedText>
           </View>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <BottomSelectModal
         visible={dependentModalVisible}
