@@ -28,6 +28,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import CustomText from "@/components/base/CustomText";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 type IncomeType = "gross" | "net";
@@ -38,7 +39,7 @@ const DEPENDENT_OPTIONS: BottomSelectOption<number>[] = Array.from({ length: 11 
 }));
 
 const PersonalIncomeTaxScreen = () => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
@@ -153,7 +154,7 @@ const PersonalIncomeTaxScreen = () => {
         ]}
       >
         {/* Subtitle */}
-        <ThemedText style={[styles.subtitle, { color: colors.icon }]}>
+        <ThemedText style={[styles.subtitle, { color: colors.text, opacity: 0.7 }]}>
           {t("pit.subtitle")}
         </ThemedText>
 
@@ -162,7 +163,7 @@ const PersonalIncomeTaxScreen = () => {
           <ThemedText style={[styles.cardLabel, { color: colors.text }]}>
             {t("pit.income_type_question")}
           </ThemedText>
-          <View style={styles.toggleContainer}>
+          <View style={[styles.toggleContainer, { backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)" }]}>
             <TouchableOpacity
               style={[
                 styles.toggleButton,
@@ -185,7 +186,7 @@ const PersonalIncomeTaxScreen = () => {
                 {t("pit.gross_salary")}
               </ThemedText>
               <ThemedText
-                style={[styles.toggleSubText, { color: incomeType === "gross" ? "rgba(255,255,255,0.75)" : colors.icon }]}
+                style={[styles.toggleSubText, { color: incomeType === "gross" ? "rgba(255,255,255,0.75)" : colors.text, opacity: incomeType === "gross" ? 1 : 0.6 }]}
               >
                 {t("pit.gross_desc")}
               </ThemedText>
@@ -212,7 +213,7 @@ const PersonalIncomeTaxScreen = () => {
                 {t("pit.net_salary")}
               </ThemedText>
               <ThemedText
-                style={[styles.toggleSubText, { color: incomeType === "net" ? "rgba(255,255,255,0.75)" : colors.icon }]}
+                style={[styles.toggleSubText, { color: incomeType === "net" ? "rgba(255,255,255,0.75)" : colors.text, opacity: incomeType === "net" ? 1 : 0.6 }]}
               >
                 {t("pit.net_desc")}
               </ThemedText>
@@ -246,7 +247,7 @@ const PersonalIncomeTaxScreen = () => {
               <ThemedText style={[styles.label, { color: colors.text }]}>
                 {t("pit.insurance_label")}
               </ThemedText>
-              <View style={styles.miniToggle}>
+              <View style={[styles.miniToggle, { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)" }]}>
                 <TouchableOpacity
                   style={[
                     styles.miniToggleButton,
@@ -266,7 +267,7 @@ const PersonalIncomeTaxScreen = () => {
                   <ThemedText
                     style={[
                       styles.miniToggleText,
-                      { color: insuranceMode === "auto" ? "#fff" : colors.icon },
+                      { color: insuranceMode === "auto" ? "#fff" : colors.text, opacity: insuranceMode === "auto" ? 1 : 0.6 },
                     ]}
                   >
                     {t("pit.auto")}
@@ -291,7 +292,7 @@ const PersonalIncomeTaxScreen = () => {
                   <ThemedText
                     style={[
                       styles.miniToggleText,
-                      { color: insuranceMode === "manual" ? "#fff" : colors.icon },
+                      { color: insuranceMode === "manual" ? "#fff" : colors.text, opacity: insuranceMode === "manual" ? 1 : 0.6 },
                     ]}
                   >
                     {t("pit.manual")}
@@ -323,7 +324,7 @@ const PersonalIncomeTaxScreen = () => {
                 onChangeText={handleInsuranceChange}
                 keyboardType="numeric"
                 placeholder={insuranceMode === "manual" ? t("pit.manual_insurance_placeholder") : ""}
-                placeholderTextColor={colors.icon}
+                placeholderTextColor={isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)"}
                 editable={insuranceMode === "manual"}
                 style={[styles.textInput, { color: colors.text }]}
               />
@@ -348,7 +349,7 @@ const PersonalIncomeTaxScreen = () => {
               <ThemedText style={[styles.selectText, { color: colors.text }]}>
                 {t("pit.people_count", { count: dependents.value })}
               </ThemedText>
-              <Ionicons name="chevron-down" size={normalize(18)} color={colors.icon} />
+              <Ionicons name="chevron-down" size={normalize(18)} color={isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.4)"} />
             </TouchableOpacity>
           </View>
 
@@ -389,10 +390,10 @@ const PersonalIncomeTaxScreen = () => {
           {/* Dòng 1: Thu nhập tính thuế (Gross − BH) */}
           <View style={styles.resultItem}>
             <View style={styles.resultLabelGroup}>
-              <ThemedText style={[styles.resultLabel, { color: colors.icon }]}>
+              <ThemedText style={[styles.resultLabel, { color: colors.text }]}>
                 {t("pit.taxable_income")}
               </ThemedText>
-              <ThemedText style={[styles.resultLabelSub, { color: colors.icon }]}>
+              <ThemedText style={[styles.resultLabelSub, { color: colors.text }]}>
                 {t("pit.gross_minus_insurance")}
               </ThemedText>
             </View>
@@ -409,10 +410,10 @@ const PersonalIncomeTaxScreen = () => {
           {/* Dòng 2: Thu nhập chịu thuế (sau khi trừ giảm trừ) */}
           <View style={styles.resultItem}>
             <View style={styles.resultLabelGroup}>
-              <ThemedText style={[styles.resultLabel, { color: colors.icon }]}>
+              <ThemedText style={[styles.resultLabel, { color: colors.text }]}>
                 {t("pit.tax_assessed_income")}
               </ThemedText>
-              <ThemedText style={[styles.resultLabelSub, { color: colors.icon }]}>
+              <ThemedText style={[styles.resultLabelSub, { color: colors.text }]}>
                 {t("pit.after_deductions")}
               </ThemedText>
             </View>
@@ -429,10 +430,10 @@ const PersonalIncomeTaxScreen = () => {
           {/* Dòng 3: Thuế TNCN */}
           <View style={styles.resultItem}>
             <View style={styles.resultLabelGroup}>
-              <ThemedText style={[styles.resultLabel, { color: colors.icon }]}>
+              <ThemedText style={[styles.resultLabel, { color: colors.text }]}>
                 {t("pit.pit_amount")}
               </ThemedText>
-              <ThemedText style={[styles.resultLabelSub, { color: colors.icon }]}>
+              <ThemedText style={[styles.resultLabelSub, { color: colors.text }]}>
                 {t("pit.on_tax_assessed_income")}
               </ThemedText>
             </View>
@@ -449,10 +450,10 @@ const PersonalIncomeTaxScreen = () => {
           {/* Dòng 4: Thu nhập thực nhận */}
           <View style={styles.resultItem}>
             <View style={styles.resultLabelGroup}>
-              <ThemedText style={[styles.resultLabel, { color: colors.icon }]}>
+              <ThemedText style={[styles.resultLabel, { color: colors.text }]}>
                 {t("pit.net_income")}
               </ThemedText>
-              <ThemedText style={[styles.resultLabelSub, { color: colors.icon }]}>
+              <ThemedText style={[styles.resultLabelSub, { color: colors.text }]}>
                 {t("pit.net_income_calc")}
               </ThemedText>
             </View>
@@ -469,7 +470,7 @@ const PersonalIncomeTaxScreen = () => {
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           {/* Tax Rate */}
-          <View style={[styles.taxRateContainer, { backgroundColor: colors.tint + "10" }]}>
+          <View style={[styles.taxRateContainer, { backgroundColor: isDark ? colors.tint + "20" : colors.tint + "10" }]}>
             <View style={styles.taxRateRow}>
               <ThemedText style={[styles.taxRateLabel, { color: colors.tint }]}>
                 {t("pit.tax_to_gross_ratio")}
@@ -481,7 +482,7 @@ const PersonalIncomeTaxScreen = () => {
           </View>
         </View>
 
-        <ThemedText style={[styles.disclaimer, { color: colors.icon }]}>
+        <ThemedText style={[styles.disclaimer, { color: colors.text, opacity: 0.5 }]}>
           {t("pit.disclaimer")}
         </ThemedText>
 
@@ -496,47 +497,47 @@ const PersonalIncomeTaxScreen = () => {
 
           <View style={styles.noteContent}>
             <ThemedText style={[styles.noteText, { color: colors.text }]}>
-              <ThemedText style={{ fontFamily: Fonts.bold }}>{t("pit.step_1")}</ThemedText>{" "}
+              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.step_1")}</CustomText>{" "}
               Gross − {t("pit.insurance_label")} ({(INSURANCE_RATE * 100).toFixed(1)}%) ={" "}
-              <ThemedText style={{ fontFamily: Fonts.bold }}>{t("pit.taxable_income")}</ThemedText>
+              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.taxable_income")}</CustomText>
             </ThemedText>
 
             <ThemedText style={[styles.noteText, { color: colors.text }]}>
-              <ThemedText style={{ fontFamily: Fonts.bold }}>{t("pit.step_2")}</ThemedText>{" "}
+              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.step_2")}</CustomText>{" "}
               {t("pit.taxable_income")} − Giảm trừ ({(PERSONAL_DEDUCTION / 1_000_000).toFixed(1)}{t("pit.million_unit")} {t("pit.self")} + {(DEPENDENT_DEDUCTION / 1_000_000).toFixed(1)}{t("pit.million_unit")}/{t("pit.dependent")}) ={" "}
-              <ThemedText style={{ fontFamily: Fonts.bold }}>{t("pit.tax_assessed_income")}</ThemedText>
+              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.tax_assessed_income")}</CustomText>
             </ThemedText>
 
             <ThemedText style={[styles.noteText, { color: colors.text }]}>
-              <ThemedText style={{ fontFamily: Fonts.bold }}>{t("pit.step_3")}</ThemedText>{" "}
-              {t("pit.apply_progressive_tax")} <ThemedText style={{ fontFamily: Fonts.bold }}>{t("pit.tax_assessed_income")}</ThemedText>:
+              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.step_3")}</CustomText>{" "}
+              {t("pit.apply_progressive_tax")} <CustomText type="bold" style={{ color: colors.text }}>{t("pit.tax_assessed_income")}</CustomText>:
             </ThemedText>
 
             {/* Biểu thuế 5 bậc — 2 cột x 2 dòng + 1 dòng cuối */}
             <View style={styles.taxBrackets}>
               <View style={styles.bracketRow}>
-                <ThemedText style={[styles.bracketText, { color: colors.icon }]}>
+                <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
                   • {t(TAX_BRACKETS_DISPLAY[0].i18nKey)}: {TAX_BRACKETS_DISPLAY[0].rate}
                 </ThemedText>
-                <ThemedText style={[styles.bracketText, { color: colors.icon }]}>
+                <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
                   • {t(TAX_BRACKETS_DISPLAY[1].i18nKey)}: {TAX_BRACKETS_DISPLAY[1].rate}
                 </ThemedText>
               </View>
               <View style={styles.bracketRow}>
-                <ThemedText style={[styles.bracketText, { color: colors.icon }]}>
+                <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
                   • {t(TAX_BRACKETS_DISPLAY[2].i18nKey)}: {TAX_BRACKETS_DISPLAY[2].rate}
                 </ThemedText>
-                <ThemedText style={[styles.bracketText, { color: colors.icon }]}>
+                <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
                   • {t(TAX_BRACKETS_DISPLAY[3].i18nKey)}: {TAX_BRACKETS_DISPLAY[3].rate}
                 </ThemedText>
               </View>
-              <ThemedText style={[styles.bracketText, { color: colors.icon }]}>
+              <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
                 • {t(TAX_BRACKETS_DISPLAY[4].i18nKey)}: {TAX_BRACKETS_DISPLAY[4].rate}
               </ThemedText>
             </View>
 
             {/* Ví dụ cập nhật theo biểu thuế mới */}
-            <View style={[styles.noteExample, { backgroundColor: colors.tint + "08" }]}>
+            <View style={[styles.noteExample, { backgroundColor: isDark ? colors.tint + "15" : colors.tint + "08" }]}>
               <ThemedText style={[styles.exampleTitle, { color: colors.tint }]}>
                 {t("pit.example")}
               </ThemedText>
@@ -548,9 +549,9 @@ const PersonalIncomeTaxScreen = () => {
             </View>
 
             <ThemedText style={[styles.noteText, { color: colors.text }]}>
-              <ThemedText style={{ fontFamily: Fonts.bold }}>{t("pit.step_4")}</ThemedText>{" "}
+              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.step_4")}</CustomText>{" "}
               Gross − {t("pit.insurance_label")} − {t("pit.tax")} ={" "}
-              <ThemedText style={{ fontFamily: Fonts.bold }}>{t("pit.net_income")}</ThemedText>
+              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.net_income")}</CustomText>
             </ThemedText>
           </View>
         </View>
@@ -601,7 +602,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: normalize(8),
     padding: normalize(4),
-    backgroundColor: "rgba(0,0,0,0.03)",
+    // backgroundColor: "rgba(0,0,0,0.03)", // Chuyển sang inline để support Dark Mode
     borderRadius: normalize(100),
   },
   toggleButton: {
@@ -632,7 +633,7 @@ const styles = StyleSheet.create({
   },
   miniToggle: {
     flexDirection: "row",
-    backgroundColor: "rgba(0,0,0,0.04)",
+    // backgroundColor: "rgba(0,0,0,0.04)", // Chuyển sang inline để support Dark Mode
     borderRadius: normalize(8),
     padding: normalize(3),
     gap: normalize(4),
@@ -646,7 +647,7 @@ const styles = StyleSheet.create({
     fontSize: normalize(12),
     fontFamily: Fonts.medium,
   },
-  divider: { height: 1, opacity: 0.1 },
+  divider: { height: 1, opacity: 0.2 },
   largeInputContainer: {
     height: normalize(56),
     backgroundColor: "transparent",
