@@ -17,6 +17,7 @@ import StorageService from "@/services/StorageService";
 import { invoiceRepository } from "@/services/repositories/invoice.repository";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
+import DatePicker from "react-native-date-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -64,7 +65,7 @@ interface AutofillData {
 }
 
 const CreateRecurringInvoiceScreen = () => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const params = useLocalSearchParams();
   const { wallets, defaultWallet } = useWallet();
   const { appInfo } = React.useContext(GlobalContext);
@@ -103,6 +104,7 @@ const CreateRecurringInvoiceScreen = () => {
     useState<SelectedCategoryData | null>(null);
   const [amount, setAmount] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [note, setNote] = useState("");
 
   const [inputCurrency, setInputCurrency] = useState<SelectedCurrency>({
@@ -751,9 +753,11 @@ const CreateRecurringInvoiceScreen = () => {
                 />
               </TouchableOpacity>
 
-              <CustomText style={styles.dateText}>
-                {formatDate(selectedDate)}
-              </CustomText>
+              <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                <CustomText style={styles.dateText}>
+                  {formatDate(selectedDate)}
+                </CustomText>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => {
@@ -870,6 +874,25 @@ const CreateRecurringInvoiceScreen = () => {
         initialSelectedDays={selectedDays}
         onSelect={handleRecurringSelect}
         onClose={() => setShowRecurringModal(false)}
+      />
+
+      {/* Date Picker Modal */}
+      <DatePicker
+        modal
+        open={showDatePicker}
+        date={selectedDate}
+        mode="date"
+        theme={isDark ? "dark" : "light"}
+        buttonColor={colors.tint}
+        dividerColor={colors.tint}
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
+        title={t("invoice.start_date", "Ngày bắt đầu")}
+        onConfirm={(date) => {
+          setShowDatePicker(false);
+          setSelectedDate(date);
+        }}
+        onCancel={() => setShowDatePicker(false)}
       />
 
     </SafeAreaView>

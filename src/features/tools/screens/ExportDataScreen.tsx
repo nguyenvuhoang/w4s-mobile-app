@@ -58,6 +58,7 @@ const ExportDataScreen = () => {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [email, setEmail] = useState("");
   const [fileType, setFileType] = useState<"excel" | "pdf">("excel");
+  const [dateError, setDateError] = useState<string | null>(null);
 
   const maxDate = new Date();
   const minStartDate = new Date();
@@ -123,6 +124,15 @@ const ExportDataScreen = () => {
       to_transaction_date: endTimestampStr,
       file_type: fileType,
     };
+
+    const startNormalized = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const endNormalized = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+    if (endNormalized < startNormalized) {
+      setDateError(t("export_data.invalid_date_range"));
+      return;
+    }
+    setDateError(null);
 
     const res = await exportData(payload);
     if (res.success) {
@@ -247,7 +257,13 @@ const ExportDataScreen = () => {
               {t("export_data.start_date")} <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
-              style={[styles.dateContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[
+                styles.dateContainer,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: dateError ? "#FF3B30" : colors.border
+                }
+              ]}
               onPress={() => setShowStartPicker(true)}
             >
               <CustomText style={[styles.dateText, { color: colors.text }]}>
@@ -263,7 +279,13 @@ const ExportDataScreen = () => {
               {t("export_data.end_date")} <CustomText style={{ color: "red" }}>*</CustomText>
             </CustomText>
             <TouchableOpacity
-              style={[styles.dateContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[
+                styles.dateContainer,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: dateError ? "#FF3B30" : colors.border
+                }
+              ]}
               onPress={() => setShowEndPicker(true)}
             >
               <CustomText style={[styles.dateText, { color: colors.text }]}>
@@ -271,6 +293,11 @@ const ExportDataScreen = () => {
               </CustomText>
               <Ionicons name="calendar-outline" size={normalize(20)} color={colors.text} />
             </TouchableOpacity>
+            {dateError && (
+              <CustomText style={styles.errorText}>
+                {dateError}
+              </CustomText>
+            )}
           </View>
 
           {/* File Type */}
@@ -357,25 +384,32 @@ const ExportDataScreen = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {/* Date Pickers */}
       <DatePicker
         modal
         open={showStartPicker}
         date={startDate}
         mode="date"
         theme={mode === "dark" ? "dark" : "light"}
-        minimumDate={minStartDate}
-        maximumDate={maxDate}
-        title={t("export_data.select_start_date")}
+        buttonColor={colors.tint}
+        dividerColor={colors.tint}
         confirmText={t("common.confirm")}
         cancelText={t("common.cancel")}
+        title={t("export_data.select_start_date")}
         onConfirm={(date) => {
           setShowStartPicker(false);
           setStartDate(date);
-          if (endDate < date) {
-            setEndDate(date);
+          const startNorm = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+          const endNorm = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+          if (endNorm < startNorm) {
+            setDateError(t("export_data.invalid_date_range"));
+          } else {
+            setDateError(null);
           }
         }}
         onCancel={() => setShowStartPicker(false)}
+        maximumDate={maxDate}
+        minimumDate={minStartDate}
       />
 
       <DatePicker
@@ -384,16 +418,25 @@ const ExportDataScreen = () => {
         date={endDate}
         mode="date"
         theme={mode === "dark" ? "dark" : "light"}
-        minimumDate={startDate}
-        maximumDate={maxDate}
-        title={t("export_data.select_end_date")}
+        buttonColor={colors.tint}
+        dividerColor={colors.tint}
         confirmText={t("common.confirm")}
         cancelText={t("common.cancel")}
+        title={t("export_data.select_end_date")}
         onConfirm={(date) => {
           setShowEndPicker(false);
           setEndDate(date);
+          const startNorm = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+          const endNorm = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+          if (endNorm < startNorm) {
+            setDateError(t("export_data.invalid_date_range"));
+          } else {
+            setDateError(null);
+          }
         }}
         onCancel={() => setShowEndPicker(false)}
+        maximumDate={maxDate}
+        minimumDate={minStartDate}
       />
     </SafeAreaView>
   );
@@ -438,6 +481,11 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: normalize(16),
+  },
+  errorText: {
+    color: "#FF3B30",
+    fontSize: normalize(12),
+    marginTop: normalize(4),
   },
 });
 

@@ -11,7 +11,7 @@ import { Images } from '@/utils/images';
 import { hasNotch, normalize } from '@/utils/layout';
 import { isValidEmail, isValidPhone } from '@/utils/validation';
 import { FontAwesome6, Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DatePicker from 'react-native-date-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -168,8 +168,8 @@ const RegisterScreen = () => {
     router.back();
   };
 
-  const handleDateChange = (_event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
+  const handleDateChange = (selectedDate: Date) => {
+    setShowDatePicker(false);
     if (selectedDate) {
       setBirthday(selectedDate.toISOString());
       setTouched(prev => ({ ...prev, birthday: true }));
@@ -476,16 +476,22 @@ const RegisterScreen = () => {
                         <ThemedText style={styles.errorText}>{errors.birthday}</ThemedText>
                       ) : null}
 
-                      {showDatePicker && (
-                        <DateTimePicker
-                          value={getDateValue()}
-                          mode="date"
-                          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                          onChange={handleDateChange}
-                          maximumDate={new Date()}
-                          minimumDate={new Date(1900, 0, 1)}
-                        />
-                      )}
+                      <DatePicker
+                        modal
+                        open={showDatePicker}
+                        date={getDateValue()}
+                        mode="date"
+                        theme={isDark ? "dark" : "light"}
+                        buttonColor={colors.brandBlue}
+                        dividerColor={colors.brandBlue}
+                        confirmText={t("common.confirm")}
+                        cancelText={t("common.cancel")}
+                        title={t("auth.select_birthday")}
+                        onConfirm={handleDateChange}
+                        onCancel={() => setShowDatePicker(false)}
+                        maximumDate={new Date()}
+                        minimumDate={new Date(1900, 0, 1)}
+                      />
                     </View>
                   </View>
 

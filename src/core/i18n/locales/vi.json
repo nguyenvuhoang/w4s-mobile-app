@@ -924,7 +924,8 @@
     "processing": "Đang xử lý...",
     "export_button": "Xuất File",
     "select_start_date": "Chọn ngày bắt đầu",
-    "select_end_date": "Chọn ngày kết thúc"
+    "select_end_date": "Chọn ngày kết thúc",
+    "invalid_date_range": "Ngày kết thúc phải sau ngày bắt đầu"
   },
   "export_gsheets": {
     "title": "Xuất tới Google trang tính",

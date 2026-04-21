@@ -929,7 +929,8 @@
     "processing": "Processing...",
     "export_button": "Export File",
     "select_start_date": "Select Start Date",
-    "select_end_date": "Select End Date"
+    "select_end_date": "Select End Date",
+    "invalid_date_range": "End date must be after start date"
   },
   "export_gsheets": {
     "title": "Export to Google Sheets",

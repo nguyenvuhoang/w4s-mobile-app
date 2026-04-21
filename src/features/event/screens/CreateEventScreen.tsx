@@ -10,7 +10,7 @@ import StorageService from "@/services/StorageService";
 import { WalletSummary } from "@/types/wallet";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DatePicker from "react-native-date-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -40,7 +40,7 @@ interface AutofillData {
 }
 
 const CreateEventScreen: React.FC = () => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { showNotification } = useNotification();
   const params = useLocalSearchParams();
   const { wallets } = useWallet();
@@ -277,7 +277,7 @@ const CreateEventScreen: React.FC = () => {
     });
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
+  const handleDateChange = (selectedDate: Date) => {
     setShowDatePicker(false);
     if (selectedDate) {
       setEndDate(selectedDate);
@@ -491,15 +491,21 @@ const CreateEventScreen: React.FC = () => {
           </View>
 
           {/* Date Picker */}
-          {showDatePicker && (
-            <DateTimePicker
-              value={endDate}
-              mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={handleDateChange}
-              minimumDate={new Date()}
-            />
-          )}
+          <DatePicker
+            modal
+            open={showDatePicker}
+            date={endDate}
+            mode="date"
+            theme={isDark ? "dark" : "light"}
+            buttonColor={colors.tint}
+            dividerColor={colors.tint}
+            confirmText="Xác nhận"
+            cancelText="Hủy"
+            title="Chọn ngày kết thúc"
+            onConfirm={handleDateChange}
+            onCancel={() => setShowDatePicker(false)}
+            minimumDate={new Date()}
+          />
 
           <View style={{ height: hp(2) }} />
         </ScrollView>

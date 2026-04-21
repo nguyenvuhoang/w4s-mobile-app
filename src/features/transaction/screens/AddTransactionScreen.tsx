@@ -19,7 +19,7 @@ import { useSpendingLimit } from "@/hooks/useSpendingLimit";
 import StorageService from "@/services/StorageService";
 import { hp, normalize } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DatePicker from "react-native-date-picker";
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, {
@@ -114,7 +114,7 @@ interface AutofillData {
 }
 
 const AddTransactionScreen = () => {
-  const { colors } = useAppTheme();
+  const { colors, mode, isDark } = useAppTheme();
   const params = useLocalSearchParams();
   const { wallets, defaultWallet, refresh } = useWallet();
   const { currencies, parseCurrencyName } = useCurrency({ autoFetch: true });
@@ -157,7 +157,6 @@ const AddTransactionScreen = () => {
   // Reminder state
   const [reminderDate, setReminderDate] = useState<Date | null>(null);
   const [showReminderPicker, setShowReminderPicker] = useState(false);
-  const [reminderMode, setReminderMode] = useState<"date" | "time">("date");
 
   // Date picker state
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -552,45 +551,27 @@ const AddTransactionScreen = () => {
     }
   };
 
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === "android") {
-      setShowDatePicker(false);
-    }
-    if (selectedDate) {
-      setSelectedDate(selectedDate);
+  const onDateChange = (date: Date) => {
+    setShowDatePicker(false);
+    if (date) {
+      setSelectedDate(date);
     }
   };
 
-  const onReminderChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === "android") {
-      setShowReminderPicker(false);
-      if (selectedDate && reminderMode === "date") {
-        setReminderDate(selectedDate);
-        setReminderMode("time");
-        setTimeout(() => setShowReminderPicker(true), 100);
-      } else if (selectedDate && reminderMode === "time") {
-        const finalDate = reminderDate || new Date();
-        finalDate.setHours(selectedDate.getHours());
-        finalDate.setMinutes(selectedDate.getMinutes());
-        setReminderDate(finalDate);
-        setReminderMode("date");
-      }
-    } else {
-      if (selectedDate) {
-        setReminderDate(selectedDate);
-      }
+  const onReminderChange = (date: Date) => {
+    setShowReminderPicker(false);
+    if (date) {
+      setReminderDate(date);
     }
   };
 
   const openReminderPicker = () => {
-    setReminderMode("date");
     setShowReminderPicker(true);
   };
 
   const clearReminder = () => {
     setReminderDate(null);
     setShowReminderPicker(false);
-    setReminderMode("date");
   };
 
   const handleCreate = async () => {
@@ -1244,49 +1225,39 @@ const AddTransactionScreen = () => {
         </ScrollView>
 
         {/* Date Picker Modal */}
-        {showDatePicker && (
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={onDateChange}
-            maximumDate={new Date(2100, 11, 31)}
-            minimumDate={new Date(2000, 0, 1)}
-          />
-        )}
+        <DatePicker
+          modal
+          open={showDatePicker}
+          date={selectedDate}
+          mode="date"
+          theme={isDark ? "dark" : "light"}
+          buttonColor={colors.tint}
+          dividerColor={colors.tint}
+          confirmText={t("common.confirm")}
+          cancelText={t("common.cancel")}
+          title={t("transaction.date")}
+          onConfirm={onDateChange}
+          onCancel={() => setShowDatePicker(false)}
+          maximumDate={new Date(2100, 11, 31)}
+          minimumDate={new Date(2000, 0, 1)}
+        />
 
         {/* Reminder Picker Modal */}
-        {showReminderPicker && (
-          <DateTimePicker
-            value={reminderDate || new Date()}
-            mode={Platform.OS === "ios" ? "datetime" : reminderMode}
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={onReminderChange}
-            minimumDate={new Date()}
-          />
-        )}
-
-        {/* iOS Picker Done Button */}
-        {Platform.OS === "ios" && (showDatePicker || showReminderPicker) && (
-          <View
-            style={[
-              styles.pickerToolbar,
-              { backgroundColor: colors.card, borderTopColor: colors.border },
-            ]}
-          >
-            <TouchableOpacity
-              onPress={() => {
-                setShowDatePicker(false);
-                setShowReminderPicker(false);
-              }}
-              style={styles.pickerButton}
-            >
-              <CustomText style={[styles.pickerButtonText, { color: colors.tint }]}>
-                {t("common.done", { defaultValue: "Done" })}
-              </CustomText>
-            </TouchableOpacity>
-          </View>
-        )}
+        <DatePicker
+          modal
+          open={showReminderPicker}
+          date={reminderDate || new Date()}
+          mode="datetime"
+          theme={isDark ? "dark" : "light"}
+          buttonColor={colors.tint}
+          dividerColor={colors.tint}
+          confirmText={t("common.confirm")}
+          cancelText={t("common.cancel")}
+          title={t("transaction.reminder")}
+          onConfirm={onReminderChange}
+          onCancel={() => setShowReminderPicker(false)}
+          minimumDate={new Date()}
+        />
 
         {/* Loan Picker Modal */}
         <Modal
