@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -173,6 +174,7 @@ const IntroScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.brandBlue }]}>
+      <StatusBar style="light" />
       {/* background lớn chạy xuyên 3 slide */}
       <AnimatedView
         pointerEvents="none"

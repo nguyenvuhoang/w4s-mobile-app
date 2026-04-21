@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { StatusBar } from 'expo-status-bar';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -60,6 +61,7 @@ const StartScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor }]}>
+      <StatusBar style="light" />
       <SafeAreaView style={styles.safeArea}>
         {/* Language Switcher */}
         <View style={styles.topContainer}>

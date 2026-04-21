@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { StatusBar } from "expo-status-bar";
 import {
   ActivityIndicator,
   Image,
@@ -188,6 +189,7 @@ const QuickLoginScreen = () => {
       {isAuthenticating && <View style={styles.biometricOverlay} />}
 
       <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
+        <StatusBar style="light" />
         <View style={styles.keyboardView}>
           <KeyboardAvoidingView
             style={styles.flex}
@@ -200,7 +202,9 @@ const QuickLoginScreen = () => {
               keyboardShouldPersistTaps="handled"
             >
               <View style={styles.header}>
+                <View style={styles.headerCircleLeftLine} />
                 <View style={styles.headerCircleLeft} />
+                <View style={styles.headerCircleRightLine} />
                 <View style={styles.headerCircleRight} />
 
                 <View style={styles.logoWrap}>
@@ -383,6 +387,18 @@ const createStyles = (colors: any) => StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)",
+    zIndex: 1,
+  },
+
+  headerCircleLeftLine: {
+    position: "absolute",
+    left: normalize(-63),
+    bottom: normalize(7),
+    width: normalize(185),
+    height: normalize(185),
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
   },
 
   headerCircleRight: {
@@ -395,6 +411,18 @@ const createStyles = (colors: any) => StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)",
+    zIndex: 1,
+  },
+
+  headerCircleRightLine: {
+    position: "absolute",
+    right: normalize(-57),
+    top: normalize(-7),
+    width: normalize(178),
+    height: normalize(178),
+    borderRadius: 999,
+    borderWidth: 1.2,
+    borderColor: "rgba(255,255,255,0.1)",
   },
 
   logoWrap: {

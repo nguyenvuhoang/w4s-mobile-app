@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { StatusBar } from 'expo-status-bar';
 import {
   ActivityIndicator,
   Image,
@@ -113,6 +114,7 @@ const LoginScreen = () => {
       edges={['top', 'bottom']}
       style={[styles.container, { backgroundColor: colors.brandBlue }]}
     >
+      <StatusBar style="light" />
       <LinearGradient
         colors={isDark ? [colors.background, colors.background] : colors.gradianLightest}
         style={styles.flex}
@@ -129,7 +131,9 @@ const LoginScreen = () => {
             keyboardShouldPersistTaps="handled"
           >
             <View style={[styles.header, { backgroundColor: colors.brandBlue }]}>
+              <View style={styles.headerCircleLeftLine} />
               <View style={styles.headerCircleLeft} />
+              <View style={styles.headerCircleRightLine} />
               <View style={styles.headerCircleRight} />
 
               <View style={styles.languageWrap}>
@@ -333,6 +337,18 @@ const createStyles = (colors: any) => StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
+    zIndex: 1,
+  },
+
+  headerCircleLeftLine: {
+    position: 'absolute',
+    left: normalize(-63),
+    bottom: normalize(7),
+    width: normalize(185),
+    height: normalize(185),
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
 
   headerCircleRight: {
@@ -345,6 +361,18 @@ const createStyles = (colors: any) => StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
+    zIndex: 1,
+  },
+
+  headerCircleRightLine: {
+    position: 'absolute',
+    right: normalize(-57),
+    top: normalize(-7),
+    width: normalize(178),
+    height: normalize(178),
+    borderRadius: 999,
+    borderWidth: 1.2,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
 
   languageWrap: {
