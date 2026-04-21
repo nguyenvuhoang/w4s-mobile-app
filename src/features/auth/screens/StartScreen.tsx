@@ -23,7 +23,7 @@ const StartScreen = () => {
   const { t, i18n } = useTranslation();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
-  const backgroundColor = isDark ? colors.background : colors.brandBlue;
+  const backgroundColor = colors.tint;
   const onBackgroundColor = Tokens.colors.main.white;
   const buttonTextColor = backgroundColor;
 

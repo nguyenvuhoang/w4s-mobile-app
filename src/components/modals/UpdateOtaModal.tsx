@@ -67,7 +67,7 @@ const UpdateOtaModal = () => {
                     <CustomText style={styles.titleText}>
                         {t("updateBanner.updateDownloaded")}
                     </CustomText>
-                    <CustomText style={styles.subtitleText}>
+                    <CustomText style={[styles.subtitleText, { color: colors.icon }]}>
                         {t("updateBanner.updateReadySubtitle")}
                     </CustomText>
                     <CustomButton
@@ -89,7 +89,7 @@ const UpdateOtaModal = () => {
                     <CustomText style={styles.titleText}>
                         {t("updateBanner.downloadingTitle")}
                     </CustomText>
-                    <CustomText style={styles.subtitleText}>
+                    <CustomText style={[styles.subtitleText, { color: colors.icon }]}>
                         {t("updateBanner.downloadingSubtitle")}
                     </CustomText>
                     <ActivityIndicator color={colors.tint} size="large" style={{ marginVertical: normalize(10) }} />
@@ -105,7 +105,7 @@ const UpdateOtaModal = () => {
                 <CustomText style={styles.titleText}>
                     {t("updateBanner.newUpdateAvailable")}
                 </CustomText>
-                <CustomText style={styles.subtitleText}>
+                <CustomText style={[styles.subtitleText, { color: colors.icon }]}>
                     {t("updateBanner.updateSubtitle")}
                 </CustomText>
                 <CustomButton
@@ -124,9 +124,9 @@ const UpdateOtaModal = () => {
     // return null;
     return (
         <View style={styles.overlay}>
-            <View style={styles.bannerContainer}>
-                <TouchableOpacity onPress={handleHideBanner} style={styles.closeButton}>
-                    <AntDesign name="close" size={normalize(20)} color="#999" />
+            <View style={[styles.bannerContainer, { backgroundColor: colors.card }]}>
+                <TouchableOpacity onPress={handleHideBanner} style={[styles.closeButton, { backgroundColor: colors.background }]}>
+                    <AntDesign name="close" size={normalize(20)} color={colors.icon} />
                 </TouchableOpacity>
                 <View style={styles.contentWrapper}>
                     {renderContent()}
@@ -150,7 +150,6 @@ const styles = StyleSheet.create({
     },
     bannerContainer: {
         width: '85%',
-        backgroundColor: '#fff',
         borderRadius: normalize(24),
         padding: normalize(24),
         alignItems: 'center',
@@ -176,14 +175,12 @@ const styles = StyleSheet.create({
     },
     titleText: {
         fontSize: normalize(18),
-        color: '#1A1A1A',
         textAlign: 'center',
         fontWeight: '800',
         marginBottom: normalize(10),
     },
     subtitleText: {
         fontSize: normalize(14),
-        color: '#666',
         textAlign: 'center',
         marginBottom: normalize(24),
         lineHeight: normalize(20),
@@ -191,7 +188,6 @@ const styles = StyleSheet.create({
     },
     bannerText: {
         fontSize: normalize(16),
-        color: '#333',
         textAlign: 'center',
         fontWeight: 'bold',
         marginBottom: normalize(20),
@@ -220,7 +216,6 @@ const styles = StyleSheet.create({
         right: normalize(14),
         padding: normalize(8),
         zIndex: 1,
-        backgroundColor: '#F5F5F5',
         borderRadius: normalize(20),
     }
 });

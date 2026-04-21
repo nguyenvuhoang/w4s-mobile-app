@@ -247,6 +247,7 @@ const ReportScreen = () => {
               key={period.id}
               style={[
                 styles.periodTab,
+                { backgroundColor: colors.card },
                 selectedPeriod.id === period.id && [
                   styles.periodTabActive,
                   { backgroundColor: colors.tint },
@@ -258,7 +259,7 @@ const ReportScreen = () => {
                 type="medium"
                 size={13}
                 style={[
-                  selectedPeriod.id === period.id && { color: '#fff' },
+                  selectedPeriod.id === period.id ? { color: '#fff' } : { color: colors.text },
                 ]}
               >
                 {period.label}
@@ -443,7 +444,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: normalize(16),
     paddingVertical: normalize(8),
     borderRadius: normalize(20),
-    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   periodTabActive: {
     shadowColor: '#000',

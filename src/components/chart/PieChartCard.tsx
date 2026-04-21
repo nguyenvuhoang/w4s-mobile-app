@@ -381,6 +381,7 @@ const PieChartWithLabels: React.FC<PieChartWithLabelsProps> = ({
               focusOnPress
               toggleFocusOnPress
               sectionAutoFocus
+              innerCircleColor={backgroundColor}
             />
           </View>
 

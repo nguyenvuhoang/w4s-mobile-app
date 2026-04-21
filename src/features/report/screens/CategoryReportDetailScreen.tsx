@@ -243,6 +243,7 @@ const CategoryReportDetailScreen = () => {
             key={pt.id}
             style={[
               styles.periodPill,
+              { backgroundColor: colors.card },
               periodType === pt.id && [styles.periodPillActive, { backgroundColor: colors.tint }],
             ]}
             onPress={() => setPeriodType(pt.id)}
@@ -250,7 +251,7 @@ const CategoryReportDetailScreen = () => {
             <CustomText
               type="medium"
               size={12}
-              style={periodType === pt.id && { color: '#fff' }}
+              style={periodType === pt.id ? { color: '#fff' } : { color: colors.text }}
             >
               {pt.label}
             </CustomText>
@@ -265,6 +266,7 @@ const CategoryReportDetailScreen = () => {
             key={tab.id}
             style={[
               styles.tabBtn,
+              { backgroundColor: colors.card },
               activeTab === tab.id && [styles.tabBtnActive, { backgroundColor: colors.tint }],
             ]}
             onPress={() => setActiveTab(tab.id)}
@@ -272,7 +274,7 @@ const CategoryReportDetailScreen = () => {
             <CustomText
               type="medium"
               size={13}
-              style={activeTab === tab.id && { color: '#fff' }}
+              style={activeTab === tab.id ? { color: '#fff' } : { color: colors.text }}
             >
               {tab.label}
             </CustomText>
@@ -562,7 +564,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: normalize(8),
     borderRadius: normalize(20),
-    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   periodPillActive: {
     elevation: 2,
@@ -584,7 +585,6 @@ const styles = StyleSheet.create({
     paddingVertical: normalize(10),
     borderRadius: normalize(10),
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   tabBtnActive: {
     elevation: 3,
