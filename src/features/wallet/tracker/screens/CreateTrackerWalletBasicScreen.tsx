@@ -213,7 +213,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
           {/* Wallet Name */}
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-              {t('wallet.wallet_name')}
+              {t('wallet.wallet_name')} <CustomText style={{ color: 'red' }}>*</CustomText>
             </CustomText>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput
@@ -262,6 +262,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
             walletCurrency={{ currencyId: currency, symbol: currencySymbol }}
             disableCurrencySelect={true}
             label={t('wallet.initial_balance')}
+            required={false}
           />
           <View style={{ paddingHorizontal: wp(5) }}>
             <CustomText style={[styles.helperText, { color: colors.icon }]} type="regular">

@@ -37,10 +37,8 @@ const mockHtmlContent = `
     <h3>4. Quyền của người dùng</h3>
     <p>Bạn luôn có quyền truy cập, chỉnh sửa hoặc yêu cầu hệ thống xóa toàn bộ dữ liệu cá nhân của mình trực tiếp thông qua mục Cài đặt của ứng dụng, hoặc liên hệ với đội ngũ CSKH để được hỗ trợ kịp thời.</p>
     
-    <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
     <h3>5. Sửa đổi chính sách</h3>
     <p>Chúng tôi có quyền thay đổi chính sách bảo mật này bất cứ khi nào để phù hợp với quy định pháp luật. Mọi sửa đổi sẽ được thông báo đến người sử dụng.</p>
-    <br/><br/><br/><br/>
     <p>Trân trọng,<br/><strong>Đội ngũ phát triển W4S</strong></p>
   </div>
 `;

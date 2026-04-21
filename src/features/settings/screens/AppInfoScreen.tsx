@@ -198,7 +198,7 @@ const AppInfoScreen = () => {
                             <ActionItem
                                 icon="mail-outline"
                                 title={t('settings.support')}
-                                subtitle="support@w4s.vn"
+                                subtitle="support@wealth4s.vn"
                                 colors={colors}
                                 onPress={openSupport}
                             />

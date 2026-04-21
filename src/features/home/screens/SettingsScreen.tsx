@@ -7,10 +7,10 @@ import { apiService } from "@/core/api/ApiService";
 import { changeLanguage, languageMap } from "@/core/i18n/i18n";
 import { Tokens } from "@/core/theme/theme";
 import { useAppTheme } from "@/core/theme/ThemeContext";
+import { useLoginService } from "@/features/auth/hooks/useLoginService";
 import { useBudget } from "@/features/budget/hooks/useBudget";
 import { useEvent } from "@/features/event/hooks/useEvent";
 import { useProfile } from "@/features/profile/hooks/useProfile";
-import { useLoginService } from "@/features/auth/hooks/useLoginService";
 import { useSettingService } from "@/features/settings/hooks/useSettingService";
 import { useCategory } from "@/hooks/useCategory";
 import { useCurrency } from "@/hooks/useCurrency";
@@ -433,12 +433,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               }}
               colors={colors}
             />
-            <SettingItem
+            {/* <SettingItem
               icon="trash-outline"
               title={t("settings.clear_cache") || "Xóa dữ liệu bộ đệm"}
               onPress={handleClearCache}
               colors={colors}
-            />
+            /> */}
           </View>
         </View>
 

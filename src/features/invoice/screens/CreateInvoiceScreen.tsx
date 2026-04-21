@@ -366,9 +366,8 @@ const CreateRecurringInvoiceScreen = () => {
       selectedWallet &&
       selectedCategoryData &&
       amount.trim() !== "" &&
-      amount !== "0" &&
-      recurringType !== "none",
-    [selectedWallet, selectedCategoryData, amount, recurringType],
+      amount !== "0",
+    [selectedWallet, selectedCategoryData, amount],
   );
 
   // Set default wallet
@@ -701,10 +700,10 @@ const CreateRecurringInvoiceScreen = () => {
             label={t("transaction.amount")}
           />
 
-          {/* Recurring Period - REQUIRED */}
+          {/* Recurring Period */}
           <View style={styles.section}>
             <CustomText style={styles.label}>
-              {t("invoice.recurring_cycle")} <CustomText style={{ color: "red" }}>*</CustomText>
+              {t("invoice.recurring_cycle")}
             </CustomText>
             <TouchableOpacity
               style={styles.field}

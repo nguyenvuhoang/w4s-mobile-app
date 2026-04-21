@@ -27,6 +27,7 @@ interface TransactionAmountInputProps {
   exchangeRate?: number | null;
   selectedType?: "income" | "expense" | "inout";
   label?: string;
+  required?: boolean;
 }
 
 const TransactionAmountInput: React.FC<TransactionAmountInputProps> = ({
@@ -43,6 +44,7 @@ const TransactionAmountInput: React.FC<TransactionAmountInputProps> = ({
   exchangeRate: propsExchangeRate = null,
   selectedType = "expense",
   label,
+  required = true,
 }) => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
@@ -143,7 +145,7 @@ const TransactionAmountInput: React.FC<TransactionAmountInputProps> = ({
   return (
     <View style={styles.section}>
       <CustomText style={[styles.label, { color: colors.text }]}>
-        {label || t("transaction.amount")} <CustomText style={{ color: "red" }}>*</CustomText>
+        {label || t("transaction.amount")} {required && <CustomText style={{ color: "red" }}>*</CustomText>}
       </CustomText>
       <View
         style={[

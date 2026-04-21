@@ -659,7 +659,7 @@
     "type_debt_desc": "Track loans and debts.",
     "type_saving_name": "Saving Wallet",
     "type_saving_desc": "Track savings and goals.",
-    "create_basic_wallet_title": "Create Basic Tracker Wallet",
+    "create_basic_wallet_title": "Create Tracker Wallet",
     "setup_wallet": "Setup Wallet",
     "wallet_name": "Wallet Name",
     "wallet_name_placeholder": "Cash",
