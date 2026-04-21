@@ -191,7 +191,7 @@ const AppInfoScreen = () => {
                             <ActionItem
                                 icon="globe-outline"
                                 title={t('settings.website')}
-                                subtitle="www.w4s.vn"
+                                subtitle="https://wealth4s.vn/"
                                 colors={colors}
                                 onPress={openWebsite}
                             />
