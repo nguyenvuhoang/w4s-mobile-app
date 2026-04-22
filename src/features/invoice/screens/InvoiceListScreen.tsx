@@ -29,23 +29,24 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 interface RecurringInfo {
   type: string;
-  count: number;
+  count: number | null;
   is_forever: boolean;
   selected_days: number[] | null;
 }
 
 interface BillItem {
   bill_id: number;
+  user_code: string;
   wallet_id: number;
-  account_number: string;
+  account_number?: string;
   bill_name: string;
   category_id: number;
-  business_type: string;
+  business_type: string | null;
+  schedule_type?: string | null;
   recurring: RecurringInfo;
   amount: number;
   currency_code: string;
   due_at_utc: string;
-  /** "Pending" | "Overdue" | "Paid" */
   status: string;
 }
 
@@ -112,7 +113,7 @@ export default function InvoiceListScreen() {
   const recurringLabel = useCallback((r: RecurringInfo) => {
     const base = RECURRING_LABELS[r?.type] ?? r?.type ?? "";
     if (!r || r.type === "None") return base;
-    return r.is_forever ? base : t("invoice.rec_count", { base, count: r.count });
+    return r.is_forever ? base : t("invoice.rec_count", { base, count: r.count ?? 0 });
   }, [t, RECURRING_LABELS]);
 
   const [tab, setTab] = useState<TabType>("unpaid");
@@ -153,12 +154,16 @@ export default function InvoiceListScreen() {
       const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
       const res = await invoiceRepository.advancedSearchInvoice({
         user_code: userCode, wallet_id: 0,
-        business_type: null, schedule_type: null, status: null,
+        business_type: null, schedule_type: null, status: ["Pending", "Paid", "Due"],
         from_due_at_utc: null, to_due_at_utc: null,
         page_index: 0, page_size: 50,
       });
-      if (res?.success && res?.data?.items)
+      if (res?.success && res?.data?.items) {
+        console.log("[InvoiceListScreen] Setting bills:", res.data.items.length);
         setBills(res.data.items as BillItem[]);
+      } else {
+        console.warn("[InvoiceListScreen] No items in response or success=false", res);
+      }
     } catch (e) {
       console.error("[InvoiceListScreen] load:", e);
     } finally {
@@ -171,9 +176,23 @@ export default function InvoiceListScreen() {
 
   // ── Derived ──────────────────────────────────────────────────────────────
 
-  const unpaid = useMemo(() => bills.filter(isPayable), [bills]);
-  const paid = useMemo(() => bills.filter((b) => !isPayable(b)), [bills]);
-  const displayed = tab === "unpaid" ? unpaid : paid;
+  const unpaid = useMemo(() => {
+    const list = bills.filter(isPayable);
+    console.log("[InvoiceListScreen] Unpaid count:", list.length);
+    return list;
+  }, [bills]);
+
+  const paid = useMemo(() => {
+    const list = bills.filter((b) => !isPayable(b));
+    console.log("[InvoiceListScreen] Paid count:", list.length);
+    return list;
+  }, [bills]);
+
+  const displayed = useMemo(() => {
+    const list = tab === "unpaid" ? unpaid : paid;
+    console.log("[InvoiceListScreen] Displayed count for tab", tab, ":", list.length);
+    return list;
+  }, [tab, unpaid, paid]);
 
   // ── Pay flow ─────────────────────────────────────────────────────────────
 
@@ -475,7 +494,7 @@ export default function InvoiceListScreen() {
         {(
           [
             { key: "unpaid", label: t("invoice.unpaid"), count: unpaid.length },
-            { key: "paid", label: t("invoice.paid"), count: 0 },
+            { key: "paid", label: t("invoice.paid"), count: paid.length },
           ] as { key: TabType; label: string; count: number }[]
         ).map(({ key, label, count }) => {
           const active = tab === key;

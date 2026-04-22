@@ -28,7 +28,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 // ---- API response types ----
 interface RecurringInfo {
   type: string;       // "Monthly" | "Weekly" | "Daily" | "Yearly"
-  count: number;
+  count: number | null;
   is_forever: boolean;
   selected_days: number[] | null; // 0=CN, 1=T2, 2=T3, 3=T4, 4=T5, 5=T6, 6=T7
 }
@@ -39,7 +39,8 @@ export interface BillItem {
   wallet_id: number;
   bill_name: string;
   category_id: number;
-  business_type: string; // "1" = income, "2" = expense
+  business_type: string | null; // "1" = income, "2" = expense
+  schedule_type?: string | null; // "Auto" | "Manual"
   recurring: RecurringInfo;
   amount: number;
   currency_code: string;
@@ -96,7 +97,7 @@ const RecurringTransactionListScreen = () => {
   const getRecurringLabel = useCallback((recurring: RecurringInfo): string => {
     const base = RECURRING_TYPE_LABELS[recurring.type] ?? recurring.type;
     if (recurring.is_forever) return base;
-    return t("invoice.rec_count", { base, count: recurring.count });
+    return t("invoice.rec_count", { base, count: recurring.count ?? 0 });
   }, [t, RECURRING_TYPE_LABELS]);
 
   /** Returns day abbreviation array for weekly bills, e.g. ["T2","T4","T5","T6"] */
@@ -145,15 +146,18 @@ const RecurringTransactionListScreen = () => {
         wallet_id: 0,
         business_type: null,
         schedule_type: null,
-        status: null,
+        status: ["Pending", "Paid", "Due"],
         from_due_at_utc: null,
         to_due_at_utc: null,
         page_index: 0,
-        page_size: 20,
+        page_size: 50,
       });
 
       if (res?.success && res?.data?.items) {
+        console.log("[RecurringTransactionListScreen] Setting bills:", res.data.items.length);
         setBills(res.data.items as BillItem[]);
+      } else {
+        console.warn("[RecurringTransactionListScreen] No items in response or success=false", res);
       }
     } catch (error) {
       console.error("[RecurringTransactionListScreen] fetchBills error:", error);
@@ -169,6 +173,10 @@ const RecurringTransactionListScreen = () => {
       fetchBills();
     }, [fetchBills]),
   );
+
+  const filteredBills = useMemo(() => {
+    return bills.filter(b => !(b.recurring?.type === "None" && b.status === "Paid"));
+  }, [bills]);
 
   const onRefresh = useCallback(() => {
     fetchBills(true);
@@ -270,8 +278,8 @@ const RecurringTransactionListScreen = () => {
       const iconName = cat?.icon ?? DEFAULT_ICON;
       const iconColor = cat?.color ?? DEFAULT_COLOR;
       const categoryName = cat?.name || parseLocalizedName(bill.bill_name);
-      const amountColor = "#EF4444"; 
-      const amountPrefix = "-";      
+      const amountColor = "#EF4444";
+      const amountPrefix = "-";
       const recurringLabel = getRecurringLabel(bill.recurring);
       const weeklyDays = getWeeklyDays(bill.recurring);
       const dueDate = formatDueDate(bill.due_at_utc);
@@ -358,9 +366,9 @@ const RecurringTransactionListScreen = () => {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-          {bills.length > 0 ? (
+          {filteredBills.length > 0 ? (
             <View style={styles.listContainer}>
-              {bills.map(renderBillCard)}
+              {filteredBills.map(renderBillCard)}
             </View>
           ) : (
             <View style={styles.emptyContainer}>

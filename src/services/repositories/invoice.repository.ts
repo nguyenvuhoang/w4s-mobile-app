@@ -127,9 +127,9 @@ export const invoiceRepository = {
         {
           user_code: data.user_code || "",
           wallet_id: data.wallet_id || 0,
-          business_type: data.business_type || "",
-          schedule_type: data.schedule_type || "",
-          status: data.status,
+          business_type: data.business_type || null,
+          schedule_type: data.schedule_type || null,
+          statuses: data.status || ["Pending", "Paid", "Due"],
           from_due_at_utc: data.from_due_at_utc || "",
           to_due_at_utc: data.to_due_at_utc || "",
           page_index: data.page_index ?? 0,
