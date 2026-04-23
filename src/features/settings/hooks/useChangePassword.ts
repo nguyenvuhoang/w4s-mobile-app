@@ -62,7 +62,7 @@ export const useChangePassword = () => {
           message: t("auth.password_not_secure"),
         };
       }
-      const appInfo = await StorageService.getAsyncItem(StorageKey.appInfo);
+      const appInfo = await StorageService.getItem(StorageKey.appInfo);
       const userName = JSON.parse(appInfo).login_name;
       const response = await settingRepository.changePassword(
         encrypt(userName + "_" + params.currentPassword),
@@ -70,7 +70,7 @@ export const useChangePassword = () => {
       );
 
       if (response.isSuccess()) {
-        await StorageService.setAsyncItem(
+        await StorageService.setItem(
           StorageKey.isVerifyFirstLogin,
           "true"
         );

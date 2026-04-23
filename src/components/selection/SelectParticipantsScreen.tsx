@@ -70,7 +70,7 @@ const SelectParticipantsScreen = () => {
 
   const loadSavedParticipants = async () => {
     try {
-      const storedParticipants = await StorageService.getAsyncItem(
+      const storedParticipants = await StorageService.getItem(
         STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE,
       );
       if (storedParticipants) {
@@ -250,7 +250,7 @@ const SelectParticipantsScreen = () => {
       // await ApiService.saveParticipants(dataToSend);
 
       // Lưu vào storage với session ID
-      await StorageService.setAsyncItem(
+      await StorageService.setItem(
         STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE,
         JSON.stringify({
           sessionId,

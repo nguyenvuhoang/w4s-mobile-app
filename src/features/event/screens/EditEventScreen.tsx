@@ -119,7 +119,7 @@ const EditEventScreen: React.FC = () => {
           }
 
           // Load selected wallet
-          const walletData = await StorageService.getAsyncItem(
+          const walletData = await StorageService.getItem(
             StorageKey.TEMP_WALLET_STORAGE
           );
           if (walletData) {
@@ -128,7 +128,7 @@ const EditEventScreen: React.FC = () => {
             if (wallet) {
               setSelectedWallet(wallet);
             }
-            await StorageService.removeAsyncItem(
+            await StorageService.removeItem(
               StorageKey.TEMP_WALLET_STORAGE
             );
           }

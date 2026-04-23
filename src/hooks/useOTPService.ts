@@ -67,7 +67,7 @@ export const useOTPService = (): UseOTPServiceReturn => {
   const handleVerifySMSOTP = useCallback(
     async (phoneNumber: string, otpCode: string, verifyOtpCode: string, purpose: string = OTPTYPE.VERIFYLOGIN): Promise<boolean> => {
       try {
-        const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+        const userCode = await StorageService.getItem(StorageKey.userCode);
         if (!userCode) {
           throw new Error("Missing user code");
         }
@@ -141,21 +141,21 @@ export const useOTPService = (): UseOTPServiceReturn => {
               if (response.isSuccess()) {
                 const appInfoData = response.getValue() as AppInfo;
                 
-                 await StorageService.setAsyncItem(
+                 await StorageService.setItem(
                   StorageKey.appInfo,
                   JSON.stringify(appInfoData),
                 );
-                await StorageService.setAsyncItem(
+                await StorageService.setItem(
                   StorageKey.userCode,
                   appInfoData.user_code,
                 );
 
                 if (appInfoData && !appInfoData.is_first_login) {
-                    await StorageService.setAsyncItem(StorageKey.isVerifyFirstLogin, "true");
-                    const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
+                    await StorageService.setItem(StorageKey.isVerifyFirstLogin, "true");
+                    const channelId = await StorageService.getItem(StorageKey.channelId);
                     if (channelId) {
                       const isVerifyFirstLogin_channel = `${StorageKey.isVerifyFirstLogin}_${channelId}`;
-                      await StorageService.setAsyncItem(isVerifyFirstLogin_channel, "true");
+                      await StorageService.setItem(isVerifyFirstLogin_channel, "true");
                     }
                   }
 

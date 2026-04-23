@@ -35,7 +35,7 @@ export const useProfile = () => {
     setLoading(true);
     setError(null);
     try {
-      const code = userCode || await StorageService.getAsyncItem(StorageKey.userCode);
+      const code = userCode || await StorageService.getItem(StorageKey.userCode);
       if (!code) throw new Error('Missing user code');
 
       const response = await apiService.executeWorkflow(
@@ -79,8 +79,8 @@ export const useProfile = () => {
     setUpdating(true);
     setError(null);
     try {
-      const code = payload.user_code || await StorageService.getAsyncItem(StorageKey.userCode);
-      const appInfo = await StorageService.getAsyncItem(StorageKey.appInfo);
+      const code = payload.user_code || await StorageService.getItem(StorageKey.userCode);
+      const appInfo = await StorageService.getItem(StorageKey.appInfo);
       const username = JSON.parse(appInfo).login_name;
       if (!code) throw new Error('Missing user code');
 
@@ -125,7 +125,7 @@ export const useProfile = () => {
     setUpdating(true);
     setError(null);
     try {
-      const code = await StorageService.getAsyncItem(StorageKey.userCode);
+      const code = await StorageService.getItem(StorageKey.userCode);
       if (!code) throw new Error('Missing user code');
 
       const response = await apiService.executeWorkflow(

@@ -151,7 +151,7 @@ export default function InvoiceListScreen() {
   const load = useCallback(async (refresh = false) => {
     try {
       refresh ? setRefreshing(true) : setLoading(true);
-      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      const userCode = await StorageService.getItem(StorageKey.userCode);
       const res = await invoiceRepository.advancedSearchInvoice({
         user_code: userCode, wallet_id: 0,
         business_type: null, schedule_type: null, status: ["Pending", "Paid", "Due"],

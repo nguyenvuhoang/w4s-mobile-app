@@ -109,7 +109,7 @@ const IntroScreen = () => {
 
   const goToLogin = async () => {
     try {
-      await StorageService.setAsyncItem(StorageKey.hasSeenIntro, 'true');
+      await StorageService.setItem(StorageKey.hasSeenIntro, 'true');
     } catch (error) {
       console.error('Error saving intro status:', error);
     }

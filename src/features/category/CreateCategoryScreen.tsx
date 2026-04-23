@@ -1,4 +1,5 @@
 import AppHeader from '@/components/base/AppHeader';
+import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
 import STORAGE_KEY from '@/constants/StorageKey';
 import { useNotification } from '@/contexts/NotificationContext';
@@ -7,7 +8,6 @@ import { useCategory } from '@/hooks/useCategory';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
 import { createMultilingualCategoryName, translateText } from '@/utils/translation';
-import AppIcon from '@/components/base/AppIcon';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -119,22 +119,22 @@ const CreateCategoryScreen: React.FC = () => {
         useCallback(() => {
             const loadSelectedData = async () => {
                 try {
-                    // Load selected icon (sử dụng getItem vì IconSelectionScreen dùng setItem)
+                    // Load selected icon
                     const selectedIcon = await StorageService.getItem(STORAGE_KEY.TEMP_ICON_STORAGE);
                     if (selectedIcon) {
                         setIcon(selectedIcon);
                         await StorageService.removeItem(STORAGE_KEY.TEMP_ICON_STORAGE);
                     }
 
-                    // Load selected color (sử dụng getItem vì ColorSelectionScreen dùng setItem)
+                    // Load selected color
                     const selectedColor = await StorageService.getItem(STORAGE_KEY.TEMP_COLOR_STORAGE);
                     if (selectedColor) {
                         setIconColor(selectedColor);
                         await StorageService.removeItem(STORAGE_KEY.TEMP_COLOR_STORAGE);
                     }
 
-                    // Load selected parent category (sử dụng getAsyncItem vì CategorySelectionScreen dùng setAsyncItem)
-                    const selectedParentStr = await StorageService.getAsyncItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
+                    // Load selected parent category (sử dụng getItem vì dữ liệu được lưu tạm trong AsyncStorage)
+                    const selectedParentStr = await StorageService.getItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
                     console.log('[CreateCategory] Raw parent from storage:', selectedParentStr);
 
                     if (selectedParentStr) {
@@ -149,7 +149,7 @@ const CreateCategoryScreen: React.FC = () => {
                                 setSelectedType(getBaseType(selectedParent.category_type));
                             }
 
-                            await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
+                            await StorageService.removeItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
                         } catch (parseError) {
                             console.error('[CreateCategory] Failed to parse parent category:', parseError);
                         }

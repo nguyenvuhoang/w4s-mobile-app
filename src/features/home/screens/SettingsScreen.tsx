@@ -262,12 +262,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               icon="setting_screen_group"
               title={t("settings.group")}
               onPress={() => {
-                router.push({
-                  pathname: "/(protected)/select-category",
-                  params: {
-                    isEdit: "true",
-                  },
-                });
+                router.push("/(protected)/category-management");
               }}
               colors={colors}
             />

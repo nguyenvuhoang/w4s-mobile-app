@@ -60,12 +60,14 @@ export const categoryRepository = {
   /**
    * Get all categories for a wallet
    */
-  async getCategories(userCode: string): Promise<BaseResponseModel> {
+  async getCategories(userCode: string, walletID: number
+  ): Promise<BaseResponseModel> {
     try {
       return await apiService.executeWorkflow(
         WORKFLOWCODE.WF_MB_GET_WALLET_CONTRACT_CATEGORY,
         {
           usercode: userCode,
+          wallet_id: walletID,
         },
         false,
         true

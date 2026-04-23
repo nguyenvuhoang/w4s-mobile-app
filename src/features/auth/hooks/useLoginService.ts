@@ -123,7 +123,7 @@ export const useLoginService = () => {
   const getPhoneNumberByUserCode = useCallback(
     async (userCode: string): Promise<string> => {
       try {
-        const channelId = await StorageService.getAsyncItem(
+        const channelId = await StorageService.getItem(
           StorageKey.channelId,
         );
         const response = await authRepository.getPhoneByUserCode(
@@ -176,11 +176,11 @@ export const useLoginService = () => {
         const appInfoData = response.getValue() as AppInfo;
         setAppInfo(appInfoData);
         setAppInfoGlobal(appInfoData);
-        await StorageService.setAsyncItem(
+        await StorageService.setItem(
           StorageKey.appInfo,
           JSON.stringify(appInfoData),
         );
-        await StorageService.setAsyncItem(
+        await StorageService.setItem(
           StorageKey.userCode,
           appInfoData.user_code,
         );
@@ -257,7 +257,7 @@ export const useLoginService = () => {
       type: string = OTPChannel.ZALO,
     ): Promise<AppInfo | null> => {
       if (!otpCode) return null;
-      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      const userCode = await StorageService.getItem(StorageKey.userCode);
       if (!userCode) {
         throw new Error("Missing user code");
       }
@@ -284,11 +284,11 @@ export const useLoginService = () => {
 
         const appInfoData = await handleGetAppInfo();
         if (appInfoData && !appInfoData.is_first_login) {
-          await StorageService.setAsyncItem(StorageKey.isVerifyFirstLogin, "true");
-          const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
+          await StorageService.setItem(StorageKey.isVerifyFirstLogin, "true");
+          const channelId = await StorageService.getItem(StorageKey.channelId);
           if (channelId) {
             const isVerifyFirstLogin_channel = `${StorageKey.isVerifyFirstLogin}_${channelId}`;
-            await StorageService.setAsyncItem(isVerifyFirstLogin_channel, "true");
+            await StorageService.setItem(isVerifyFirstLogin_channel, "true");
           }
         }
         return appInfoData;
@@ -361,14 +361,14 @@ export const useLoginService = () => {
             workflowid: WORKFLOWCODE.WF_MB_EXECUTE_SQL_FROM_CTH,
           });
           await handleGetAppInfo();
-          await StorageService.setAsyncItem(
+          await StorageService.setItem(
             StorageKey.isVerifyFirstLogin,
             "true",
           );
-          const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
+          const channelId = await StorageService.getItem(StorageKey.channelId);
           if (channelId) {
             const isVerifyFirstLogin_channel = `${StorageKey.isVerifyFirstLogin}_${channelId}`;
-            await StorageService.setAsyncItem(isVerifyFirstLogin_channel, "true");
+            await StorageService.setItem(isVerifyFirstLogin_channel, "true");
           }
           return true;
         }
@@ -497,7 +497,7 @@ export const useLoginService = () => {
                 StorageKey.refreshToken,
                 refreshToken,
               );
-              const channelId = await StorageService.getAsyncItem(
+              const channelId = await StorageService.getItem(
                 StorageKey.channelId,
               );
               const refreshTokenKey = channelId
@@ -571,7 +571,7 @@ export const useLoginService = () => {
           try {
             const userToken = response.getValue(StorageKey.token);
             const refreshToken = response.getValue(StorageKey.refreshToken);
-            const channelId = await StorageService.getAsyncItem(
+            const channelId = await StorageService.getItem(
               StorageKey.channelId,
             );
             await StorageService.setSecureItem(
@@ -587,7 +587,7 @@ export const useLoginService = () => {
             const userSessionKey = channelId
               ? `${StorageKey.userSession}_${channelId}`
               : StorageKey.userSession;
-            await StorageService.setAsyncItem(
+            await StorageService.setSecureItem(
               userSessionKey,
               JSON.stringify({ token: userToken }),
             );

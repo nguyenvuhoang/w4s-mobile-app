@@ -203,7 +203,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const loadDefaultWallet = async () => {
       try {
-        const stored = await StorageService.getAsyncItem(
+        const stored = await StorageService.getItem(
           StorageKey.defaultWalletId,
         );
         if (stored) {
@@ -219,7 +219,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
   // 🔹 ADD — Persist default wallet
   useEffect(() => {
     if (!defaultWalletId) return;
-    StorageService.setAsyncItem(
+    StorageService.setItem(
       StorageKey.defaultWalletId,
       String(defaultWalletId),
     );
@@ -285,7 +285,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const loadAppInfo = async () => {
       try {
-        const storedAppInfo = await StorageService.getAsyncItem(
+        const storedAppInfo = await StorageService.getItem(
           StorageKey.appInfo,
         );
         if (storedAppInfo) {

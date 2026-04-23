@@ -32,7 +32,7 @@ const SelectWalletIconScreen: React.FC = () => {
   const categoryParam = params.category as string;
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedIcon, setSelectedIcon] = useState('wallet');
+  const [selectedIcon, setSelectedIcon] = useState((params.icon as string) || 'wallet');
   const [displayCount, setDisplayCount] = useState(INITIAL_LOAD);
 
   const { width: SCREEN_WIDTH } = Dimensions.get('window');

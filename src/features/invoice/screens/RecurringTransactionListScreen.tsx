@@ -140,7 +140,7 @@ const RecurringTransactionListScreen = () => {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
 
-      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      const userCode = await StorageService.getItem(StorageKey.userCode);
       const res = await invoiceRepository.advancedSearchInvoice({
         user_code: userCode,
         wallet_id: 0,

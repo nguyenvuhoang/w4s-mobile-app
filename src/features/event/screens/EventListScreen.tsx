@@ -97,7 +97,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
   const handleEventPress = async (event: Event) => {
     const localizedTitle = parseLocalizedName(event.title);
     if (mode === "select") {
-      await StorageService.setAsyncItem(
+      await StorageService.setItem(
         STORAGE_KEY.TEMP_EVENT_STORAGE,
         JSON.stringify({
           eventId: event.id,

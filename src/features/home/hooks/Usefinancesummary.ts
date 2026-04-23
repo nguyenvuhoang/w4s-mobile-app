@@ -49,7 +49,7 @@ export const useFinanceSummary = (): UseFinanceSummaryReturn => {
       setLoading(true);
       setError(null);
 
-      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      const userCode = await StorageService.getItem(StorageKey.userCode);
       if (!userCode) {
         throw new Error("Missing user code");
       }
@@ -179,7 +179,7 @@ export const useWalletOpeningClosingBalance = () => {
       setLoading(true);
       setError(null);
       try {
-        const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+        const userCode = await StorageService.getItem(StorageKey.userCode);
         if (!userCode) {
             throw new Error("Missing user code");
         }
@@ -266,7 +266,7 @@ export const useMonthlyChartData = (params?: {
     setError(null);
 
     try {
-      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      const userCode = await StorageService.getItem(StorageKey.userCode);
       if (!userCode) throw new Error("Missing user code");
 
       const [expenseRes, incomeRes] = await Promise.all([

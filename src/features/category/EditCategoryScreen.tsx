@@ -192,7 +192,7 @@ const EditCategoryScreen: React.FC = () => {
             await StorageService.removeItem(STORAGE_KEY.TEMP_COLOR_STORAGE);
           }
 
-          const selectedCategoryJson = await StorageService.getAsyncItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
+          const selectedCategoryJson = await StorageService.getItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
           if (selectedCategoryJson) {
             try {
               const selectedCategory = JSON.parse(selectedCategoryJson) as Category;
@@ -200,7 +200,7 @@ const EditCategoryScreen: React.FC = () => {
             } catch (err) {
               console.error('[EditCategory] Failed to parse parent category:', err);
             }
-            await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
+            await StorageService.removeItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
           }
         } catch (error) {
           console.error('[EditCategory] Failed to load selected data:', error);

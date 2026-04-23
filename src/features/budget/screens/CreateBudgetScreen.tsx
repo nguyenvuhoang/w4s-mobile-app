@@ -113,6 +113,7 @@ const CreateBudgetScreen = () => {
         name: string;
     }>(userDefaultCurrency);
     const hasManuallySelectedCurrencyRef = useRef(false);
+    const prevWalletIdRef = useRef<number | null>(null);
 
     // Date range states
     const [startDate, setStartDate] = useState<Date>(new Date());
@@ -347,6 +348,13 @@ const CreateBudgetScreen = () => {
     }, [defaultWallet, sourceWalletId, userDefaultCurrency]);
 
     useEffect(() => {
+        if (prevWalletIdRef.current !== null && sourceWalletId !== prevWalletIdRef.current) {
+            setSelectedCategoryData(null);
+        }
+        prevWalletIdRef.current = sourceWalletId;
+    }, [sourceWalletId]);
+
+    useEffect(() => {
         if (selectedWallet && currencies.length > 0 && !hasManuallySelectedCurrencyRef.current) {
             setInputCurrency(walletCurrency);
         }
@@ -358,17 +366,17 @@ const CreateBudgetScreen = () => {
             const loadData = async () => {
                 try {
                     // Load wallet
-                    const storedWallet = await StorageService.getAsyncItem(
+                    const storedWallet = await StorageService.getItem(
                         WALLET_STORAGE_KEY
                     );
                     if (storedWallet) {
                         const { walletId } = JSON.parse(storedWallet);
                         setSourceWalletId(walletId);
-                        await StorageService.removeAsyncItem(WALLET_STORAGE_KEY);
+                        await StorageService.removeItem(WALLET_STORAGE_KEY);
                     }
 
                     // Load category
-                    const storedCategory = await StorageService.getAsyncItem(
+                    const storedCategory = await StorageService.getItem(
                         CATEGORY_STORAGE_KEY
                     );
                     if (storedCategory) {
@@ -384,7 +392,7 @@ const CreateBudgetScreen = () => {
                         } as const;
                         setSelectedType(typeMap[categoryData.category_type]);
 
-                        await StorageService.removeAsyncItem(CATEGORY_STORAGE_KEY);
+                        await StorageService.removeItem(CATEGORY_STORAGE_KEY);
                     }
 
                     // Load currency (shared storage key with AddTransactionScreen)
@@ -564,12 +572,21 @@ const CreateBudgetScreen = () => {
                                 styles.field,
                                 { backgroundColor: colors.card, borderColor: colors.border },
                             ]}
-                            onPress={() =>
+                            onPress={() => {
+                                if (sourceWalletId === null) {
+                                    showNotification(
+                                        t("transaction.please_select_wallet_first", {
+                                            defaultValue: "Vui lòng chọn ví trước khi chọn hạng mục",
+                                        }),
+                                        "warning"
+                                    );
+                                    return;
+                                }
                                 router.push({
                                     pathname: "/(protected)/select-category",
-                                    params: { selectedType, isBudget: "true" },
-                                })
-                            }
+                                    params: { selectedType, isBudget: "true", walletId: sourceWalletId },
+                                });
+                            }}
                         >
                             <View style={styles.fieldLeft}>
                                 {selectedCategoryData ? (

@@ -9,7 +9,7 @@ import { Platform } from "react-native";
 class StorageService {
   static async getSession(): Promise<Session | null> {
     try {
-      const session = await this.getItem("session");
+      const session = await this.getSecureItem("session");
 
       if (session) {
         const parsedSession = JSON.parse(session);
@@ -25,40 +25,19 @@ class StorageService {
 
   static async setUserSession(session: any): Promise<void> {
     try {
-      await this.setItem(StorageKey.userSession, JSON.stringify({ token: session }));
-
-      // const channelId = await this.getItem(StorageKey.channelId);
-      // const key = channelId ? `${StorageKey.userSession}_${channelId}` : StorageKey.userSession;
-      // await this.setItem(key, JSON.stringify({ token: session }));
+      await this.setSecureItem(StorageKey.userSession, JSON.stringify({ token: session }));
     } catch (error) {
       console.error("Error setting user session:", error);
     }
   }
 
   public static isWeb(): boolean {
-    // Cách 1: Kiểm tra Platform từ react-native
-    if (Platform.OS === 'web') return true;
-    return false;
-
-    // Cách 2: Kiểm tra window và navigator
-    // return typeof window !== 'undefined' && typeof window.navigator !== 'undefined';
-
-    // Cách 3: Kiểm tra document
-    // return typeof document !== 'undefined';
+    return Platform.OS === 'web';
   }
-  static async getSecureItem(key: string): Promise<string> {
-    return await SecureStore.getItemAsync(key) ?? "";
-  }
+
+  // --- Secure Storage (SecureStore on Mobile, AsyncStorage on Web) ---
 
   static async setSecureItem(key: string, value: any): Promise<void> {
-    await SecureStore.setItemAsync(key, value);
-  }
-
-  static async removeSecureItem(key: string): Promise<void> {
-    await SecureStore.deleteItemAsync(key);
-  }
-
-  static async setItem(key: string, value: any): Promise<void> {
     if (this.isWeb()) {
       await AsyncStorage.setItem(key, value);
     } else {
@@ -66,8 +45,7 @@ class StorageService {
     }
   }
 
-  static async getItem(key: string): Promise<string> {
-    // console.log("this.isWeb()", this.isWeb());
+  static async getSecureItem(key: string): Promise<string> {
     if (this.isWeb()) {
       const item = await AsyncStorage.getItem(key);
       return item ?? "";
@@ -76,12 +54,8 @@ class StorageService {
       return item ?? "";
     }
   }
-  static async getUserSession(): Promise<UserSession | null> {
-    const userSession = await this.getItem(StorageKey.userSession);
-    return userSession ? JSON.parse(userSession) : null;
-  }
 
-  static async removeItem(key: string): Promise<void> {
+  static async removeSecureItem(key: string): Promise<void> {
     if (this.isWeb()) {
       await AsyncStorage.removeItem(key);
     } else {
@@ -89,38 +63,60 @@ class StorageService {
     }
   }
 
+  // --- Regular Storage (AsyncStorage) ---
+
+  static async setItem(key: string, value: string): Promise<void> {
+    await AsyncStorage.setItem(key, value);
+  }
+
+  static async getItem(key: string): Promise<string> {
+    const item = await AsyncStorage.getItem(key);
+    return item ?? "";
+  }
+
+  static async removeItem(key: string): Promise<void> {
+    await AsyncStorage.removeItem(key);
+  }
+
+  // Alias for backward compatibility
+  static setAsyncItem = this.setItem;
+  static getAsyncItem = this.getItem;
+  static removeAsyncItem = this.removeItem;
+
+  // --- Specialized Methods ---
+
+  static async getUserSession(): Promise<UserSession | null> {
+    const userSession = await this.getSecureItem(StorageKey.userSession);
+    return userSession ? JSON.parse(userSession) : null;
+  }
+
   static async clearSession(): Promise<void> {
-    await this.removeItem("session");
+    await this.removeSecureItem("session");
   }
 
   static async getUsername(): Promise<string> {
-    let username = await this.getItem("username");
+    let username = await this.getSecureItem("username");
     return username ? username : "";
   }
 
   static async getPin(): Promise<string> {
-    let pin = await this.getItem("pin");
+    let pin = await this.getSecureItem("pin");
     return pin ? pin : "";
   }
 
   static async getPrivateKey(): Promise<string> {
-    let privateKey = await this.getItem("privateKey");
+    let privateKey = await this.getSecureItem("privateKey");
     return privateKey ? privateKey : "";
   }
 
   static async checkFastLogin(): Promise<boolean> {
     let pin = await this.getPin();
     let userName = await this.getUsername();
-
-    if (pin && userName) {
-      return true;
-    }
-    return false;
+    return !!(pin && userName);
   }
 
   static async getFcmToken(): Promise<string> {
-    let fcmToken = await this.getItem("fcmToken");
-    return fcmToken ? fcmToken : "";
+    return await this.getSecureItem("fcmToken");
   }
 
   static async getLanguage(): Promise<string> {
@@ -129,30 +125,15 @@ class StorageService {
   }
 
   static async getTempActivationCode(): Promise<string> {
-    let value = await this.getItem("tempActivationCode");
-    return value ? value : "";
+    return await this.getSecureItem("tempActivationCode");
   }
 
   static async getPassword(): Promise<string> {
-    let password = await this.getItem("password");
-    return password ? password : "";
-  }
-
-  //#region AsyncStorage
-  static async getAsyncItem(key: string): Promise<string> {
-    return await AsyncStorage.getItem(key) ?? "";
-  }
-
-  static async setAsyncItem(key: string, value: string): Promise<void> {
-    await AsyncStorage.setItem(key, value);
-  }
-
-  static async removeAsyncItem(key: string): Promise<void> {
-    await AsyncStorage.removeItem(key);
+    return await this.getSecureItem("password");
   }
 
   static async getCachedRoleCommand(): Promise<string[]> {
-    const commandIds = await this.getAsyncItem(StorageKey.roleCommand);
+    const commandIds = await this.getItem(StorageKey.roleCommand);
     if (commandIds) {
       try {
         const parsedCommandIds = JSON.parse(commandIds);
@@ -165,17 +146,19 @@ class StorageService {
     }
     return [];
   }
+
   static async getCommandMenu(): Promise<UserCommand[]> {
-    let value = await this.getAsyncItem(StorageKey.commandMenu);
-    return JSON.parse(value) as UserCommand[]
+    let value = await this.getItem(StorageKey.commandMenu);
+    return value ? JSON.parse(value) as UserCommand[] : [];
   }
+
   static async getBaseURL(): Promise<string> {
-    return await this.getAsyncItem(StorageKey.baseURL);
+    return await this.getItem(StorageKey.baseURL);
   }
+
   static async setBaseURL(baseURL: string): Promise<void> {
-    await this.setAsyncItem(StorageKey.baseURL, baseURL);
+    await this.setItem(StorageKey.baseURL, baseURL);
   }
-  //#end region
 }
 
 export default StorageService;

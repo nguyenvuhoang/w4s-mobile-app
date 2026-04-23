@@ -36,7 +36,7 @@ export const useWalletTracker = () => {
     setError(null);
 
     try {
-      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      const userCode = await StorageService.getItem(StorageKey.userCode);
       if (!userCode) {
         throw new Error('Missing user code');
       }
@@ -72,7 +72,7 @@ export const useWalletTracker = () => {
     setError(null);
 
     try {
-      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      const userCode = await StorageService.getItem(StorageKey.userCode);
       if (!userCode) {
         throw new Error('Missing user code');
       }

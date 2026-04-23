@@ -42,14 +42,14 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [isConnected, setIsConnected] = useState(false);
-  const { getAsyncItem, setAsyncItem } = StorageService;
+  const { getItem, setItem } = StorageService;
   const { setBalance, setWalletBalance } = useContext(GlobalContext);
   // const { getPrimaryAccount, getBalance, getPrimaryWallet } = useHomeService();
   const globalContext = useContext(GlobalContext);
   const hasInitialized = useRef(false);
 
   const handleUpdateThemeBanners = async (data: any) => {
-    const raw = await getAsyncItem(StorageKey.ThemeBanners);
+    const raw = await getItem(StorageKey.ThemeBanners);
     const list = raw ? JSON.parse(raw) : [];
 
     const newBanner = {
@@ -71,12 +71,12 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       list.push(newBanner);
     }
-    await setAsyncItem(StorageKey.ThemeBanners, JSON.stringify(list));
+    await setItem(StorageKey.ThemeBanners, JSON.stringify(list));
     console.log("✅ ThemeBanners updated in storage");
   };
 
   const handleUpdatePopupBanners = async (data: any) => {
-    const raw = await getAsyncItem(StorageKey.PopupBanners);
+    const raw = await getItem(StorageKey.PopupBanners);
     const list = raw ? JSON.parse(raw) : [];
 
     const newBanner = {
@@ -111,7 +111,7 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({
       list.push(newBanner);
     }
 
-    await setAsyncItem(StorageKey.PopupBanners, JSON.stringify(list));
+    await setItem(StorageKey.PopupBanners, JSON.stringify(list));
     console.log("✅ PopupBanners updated in storage");
   };
 

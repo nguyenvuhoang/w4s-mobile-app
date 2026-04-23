@@ -175,16 +175,16 @@ export const useSettingService = () => {
         // await handleGetAppInfo();
 
         // Logic verify first login
-        // await StorageService.setAsyncItem(
+        // await StorageService.setItem(
         //   StorageKey.isVerifyFirstLogin,
         //   "true"
         // );
-        // const channelId = await StorageService.getAsyncItem(
+        // const channelId = await StorageService.getItem(
         //   StorageKey.channelId
         // );
         // if (channelId) {
         //   const isVerifyFirstLogin_channel = `${StorageKey.isVerifyFirstLogin}_${channelId}`;
-        //   await StorageService.setAsyncItem(isVerifyFirstLogin_channel, "true");
+        //   await StorageService.setItem(isVerifyFirstLogin_channel, "true");
         // }
       } else {
         showNotification(t("errors.logout.logoutFailed"), "error");

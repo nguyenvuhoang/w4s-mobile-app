@@ -68,18 +68,18 @@ const ExportDataScreen = () => {
     useCallback(() => {
       const loadTempData = async () => {
         try {
-          const storedWallet = await StorageService.getAsyncItem(STORAGE_KEY.TEMP_WALLET_STORAGE);
+          const storedWallet = await StorageService.getItem(STORAGE_KEY.TEMP_WALLET_STORAGE);
           if (storedWallet) {
             const { walletId: storedId } = JSON.parse(storedWallet);
             setWalletId(storedId);
-            await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_WALLET_STORAGE);
+            await StorageService.removeItem(STORAGE_KEY.TEMP_WALLET_STORAGE);
           }
 
-          const storedCategory = await StorageService.getAsyncItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
+          const storedCategory = await StorageService.getItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
           if (storedCategory) {
             const categoryObj: SelectedCategoryData = JSON.parse(storedCategory);
             setCategoryData(categoryObj);
-            await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
+            await StorageService.removeItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
           }
         } catch (error) {
           console.error("Load data failed:", error);

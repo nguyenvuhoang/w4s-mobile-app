@@ -1,14 +1,29 @@
-import { AppConfig } from '@/config/AppConfig';
 import StorageKey from '@/constants/StorageKey';
+import { categoryCache } from '@/features/category/hooks/useCategorycache';
+import { useWallet } from '@/features/wallet/hooks/useWallet';
 import CurrencyEventEmitter from '@/services/CurrencyEventEmitter';
-import { AnalyzeCategoryPayload, Category, categoryRepository, CreateCategoryPayload } from '@/services/repositories/category.repository';
+import {
+  AnalyzeCategoryPayload,
+  Category,
+  categoryRepository,
+  CreateCategoryPayload,
+} from '@/services/repositories/category.repository';
 import StorageService from '@/services/StorageService';
 import TransactionEventEmitter from '@/services/TransactionEventEmitter';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
+
 interface UseCategoryOptions {
   autoFetch?: boolean;
   forceRefresh?: boolean;
+  /**
+   * Truyền walletId để fetch category của 1 ví cụ thể.
+   * Nếu không truyền → tự động fetch tất cả ví (dùng cho màn hình tổng quan).
+   */
+  walletId?: number;
 }
 
 interface CreateCategoryResult {
@@ -45,16 +60,30 @@ export interface TopSpendingCategoryItem {
   transaction_count: number;
 }
 
-/**
- * Hook lấy top danh mục chi tiêu tổng hợp tất cả ví (không cần wallet_id)
- * Dùng cho màn hình tổng quan (StatisticsScreen)
- */
+// ─────────────────────────────────────────────
+// Helper
+// ─────────────────────────────────────────────
+
+const flattenCategories = (categories: Category[]): Category[] => {
+  const result: Category[] = [];
+  categories.forEach(category => {
+    result.push(category);
+    if (category.children?.length) {
+      result.push(...category.children);
+    }
+  });
+  return result;
+};
+
+// ─────────────────────────────────────────────
+// useTopSpendingCategories (không thay đổi)
+// ─────────────────────────────────────────────
+
 export const useTopSpendingCategories = () => {
   const [data, setData] = useState<TopSpendingCategoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Lưu trữ params cuối cùng để dùng cho refresh khi có event
   const lastParams = useRef({ period_type: 'M', take: 5 });
 
   const fetchTopCategories = useCallback(async (
@@ -66,7 +95,7 @@ export const useTopSpendingCategories = () => {
     setError(null);
 
     try {
-      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      const userCode = await StorageService.getItem(StorageKey.userCode);
 
       const currentDate = new Date();
       const formattedAnchorDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
@@ -83,7 +112,12 @@ export const useTopSpendingCategories = () => {
         let list: TopSpendingCategoryItem[] = [];
         if (Array.isArray(response.data)) {
           list = response.data;
-        } else if (response.data.data && Array.isArray(response.data.data) && response.data.data.length > 0 && response.data.data[0].top_categories) {
+        } else if (
+          response.data.data &&
+          Array.isArray(response.data.data) &&
+          response.data.data.length > 0 &&
+          response.data.data[0].top_categories
+        ) {
           list = response.data.data[0].top_categories;
         } else {
           list = response.data.data || response.data.categories || response.data.category_analyze || [];
@@ -103,7 +137,6 @@ export const useTopSpendingCategories = () => {
     }
   }, []);
 
-  // Lắng nghe sự thay đổi giao dịch
   useEffect(() => {
     const handleRefresh = () => {
       fetchTopCategories(lastParams.current.period_type, lastParams.current.take);
@@ -121,30 +154,14 @@ export const useTopSpendingCategories = () => {
   return { data, loading, error, fetchTopCategories };
 };
 
-let sessionCache: {
-  categories: Category[];
-  timestamp: number;
-} | null = null;
-
-// 🔥 Helper: Flatten nested categories
-const flattenCategories = (categories: Category[]): Category[] => {
-  const result: Category[] = [];
-
-  categories.forEach(category => {
-    // Add parent
-    result.push(category);
-
-    // Add children if exist
-    if (category.children && category.children.length > 0) {
-      result.push(...category.children);
-    }
-  });
-
-  return result;
-};
+// ─────────────────────────────────────────────
+// useCategory
+// ─────────────────────────────────────────────
 
 export const useCategory = (options: UseCategoryOptions = {}) => {
-  const { autoFetch = true, forceRefresh = false } = options;
+  const { autoFetch = true, forceRefresh = false, walletId } = options;
+
+  const { wallets } = useWallet();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -153,41 +170,60 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
   const [analyzing, setAnalyzing] = useState(false);
   const [categoryAnalysis, setCategoryAnalysis] = useState<CategoryAnalyzeItem[]>([]);
 
-  const fetchCategories = async (skipCache = false) => {
-    if (!skipCache && sessionCache) {
-      const isExpired = Date.now() - sessionCache.timestamp > AppConfig.CACHE.CATEGORY_TIMEOUT;
-
-      if (!isExpired) {
-        console.log('[useCategory] Using cached data');
-        setCategories(sessionCache.categories);
-        return;
-      } else {
-        console.log('[useCategory] Cache expired, fetching new data');
+  // ── Fetch 1 ví ──────────────────────────────
+  const fetchSingleWallet = async (wId: number, skipCache = false): Promise<Category[]> => {
+    if (!skipCache) {
+      const cached = categoryCache.getByWallet(wId);
+      if (cached) {
+        console.log(`[useCategory] Cache hit for wallet ${wId}`);
+        return cached;
       }
     }
 
+    const userCode = await StorageService.getItem(StorageKey.userCode);
+    const response = await categoryRepository.getCategories(userCode.toString(), wId);
+
+    if (response.isSuccess() && response.data) {
+      const flat = flattenCategories(response.data.data || []);
+      categoryCache.set(wId, flat);
+      console.log(`[useCategory] Fetched and cached wallet ${wId}`);
+      return flat;
+    }
+
+    throw new Error(response.message || `Failed to fetch categories for wallet ${wId}`);
+  };
+
+  // ── Fetch chính: 1 ví hoặc tất cả ví song song ──
+  const fetchCategories = useCallback(async (skipCache = false) => {
     setLoading(true);
     setError(null);
 
     try {
-      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
-      const response = await categoryRepository.getCategories(userCode.toString());
-
-      if (response.isSuccess() && response.data) {
-        const rawCategories = response.data.data || [];
-
-        // 🔥 Flatten nested structure
-        const flattenedCategories = flattenCategories(rawCategories);
-
-        sessionCache = {
-          categories: flattenedCategories,
-          timestamp: Date.now(),
-        };
-
-        setCategories(flattenedCategories);
-        console.log('[useCategory] Data fetched and cached');
+      if (walletId) {
+        // Màn hình có wallet context → fetch đúng ví đó
+        const result = await fetchSingleWallet(walletId, skipCache);
+        setCategories(result);
       } else {
-        throw new Error(response.message || 'Failed to fetch categories');
+        // Màn hình tổng quan → fetch song song tất cả ví chưa có cache
+        const walletIds = wallets.map(w => w.walletId);
+
+        if (walletIds.length === 0) {
+          setCategories([]);
+          return;
+        }
+
+        const uncachedIds = skipCache
+          ? walletIds
+          : walletIds.filter(id => !categoryCache.hasWallet(id));
+
+        // Fetch song song các ví chưa có cache
+        if (uncachedIds.length > 0) {
+          await Promise.all(uncachedIds.map(id => fetchSingleWallet(id, true)));
+        }
+
+        // Gộp tất cả từ cache
+        const all = walletIds.flatMap(id => categoryCache.getByWallet(id) || []);
+        setCategories(all);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch categories';
@@ -196,13 +232,9 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [walletId, wallets]);
 
-  /**
-   * Create a new category
-   * @param payload - Category data (without usercode, will be auto-filled)
-   * @returns Promise with success status and optional message
-   */
+  // ── Create ───────────────────────────────────
   const createCategory = async (
     payload: Omit<CreateCategoryPayload, 'usercode'>
   ): Promise<CreateCategoryResult> => {
@@ -210,7 +242,7 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
     setError(null);
 
     try {
-      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      const userCode = await StorageService.getItem(StorageKey.userCode);
 
       const response = await categoryRepository.createCategory({
         ...payload,
@@ -218,14 +250,12 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
       });
 
       if (response.isSuccess()) {
-        console.log('[useCategory] Category created successfully');
 
-        // Refetch để cập nhật danh sách
+        categoryCache.invalidateAll();
+
         await fetchCategories(true);
-
         return { success: true };
       } else {
-        console.error('[useCategory] Create category failed:', response.message);
         return { success: false, message: response.message };
       }
     } catch (err) {
@@ -238,12 +268,15 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
     }
   };
 
-  const analyzeCategory = useCallback(async (payload: Omit<AnalyzeCategoryPayload, 'usercode'>) => {
+  // ── Analyze ──────────────────────────────────
+  const analyzeCategory = useCallback(async (
+    payload: Omit<AnalyzeCategoryPayload, 'usercode'>
+  ) => {
     setAnalyzing(true);
     setError(null);
 
     try {
-      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      const userCode = await StorageService.getItem(StorageKey.userCode);
 
       const response = await categoryRepository.analyzeCategory({
         ...payload,
@@ -266,29 +299,30 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
     }
   }, []);
 
-  const refetch = () => {
-    console.log('[useCategory] Force refresh');
-    fetchCategories(true);
-  };
-
-  const clearCache = () => {
-    console.log('[useCategory] Cache cleared');
-    sessionCache = null;
-  };
-
+  // ── Auto fetch ───────────────────────────────
   useEffect(() => {
     if (autoFetch) {
       fetchCategories(forceRefresh);
     }
-  }, [autoFetch, forceRefresh]);
+  }, [autoFetch, forceRefresh, walletId]);
 
+  const refetch = useCallback(() => fetchCategories(true), [fetchCategories]);
+
+  // ── Expose ───────────────────────────────────
   return {
     categories,
     loading,
     error,
     creating,
+
     refetch,
-    clearCache,
+    clearCache: () => walletId
+      ? categoryCache.invalidateWallet(walletId)
+      : categoryCache.invalidateAll(),
+
+    // Global lookup — dùng được kể cả khi không có walletId
+    getCategoryById: categoryCache.getById,
+
     createCategory,
     analyzeCategory,
     analyzing,

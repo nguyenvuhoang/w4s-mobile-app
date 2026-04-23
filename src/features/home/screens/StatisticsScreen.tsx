@@ -215,7 +215,7 @@ const StatisticsScreen = () => {
   const handleWalletPress = async (walletId: number) => {
     try {
       // Lưu wallet đã chọn vào storage
-      await StorageService.setAsyncItem(
+      await StorageService.setItem(
         STORAGE_KEY.TEMP_WALLET_STORAGE,
         JSON.stringify({ walletId })
       );
@@ -231,7 +231,7 @@ const StatisticsScreen = () => {
     useCallback(() => {
       const checkWalletSelection = async () => {
         try {
-          const storedWallet = await StorageService.getAsyncItem(
+          const storedWallet = await StorageService.getItem(
             STORAGE_KEY.TEMP_WALLET_STORAGE,
           );
           if (storedWallet) {

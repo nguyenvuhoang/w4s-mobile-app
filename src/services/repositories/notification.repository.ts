@@ -10,7 +10,7 @@ export const notificationRepository = {
     pageIndex: number,
     pageSize: number
   ): Promise<BaseResponseModel> {
-    const channelId = await StorageService.getAsyncItem(StorageKey.channelId);
+    const channelId = await StorageService.getItem(StorageKey.channelId);
 
     return await apiService.executeWorkflow(
       WORKFLOWCODE.MB_GET_NOTIFICATIONS,

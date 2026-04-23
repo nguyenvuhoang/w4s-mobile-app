@@ -188,7 +188,7 @@ const FeatureSearchModal: React.FC<FeatureSearchModalProps> = ({ isVisible, onCl
   useEffect(() => {
     const loadRecent = async () => {
       try {
-        const stored = await StorageService.getAsyncItem('recent_search_features');
+        const stored = await StorageService.getItem('recent_search_features');
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed)) {
@@ -215,7 +215,7 @@ const FeatureSearchModal: React.FC<FeatureSearchModalProps> = ({ isVisible, onCl
     const newRecent = [item.id, ...recentIds.filter(id => id !== item.id)].slice(0, 3);
     setRecentIds(newRecent);
     try {
-      await StorageService.setAsyncItem('recent_search_features', JSON.stringify(newRecent));
+      await StorageService.setItem('recent_search_features', JSON.stringify(newRecent));
     } catch (error) {
       console.error('Failed to save recent features:', error);
     }

@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.semiBold,
   },
   rightContainer: {
-    width: normalize(40),
+    minWidth: normalize(40),
     alignItems: "flex-end",
   },
   placeholder: {

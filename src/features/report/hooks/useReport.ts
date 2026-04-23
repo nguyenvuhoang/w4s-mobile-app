@@ -20,7 +20,7 @@ export const useReport = () => {
     setLoading(true);
     setError(null);
     try {
-      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      const userCode = await StorageService.getItem(StorageKey.userCode);
       const response = await financeSummaryRepository.getMonthlyDebitSummary({
         ...params,
         usercode: userCode?.toString() || '',

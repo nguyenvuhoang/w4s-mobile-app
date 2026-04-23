@@ -64,7 +64,7 @@ const AIChatScreen = () => {
     // Get token and usercode from storage
     const session = await StorageService.getUserSession();
     const token = session?.token;
-    const usercode = await StorageService.getAsyncItem(StorageKey.userCode);
+    const usercode = await StorageService.getItem(StorageKey.userCode);
 
     console.log("=========", token);
     console.log("============", usercode);

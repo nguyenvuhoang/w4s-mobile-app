@@ -51,7 +51,7 @@ const SelectLocationScreen = () => {
   const loadSavedLocation = async () => {
     try {
       // Load location đã chọn trước đó (nếu có)
-      const storedLocation = await StorageService.getAsyncItem(
+      const storedLocation = await StorageService.getItem(
         STORAGE_KEY.TEMP_LOCATION_STORAGE
       );
       if (storedLocation) {
@@ -210,7 +210,7 @@ const SelectLocationScreen = () => {
       };
 
       // Lưu vào storage với session ID
-      await StorageService.setAsyncItem(
+      await StorageService.setItem(
         STORAGE_KEY.TEMP_LOCATION_STORAGE,
         JSON.stringify({
           sessionId,

@@ -82,7 +82,7 @@ const QuickLoginScreen = () => {
         return;
       }
 
-      const storedAppInfo = await StorageService.getAsyncItem(StorageKey.appInfo);
+      const storedAppInfo = await StorageService.getItem(StorageKey.appInfo);
       if (storedAppInfo) {
         const parsedAppInfo: AppInfo = JSON.parse(storedAppInfo);
         setAppInfo(parsedAppInfo);
@@ -107,7 +107,7 @@ const QuickLoginScreen = () => {
           is_login: islogin,
         };
 
-        await StorageService.setAsyncItem(
+        await StorageService.setItem(
           StorageKey.appInfo,
           JSON.stringify(appInfoData)
         );
@@ -164,10 +164,10 @@ const QuickLoginScreen = () => {
   };
 
   const clearDataUser = async () => {
-    await StorageService.removeAsyncItem(StorageKey.appInfo);
-    await StorageService.removeAsyncItem(StorageKey.user);
-    await StorageService.removeAsyncItem(StorageKey.isVerifyFirstLogin);
-    await StorageService.removeAsyncItem(StorageKey.token);
+    await StorageService.removeItem(StorageKey.appInfo);
+    await StorageService.removeItem(StorageKey.user);
+    await StorageService.removeItem(StorageKey.isVerifyFirstLogin);
+    await StorageService.removeSecureItem(StorageKey.token);
     await StorageService.clearSession();
   };
 

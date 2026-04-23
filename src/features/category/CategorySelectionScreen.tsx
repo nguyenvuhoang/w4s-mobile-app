@@ -1,5 +1,5 @@
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -69,7 +69,7 @@ const CategorySelectionScreen: React.FC = () => {
 
   const params = useLocalSearchParams<{
     selectedType?: string;
-    isEdit?: string;
+    walletId?: string;
     isSelectParent?: string;
     isBudget?: string;
     isInvoice?: string;
@@ -78,7 +78,10 @@ const CategorySelectionScreen: React.FC = () => {
   /* =====================
      Modes
   ===================== */
-  const isEdit = useMemo(() => params.isEdit === "true", [params.isEdit]);
+  const walletId = useMemo(
+    () => (params.walletId ? parseInt(params.walletId) : undefined),
+    [params.walletId]
+  );
   const isSelectParent = useMemo(
     () => params.isSelectParent === "true",
     [params.isSelectParent]
@@ -90,17 +93,14 @@ const CategorySelectionScreen: React.FC = () => {
      Available Tabs
   ===================== */
   const availableTabs = useMemo((): TabType[] => {
-    // 🔥 Nếu đang chọn cho ngân sách hoặc hoá đơn, chỉ cho chọn EXPENSE
     if (isBudget || isInvoice) {
       return ["EXPENSE"];
     }
-    // 🔥 Nếu đang select parent, chỉ cho chọn INCOME hoặc EXPENSE
     if (isSelectParent) {
       return ["INCOME", "EXPENSE"];
     }
-    // Normal mode: cho chọn cả 3
     return ["INCOME", "EXPENSE", "LOAN"];
-  }, [isSelectParent, isBudget]);
+  }, [isSelectParent, isBudget, isInvoice]);
 
   /* =====================
      Initial Tab
@@ -115,7 +115,6 @@ const CategorySelectionScreen: React.FC = () => {
     else if (params.selectedType === "EXPENSE") requestedTab = "EXPENSE";
     else if (params.selectedType === "LOAN") requestedTab = "LOAN";
 
-    // 🔥 Nếu requested tab không có trong available tabs, fallback về tab đầu tiên
     if (!availableTabs.includes(requestedTab)) {
       return availableTabs[0];
     }
@@ -128,20 +127,12 @@ const CategorySelectionScreen: React.FC = () => {
 
   const { categories, loading, error, refetch } = useCategory({
     autoFetch: true,
+    walletId: walletId,
   });
 
   useEffect(() => {
     setSelectedTab(initialTab);
   }, [initialTab]);
-
-  // Khi quay lại từ EditCategoryScreen → refetch để lấy data mới nhất
-  useFocusEffect(
-    useCallback(() => {
-      if (isEdit) {
-        refetch();
-      }
-    }, [isEdit])
-  );
 
   /* =====================
      Helpers
@@ -169,7 +160,6 @@ const CategorySelectionScreen: React.FC = () => {
   const groupedCategories = useMemo(() => {
     let baseList = [...categories];
 
-    // 🔥 Inject static loan categories if on LOAN tab
     if (selectedTab === "LOAN") {
       baseList = [...baseList, ...STATIC_LOAN_CATEGORIES];
     }
@@ -188,9 +178,6 @@ const CategorySelectionScreen: React.FC = () => {
       });
     }
 
-    /* =====================
-       SELECT PARENT MODE
-    ===================== */
     if (isSelectParent) {
       return filtered
         .filter((cat) => !cat.parent_category_id)
@@ -200,9 +187,6 @@ const CategorySelectionScreen: React.FC = () => {
         }, {});
     }
 
-    /* =====================
-       NORMAL MODE
-    ===================== */
     const groups: Record<string, Category[]> = {};
     const parents = filtered.filter((cat) => !cat.parent_category_id);
 
@@ -222,36 +206,8 @@ const CategorySelectionScreen: React.FC = () => {
      Press handler
   ===================== */
   const handlePressCategory = async (category: Category) => {
-    // 🔥 Prevent editing static categories
-    if (isEdit && category.id < 0) {
-      return;
-    }
-
-    // 🔥 SELECT PARENT MODE - Lưu toàn bộ category object
-    if (isSelectParent) {
-      await StorageService.setAsyncItem(
-        STORAGE_KEY,
-        JSON.stringify(category)
-      );
-      router.back();
-      return;
-    }
-
-    // ✏️ EDIT MODE
-    if (isEdit) {
-      router.push({
-        pathname: "/(protected)/edit-category",
-        params: {
-          category: encodeURIComponent(JSON.stringify(category)),
-          allCategories: encodeURIComponent(JSON.stringify(categories)),
-        },
-      });
-      return;
-    }
-
-    // ✅ SELECT MODE
     try {
-      await StorageService.setAsyncItem(
+      await StorageService.setItem(
         STORAGE_KEY,
         JSON.stringify(category)
       );
@@ -296,33 +252,10 @@ const CategorySelectionScreen: React.FC = () => {
         title={
           isSelectParent
             ? t("category.select_type_parent")
-            : isEdit
-              ? t("category.edit_category")
-              : t("category.title")
+            : t("category.title")
         }
         showBackButton
       />
-
-      {/* CREATE BUTTON */}
-      {!isSelectParent && (
-        <View style={styles.createButtonContainer}>
-          <TouchableOpacity
-            style={[styles.createButton, { backgroundColor: colors.tint }]}
-            onPress={() => {
-              router.push({
-                pathname: "/(protected)/category/create-category",
-                params: {
-                  type: selectedTab,
-                },
-              });
-            }}
-          >
-            <CustomText style={styles.createButtonText}>
-              {t("category.create_new_category")}
-            </CustomText>
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* TABS */}
       {availableTabs.length > 1 && (
@@ -375,7 +308,6 @@ const CategorySelectionScreen: React.FC = () => {
           {Object.values(groupedCategories).map((group) => {
             const parent = group[0];
             const children = group.slice(1);
-            const parentName = parseCategoryName(parent.category_name);
 
             return (
               <View
@@ -411,22 +343,12 @@ const CategorySelectionScreen: React.FC = () => {
                   >
                     {getCategoryName(parent.category_name)}
                   </CustomText>
-
-                  {isEdit && !isSelectParent && (
-                    <Ionicons
-                      name="chevron-forward"
-                      size={normalize(18)}
-                      color={colors.icon}
-                    />
-                  )}
                 </TouchableOpacity>
 
-                {/* CHILDREN - Chỉ render khi KHÔNG phải select parent mode */}
+                {/* CHILDREN */}
                 {!isSelectParent && children.length > 0 && (
                   <>
                     {children.map((child) => {
-                      const childName = parseCategoryName(child.category_name);
-
                       return (
                         <TouchableOpacity
                           key={child.id}
@@ -454,14 +376,6 @@ const CategorySelectionScreen: React.FC = () => {
                           >
                             {getCategoryName(child.category_name)}
                           </CustomText>
-
-                          {isEdit && (
-                            <Ionicons
-                              name="chevron-forward"
-                              size={normalize(18)}
-                              color={colors.icon}
-                            />
-                          )}
                         </TouchableOpacity>
                       );
                     })}
@@ -483,27 +397,6 @@ export default CategorySelectionScreen;
 ===================== */
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
-  createButtonContainer: {
-    paddingHorizontal: wp(5),
-    paddingVertical: hp(1.5),
-  },
-  createButton: {
-    paddingVertical: normalize(14),
-    borderRadius: normalize(100),
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  createButtonText: {
-    fontSize: normalize(16),
-    fontWeight: "600",
-    color: "#fff",
-  },
-
   tabContainer: {
     flexDirection: "row",
     paddingHorizontal: wp(5),
@@ -515,9 +408,7 @@ const styles = StyleSheet.create({
     paddingVertical: normalize(10),
     borderRadius: normalize(100),
     alignItems: "center",
-    backgroundColor: "#eee", // Will be overridden by inline styles
   },
-
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -529,17 +420,15 @@ const styles = StyleSheet.create({
     gap: normalize(8),
   },
   searchInput: { flex: 1 },
-
   scrollContent: {
     paddingHorizontal: wp(5),
+    paddingBottom: hp(5),
     gap: normalize(12),
   },
-
   categoryGroup: {
     borderRadius: normalize(16),
     padding: normalize(12),
   },
-
   categoryItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -557,7 +446,6 @@ const styles = StyleSheet.create({
     fontSize: normalize(16),
     fontWeight: "600",
   },
-
   childItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -575,7 +463,6 @@ const styles = StyleSheet.create({
   childName: {
     fontSize: normalize(15),
   },
-
   centerContainer: {
     flex: 1,
     justifyContent: "center",

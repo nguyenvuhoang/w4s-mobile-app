@@ -113,6 +113,7 @@ const CreateRecurringInvoiceScreen = () => {
     name: "Việt Nam Đồng",
   });
   const hasManuallySelectedCurrencyRef = React.useRef(false);
+  const prevWalletIdRef = React.useRef<number | null>(null);
 
   // Recurring states
   const [showRecurringModal, setShowRecurringModal] = useState(false);
@@ -380,6 +381,13 @@ const CreateRecurringInvoiceScreen = () => {
   }, [defaultWallet, sourceWalletId]);
 
   useEffect(() => {
+    if (prevWalletIdRef.current !== null && sourceWalletId !== prevWalletIdRef.current) {
+      setSelectedCategoryData(null);
+    }
+    prevWalletIdRef.current = sourceWalletId;
+  }, [sourceWalletId]);
+
+  useEffect(() => {
     if (selectedWallet && currencies.length > 0) {
       if (!hasManuallySelectedCurrencyRef.current) {
         setInputCurrency(walletCurrency);
@@ -392,18 +400,18 @@ const CreateRecurringInvoiceScreen = () => {
     useCallback(() => {
       const loadData = async () => {
         try {
-          const storedWallet = await StorageService.getAsyncItem(
+          const storedWallet = await StorageService.getItem(
             STORAGE_KEY.TEMP_WALLET_STORAGE,
           );
           if (storedWallet) {
             const { walletId } = JSON.parse(storedWallet);
             setSourceWalletId(walletId);
-            await StorageService.removeAsyncItem(
+            await StorageService.removeItem(
               STORAGE_KEY.TEMP_WALLET_STORAGE,
             );
           }
 
-          const storedCategory = await StorageService.getAsyncItem(
+          const storedCategory = await StorageService.getItem(
             STORAGE_KEY.TEMP_CATEGORY_STORAGE,
           );
           if (storedCategory) {
@@ -420,7 +428,7 @@ const CreateRecurringInvoiceScreen = () => {
               setSelectedCategoryData(categoryData);
             }
 
-            await StorageService.removeAsyncItem(
+            await StorageService.removeItem(
               STORAGE_KEY.TEMP_CATEGORY_STORAGE,
             );
           }
@@ -635,12 +643,21 @@ const CreateRecurringInvoiceScreen = () => {
             </CustomText>
             <TouchableOpacity
               style={styles.field}
-              onPress={() =>
+              onPress={() => {
+                if (sourceWalletId === null) {
+                  showNotification(
+                    t("transaction.please_select_wallet_first", {
+                      defaultValue: "Vui lòng chọn ví trước khi chọn hạng mục",
+                    }),
+                    "warning",
+                  );
+                  return;
+                }
                 router.push({
                   pathname: "/(protected)/select-category",
-                  params: { selectedType: selectedType, isInvoice: "true" },
-                })
-              }
+                  params: { selectedType: selectedType, isInvoice: "true", walletId: sourceWalletId },
+                });
+              }}
             >
               <View style={styles.fieldLeft}>
                 {selectedCategoryData ? (

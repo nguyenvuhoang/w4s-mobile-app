@@ -76,7 +76,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
       // Mode select: Lưu vào storage và quay lại
       try {
         console.log('[WalletList] Saving wallet to storage:', wallet.walletId);
-        await StorageService.setAsyncItem(
+        await StorageService.setItem(
           STORAGE_KEY.TEMP_WALLET_STORAGE,
           JSON.stringify({ walletId: wallet.walletId })
         );

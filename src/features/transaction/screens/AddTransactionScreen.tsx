@@ -129,6 +129,7 @@ const AddTransactionScreen = () => {
 
   const [selectedType, setSelectedType] = useState<TransactionType>("expense");
   const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
+  const prevWalletIdRef = useRef<number | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent | null>(null);
   const [sourceEventId, setSourceEventId] = useState<number | null>(null);
   const [selectedCategoryData, setSelectedCategoryData] = useState<SelectedCategoryData | null>(null);
@@ -282,7 +283,10 @@ const AddTransactionScreen = () => {
         console.log("[AddTransaction] Autofill data:", autofillData);
 
         if (autofillData.type) setSelectedType(autofillData.type);
-        if (autofillData.walletId !== undefined) setSourceWalletId(autofillData.walletId);
+        if (autofillData.walletId !== undefined) {
+          setSourceWalletId(autofillData.walletId);
+          prevWalletIdRef.current = autofillData.walletId;
+        }
         if (autofillData.category) setSelectedCategoryData(autofillData.category);
         if (autofillData.amount !== undefined) setAmount(String(autofillData.amount));
 
@@ -379,6 +383,13 @@ const AddTransactionScreen = () => {
   }, [inputCurrency.currencyId]);
 
   useEffect(() => {
+    if (prevWalletIdRef.current !== null && sourceWalletId !== prevWalletIdRef.current) {
+      setSelectedCategoryData(null);
+    }
+    prevWalletIdRef.current = sourceWalletId;
+  }, [sourceWalletId]);
+
+  useEffect(() => {
     if (!sourceWalletId && defaultWallet) {
       setSourceWalletId(defaultWallet.walletId);
     }
@@ -397,17 +408,17 @@ const AddTransactionScreen = () => {
     useCallback(() => {
       const loadData = async () => {
         try {
-          const storedWallet = await StorageService.getAsyncItem(
+          const storedWallet = await StorageService.getItem(
             STORAGE_KEY.TEMP_WALLET_STORAGE,
           );
           if (storedWallet) {
             const { walletId } = JSON.parse(storedWallet);
             setSourceWalletId(walletId);
             hasManuallySelectedCurrencyRef.current = false;
-            await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_WALLET_STORAGE);
+            await StorageService.removeItem(STORAGE_KEY.TEMP_WALLET_STORAGE);
           }
 
-          const storedCategory = await StorageService.getAsyncItem(
+          const storedCategory = await StorageService.getItem(
             STORAGE_KEY.TEMP_CATEGORY_STORAGE,
           );
           if (storedCategory) {
@@ -425,7 +436,7 @@ const AddTransactionScreen = () => {
               setSelectedType(typeMap[groupKey as keyof typeof typeMap]);
             }
 
-            await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
+            await StorageService.removeItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
           }
 
           const storedCurrency = await StorageService.getItem(
@@ -438,7 +449,7 @@ const AddTransactionScreen = () => {
             await StorageService.removeItem(STORAGE_KEY.TEMP_CURRENCY_STORAGE);
           }
 
-          const storedParticipants = await StorageService.getAsyncItem(
+          const storedParticipants = await StorageService.getItem(
             STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE,
           );
           if (storedParticipants) {
@@ -446,11 +457,11 @@ const AddTransactionScreen = () => {
             if (data.sessionId === sessionIdRef.current) {
               setParticipants(data.participants);
             } else {
-              await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE);
+              await StorageService.removeItem(STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE);
             }
           }
 
-          const storedLocation = await StorageService.getAsyncItem(
+          const storedLocation = await StorageService.getItem(
             STORAGE_KEY.TEMP_LOCATION_STORAGE,
           );
           if (storedLocation) {
@@ -458,18 +469,18 @@ const AddTransactionScreen = () => {
             if (data.sessionId === sessionIdRef.current) {
               setLocation(data.locationData.address || data.locationData.name || "");
             } else {
-              await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_LOCATION_STORAGE);
+              await StorageService.removeItem(STORAGE_KEY.TEMP_LOCATION_STORAGE);
             }
           }
 
-          const storedEvent = await StorageService.getAsyncItem(
+          const storedEvent = await StorageService.getItem(
             STORAGE_KEY.TEMP_EVENT_STORAGE,
           );
           if (storedEvent) {
             const eventData: SelectedEvent = JSON.parse(storedEvent);
             setSelectedEvent(eventData);
             setSourceEventId(eventData.eventId);
-            await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_EVENT_STORAGE);
+            await StorageService.removeItem(STORAGE_KEY.TEMP_EVENT_STORAGE);
           }
         } catch (error) {
           console.error("[AddTransaction] Load data failed:", error);
@@ -644,8 +655,8 @@ const AddTransactionScreen = () => {
   const clearTempData = async () => {
     try {
       await Promise.all([
-        StorageService.removeAsyncItem(STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE),
-        StorageService.removeAsyncItem(STORAGE_KEY.TEMP_LOCATION_STORAGE),
+        StorageService.removeItem(STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE),
+        StorageService.removeItem(STORAGE_KEY.TEMP_LOCATION_STORAGE),
       ]);
     } catch (error) {
       console.error("[AddTransaction] Failed to clear temp data:", error);
@@ -837,14 +848,27 @@ const AddTransactionScreen = () => {
             <TouchableOpacity
               style={[
                 styles.field,
-                { backgroundColor: colors.card, borderColor: colors.border },
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  opacity: sourceWalletId ? 1 : 0.6,
+                },
               ]}
-              onPress={() =>
+              onPress={() => {
+                if (!sourceWalletId) {
+                  showNotification(
+                    t("transaction.please_select_wallet_first", {
+                      defaultValue: "Vui lòng chọn ví trước khi chọn hạng mục",
+                    }),
+                    "warning",
+                  );
+                  return;
+                }
                 router.push({
                   pathname: "/(protected)/select-category",
-                  params: { selectedType },
-                })
-              }
+                  params: { selectedType, walletId: sourceWalletId },
+                });
+              }}
             >
               <View style={styles.fieldLeft}>
                 {selectedCategoryData ? (

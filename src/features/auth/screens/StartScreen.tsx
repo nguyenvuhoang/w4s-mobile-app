@@ -55,7 +55,7 @@ const StartScreen = () => {
   };
 
   const handleLogin = async () => {
-    await StorageService.setAsyncItem(StorageKey.hasSeenIntro, 'true');
+    await StorageService.setItem(StorageKey.hasSeenIntro, 'true');
     router.push('/(auth)/login');
   };
 

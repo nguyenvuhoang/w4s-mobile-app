@@ -119,7 +119,7 @@ const ReportScreen = () => {
     useCallback(() => {
       const loadSelectedWallet = async () => {
         try {
-          const storedWallet = await StorageService.getAsyncItem(
+          const storedWallet = await StorageService.getItem(
             STORAGE_KEY.TEMP_WALLET_STORAGE,
           );
           if (storedWallet) {
@@ -128,7 +128,7 @@ const ReportScreen = () => {
             if (wallet) {
               setSelectedWallet(wallet);
             }
-            await StorageService.removeAsyncItem(
+            await StorageService.removeItem(
               STORAGE_KEY.TEMP_WALLET_STORAGE,
             );
           }

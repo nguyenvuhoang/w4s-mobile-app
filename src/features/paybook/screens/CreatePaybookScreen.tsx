@@ -412,7 +412,7 @@ const CreatePaybookScreen = () => {
     useCallback(() => {
       const loadContact = async () => {
         try {
-          const stored = await StorageService.getAsyncItem(
+          const stored = await StorageService.getItem(
             STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE
           );
           if (!stored) return;
@@ -423,7 +423,7 @@ const CreatePaybookScreen = () => {
           const contact = participants[0];
           setSelectedContact(contact);
           setCounterpartyName(contact.display_name || contact.name || "");
-          await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE);
+          await StorageService.removeItem(STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE);
         } catch (err) {
           console.error("[CreatePaybook] Load contact failed:", err);
         }
@@ -437,7 +437,7 @@ const CreatePaybookScreen = () => {
     useCallback(() => {
       const loadSelectedWallet = async () => {
         try {
-          const stored = await StorageService.getAsyncItem(
+          const stored = await StorageService.getItem(
             STORAGE_KEY.TEMP_WALLET_STORAGE
           );
           if (!stored) return;
@@ -450,7 +450,7 @@ const CreatePaybookScreen = () => {
               refresh();
             }
           }
-          await StorageService.removeAsyncItem(STORAGE_KEY.TEMP_WALLET_STORAGE);
+          await StorageService.removeItem(STORAGE_KEY.TEMP_WALLET_STORAGE);
         } catch (err) {
           console.error("[CreatePaybook] Load wallet failed:", err);
         }

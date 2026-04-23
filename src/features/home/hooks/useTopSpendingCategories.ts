@@ -39,7 +39,7 @@ export const useTopSpendingCategories = (
             setLoading(true);
             setError(null);
 
-            const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+            const userCode = await StorageService.getItem(StorageKey.userCode);
             if (!userCode) {
                 throw new Error("Missing user code");
             }

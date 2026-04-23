@@ -39,7 +39,7 @@ class DefaultCurrencyService {
 
     // 2. No cache - get currency_code from AppInfo and fetch from API
     try {
-      const appInfoStr = await StorageService.getAsyncItem(StorageKey.appInfo);
+      const appInfoStr = await StorageService.getItem(StorageKey.appInfo);
       
       if (appInfoStr) {
         const appInfo = JSON.parse(appInfoStr);
@@ -92,7 +92,7 @@ class DefaultCurrencyService {
     
     // Sync with API
     try {
-      const userCode = await StorageService.getAsyncItem(StorageKey.userCode);
+      const userCode = await StorageService.getItem(StorageKey.userCode);
       if (!userCode) {
         throw new Error("Missing user code");
       }
