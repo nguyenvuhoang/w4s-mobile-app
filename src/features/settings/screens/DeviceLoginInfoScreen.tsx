@@ -1,5 +1,6 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
+import { useNotification } from '@/contexts/NotificationContext';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
 import { Tokens } from '@/core/theme/theme';
@@ -24,12 +25,14 @@ const DeviceCard = ({
     colors,
     t,
     formatDateTime,
+    onRemove,
 }: {
     device: any;
     index: number;
     colors: any;
     t: any;
     formatDateTime: (s: string | undefined) => string;
+    onRemove: (device: any) => void;
 }) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -136,6 +139,15 @@ const DeviceCard = ({
                         )}
                     </View>
 
+                    {/* Remove Button */}
+                    <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => onRemove(device)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        <Ionicons name="close" size={normalize(20)} color={colors.icon} />
+                    </TouchableOpacity>
+
                     {/* Divider */}
                     <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -194,10 +206,25 @@ const DeviceLoginInfoScreen = () => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { deviceInformation, loginDeviceInformation } = useSettingService();
+    const { showNotification } = useNotification();
 
     useEffect(() => {
         loginDeviceInformation();
     }, []);
+
+    const handleRemoveDevice = (device: any) => {
+        showNotification(
+            t('settings.confirm_remove_device', { defaultValue: 'Bạn có chắc chắn muốn gỡ thiết bị này?' }),
+            'warning',
+            undefined,
+            undefined,
+            async () => {
+                // TODO: Implement actual removal API call if available
+                console.log('Removing device:', device.deviceid);
+                showNotification(t('settings.remove_device_success', { defaultValue: 'Đã gỡ thiết bị thành công' }), 'success');
+            }
+        );
+    };
 
     const formatDateTime = (dateTimeString: string | undefined) => {
         if (!dateTimeString) return '—';
@@ -237,6 +264,7 @@ const DeviceLoginInfoScreen = () => {
                             colors={colors}
                             t={t}
                             formatDateTime={formatDateTime}
+                            onRemove={handleRemoveDevice}
                         />
                     ))
                 )}
@@ -298,6 +326,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: normalize(16),
         paddingBottom: normalize(12),
+        paddingRight: normalize(40), // Space for remove button
+    },
+    removeButton: {
+        position: 'absolute',
+        top: normalize(12),
+        right: normalize(12),
+        width: normalize(28),
+        height: normalize(28),
+        borderRadius: normalize(14),
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
     },
     iconCircle: {
         width: normalize(46),
