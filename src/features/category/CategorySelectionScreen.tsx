@@ -164,7 +164,12 @@ const CategorySelectionScreen: React.FC = () => {
       baseList = [...baseList, ...STATIC_LOAN_CATEGORIES];
     }
 
-    let filtered = baseList.filter(
+    // Deduplicate by category_code
+    const uniqueBaseList = Array.from(
+      new Map(baseList.map((cat) => [cat.category_code, cat])).values()
+    );
+
+    let filtered = uniqueBaseList.filter(
       (cat) => cat.category_group === selectedTab
     );
 
@@ -191,11 +196,17 @@ const CategorySelectionScreen: React.FC = () => {
     const parents = filtered.filter((cat) => !cat.parent_category_id);
 
     parents.forEach((parent) => {
-      groups[parent.id] = [
+      // Use id if available, otherwise fallback to category_code as unique key
+      const groupingKey = parent.id !== undefined && parent.id !== null ? parent.id : parent.category_code;
+      
+      groups[groupingKey] = [
         parent,
-        ...filtered.filter(
-          (cat) => cat.parent_category_id === parent.id
-        ),
+        ...filtered.filter((cat) => {
+          if (!cat.parent_category_id) return false;
+          // Parent-child matching by numeric ID or by code if ID missing
+          if (parent.id !== undefined && cat.parent_category_id === parent.id) return true;
+          return false;
+        }),
       ];
     });
 
@@ -305,13 +316,13 @@ const CategorySelectionScreen: React.FC = () => {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {Object.values(groupedCategories).map((group) => {
+          {Object.values(groupedCategories).map((group, groupIndex) => {
             const parent = group[0];
             const children = group.slice(1);
 
             return (
               <View
-                key={parent.id}
+                key={`group-${parent?.category_code || parent?.id}-${groupIndex}`}
                 style={[
                   styles.categoryGroup,
                   { backgroundColor: colors.card },
@@ -348,10 +359,10 @@ const CategorySelectionScreen: React.FC = () => {
                 {/* CHILDREN */}
                 {!isSelectParent && children.length > 0 && (
                   <>
-                    {children.map((child) => {
+                    {children.map((child, childIndex) => {
                       return (
                         <TouchableOpacity
-                          key={child.id}
+                          key={`child-${child?.category_code || child?.id}-${childIndex}`}
                           style={styles.childItem}
                           onPress={() => handlePressCategory(child)}
                         >

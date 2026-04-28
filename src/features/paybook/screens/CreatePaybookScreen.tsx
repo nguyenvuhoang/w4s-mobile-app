@@ -8,8 +8,8 @@ import { FloatingSchedulePreview } from "@/features/paybook/components/FloatingS
 import { usePaybookDetail } from "@/features/paybook/hooks/usePaybook";
 import TransactionAmountInput from "@/features/transaction/components/TransactionAmountInput";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
-import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { useCurrencyPicker } from "@/hooks/useCurrencyPicker";
+import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import {
   type CounterpartyType,
   type FloatingRatePeriod,
@@ -324,6 +324,38 @@ const CreatePaybookScreen = () => {
   ], [t]);
 
   const [interestEnabled, setInterestEnabled] = useState(false);
+  
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const parseNumber = useCallback((val: string) => {
+    const raw = val.replace(/\./g, "").replace(/,/g, "");
+    const n = parseFloat(raw);
+    return isNaN(n) ? 0 : n;
+  }, []);
+
+  const formatNum = useCallback(
+    (val: string) => {
+      const raw = val.replace(/\D/g, "");
+      if (!raw) return "";
+      return new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : "en-US").format(
+        parseInt(raw, 10)
+      );
+    },
+    [i18n.language]
+  );
+
+  const formatDate = (d: Date) =>
+    d.toLocaleDateString(i18n.language === "vi" ? "vi-VN" : "en-US", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+
+  const getInitials = (n: string) => {
+    const words = n.trim().split(" ");
+    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+  };
+
   const [loanType, setLoanType] = useState<LoanType>("LEND");
   const [walletId, setWalletId] = useState<number | null>(null);
   const [counterpartyName, setCounterpartyName] = useState("");
@@ -400,6 +432,25 @@ const CreatePaybookScreen = () => {
     }
   }, [startDate, paymentType, totalInstallments, periodValue, periodUnit]);
 
+  // ── Bullet interest calculation ───────────────────────────────────────────
+  const bulletSummary = useMemo(() => {
+    if (paymentType !== "BULLET" || !interestEnabled || !maturityDate || !startDate) return null;
+    const principal = parseNumber(principalAmount);
+    const rate = parseFloat(interestRate) || 0;
+    const diffMs = maturityDate.getTime() - startDate.getTime();
+    if (diffMs <= 0) return null;
+
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const years = diffDays / 365;
+    const interest = Math.round(principal * (rate / 100) * years);
+
+    return {
+      interest,
+      total: principal + interest,
+      days: diffDays,
+    };
+  }, [paymentType, interestEnabled, principalAmount, interestRate, startDate, maturityDate]);
+
   // ── Default wallet ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!walletId && defaultWallet) {
@@ -460,27 +511,7 @@ const CreatePaybookScreen = () => {
   );
 
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-  const parseNumber = (val: string) => {
-    const raw = val.replace(/\./g, "").replace(/,/g, "");
-    const n = parseFloat(raw);
-    return isNaN(n) ? 0 : n;
-  };
 
-  const formatNum = useCallback((val: string) => {
-    const raw = val.replace(/\D/g, "");
-    if (!raw) return "";
-    return new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : "en-US").format(parseInt(raw, 10));
-  }, [i18n.language]);
-
-  const formatDate = (d: Date) =>
-    d.toLocaleDateString(i18n.language === "vi" ? "vi-VN" : "en-US", { day: "2-digit", month: "2-digit", year: "numeric" });
-
-  const getInitials = (n: string) => {
-    const words = n.trim().split(" ");
-    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
-    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
-  };
 
   const selectedWallet = useMemo(
     () => wallets.find((w) => w.walletId === walletId),
@@ -902,6 +933,52 @@ const CreatePaybookScreen = () => {
             </View>
           )}
 
+          <SectionHeader title={t("paybook.timeline")} />
+          <View style={[styles.section, { flexDirection: "row", gap: wp(3) }]}>
+            <View style={{ flex: 1 }}>
+              <CustomText style={[styles.label, { color: colors.text }]}>
+                {t("paybook.start_date_label")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
+              </CustomText>
+              <TouchableOpacity
+                style={[styles.dateField, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => setShowStartPicker(true)}
+                activeOpacity={0.7}
+              >
+                <FontAwesome6 name="calendar" size={normalize(13)} color={accentColor} solid style={{ marginRight: wp(2) }} />
+                <CustomText style={[styles.dateText, { color: colors.text }]}>{formatDate(startDate)}</CustomText>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <CustomText style={[styles.label, { color: colors.text }]}>
+                {t("paybook.maturity_date_label")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
+              </CustomText>
+              <TouchableOpacity
+                style={[
+                  styles.dateField,
+                  {
+                    backgroundColor: paymentType === "INSTALLMENT" ? `${colors.border}40` : colors.card,
+                    borderColor: maturityDate ? accentColor : colors.border
+                  }
+                ]}
+                onPress={() => setShowMaturityPicker(true)}
+                activeOpacity={0.7}
+                disabled={paymentType === "INSTALLMENT"}
+              >
+                <FontAwesome6
+                  name="calendar-days"
+                  size={normalize(13)}
+                  color={maturityDate ? accentColor : colors.icon}
+                  solid
+                  style={{ marginRight: wp(2), opacity: paymentType === "INSTALLMENT" ? 0.5 : 1 }}
+                />
+                <CustomText style={[styles.dateText, { color: maturityDate ? colors.text : colors.icon, opacity: paymentType === "INSTALLMENT" ? 0.5 : 1 }]}>
+                  {maturityDate ? formatDate(maturityDate) : t("paybook.select_date_placeholder")}
+                </CustomText>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* ════════════════════════════════════════════════════════════════
               5. LÃI SUẤT — Toggle section
           ════════════════════════════════════════════════════════════════ */}
@@ -913,6 +990,32 @@ const CreatePaybookScreen = () => {
             accentColor={accentColor}
             colors={colors}
           >
+            {/* Phương pháp tính lãi */}
+            <View style={styles.section}>
+              <CustomText style={[styles.label, { color: colors.text }]}>{t("paybook.interest_calc_method_label")}</CustomText>
+              {INTEREST_CALC_METHODS.map((cm) => {
+                const isActive = interestCalcMethod === cm.key;
+                return (
+                  <TouchableOpacity
+                    key={cm.key}
+                    style={[
+                      styles.optionRow,
+                      { backgroundColor: colors.card, borderColor: isActive ? accentColor : colors.border },
+                    ]}
+                    onPress={() => setInterestCalcMethod(cm.key)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.radioCircle, { borderColor: isActive ? accentColor : colors.border }]}>
+                      {isActive && <View style={[styles.radioFill, { backgroundColor: accentColor }]} />}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <CustomText style={[styles.optionLabel, { color: colors.text }]}>{cm.label}</CustomText>
+                      <CustomText style={[styles.optionDesc, { color: colors.icon }]}>{cm.desc}</CustomText>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
             {/* Loại lãi suất: Cố định / Thả nổi (chỉ hiện khi INSTALLMENT) */}
             {paymentType === "INSTALLMENT" && (
@@ -1042,9 +1145,18 @@ const CreatePaybookScreen = () => {
                   </View>
                 )}
 
-                {/* Preview bảng lịch lãi */}
+              </View>
+            )}
+
+            {/* Preview bảng lịch lãi — Hiện cho cả Fixed và Floating khi trả góp */}
+            {paymentType === "INSTALLMENT" && (
+              <View style={styles.section}>
                 <FloatingSchedulePreview
-                  floatingRates={floatingRates}
+                  floatingRates={
+                    interestRateType === "FLOATING"
+                      ? floatingRates
+                      : [{ from_installment: 1, rate: parseFloat(interestRate) || 0 }]
+                  }
                   totalInstallments={parseInt(totalInstallments) || 0}
                   principalAmount={parseNumber(principalAmount)}
                   interestCalcMethod={interestCalcMethod}
@@ -1055,79 +1167,45 @@ const CreatePaybookScreen = () => {
               </View>
             )}
 
-            {/* Phương pháp tính lãi */}
-            <View style={styles.section}>
-              <CustomText style={[styles.label, { color: colors.text }]}>{t("paybook.interest_calc_method_label")}</CustomText>
-              {INTEREST_CALC_METHODS.map((cm) => {
-                const isActive = interestCalcMethod === cm.key;
-                return (
-                  <TouchableOpacity
-                    key={cm.key}
-                    style={[
-                      styles.optionRow,
-                      { backgroundColor: colors.card, borderColor: isActive ? accentColor : colors.border },
-                    ]}
-                    onPress={() => setInterestCalcMethod(cm.key)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.radioCircle, { borderColor: isActive ? accentColor : colors.border }]}>
-                      {isActive && <View style={[styles.radioFill, { backgroundColor: accentColor }]} />}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <CustomText style={[styles.optionLabel, { color: colors.text }]}>{cm.label}</CustomText>
-                      <CustomText style={[styles.optionDesc, { color: colors.icon }]}>{cm.desc}</CustomText>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+
+          {/* Summary cho Bullet */}
+          {paymentType === "BULLET" && bulletSummary && interestEnabled && (
+            <View style={[styles.section, { marginTop: hp(1) }]}>
+              <View style={[styles.bulletSummaryCard, { backgroundColor: `${accentColor}10`, borderColor: accentColor }]}>
+                <View style={styles.summaryHeader}>
+                  <FontAwesome6 name="circle-info" size={normalize(14)} color={accentColor} solid />
+                  <CustomText style={[styles.summaryTitle, { color: accentColor }]}>
+                    {t("paybook.payment_summary", "Tóm tắt thanh toán")}
+                  </CustomText>
+                </View>
+                
+                <View style={styles.summaryRow}>
+                  <CustomText style={[styles.summaryLabel, { color: colors.text }]}>{t("paybook.duration", "Thời hạn")}</CustomText>
+                  <CustomText style={[styles.summaryValue, { color: colors.text }]}>
+                    {bulletSummary.days} {t("paybook.days_unit", "ngày")}
+                  </CustomText>
+                </View>
+
+                <View style={styles.summaryRow}>
+                  <CustomText style={[styles.summaryLabel, { color: colors.text }]}>{t("paybook.interest", "Lãi")}</CustomText>
+                  <CustomText style={[styles.summaryValue, { color: accentColor, fontFamily: Fonts.bold }]}>
+                    {new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : "en-US").format(bulletSummary.interest)} {inputCurrency.symbol}
+                  </CustomText>
+                </View>
+
+                <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
+
+                <View style={styles.summaryRow}>
+                  <CustomText style={[styles.summaryLabel, { color: colors.text, fontFamily: Fonts.semiBold }]}>{t("paybook.total_payment", "Tổng thanh toán")}</CustomText>
+                  <CustomText style={[styles.summaryValue, { color: colors.text, fontSize: normalize(15), fontFamily: Fonts.bold }]}>
+                    {new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : "en-US").format(bulletSummary.total)} {inputCurrency.symbol}
+                  </CustomText>
+                </View>
+              </View>
             </View>
+          )}
           </CollapsibleSection>
 
-          <SectionHeader title={t("paybook.timeline")} />
-          <View style={[styles.section, { flexDirection: "row", gap: wp(3) }]}>
-            <View style={{ flex: 1 }}>
-              <CustomText style={[styles.label, { color: colors.text }]}>
-                {t("paybook.start_date_label")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
-              </CustomText>
-              <TouchableOpacity
-                style={[styles.dateField, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => setShowStartPicker(true)}
-                activeOpacity={0.7}
-              >
-                <FontAwesome6 name="calendar" size={normalize(13)} color={accentColor} solid style={{ marginRight: wp(2) }} />
-                <CustomText style={[styles.dateText, { color: colors.text }]}>{formatDate(startDate)}</CustomText>
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <CustomText style={[styles.label, { color: colors.text }]}>
-                {t("paybook.maturity_date_label")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
-              </CustomText>
-              <TouchableOpacity
-                style={[
-                  styles.dateField,
-                  {
-                    backgroundColor: paymentType === "INSTALLMENT" ? `${colors.border}40` : colors.card,
-                    borderColor: maturityDate ? accentColor : colors.border
-                  }
-                ]}
-                onPress={() => setShowMaturityPicker(true)}
-                activeOpacity={0.7}
-                disabled={paymentType === "INSTALLMENT"}
-              >
-                <FontAwesome6
-                  name="calendar-days"
-                  size={normalize(13)}
-                  color={maturityDate ? accentColor : colors.icon}
-                  solid
-                  style={{ marginRight: wp(2), opacity: paymentType === "INSTALLMENT" ? 0.5 : 1 }}
-                />
-                <CustomText style={[styles.dateText, { color: maturityDate ? colors.text : colors.icon, opacity: paymentType === "INSTALLMENT" ? 0.5 : 1 }]}>
-                  {maturityDate ? formatDate(maturityDate) : t("paybook.select_date_placeholder")}
-                </CustomText>
-              </TouchableOpacity>
-            </View>
-          </View>
 
           {/* ════════════════════════════════════════════════════════════════
               6. GHI CHÚ
@@ -1359,6 +1437,44 @@ const createStyles = (colors: any) =>
       borderRadius: normalize(12),
       alignItems: "center",
       justifyContent: "center",
+    },
+
+    // Bullet Summary Card
+    bulletSummaryCard: {
+      padding: wp(4),
+      borderRadius: normalize(16),
+      borderWidth: 1.5,
+      borderStyle: "dashed",
+    },
+    summaryHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: wp(2),
+      marginBottom: hp(1.5),
+    },
+    summaryTitle: {
+      fontSize: normalize(13),
+      fontFamily: Fonts.bold,
+      textTransform: "uppercase",
+    },
+    summaryRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: hp(0.8),
+    },
+    summaryLabel: {
+      fontSize: normalize(13),
+      fontFamily: Fonts.regular,
+    },
+    summaryValue: {
+      fontSize: normalize(14),
+      fontFamily: Fonts.semiBold,
+    },
+    summaryDivider: {
+      height: 1,
+      marginVertical: hp(1),
+      opacity: 0.5,
     },
   });
 

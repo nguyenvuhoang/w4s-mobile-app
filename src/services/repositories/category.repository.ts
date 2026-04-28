@@ -60,15 +60,27 @@ export const categoryRepository = {
   /**
    * Get all categories for a wallet
    */
-  async getCategories(userCode: string, walletID: number
+  async getCategories(userCode: string, walletID: number, contractID: string
   ): Promise<BaseResponseModel> {
     try {
+      const isContractLevel = !walletID || walletID === 0;
+      const workflowCode = isContractLevel
+        ? WORKFLOWCODE.WF_MB_GET_WALLET_CONTRACT_CATEGORY
+        : WORKFLOWCODE.WF_MB_GET_WALLET_CATEGORY;
+
+      const fields: any = {
+        usercode: userCode,
+      };
+
+      if (isContractLevel) {
+        fields.contract_number = contractID;
+      } else {
+        fields.wallet_id = walletID;
+      }
+
       return await apiService.executeWorkflow(
-        WORKFLOWCODE.WF_MB_GET_WALLET_CONTRACT_CATEGORY,
-        {
-          usercode: userCode,
-          wallet_id: walletID,
-        },
+        workflowCode,
+        fields,
         false,
         true
       );

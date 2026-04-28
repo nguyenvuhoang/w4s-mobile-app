@@ -181,7 +181,20 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
     }
 
     const userCode = await StorageService.getItem(StorageKey.userCode);
-    const response = await categoryRepository.getCategories(userCode.toString(), wId);
+    
+    // Get contract_number from appInfo
+    const appInfoStr = await StorageService.getItem(StorageKey.appInfo);
+    let contractNumber = '';
+    if (appInfoStr) {
+      try {
+        const appInfo = JSON.parse(appInfoStr);
+        contractNumber = appInfo?.contract_number || '';
+      } catch (e) {
+        console.warn('[useCategory] Failed to parse appInfo', e);
+      }
+    }
+
+    const response = await categoryRepository.getCategories(userCode.toString(), wId, contractNumber);
 
     if (response.isSuccess() && response.data) {
       const flat = flattenCategories(response.data.data || []);
@@ -199,8 +212,8 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
     setError(null);
 
     try {
-      if (walletId) {
-        // Màn hình có wallet context → fetch đúng ví đó
+      if (walletId !== undefined) {
+        // Màn hình có wallet context hoặc chọn "Tất cả" (walletId=0) → fetch 1 lần
         const result = await fetchSingleWallet(walletId, skipCache);
         setCategories(result);
       } else {

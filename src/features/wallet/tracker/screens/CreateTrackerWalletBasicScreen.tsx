@@ -1,4 +1,5 @@
 import AppHeader from '@/components/base/AppHeader';
+import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
 import WalletPreviewCard from '@/components/wallet/WalletPreviewCard';
 import { useAppTheme } from '@/core/theme/ThemeContext';
@@ -8,7 +9,6 @@ import { useWalletTracker } from '@/features/wallet/hooks/useWalletTracker';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
-import AppIcon from '@/components/base/AppIcon';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -130,7 +130,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
         walletType,
       });
       await refresh();
-      router.navigate('/(protected)/wallet/wallet-list');
+      router.back();
     } catch (error) {
       console.error('[CreateWallet] Create wallet failed:', error);
       alert(t('wallet.error_create_wallet'));

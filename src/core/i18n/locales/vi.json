@@ -144,12 +144,20 @@
     "error_create": "Tạo sổ nợ thất bại!",
     "error_period_range": "Kỳ bắt đầu phải từ 1 đến {{max}}!",
     "error_period_exists": "Kỳ {{period}} đã có lãi suất!",
+    "fixed": "Cố định",
+    "floating": "Thả nổi",
+    "custom_interest_hint": "Tuỳ chỉnh lãi suất & phương thức",
+    "default_interest_hint": "Mặc định: không lãi suất (0%)",
     "fixed_desc": "Lãi suất không đổi",
     "floating_desc": "Lãi theo từng giai đoạn",
     "reducing_desc": "Lãi tính trên số dư còn lại",
     "flat_desc": "Lãi tính theo số gốc ban đầu",
     "bullet_desc": "Trả toàn bộ cuối kỳ",
     "installment_desc": "Trả theo nhiều kỳ",
+    "payment_summary": "Tóm tắt thanh toán",
+    "duration": "Thời hạn",
+    "days_unit": "ngày",
+    "day": "Ngày",
     "week": "Tuần",
     "month": "Tháng",
     "quarter": "Quý",
@@ -250,7 +258,18 @@
     "rec_preview": "Xem trước:",
     "rec_repeat_on": "Lặp lại vào:",
     "history_title_bill": "Lịch sử hóa đơn",
-    "history_title_recurring": "Lịch sử giao dịch định kỳ"
+    "history_title_recurring": "Lịch sử giao dịch định kỳ",
+    "scan_title": "Quét hóa đơn",
+    "analyzing": "Đang phân tích...",
+    "ai_reading": "AI đang đọc hóa đơn...",
+    "frame_hint": "Vui lòng đưa hóa đơn vào khung hình",
+    "processing_wait": "Đang xử lý, vui lòng chờ...",
+    "camera_permission_title": "Cấp quyền máy ảnh",
+    "camera_permission_desc": "Chúng tôi cần quyền truy cập máy ảnh để có thể quét hóa đơn của bạn.",
+    "grant_permission": "Cấp quyền ngay",
+    "starting_camera": "Đang khởi động máy ảnh...",
+    "scan_error": "Lỗi quét hóa đơn",
+    "scan_failed_desc": "Không thể nhận diện hóa đơn, vui lòng thử lại hoặc chụp rõ hơn."
   },
   "event": {
     "title": "Sự kiện",
@@ -979,5 +998,25 @@
     "newUpdateAvailable": "Có bản cập nhật mới",
     "updateSubtitle": "Phiên bản mới của ứng dụng đã sẵn sàng. Cập nhật ngay để nhận các tính năng và sửa lỗi mới nhất.",
     "updateNow": "Cập nhật ngay"
+  },
+  "notification": {
+    "title": "Thông báo",
+    "search_placeholder": "Tìm kiếm thông báo...",
+    "unread_count": "Bạn có {{count}} thông báo chưa đọc",
+    "empty_title": "Chưa có thông báo",
+    "empty_subtitle": "Các thông báo mới sẽ xuất hiện tại đây",
+    "no_results": "Không tìm thấy kết quả",
+    "no_match_query": "Không có thông báo nào khớp với \"{{query}}\"",
+    "tabs": {
+      "all": "Thông báo",
+      "promotion": "Khuyến mãi",
+      "balance": "Biến động số dư"
+    },
+    "time": {
+      "just_now": "Vừa xong",
+      "minutes_ago": "{{count}} phút trước",
+      "hours_ago": "{{count}} giờ trước",
+      "days_ago": "{{count}} ngày trước"
+    }
   }
 }

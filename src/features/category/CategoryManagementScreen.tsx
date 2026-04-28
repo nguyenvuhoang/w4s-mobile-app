@@ -159,7 +159,12 @@ const CategoryManagementScreen: React.FC = () => {
       baseList = [...baseList, ...STATIC_LOAN_CATEGORIES];
     }
 
-    let filtered = baseList.filter((cat) => cat.category_group === selectedTab);
+    // Deduplicate by category_code (preferring the latest one, which might be static if added last)
+    const uniqueBaseList = Array.from(
+      new Map(baseList.map((cat) => [cat.category_code, cat])).values()
+    );
+
+    let filtered = uniqueBaseList.filter((cat) => cat.category_group === selectedTab);
 
     if (searchQuery) {
       filtered = filtered.filter((cat) => {
@@ -175,9 +180,17 @@ const CategoryManagementScreen: React.FC = () => {
     const parents = filtered.filter((cat) => !cat.parent_category_id);
 
     parents.forEach((parent) => {
-      groups[parent.id] = [
+      // Use id if available, otherwise fallback to category_code as unique key
+      const groupingKey = parent.id !== undefined && parent.id !== null ? parent.id : parent.category_code;
+      
+      groups[groupingKey] = [
         parent,
-        ...filtered.filter((cat) => cat.parent_category_id === parent.id),
+        ...filtered.filter((cat) => {
+          if (!cat.parent_category_id) return false;
+          // Match by ID if both have it, otherwise match by code (if that's how the API works) or just skip
+          if (parent.id !== undefined && cat.parent_category_id === parent.id) return true;
+          return false;
+        }),
       ];
     });
 
@@ -292,13 +305,13 @@ const CategoryManagementScreen: React.FC = () => {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {Object.values(groupedCategories).map((group) => {
+          {Object.values(groupedCategories).map((group, groupIndex) => {
             const parent = group[0];
             const children = group.slice(1);
 
             return (
               <View
-                key={parent.id}
+                key={`group-${parent?.id}-${groupIndex}`}
                 style={[
                   styles.categoryGroup,
                   { backgroundColor: colors.card },
@@ -341,9 +354,9 @@ const CategoryManagementScreen: React.FC = () => {
                 {/* CHILDREN */}
                 {children.length > 0 && (
                   <>
-                    {children.map((child) => (
+                    {children.map((child, childIndex) => (
                       <TouchableOpacity
-                        key={child.id}
+                        key={`child-${child?.id}-${childIndex}`}
                         style={styles.childItem}
                         onPress={() => handlePressCategory(child)}
                       >

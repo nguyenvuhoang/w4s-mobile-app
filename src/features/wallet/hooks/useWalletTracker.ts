@@ -1,6 +1,7 @@
 import StorageKey from '@/constants/StorageKey';
 import { walletTrackerRepository } from '@/services/repositories/walletTracker.repository';
 import StorageService from '@/services/StorageService';
+import TransactionEventEmitter from '@/services/TransactionEventEmitter';
 import { useState } from 'react';
 
 interface CreateWalletTrackerParams {
@@ -56,6 +57,7 @@ export const useWalletTracker = () => {
         throw new Error(response.getError() || response.message || 'Create wallet failed');
       }
 
+      TransactionEventEmitter.emitTransactionChanged();
       return response;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Create wallet failed';
@@ -83,6 +85,10 @@ export const useWalletTracker = () => {
         confirm
       );
 
+      if (response && (response.isSuccess?.() || response.isSuccess())) {
+        TransactionEventEmitter.emitTransactionChanged();
+      }
+
       return response;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Delete wallet failed';
@@ -105,6 +111,7 @@ export const useWalletTracker = () => {
         throw new Error(response.getError() || response.message || 'Update wallet failed');
       }
 
+      TransactionEventEmitter.emitTransactionChanged();
       return response;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Update wallet failed';

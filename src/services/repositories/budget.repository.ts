@@ -35,7 +35,7 @@ export interface AdvancedSearchBudgetParams {
 
 export interface CreateBudgetPayload {
   amount: number;
-  category_id: number;
+  category_id: string | number;
   end_date: string;
   period_type: string;
   source_gudget: string;
@@ -52,7 +52,7 @@ export interface CreateBudgetPayload {
 export interface UpdateBudgetPayload {
   budget_id: number;
   amount: number;
-  category_id: number;
+  category_id: string | number;
   end_date: string;
   period_type: string;
   source_gudget: string;

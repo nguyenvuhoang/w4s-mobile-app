@@ -144,12 +144,20 @@
     "error_create": "Failed to create paybook!",
     "error_period_range": "Starting period must be between 1 and {{max}}!",
     "error_period_exists": "Period {{period}} already has an interest rate!",
+    "fixed": "Fixed",
+    "floating": "Floating",
+    "custom_interest_hint": "Customize interest rate & method",
+    "default_interest_hint": "Default: no interest (0%)",
     "fixed_desc": "Constant interest rate",
     "floating_desc": "Rate varies by period",
     "reducing_desc": "Interest on remaining balance",
     "flat_desc": "Interest on original principal",
     "bullet_desc": "Full repayment at end of term",
     "installment_desc": "Repayment in multiple periods",
+    "payment_summary": "Payment Summary",
+    "duration": "Duration",
+    "days_unit": "days",
+    "day": "Day",
     "week": "Week",
     "month": "Month",
     "quarter": "Quarter",
@@ -984,5 +992,25 @@
     "newUpdateAvailable": "New Update Available",
     "updateSubtitle": "A new version of the app is available. Update now to get the latest features and bug fixes.",
     "updateNow": "Update Now"
+  },
+  "notification": {
+    "title": "Notifications",
+    "search_placeholder": "Search notifications...",
+    "unread_count": "You have {{count}} unread notifications",
+    "empty_title": "No notifications",
+    "empty_subtitle": "New notifications will appear here",
+    "no_results": "No results found",
+    "no_match_query": "No notifications match \"{{query}}\"",
+    "tabs": {
+      "all": "All",
+      "promotion": "Promotions",
+      "balance": "Balance"
+    },
+    "time": {
+      "just_now": "Just now",
+      "minutes_ago": "{{count}} mins ago",
+      "hours_ago": "{{count}} hours ago",
+      "days_ago": "{{count}} days ago"
+    }
   }
 }

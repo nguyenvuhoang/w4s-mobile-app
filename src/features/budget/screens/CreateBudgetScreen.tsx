@@ -36,6 +36,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 interface SelectedCategoryData {
     id?: number;
     category_id?: string | number;
+    category_code?: string;
     category_name: string;
     category_type: "EXPENSE" | "INCOME" | "LOAN";
     icon: string;
@@ -459,9 +460,7 @@ const CreateBudgetScreen = () => {
             inout: "LOAN",
         } as const;
 
-        const finalCategoryId = selectedCategoryData.id !== undefined
-            ? Number(selectedCategoryData.id)
-            : Number(selectedCategoryData.category_id);
+        const finalCategoryId = selectedCategoryData.category_code || selectedCategoryData.id || selectedCategoryData.category_id || 0;
 
         const finalAmount = parseFloat(amount.replace(/,/g, ""));
 
@@ -507,6 +506,10 @@ const CreateBudgetScreen = () => {
         autoRepeat,
         createBudget,
         walletCurrency,
+        inputCurrency,
+        appInfo,
+        t,
+        showNotification,
     ]);
 
     const parseCategoryName = (nameJson: string) => {

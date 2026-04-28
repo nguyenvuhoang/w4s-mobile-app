@@ -50,7 +50,7 @@ export interface AdvancedSearchInvoicePayload {
   wallet_id?: number | null;
   business_type?: string | null;
   schedule_type?: string | null;
-  status?: string | null;
+  status?: string | string[] | null;
   from_due_at_utc?: string | null;
   to_due_at_utc?: string | null;
   page_index: number;
