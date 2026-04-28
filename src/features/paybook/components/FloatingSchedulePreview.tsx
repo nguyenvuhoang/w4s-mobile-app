@@ -21,6 +21,7 @@ import { FontAwesome6 } from "@expo/vector-icons";
 import React, { useMemo, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { hp, normalize, wp } from "@/utils/layout";
+import { useTranslation } from "react-i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,14 +51,6 @@ const PERIOD_MONTHS: Record<PeriodUnit, number> = {
   MONTH: 1,
   QUARTER: 3,
   YEAR: 12,
-};
-
-const PERIOD_LABEL: Record<PeriodUnit, string> = {
-  DAY: "ngày",
-  WEEK: "tuần",
-  MONTH: "tháng",
-  QUARTER: "quý",
-  YEAR: "năm",
 };
 
 const fmt = (n: number) =>
@@ -162,10 +155,10 @@ function renderRow(
         isRateChange && { backgroundColor: `${accentColor}08` },
       ]}
     >
-      <CustomText style={[s.td, { color: colors.text, width: normalize(36) }]}>
+      <CustomText style={[s.td, { color: colors.text, width: normalize(32) }]}>
         {row.installment}
       </CustomText>
-      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: wp(0.5) }}>
+      <View style={{ flex: 0.8, flexDirection: "row", alignItems: "center", gap: wp(0.5) }}>
         {isRateChange && (
           <FontAwesome6 name="rotate" size={normalize(9)} color={accentColor} solid />
         )}
@@ -182,16 +175,22 @@ function renderRow(
         </CustomText>
       </View>
       <CustomText
-        style={[s.td, { color: colors.icon, flex: 1.4, textAlign: "right" }]}
+        style={[s.td, { color: colors.icon, flex: 1.3, textAlign: "right" }]}
         numberOfLines={1}
       >
         {fmt(row.principalDue)}
       </CustomText>
       <CustomText
-        style={[s.td, { color: accentColor, flex: 1.4, textAlign: "right" }]}
+        style={[s.td, { color: accentColor, flex: 1.3, textAlign: "right" }]}
         numberOfLines={1}
       >
         {fmt(row.interest)}
+      </CustomText>
+      <CustomText
+        style={[s.td, { color: colors.icon, flex: 1.5, textAlign: "right" }]}
+        numberOfLines={1}
+      >
+        {fmt(row.balance)}
       </CustomText>
     </View>
   );
@@ -208,6 +207,7 @@ export const FloatingSchedulePreview: React.FC<Props> = ({
   colors,
   accentColor,
 }) => {
+  const { t, i18n } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
   const schedule = useMemo<ScheduleRow[]>(() => {
@@ -253,19 +253,20 @@ export const FloatingSchedulePreview: React.FC<Props> = ({
       <View style={[s.header, { borderBottomColor: colors.border }]}>
         <FontAwesome6 name="table-list" size={normalize(13)} color={accentColor} solid style={{ marginRight: wp(1.5) }} />
         <CustomText style={[s.headerTitle, { color: colors.text }]}>
-          Xem trước lịch lãi
+          {t("paybook.schedule_preview")}
         </CustomText>
         <CustomText style={[s.totalInterest, { color: accentColor }]}>
-          Tổng lãi ≈ {fmt(totalInterest)} đ
+          {t("paybook.total_interest_approx")} ≈ {fmt(totalInterest)}
         </CustomText>
       </View>
 
       {/* Table header */}
       <View style={[s.tableHeader, { backgroundColor: `${accentColor}10` }]}>
-        <CustomText style={[s.th, { color: colors.icon, width: normalize(36) }]}>Kỳ</CustomText>
-        <CustomText style={[s.th, { color: colors.icon, flex: 1 }]}>Lãi suất</CustomText>
-        <CustomText style={[s.th, { color: colors.icon, flex: 1.4, textAlign: "right" }]}>Gốc/kỳ</CustomText>
-        <CustomText style={[s.th, { color: colors.icon, flex: 1.4, textAlign: "right" }]}>Tiền lãi</CustomText>
+        <CustomText style={[s.th, { color: colors.icon, width: normalize(32) }]}>{t("paybook.installment_index_short")}</CustomText>
+        <CustomText style={[s.th, { color: colors.icon, flex: 0.8 }]}>{t("paybook.interest_short")}</CustomText>
+        <CustomText style={[s.th, { color: colors.icon, flex: 1.3, textAlign: "right" }]}>{t("paybook.principal_short")}</CustomText>
+        <CustomText style={[s.th, { color: colors.icon, flex: 1.3, textAlign: "right" }]}>{t("paybook.interest_amount_short")}</CustomText>
+        <CustomText style={[s.th, { color: colors.icon, flex: 1.5, textAlign: "right" }]}>{t("paybook.balance_short")}</CustomText>
       </View>
 
       {/* Rows — collapsed (5 rows) or expanded (all rows, parent ScrollView handles scroll) */}
@@ -289,7 +290,7 @@ export const FloatingSchedulePreview: React.FC<Props> = ({
           activeOpacity={0.7}
         >
           <CustomText style={[s.expandLabel, { color: accentColor }]}>
-            {expanded ? "Thu gọn" : `Xem thêm ${schedule.length - COLLAPSED_COUNT} kỳ nữa`}
+            {expanded ? t("common.collapse") : t("paybook.view_more_installments", { count: schedule.length - COLLAPSED_COUNT })}
           </CustomText>
           <FontAwesome6
             name={expanded ? "chevron-up" : "chevron-down"}
@@ -301,7 +302,7 @@ export const FloatingSchedulePreview: React.FC<Props> = ({
 
       {/* Footer hint */}
       <CustomText style={[s.hint, { color: colors.icon }]}>
-        * Số tiền lãi tính theo {PERIOD_LABEL[periodUnit]} — mang tính tham khảo
+        * {t("paybook.schedule_hint", { unit: t(`paybook.${periodUnit.toLowerCase()}`).toLowerCase() })}
       </CustomText>
     </View>
   );
