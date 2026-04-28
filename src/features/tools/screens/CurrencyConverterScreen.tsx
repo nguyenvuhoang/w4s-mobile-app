@@ -1,12 +1,12 @@
 import AppHeader from "@/components/base/AppHeader";
+import CustomText from "@/components/base/CustomText";
 import MoneyInput from "@/components/base/MoneyInput";
-import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import { Tokens } from "@/core/theme/theme";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
-import { Tokens } from "@/core/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
@@ -173,7 +173,7 @@ const CurrencyConverterScreen = () => {
         <AppHeader title={t("currency_converter.title")} showBackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.tint} />
-          <ThemedText style={styles.loadingText}>{t("currency_converter.loading")}</ThemedText>
+          <CustomText style={[styles.loadingText, { color: colors.text }]}>{t("currency_converter.loading")}</CustomText>
         </View>
       </SafeAreaView>
     );
@@ -185,13 +185,13 @@ const CurrencyConverterScreen = () => {
 
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: hp(2) + insets.bottom }]}>
         <View style={styles.subtitleRow}>
-          <ThemedText style={styles.subtitle}>
+          <CustomText style={[styles.subtitle, { color: colors.icon }]}>
             {t("currency_converter.subtitle")}
-          </ThemedText>
+          </CustomText>
           {rateDate && (
-            <ThemedText style={styles.updateTime}>
+            <CustomText style={[styles.updateTime, { color: colors.icon }]}>
               {t("currency_converter.updated_at", { date: formatRateDate() })}
-            </ThemedText>
+            </CustomText>
           )}
         </View>
 
@@ -200,18 +200,18 @@ const CurrencyConverterScreen = () => {
           {/* FROM */}
           <View style={styles.section}>
             <View style={styles.labelRow}>
-              <ThemedText style={styles.label}>{t("currency_converter.from")}</ThemedText>
+              <CustomText style={[styles.label, { color: colors.text }]}>{t("currency_converter.from")}</CustomText>
               <TouchableOpacity
-                style={styles.currencyBadge}
+                style={[styles.currencyBadge, { backgroundColor: colors.border, borderColor: colors.border }]}
                 onPress={() => {
                   selectingTypeRef.current = "from";
                   router.push("/(protected)/select-currency");
                 }}
               >
-                <ThemedText style={styles.currencyBadgeText}>
+                <CustomText style={[styles.currencyBadgeText, { color: colors.text }]}>
                   {fromCurrency.currencyId}
-                </ThemedText>
-                <Ionicons name="chevron-down" size={16} />
+                </CustomText>
+                <Ionicons name="chevron-down" size={normalize(14)} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -219,11 +219,8 @@ const CurrencyConverterScreen = () => {
               value={fromAmount}
               onChange={setFromAmount}
               currency={fromCurrency.symbol}
-              containerStyle={styles.largeInputContainer}
-              currencyStyle={styles.largeCurrency}
-              inputStyle={styles.largeInput}
             />
-            <ThemedText style={styles.currencyName}>{fromCurrency.name}</ThemedText>
+            <CustomText style={[styles.currencyName, { color: colors.icon }]}>{fromCurrency.name}</CustomText>
           </View>
 
           {/* Swap */}
@@ -249,32 +246,29 @@ const CurrencyConverterScreen = () => {
           {/* TO */}
           <View style={styles.section}>
             <View style={styles.labelRow}>
-              <ThemedText style={styles.label}>{t("currency_converter.to")}</ThemedText>
+              <CustomText style={[styles.label, { color: colors.text }]}>{t("currency_converter.to")}</CustomText>
               <TouchableOpacity
-                style={styles.currencyBadge}
+                style={[styles.currencyBadge, { backgroundColor: colors.border, borderColor: colors.border }]}
                 onPress={() => {
                   selectingTypeRef.current = "to";
                   router.push("/(protected)/select-currency");
                 }}
               >
-                <ThemedText style={styles.currencyBadgeText}>
+                <CustomText style={[styles.currencyBadgeText, { color: colors.text }]}>
                   {toCurrency.currencyId}
-                </ThemedText>
-                <Ionicons name="chevron-down" size={16} />
+                </CustomText>
+                <Ionicons name="chevron-down" size={normalize(14)} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             <MoneyInput
               value={toAmount}
-              onChange={() => {}}
+              onChange={() => { }}
               editable={false}
               highlightMode
               currency={toCurrency.symbol}
-              containerStyle={styles.largeInputContainer}
-              currencyStyle={styles.largeCurrency}
-              inputStyle={styles.largeInput}
             />
-            <ThemedText style={styles.currencyName}>{toCurrency.name}</ThemedText>
+            <CustomText style={[styles.currencyName, { color: colors.icon }]}>{toCurrency.name}</CustomText>
           </View>
         </View>
 
@@ -282,19 +276,19 @@ const CurrencyConverterScreen = () => {
         <View style={[styles.rateCard, { backgroundColor: colors.card }]}>
           <Ionicons name="analytics-outline" size={24} color={colors.tint} />
           <View style={{ flex: 1 }}>
-            <ThemedText style={styles.rateLabel}>{t("currency_converter.exchange_rate")}</ThemedText>
-            <ThemedText style={styles.rateValue}>
+            <CustomText style={[styles.rateLabel, { color: colors.icon }]}>{t("currency_converter.exchange_rate")}</CustomText>
+            <CustomText type="bold" style={[styles.rateValue, { color: colors.text }]}>
               {getSmartExchangeRate()}
-            </ThemedText>
+            </CustomText>
           </View>
           <TouchableOpacity onPress={refetchRates}>
             <Ionicons name="refresh" size={20} color={colors.tint} />
           </TouchableOpacity>
         </View>
 
-        <ThemedText style={styles.disclaimer}>
+        <CustomText style={[styles.disclaimer, { color: colors.icon }]}>
           {t("currency_converter.disclaimer")}
-        </ThemedText>
+        </CustomText>
       </ScrollView>
     </SafeAreaView>
   );

@@ -173,6 +173,7 @@ const EditTransactionScreen: React.FC = () => {
                 amount: finalAmount,
                 currency: inputCurrency.currencyId,
                 categoryId: (transaction.walletcategory as any)?.id || 0,
+                categoryCode: (transaction.walletcategory as any)?.category_code,
                 description,
                 location,
                 transactionDate: isoDate,

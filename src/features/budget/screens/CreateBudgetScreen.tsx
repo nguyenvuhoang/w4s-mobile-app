@@ -102,11 +102,43 @@ const CreateBudgetScreen = () => {
     const { appInfo } = useContext(GlobalContext);
     const { showNotification } = useNotification();
 
-    const [selectedType, setSelectedType] = useState<BudgetType>("expense");
-    const [sourceWalletId, setSourceWalletId] = useState<number | null>(null);
+    const [selectedType, setSelectedType] = useState<BudgetType>(() => {
+        if (params.autofillData) {
+            try {
+                const data = JSON.parse(params.autofillData as string);
+                if (data.type) return data.type;
+                if (data.category?.category_type) {
+                    const typeMap = {
+                        INCOME: "income",
+                        EXPENSE: "expense",
+                        LOAN: "inout",
+                    } as const;
+                    return typeMap[data.category.category_type as keyof typeof typeMap] || "expense";
+                }
+            } catch (e) { }
+        }
+        return "expense";
+    });
+    const initialAutofillData = useMemo(() => {
+        if (params.autofillData) {
+            try {
+                return typeof params.autofillData === "string"
+                    ? JSON.parse(params.autofillData as string)
+                    : (params.autofillData as unknown as AutofillData);
+            } catch (error) {
+                console.error("[CreateBudget] Initial parse error:", error);
+                return null;
+            }
+        }
+        return null;
+    }, [params.autofillData]);
+
+    const [sourceWalletId, setSourceWalletId] = useState<number | null>(
+        initialAutofillData?.walletId !== undefined ? initialAutofillData.walletId : null
+    );
     const [selectedCategoryData, setSelectedCategoryData] =
-        useState<SelectedCategoryData | null>(null);
-    const [amount, setAmount] = useState("");
+        useState<SelectedCategoryData | null>(initialAutofillData?.category ?? null);
+    const [amount, setAmount] = useState(initialAutofillData?.amount ? String(initialAutofillData.amount) : "");
 
     const [inputCurrency, setInputCurrency] = useState<{
         currencyId: string;
@@ -114,7 +146,7 @@ const CreateBudgetScreen = () => {
         name: string;
     }>(userDefaultCurrency);
     const hasManuallySelectedCurrencyRef = useRef(false);
-    const prevWalletIdRef = useRef<number | null>(null);
+    const prevWalletIdRef = useRef<number | null>(sourceWalletId);
 
     // Date range states
     const [startDate, setStartDate] = useState<Date>(new Date());
@@ -183,17 +215,14 @@ const CreateBudgetScreen = () => {
 
                 console.log("[CreateBudget] Autofill data:", autofillData);
 
-                // Autofill type (explicit type takes priority)
                 if (autofillData.type) {
                     setSelectedType(autofillData.type);
                 }
 
-                // Autofill wallet
                 if (autofillData.walletId !== undefined) {
                     setSourceWalletId(autofillData.walletId);
                 }
 
-                // Autofill category + auto-sync type from category if type not explicitly set
                 if (autofillData.category) {
                     setSelectedCategoryData(autofillData.category);
                     if (!autofillData.type) {
@@ -339,14 +368,14 @@ const CreateBudgetScreen = () => {
     }, [params.autofillData]);
 
     useEffect(() => {
-        if (sourceWalletId === null && defaultWallet) {
+        if (sourceWalletId === null && defaultWallet && !initialAutofillData?.walletId) {
             setSourceWalletId(defaultWallet.walletId);
         }
 
         if (!hasManuallySelectedCurrencyRef.current && userDefaultCurrency) {
             setInputCurrency(userDefaultCurrency);
         }
-    }, [defaultWallet, sourceWalletId, userDefaultCurrency]);
+    }, [defaultWallet, sourceWalletId, userDefaultCurrency, initialAutofillData?.walletId]);
 
     useEffect(() => {
         if (prevWalletIdRef.current !== null && sourceWalletId !== prevWalletIdRef.current) {
@@ -460,15 +489,14 @@ const CreateBudgetScreen = () => {
             inout: "LOAN",
         } as const;
 
-        const finalCategoryId = selectedCategoryData.category_code || selectedCategoryData.id || selectedCategoryData.category_id || 0;
-
+        const isAllWallets = sourceWalletId === 0;
         const finalAmount = parseFloat(amount.replace(/,/g, ""));
-
         const contractNumber = appInfo?.contract_number || "";
 
         const payload = {
             amount: finalAmount,
-            category_id: finalCategoryId,
+            category_id: isAllWallets ? null : (selectedCategoryData.id || selectedCategoryData.category_id || 0),
+            category_code: isAllWallets ? selectedCategoryData.category_code : undefined,
             end_date: formatToISO(endDate),
             period_type: periodType,
             source_gudget: "USER_MANUAL",

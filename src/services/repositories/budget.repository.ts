@@ -35,7 +35,8 @@ export interface AdvancedSearchBudgetParams {
 
 export interface CreateBudgetPayload {
   amount: number;
-  category_id: string | number;
+  category_id: string | number | null;
+  category_code?: string;
   end_date: string;
   period_type: string;
   source_gudget: string;
@@ -52,7 +53,8 @@ export interface CreateBudgetPayload {
 export interface UpdateBudgetPayload {
   budget_id: number;
   amount: number;
-  category_id: string | number;
+  category_id: string | number | null;
+  category_code?: string;
   end_date: string;
   period_type: string;
   source_gudget: string;
@@ -175,7 +177,7 @@ export const budgetRepository = {
           category_id: data.category_id,
           end_date: data.end_date,
           period_type: data.period_type,
-          source_gudget: data.source_gudget,
+          source_budget: data.source_gudget,
           source_tracker: data.source_tracker,
           start_date: data.start_date,
           wallet_id: data.wallet_id,
@@ -184,6 +186,7 @@ export const budgetRepository = {
           is_auto_repeat: data.is_auto_repeat,
           contract_number: data.contract_number,
           currency_code: data.currency_code,
+          category_code: data.category_code,
         },
         false
       );
@@ -214,6 +217,7 @@ export const budgetRepository = {
           include_in_report: data.include_in_report,
           is_auto_repeat: data.is_auto_repeat,
           currency_code: data.currency_code,
+          category_code: data.category_code,
         },
         false
       );

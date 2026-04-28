@@ -11,6 +11,7 @@ export interface CreateInvoicePayload {
   wallet_id: number | null;
   account_number: string;
   category_id: number;
+  category_code?: string;
   payment_transaction_type: string;
   bill_name: string;
   business_type: string | null;
@@ -62,6 +63,7 @@ export interface UpdateInvoicePayload {
   wallet_id: number | null;
   account_number: string;
   category_id: number;
+  category_code?: string;
   payment_transaction_type: string;
   bill_name: string;
   business_type: string | null;

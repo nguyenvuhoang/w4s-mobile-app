@@ -48,6 +48,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 interface SelectedCategoryData {
   id: number;
   category_id: string;
+  category_code?: string;
   category_name: string;
   category_type: string;
   category_group: "EXPENSE" | "INCOME" | "LOAN";
@@ -89,6 +90,7 @@ interface AutofillData {
   category?: {
     id: number;
     category_id: string;
+    category_code?: string;
     category_name: string;
     category_type: string;
     category_group: "EXPENSE" | "INCOME" | "LOAN";
@@ -621,6 +623,7 @@ const AddTransactionScreen = () => {
         amount: finalAmount || 0,
         currency: walletCurrency.currencyId,
         categoryId: selectedCategoryData?.id || 0,
+        categoryCode: selectedCategoryData?.category_code,
         eventId: sourceEventId,
         loanId: selectedLoan ? ((selectedLoan as any).id ?? parseInt(selectedLoan.loan_id, 10)) : null,
         description: note,

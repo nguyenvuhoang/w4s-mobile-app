@@ -22,6 +22,7 @@ export interface CreateTransactionPayload {
   fee?: number;
   currency: string;
   category_id: number;
+  category_code?: string;
   event_id?: number | null;
   loan_id?: number | null;
   transaction_description?: string;
@@ -49,6 +50,7 @@ export interface UpdateTransactionPayload {
   fee?: number;
   currency: string;
   category_id: number;
+  category_code?: string;
   event_id?: string | null;
   location?: string;
   transaction_date: string;
@@ -119,6 +121,7 @@ export const transactionRepository = {
           images: data.images || [],
           with_users: data.with_users || [],
           is_support_report: true,
+          category_code: data.category_code,
         },
         false,
       );
@@ -160,6 +163,7 @@ export const transactionRepository = {
           current_user_code: data.current_user_code,
           channel_id: data.channel_id,
           reference_id: data.reference_id,
+          category_code: data.category_code,
         },
         false,
       );

@@ -10,6 +10,7 @@ export interface CreateTransactionData {
   amount: number;
   currency: string;
   categoryId: number;
+  categoryCode?: string;
   eventId?: number | null;
   loanId?: number | null;
   description?: string;
@@ -28,6 +29,7 @@ export interface UpdateTransactionData {
   amount: number;
   currency: string;
   categoryId: number;
+  categoryCode?: string;
   eventId?: string | null;
   description?: string;
   location?: string;
@@ -108,6 +110,7 @@ export const useTransaction = () => {
         amount: data.amount,
         currency: data.currency,
         category_id: data.categoryId,
+        category_code: data.categoryCode,
         event_id: data.eventId || null,
         loan_id: data.loanId || null,
         transaction_description: data.description || "",
@@ -168,6 +171,7 @@ export const useTransaction = () => {
         amount: data.amount,
         currency: data.currency,
         category_id: data.categoryId,
+        category_code: data.categoryCode,
         event_id: data.eventId || null,
         location: data.location || "",
         transaction_date: data.transactionDate,
