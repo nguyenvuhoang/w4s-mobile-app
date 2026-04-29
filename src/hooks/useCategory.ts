@@ -336,6 +336,9 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
     // Global lookup — dùng được kể cả khi không có walletId
     getCategoryById: categoryCache.getById,
 
+    /** Tra cứu nhanh theo category_code string (ví dụ: "LOAN_COLLECT") */
+    getCategoryByCode: categoryCache.getByCode,
+
     createCategory,
     analyzeCategory,
     analyzing,

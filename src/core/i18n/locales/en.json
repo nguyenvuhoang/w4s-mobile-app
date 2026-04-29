@@ -179,7 +179,11 @@
       "income": "Income",
       "expense": "Expense",
       "summary": "Summary"
-    }
+    },
+    "action_collect": "Collect Debt",
+    "action_repay": "Repay Debt",
+    "collect_from": "Collect debt from",
+    "repay_to": "Repay debt to"
   },
   "paybookSchedule": {
     "title": "Payment Schedule",

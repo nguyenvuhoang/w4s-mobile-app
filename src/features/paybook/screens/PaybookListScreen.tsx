@@ -7,6 +7,7 @@ import type {
   LoanFilterType,
   LoanSummary
 } from "@/features/paybook/types";
+import { useCategory } from "@/hooks/useCategory";
 import { paybookRepository } from "@/services/repositories/paybook.repository";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
@@ -68,6 +69,7 @@ const FILTER_TABS: {
 
 const PaybookListScreen = () => {
   const { colors } = useAppTheme();
+  const { getCategoryByCode } = useCategory({ autoFetch: false });
   const [activeFilter, setActiveFilter] = useState<LoanFilterType>("ALL");
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -197,6 +199,47 @@ const PaybookListScreen = () => {
     );
     return delta;
   };
+
+  // ── Quick-transact handler ─────────────────────────────────────────────────
+  const handleQuickTransact = useCallback(
+    (loan: Loan) => {
+      const isLend = loan.loan_type === "LEND";
+      const code = isLend ? "LOAN_COLLECT" : "LOAN_REPAY";
+
+      // Lấy category từ cache — nếu chưa có thì không truyền (user tự chọn trong màn hình)
+      const cached = getCategoryByCode(loan.wallet_id, code);
+      const category = cached
+        ? {
+          id: cached.id,
+          category_id: cached.category_code ?? code,
+          category_code: cached.category_code ?? code,
+          category_name: cached.category_name,
+          category_type: cached.category_type,
+          category_group: cached.category_group as "LOAN",
+          icon: cached.icon,
+          color: cached.color,
+        }
+        : undefined;
+
+      const autofillData = {
+        type: "inout" as const,
+        walletId: loan.wallet_id,
+        ...(category && { category }),
+        amount: String(loan.remaining_amount),
+        note: loan.counterparty_name
+          ? `${isLend ? t("paybook.collect_from") : t("paybook.repay_to")} ${loan.counterparty_name}`
+          : "",
+      };
+      console.log("+++++++++++", JSON.stringify(autofillData))
+
+      router.push({
+        pathname: "/(protected)/transaction/add-transaction",
+        params: { autofillData: JSON.stringify(autofillData) },
+      } as any);
+    },
+    [getCategoryByCode, t]
+  );
+
 
   // ── Render card ────────────────────────────────────────────────────────────
   const renderLoanCard = useCallback(
@@ -402,10 +445,35 @@ const PaybookListScreen = () => {
               </CustomText>
             </View>
           </View>
+
+          {/* Quick-action button — only for active/overdue loans */}
+          {(loan.status === "ACTIVE" || loan.status === "OVERDUE") && (
+            <TouchableOpacity
+              style={[
+                styles.actionBtn,
+                { backgroundColor: isLend ? "#E8F5E9" : "#FFEBEE" },
+              ]}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleQuickTransact(loan);
+              }}
+              activeOpacity={0.75}
+            >
+              <FontAwesome6
+                name={isLend ? "hand-holding-dollar" : "money-bill-transfer"}
+                size={normalize(12)}
+                color={amountColor}
+                style={{ marginRight: wp(1.5) }}
+              />
+              <CustomText style={[styles.actionBtnText, { color: amountColor }]}>
+                {isLend ? t("paybook.action_collect") : t("paybook.action_repay")}
+              </CustomText>
+            </TouchableOpacity>
+          )}
         </TouchableOpacity>
       );
     },
-    [styles, colors, formatCurrency, t]
+    [styles, colors, formatCurrency, handleQuickTransact, t]
   );
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -802,6 +870,16 @@ const createStyles = (colors: any) =>
       borderRadius: normalize(8),
     },
     statusText: { fontSize: normalize(10), fontFamily: Fonts.semiBold },
+    actionBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: hp(1.2),
+      paddingVertical: hp(0.9),
+      borderRadius: normalize(10),
+    },
+    actionBtnText: { fontSize: normalize(13), fontFamily: Fonts.semiBold },
+
 
     // Loading
     loadingContainer: {

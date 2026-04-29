@@ -180,7 +180,11 @@
       "income": "Khoản thu",
       "expense": "Khoản chi",
       "summary": "Tổng kết"
-    }
+    },
+    "action_collect": "Thu nợ",
+    "action_repay": "Trả nợ",
+    "collect_from": "Thu nợ từ",
+    "repay_to": "Trả nợ cho"
   },
   "paybookSchedule": {
     "title": "Lịch thanh toán",

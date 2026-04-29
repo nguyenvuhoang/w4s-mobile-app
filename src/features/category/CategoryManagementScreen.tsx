@@ -33,32 +33,6 @@ interface ParsedCategoryName {
 
 type TabType = "INCOME" | "EXPENSE" | "LOAN";
 
-const STATIC_LOAN_CATEGORIES: Category[] = [
-  {
-    id: -1,
-    category_code: "LOAN_COLLECT",
-    wallet_id: 0,
-    parent_category_id: 0,
-    category_group: "LOAN",
-    category_type: "LOAN_COLLECT",
-    category_name: JSON.stringify({ vi: "Thu nợ", en: "Debt Collection" }),
-    icon: "hand-holding-dollar",
-    color: "#4CAF50",
-    web_icon: "",
-  },
-  {
-    id: -2,
-    category_code: "LOAN_REPAY",
-    wallet_id: 0,
-    parent_category_id: 0,
-    category_group: "LOAN",
-    category_type: "LOAN_REPAY",
-    category_name: JSON.stringify({ vi: "Trả nợ", en: "Debt Repayment" }),
-    icon: "money-bill-transfer",
-    color: "#F44336",
-    web_icon: "",
-  },
-];
 
 /* =====================
    Screen
@@ -153,13 +127,6 @@ const CategoryManagementScreen: React.FC = () => {
   ===================== */
   const groupedCategories = useMemo(() => {
     let baseList = [...categories];
-
-    // 🔥 Inject static loan categories if on LOAN tab
-    if (selectedTab === "LOAN") {
-      baseList = [...baseList, ...STATIC_LOAN_CATEGORIES];
-    }
-
-    // Deduplicate by category_code (preferring the latest one, which might be static if added last)
     const uniqueBaseList = Array.from(
       new Map(baseList.map((cat) => [cat.category_code, cat])).values()
     );
@@ -182,7 +149,7 @@ const CategoryManagementScreen: React.FC = () => {
     parents.forEach((parent) => {
       // Use id if available, otherwise fallback to category_code as unique key
       const groupingKey = parent.id !== undefined && parent.id !== null ? parent.id : parent.category_code;
-      
+
       groups[groupingKey] = [
         parent,
         ...filtered.filter((cat) => {
