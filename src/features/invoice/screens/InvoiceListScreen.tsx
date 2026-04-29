@@ -8,7 +8,7 @@ import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCategory } from "@/hooks/useCategory";
 import { invoiceRepository } from "@/services/repositories/invoice.repository";
 import StorageService from "@/services/StorageService";
-import { WalletSummary } from "@/types/wallet";
+import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
@@ -123,7 +123,6 @@ export default function InvoiceListScreen() {
 
   // Pay modal
   const [payBill, setPayBill] = useState<BillItem | null>(null);
-  const [selWallet, setSelWallet] = useState<WalletSummary | null>(null);
   const [paying, setPaying] = useState(false);
 
   const { categories } = useCategory({ autoFetch: true });
@@ -199,36 +198,40 @@ export default function InvoiceListScreen() {
   const openPay = useCallback(
     (b: BillItem) => {
       setPayBill(b);
-      setSelWallet(defaultWallet ?? wallets[0] ?? null);
     },
-    [defaultWallet, wallets],
+    [],
   );
 
   const closePay = useCallback(() => { setPayBill(null); }, []);
 
   const confirmPay = useCallback(async () => {
-    if (!payBill || !selWallet || paying) return;
+    if (!payBill || paying) return;
     setPaying(true);
     try {
+      const targetWallet = wallets.find(w => w.walletId === payBill.wallet_id);
       const expenseAccount =
-        selWallet.accounts?.find((a) => a.accountType === "02") ??
-        selWallet.accounts?.find((a) => a.isPrimary) ??
-        selWallet.accounts?.[0];
+        targetWallet?.accounts?.find((a) => a.accountType === "02") ??
+        targetWallet?.accounts?.find((a) => a.isPrimary) ??
+        targetWallet?.accounts?.[0];
+
       const res = await invoiceRepository.payBill({
         id: payBill.bill_id,
-        wallet_id: selWallet.walletId,
-        account_number: expenseAccount?.accountNumber ?? "",
+        wallet_id: payBill.wallet_id,
+        account_number: payBill.account_number || expenseAccount?.accountNumber || "",
         paid_at_utc: new Date().toISOString(),
       });
       setPayBill(null);
       showNotificationAPI(res);
-      if (res?.success) load(true);
+      if (res?.success) {
+        TransactionEventEmitter.emitTransactionChanged();
+        load(true);
+      }
     } catch {
       showNotification(t("invoice.payment_failed"), "error");
     } finally {
       setPaying(false);
     }
-  }, [payBill, selWallet, paying, showNotification, showNotificationAPI, load, t]);
+  }, [payBill, paying, wallets, showNotification, showNotificationAPI, load, t]);
 
   // ── Card ─────────────────────────────────────────────────────────────────
 
@@ -389,77 +392,59 @@ export default function InvoiceListScreen() {
             </View>
           </View>
 
-          {/* Wallet selector label */}
+          {/* Wallet Info (Read-only) */}
           <CustomText style={[styles.sectionLabel, { color: colors.icon }]}>
             {t("invoice.pay_from_wallet")}
           </CustomText>
-
-          {/* Wallet list */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.walletRow}
-          >
-            {wallets.map((w) => {
-              const active = selWallet?.walletId === w.walletId;
-              return (
-                <TouchableOpacity
-                  key={w.walletId}
+          {(() => {
+            const w = wallets.find(wal => wal.walletId === payBill.wallet_id);
+            if (!w) return null;
+            return (
+              <View
+                style={[
+                  styles.walletChip,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                    opacity: 0.8,
+                  },
+                ]}
+              >
+                <View
                   style={[
-                    styles.walletChip,
-                    {
-                      borderColor: active ? colors.tint : colors.border,
-                      backgroundColor: active ? colors.tint + "18" : colors.background,
-                    },
+                    styles.walletDot,
+                    { backgroundColor: w.color ?? colors.tint },
                   ]}
-                  onPress={() => setSelWallet(w)}
-                  activeOpacity={0.75}
-                >
-                  {/* Color dot */}
-                  <View
+                />
+                <View style={{ flex: 1 }}>
+                  <CustomText
                     style={[
-                      styles.walletDot,
-                      { backgroundColor: w.color ?? colors.tint },
+                      styles.walletName,
+                      { color: colors.text },
                     ]}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <CustomText
-                      style={[
-                        styles.walletName,
-                        { color: active ? colors.tint : colors.text },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {w.name}
-                    </CustomText>
-                    <CustomText
-                      style={[styles.walletBalance, { color: colors.icon }]}
-                    >
-                      {fmt(w.balance)} {w.currency}
-                    </CustomText>
-                  </View>
-                  {active && (
-                    <FontAwesome6
-                      name="circle-check"
-                      size={normalize(16)}
-                      color={colors.tint}
-                      solid
-                    />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+                    numberOfLines={1}
+                  >
+                    {w.name}
+                  </CustomText>
+                  <CustomText
+                    style={[styles.walletBalance, { color: colors.icon }]}
+                  >
+                    {fmt(w.balance)} {w.currency}
+                  </CustomText>
+                </View>
+              </View>
+            );
+          })()}
 
           {/* Confirm */}
           <TouchableOpacity
             style={[
               styles.confirmBtn,
               { backgroundColor: colors.tint },
-              (!selWallet || paying) && { opacity: 0.55 },
+              paying && { opacity: 0.55 },
             ]}
             onPress={confirmPay}
-            disabled={!selWallet || paying}
+            disabled={paying}
             activeOpacity={0.8}
           >
             {paying ? (

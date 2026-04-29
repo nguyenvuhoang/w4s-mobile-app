@@ -45,10 +45,15 @@ interface UseCurrencyPickerOptions {
    */
   amount?: string;
   /**
+  /**
    * When true the currency picker navigation is disabled (e.g. Edit screens
    * where the API does not support changing currency).
    */
   disabled?: boolean;
+  /**
+   * Optional initial currency to use instead of app default.
+   */
+  initialCurrency?: CurrencyInfo;
 }
 
 interface UseCurrencyPickerResult {
@@ -77,7 +82,7 @@ interface UseCurrencyPickerResult {
 export const useCurrencyPicker = (
   options: UseCurrencyPickerOptions = {}
 ): UseCurrencyPickerResult => {
-  const { amount = "0", disabled = false } = options;
+  const { amount = "0", disabled = false, initialCurrency } = options;
   const { defaultCurrency } = useDefaultCurrency();
   const { convert } = useExchangeRate();
 
@@ -87,13 +92,15 @@ export const useCurrencyPicker = (
     name: defaultCurrency.name,
   };
 
-  const hasManuallySelectedRef = useRef(false);
+  const hasManuallySelectedRef = useRef(!!initialCurrency);
 
-  const [inputCurrency, setInputCurrency] = useState<CurrencyInfo>({
-    currencyId: defaultCurrency.currencyId,
-    symbol: defaultCurrency.symbol,
-    name: defaultCurrency.name,
-  });
+  const [inputCurrency, setInputCurrency] = useState<CurrencyInfo>(
+    initialCurrency ?? {
+      currencyId: defaultCurrency.currencyId,
+      symbol: defaultCurrency.symbol,
+      name: defaultCurrency.name,
+    }
+  );
 
   // ── Sync with defaultCurrency when user hasn't manually chosen ──────────────
   // Depend on both currencyId AND symbol: useDefaultCurrency initializes with
@@ -107,6 +114,14 @@ export const useCurrencyPicker = (
       });
     }
   }, [defaultCurrency.currencyId, defaultCurrency.symbol]);
+
+  // Handle updates to initialCurrency from parent
+  useEffect(() => {
+    if (initialCurrency) {
+      setInputCurrency(initialCurrency);
+      hasManuallySelectedRef.current = true;
+    }
+  }, [initialCurrency?.currencyId, initialCurrency?.symbol]);
 
   // ── Pick up selection from /(protected)/select-currency ─────────────────────
   useFocusEffect(

@@ -258,7 +258,10 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
         if (!transactionId) return;
         router.push({
             pathname: '/(protected)/edit-transaction',
-            params: { transactionId },
+            params: { 
+                transactionId,
+                transaction: JSON.stringify(transaction)
+            },
         });
     };
     const handleDuplicate = () => console.log('Duplicate:', transactionId);

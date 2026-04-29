@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 /* ================= TYPES ================= */
@@ -38,20 +39,10 @@ const parseCategoryName = (nameJson: string, lang = 'vi'): string => {
   }
 };
 
-const PERIOD_TYPES: { id: PeriodType; label: string }[] = [
-  { id: 'W', label: 'Tuần' },
-  { id: 'M', label: 'Tháng' },
-  { id: 'Q', label: 'Quý' },
-  { id: 'Y', label: 'Năm' },
-];
-
-const CATEGORY_TABS = [
-  { id: 'EXPENSE' as const, label: 'Chi tiêu' },
-  { id: 'INCOME' as const, label: 'Thu nhập' },
-];
+// Removed static PERIOD_TYPES and CATEGORY_TABS to generate inside component
 
 /** Build anchor date options for each period type (current + 5 past) */
-const buildPeriodOptions = (periodType: PeriodType): PeriodOption[] => {
+const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
   const today = new Date();
   const options: PeriodOption[] = [];
 
@@ -65,7 +56,7 @@ const buildPeriodOptions = (periodType: PeriodType): PeriodOption[] => {
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
         options.push({
-          label: i === 0 ? 'Tuần này' : `Tuần ${dd}/${mm}/${yy}`,
+          label: i === 0 ? t('report.this_week') : `${t('report.week')} ${dd}/${mm}/${yy}`,
           anchor_date: `${yy}-${mm}-${dd}`,
         });
       }
@@ -78,7 +69,7 @@ const buildPeriodOptions = (periodType: PeriodType): PeriodOption[] => {
         const yy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         options.push({
-          label: i === 0 ? 'Tháng này' : `Tháng ${mm}/${yy}`,
+          label: i === 0 ? t('report.this_month') : `${t('report.month')} ${mm}/${yy}`,
           anchor_date: `${yy}-${mm}-01`,
         });
       }
@@ -93,7 +84,7 @@ const buildPeriodOptions = (periodType: PeriodType): PeriodOption[] => {
         while (q < 0) { q += 4; y--; }
         const startMonth = String(q * 3 + 1).padStart(2, '0');
         options.push({
-          label: i === 0 ? 'Quý này' : `Q${q + 1}/${y}`,
+          label: i === 0 ? t('report.this_quarter') : `Q${q + 1}/${y}`,
           anchor_date: `${y}-${startMonth}-01`,
         });
       }
@@ -104,7 +95,7 @@ const buildPeriodOptions = (periodType: PeriodType): PeriodOption[] => {
       for (let i = 0; i <= 4; i++) {
         const y = today.getFullYear() - i;
         options.push({
-          label: i === 0 ? 'Năm nay' : `Năm ${y}`,
+          label: i === 0 ? t('report.this_year') : `${t('report.year')} ${y}`,
           anchor_date: `${y}-01-01`,
         });
       }
@@ -117,18 +108,31 @@ const buildPeriodOptions = (periodType: PeriodType): PeriodOption[] => {
 /* ================= SCREEN ================= */
 
 const CategoryReportDetailScreen = () => {
+  const { t } = useTranslation();
   const { colors } = useAppTheme();
   const { wallets, defaultWallet } = useWallet();
+
+  const PERIOD_TYPES: { id: PeriodType; label: string }[] = useMemo(() => [
+    { id: 'W', label: t('report.week') },
+    { id: 'M', label: t('report.month') },
+    { id: 'Q', label: t('report.quarter') },
+    { id: 'Y', label: t('report.year') },
+  ], [t]);
+
+  const CATEGORY_TABS = useMemo(() => [
+    { id: 'EXPENSE' as const, label: t('report.expense') },
+    { id: 'INCOME' as const, label: t('report.income') },
+  ], [t]);
 
   // Đối tượng "Tất cả ví"
   const allWalletOption = useMemo(() => ({
     walletId: 0,
-    name: 'Tất cả ví',
+    name: t('report.all_wallets'),
     icon: 'layer-group',
     color: colors.tint,
     balance: wallets.reduce((acc, w) => acc + (w.balance || 0), 0),
     currency: '',
-  } as WalletSummary), [wallets, colors.tint]);
+  } as WalletSummary), [wallets, colors.tint, t]);
 
   const walletOptions = useMemo(() => [allWalletOption, ...wallets], [allWalletOption, wallets]);
 
@@ -153,14 +157,14 @@ const CategoryReportDetailScreen = () => {
   const [periodType, setPeriodType] = useState<PeriodType>(
     (params.period_type as PeriodType) || 'M'
   );
-  const periodOptions = useMemo(() => buildPeriodOptions(periodType), [periodType]);
+  const periodOptions = useMemo(() => buildPeriodOptions(periodType, t), [periodType, t]);
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodOption>(periodOptions[0]);
 
   // When period type changes, reset to "current" option
   useEffect(() => {
-    const opts = buildPeriodOptions(periodType);
+    const opts = buildPeriodOptions(periodType, t);
     setSelectedPeriod(opts[0]);
-  }, [periodType]);
+  }, [periodType, t]);
 
   // When wallets loaded, sync initial wallet from params
   useEffect(() => {
@@ -201,7 +205,7 @@ const CategoryReportDetailScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader title="Chi tiết theo nhóm" showBackButton />
+      <AppHeader title={t('report.category_detail')} showBackButton />
 
       {/* ===== FILTER ROW ===== */}
       <View style={styles.filterRow}>
@@ -217,7 +221,7 @@ const CategoryReportDetailScreen = () => {
             color={selectedWallet?.color || colors.tint}
           />
           <CustomText type="medium" size={13} numberOfLines={1} style={styles.filterChipText}>
-            {selectedWallet?.name || 'Chọn ví'}
+            {selectedWallet?.name || t('report.select_wallet')}
           </CustomText>
           <FontAwesome6 name="chevron-down" size={normalize(11)} color={colors.icon} />
         </TouchableOpacity>
@@ -287,7 +291,7 @@ const CategoryReportDetailScreen = () => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.tint} />
           <CustomText size={14} style={{ color: colors.text, marginTop: normalize(12) }}>
-            Đang tải dữ liệu...
+            {t('common.loading')}
           </CustomText>
         </View>
       ) : (
@@ -308,7 +312,7 @@ const CategoryReportDetailScreen = () => {
               </View>
               <View>
                 <CustomText size={12} style={{ color: colors.text }}>
-                  Tổng {activeTab === 'EXPENSE' ? 'chi tiêu' : 'thu nhập'}
+                  {t('report.total_income')} {activeTab === 'EXPENSE' ? t('report.expense').toLowerCase() : t('report.income').toLowerCase()}
                 </CustomText>
                 <CustomText type="bold" size={20}>
                   {formatCurrency(totalAmount)}
@@ -319,7 +323,7 @@ const CategoryReportDetailScreen = () => {
               <CustomText type="bold" size={18} style={{ color: colors.tint }}>
                 {filteredCategories.length}
               </CustomText>
-              <CustomText size={11} style={{ color: colors.tint }}>nhóm</CustomText>
+              <CustomText size={11} style={{ color: colors.tint }}>{t('report.group_unit')}</CustomText>
             </View>
           </View>
 
@@ -328,7 +332,7 @@ const CategoryReportDetailScreen = () => {
             <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
               <FontAwesome6 name="chart-pie" size={normalize(36)} color={colors.icon} />
               <CustomText size={14} style={{ color: colors.text, marginTop: normalize(12) }}>
-                Không có dữ liệu {activeTab === 'EXPENSE' ? 'chi tiêu' : 'thu nhập'}
+                {activeTab === 'EXPENSE' ? t('report.no_expense_data') : t('report.no_income_data')}
               </CustomText>
             </View>
           ) : (
@@ -372,7 +376,7 @@ const CategoryReportDetailScreen = () => {
       <BottomSheetModal
         visible={showWalletModal}
         onClose={() => setShowWalletModal(false)}
-        title="Chọn ví"
+        title={t('report.select_wallet')}
         colors={colors}
       >
         {walletOptions.map(w => (
@@ -397,7 +401,7 @@ const CategoryReportDetailScreen = () => {
               <CustomText type="medium" size={14}>{w.name}</CustomText>
               <CustomText size={12} style={{ color: colors.text }}>
                 {w.walletId === 0 
-                  ? 'Tổng số dư các ví' 
+                  ? t('report.all_wallets_summary')
                   : `${w.balance?.toLocaleString('vi-VN')} ${w.currency}`}
               </CustomText>
             </View>
@@ -412,7 +416,7 @@ const CategoryReportDetailScreen = () => {
       <BottomSheetModal
         visible={showPeriodModal}
         onClose={() => setShowPeriodModal(false)}
-        title="Chọn khoảng thời gian"
+        title={t('report.select_time_range')}
         colors={colors}
       >
         {periodOptions.map((opt, idx) => (

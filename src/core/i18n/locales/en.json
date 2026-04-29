@@ -1018,9 +1018,43 @@
     },
     "time": {
       "just_now": "Just now",
-      "minutes_ago": "{{count}} mins ago",
-      "hours_ago": "{{count}} hours ago",
-      "days_ago": "{{count}} days ago"
+      "minutes_ago": "{{count}}m ago",
+      "hours_ago": "{{count}}h ago",
+      "days_ago": "{{count}}d ago"
     }
+  },
+  "report": {
+    "title": "Report",
+    "this_month": "This month",
+    "this_week": "This week",
+    "this_quarter": "This quarter",
+    "this_year": "This year",
+    "week": "Week",
+    "month": "Month",
+    "month_short": "M",
+    "quarter": "Quarter",
+    "year": "Year",
+    "expense": "Expense",
+    "income": "Income",
+    "all_wallets": "All Wallets",
+    "all_wallets_summary": "Total balance of all wallets",
+    "select_wallet": "Select Wallet",
+    "select_time_range": "Select Time Range",
+    "net_income_title": "Net Income",
+    "total_expense": "Total Expense",
+    "total_income": "Total Income",
+    "previous_month": "last month",
+    "total_net_balance": "Total Net Balance",
+    "opening_balance": "Opening Balance",
+    "closing_balance": "Closing Balance",
+    "no_debt_data": "No debt data",
+    "group_report": "Group Report",
+    "category_detail": "Category Detail",
+    "view_detail": "View Detail",
+    "expense_items": "Expenses",
+    "income_items": "Incomes",
+    "no_expense_data": "No expense data",
+    "no_income_data": "No income data",
+    "group_unit": "groups"
   }
 }

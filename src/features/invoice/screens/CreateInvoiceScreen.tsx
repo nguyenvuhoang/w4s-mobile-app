@@ -17,7 +17,6 @@ import StorageService from "@/services/StorageService";
 import { invoiceRepository } from "@/services/repositories/invoice.repository";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
-import DatePicker from "react-native-date-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -30,13 +29,13 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import DatePicker from "react-native-date-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useInvoice } from "../hooks/useInvoice";
 
 interface SelectedCategoryData {
   id: number;
   category_id: string;
-  category_code?: string;
   category_name: string;
   category_type: string;
   category_group: "EXPENSE" | "INCOME" | "LOAN";
@@ -505,7 +504,6 @@ const CreateRecurringInvoiceScreen = () => {
       due_at_utc: selectedDate.toISOString(),
       note,
       contract_number: appInfo.contract_number || "",
-      category_code: selectedCategoryData.category_code,
     };
 
     if (isEditMode) {

@@ -6,6 +6,7 @@ import { Fonts } from '@/core/theme/font';
 import TransactionAmountInput from '@/features/transaction/components/TransactionAmountInput';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useCurrencyPicker } from '@/hooks/useCurrencyPicker';
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -79,6 +80,7 @@ const EditTransactionScreen: React.FC = () => {
     const params = useLocalSearchParams();
     const { showNotification } = useNotification();
     const { updateTransaction, loading: updating } = useTransaction();
+    const { defaultCurrency } = useDefaultCurrency();
 
     const transactionId = useMemo(() => {
         if (typeof params.transactionId === 'string') return params.transactionId;
@@ -100,12 +102,14 @@ const EditTransactionScreen: React.FC = () => {
     const [dateStr, setDateStr] = useState('');
     const [isCalculateReport, setIsCalculateReport] = useState(true);
 
-    const [walletCurrency, setWalletCurrency] = useState({ currencyId: 'VND', symbol: 'đ' });
+
 
     const { currencies } = useCurrency();
 
+    const [initialInputCurrency, setInitialInputCurrency] = useState<any>(undefined);
+
     // ── Currency picker (shared hook) ───────────────────────────────────────────
-    // walletCurrency = walletCurrency state (fixed from transaction)
+    // baseCurrency = default app currency (as requested by user)
     const {
         inputCurrency,
         onCurrencyPress,
@@ -113,47 +117,72 @@ const EditTransactionScreen: React.FC = () => {
         exchangeRate,
         convertedAmount,
     } = useCurrencyPicker({
-        baseCurrency: walletCurrency,
+        baseCurrency: defaultCurrency,
         amount,
+        initialCurrency: initialInputCurrency,
     });
 
     const amountNum = parseFloat(amount.replace(/[^0-9.]/g, '')) || 0;
 
     const initialized = useRef(false);
 
+    const [displayTransaction, setDisplayTransaction] = useState<any>(null);
+
+    const applyTransactionData = useCallback((data: any) => {
+        if (!data) return;
+
+        // Format initial amount with commas
+        const rawAmount = String(data.amount || '0');
+        const parts = rawAmount.split('.');
+        const formattedInt = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        const formattedAmount = formattedInt + (parts.length > 1 ? "." + parts[1].substring(0, 2) : "");
+
+        setAmount(formattedAmount);
+        setDescription(data.trandesc || data.description || '');
+        setLocation(data.location || '');
+        setDateStr(isoToDateInput(data.transactiondate || data.recorded_at || ''));
+        setIsCalculateReport(data.is_calculate_report ?? true);
+
+        // Set initial currency
+        const transCcyId = data.ccyid || data.currency || 'VND';
+        const transCcy = { currencyId: transCcyId, symbol: transCcyId === 'VND' ? 'đ' : (transCcyId === 'USD' ? '$' : transCcyId) };
+        setInitialInputCurrency(transCcy);
+
+
+    }, []);
+
     useEffect(() => {
-        if (transaction && !initialized.current) {
-            initialized.current = true;
-
-            // Format initial amount with commas
-            const rawAmount = String(transaction.amount || '0');
-            const parts = rawAmount.split('.');
-            const formattedInt = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            const formattedAmount = formattedInt + (parts.length > 1 ? "." + parts[1].substring(0, 2) : "");
-
-            setAmount(formattedAmount);
-            setDescription(transaction.trandesc || '');
-            setLocation((transaction as any).location || '');
-            setDateStr(isoToDateInput(transaction.transactiondate || ''));
-            setIsCalculateReport(true);
-
-            // Set initial currency
-            if (transaction.ccyid) {
-                const ccy = { currencyId: transaction.ccyid, symbol: transaction.ccyid === 'VND' ? 'đ' : '$' };
-                setWalletCurrency(ccy); // walletCurrency fixed from transaction; inputCurrency managed by hook
+        if (params.transaction && !initialized.current) {
+            try {
+                const parsed = JSON.parse(params.transaction as string);
+                setDisplayTransaction(parsed);
+                applyTransactionData(parsed);
+                initialized.current = true;
+            } catch (e) {
+                console.error("Failed to parse transaction param", e);
             }
         }
-    }, [transaction]);
+    }, [params.transaction, applyTransactionData]);
+
+    useEffect(() => {
+        if (transaction) {
+            setDisplayTransaction(transaction);
+            if (!initialized.current) {
+                applyTransactionData(transaction);
+                initialized.current = true;
+            }
+        }
+    }, [transaction, applyTransactionData]);
 
     // Handle currency selection is now managed by useCurrencyPicker hook
 
     // ── Computed data ──────────────────────────────────────────────────────────
     const categoryName = useMemo(() =>
-        parseName(transaction?.walletcategory?.category_name || null, i18n.language),
-        [transaction, i18n.language]
+        parseName(displayTransaction?.walletcategory?.category_name || null, i18n.language),
+        [displayTransaction, i18n.language]
     );
 
-    const isIncome = transaction?.transactioncode === '01';
+    const isIncome = displayTransaction?.transactioncode === '01';
     const typeColor = isIncome ? '#10B981' : '#EF4444';
     const typeLabel = isIncome ? (t('Income') || 'Thu nhập') : (t('Expense') || 'Khoản chi');
 
@@ -161,19 +190,19 @@ const EditTransactionScreen: React.FC = () => {
 
     // ── Submit ─────────────────────────────────────────────────────────────────
     const handleSave = useCallback(async () => {
-        if (!transactionId || !transaction) return;
+        if (!transactionId || !displayTransaction) return;
         try {
             const finalAmount = needsConversion && convertedAmount !== null
                 ? convertedAmount
                 : amountNum;
 
-            const isoDate = rebuildIso(dateStr, transaction.transactiondate);
+            const isoDate = rebuildIso(dateStr, displayTransaction.transactiondate || displayTransaction.recorded_at);
             await updateTransaction({
                 transactionId,
                 amount: finalAmount,
                 currency: inputCurrency.currencyId,
-                categoryId: (transaction.walletcategory as any)?.id || 0,
-                categoryCode: (transaction.walletcategory as any)?.category_code,
+                categoryId: (displayTransaction.walletcategory as any)?.id || 0,
+                categoryCode: (displayTransaction.walletcategory as any)?.category_code,
                 description,
                 location,
                 transactionDate: isoDate,
@@ -192,7 +221,7 @@ const EditTransactionScreen: React.FC = () => {
         }
     }, [
         transactionId,
-        transaction,
+        displayTransaction,
         amountNum,
         description,
         location,
@@ -207,7 +236,7 @@ const EditTransactionScreen: React.FC = () => {
     ]);
 
     // ── Loading / Error states ─────────────────────────────────────────────────
-    if (fetching) {
+    if (fetching && !initialized.current) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
                 <AppHeader title={t('Edit Transaction') || 'Sửa giao dịch'} showBackButton />
@@ -218,7 +247,7 @@ const EditTransactionScreen: React.FC = () => {
         );
     }
 
-    if (!transaction) {
+    if (!displayTransaction && !fetching) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
                 <AppHeader title={t('Edit Transaction') || 'Sửa giao dịch'} showBackButton />
@@ -247,32 +276,34 @@ const EditTransactionScreen: React.FC = () => {
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <TransactionAmountInput
-                        amount={amount}
-                        onAmountChange={setAmount}
-                        inputCurrency={inputCurrency}
-                        walletCurrency={walletCurrency}
-                        onCurrencyPress={onCurrencyPress}
-                        needsConversion={needsConversion}
-                        convertedAmount={convertedAmount}
-                        exchangeRate={exchangeRate}
-                        selectedType={isIncome ? 'income' : 'expense'}
-                        label={t('Amount') || 'Số tiền'}
-                    />
+                    <View style={{ marginHorizontal: -wp(5) }}>
+                        <TransactionAmountInput
+                            amount={amount}
+                            onAmountChange={setAmount}
+                            inputCurrency={inputCurrency}
+                            walletCurrency={defaultCurrency}
+                            onCurrencyPress={onCurrencyPress}
+                            needsConversion={needsConversion}
+                            convertedAmount={convertedAmount}
+                            exchangeRate={exchangeRate}
+                            selectedType={isIncome ? 'income' : 'expense'}
+                            label={t('Amount') || 'Số tiền'}
+                        />
+                    </View>
 
                     {/* ── Nhóm (readonly) ── */}
-                    {transaction.walletcategory && (
+                    {displayTransaction?.walletcategory && (
                         <View style={styles.section}>
                             <FieldLabel icon="tag" label={t('Category') || 'Nhóm'} colors={colors} />
                             <View style={[styles.readonlyRow, { backgroundColor: colors.card }]}>
                                 <View style={[
                                     styles.catIcon,
-                                    { backgroundColor: (transaction.walletcategory.color || '#6B7280') + '25' },
+                                    { backgroundColor: (displayTransaction.walletcategory.color || '#6B7280') + '25' },
                                 ]}>
                                     <FontAwesome6
-                                        name={transaction.walletcategory.icon || 'tag'}
+                                        name={displayTransaction.walletcategory.icon || 'tag'}
                                         size={normalize(16)}
-                                        color={transaction.walletcategory.color || '#6B7280'}
+                                        color={displayTransaction.walletcategory.color || '#6B7280'}
                                         solid
                                     />
                                 </View>
@@ -399,7 +430,7 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: normalize(12) },
     scrollContent: {
-        paddingHorizontal: wp(4),
+        paddingHorizontal: wp(5),
         paddingTop: hp(1.5),
         paddingBottom: hp(6),
     },

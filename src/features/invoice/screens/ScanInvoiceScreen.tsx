@@ -1,7 +1,9 @@
 import CustomButton from "@/components/base/CustomButton";
 import CustomText from "@/components/base/CustomText";
+import { apiClient } from "@/core/api";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import { useCategory } from "@/hooks/useCategory";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -26,6 +28,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
     Camera,
     useCameraDevice,
+    useCameraFormat,
     useCameraPermission,
 } from "react-native-vision-camera";
 
@@ -97,10 +100,15 @@ const scanLineStyles = StyleSheet.create({
 const ScanInvoiceScreen = () => {
     const { colors } = useAppTheme();
     const { t } = useTranslation();
+    const { categories } = useCategory();
     const styles = React.useMemo(() => createStyles(colors), [colors]);
 
     const { hasPermission, requestPermission } = useCameraPermission();
     const device = useCameraDevice("back");
+    const format = useCameraFormat(device, [
+        { photoResolution: "max" },
+        { videoResolution: "max" },
+    ]);
     const camera = useRef<Camera>(null);
 
     const [isCameraActive, setIsCameraActive] = useState(true);
@@ -120,22 +128,50 @@ const ScanInvoiceScreen = () => {
         if (!camera.current || scanState !== "idle") return;
 
         try {
-            // 1. Take photo while camera is still active
+            // 1. Take photo
             const photo = await camera.current.takePhoto({
                 flash: flashOn ? "on" : "off",
+                enableShutterSound: false,
             });
             const uri = `file://${photo.path}`;
-            console.log("[ScanInvoice] Photo captured:", uri);
+            console.log("[ScanInvoice] Photo Captured Details:", {
+                uri,
+                width: photo.width,
+                height: photo.height,
+                path: photo.path
+            });
 
             // 2. Show preview + scan animation
             setCapturedUri(uri);
             setScanState("scanning");
             setIsCameraActive(false);
 
-            // 3. Mock API delay & navigate
-            setTimeout(() => {
-                // const result = await apiClient.scanInvoice(uri);
-                // setScanResult(result);
+            // 3. Call API & process result
+            console.log("[ScanInvoice] Starting API call to scanInvoice...");
+            const result = await apiClient.scanInvoice(uri);
+            console.log("[ScanInvoice] API Result:", result);
+
+            if (result && result.success && result.data) {
+                const invoiceData = result.data;
+
+                const serverCategoryId = invoiceData.category?.category_id;
+                const matchedCategory = categories.find(c => c.id === serverCategoryId);
+
+                const autofillData = {
+                    walletId: invoiceData.wallet_id !== 0 ? invoiceData.wallet_id : undefined,
+                    category: matchedCategory ? {
+                        id: matchedCategory.id,
+                        category_id: String(matchedCategory.id),
+                        category_name: matchedCategory.category_name,
+                        category_type: matchedCategory.category_type,
+                        category_group: matchedCategory.category_group,
+                        icon: matchedCategory.icon,
+                        color: matchedCategory.color
+                    } : null,
+                    amount: invoiceData.amount,
+                    date: invoiceData.date,
+                    note: invoiceData.note || "",
+                };
 
                 setScanState("idle");
                 setIsCameraActive(true);
@@ -143,28 +179,12 @@ const ScanInvoiceScreen = () => {
                 router.push({
                     pathname: "/(protected)/invoice/create-invoice",
                     params: {
-                        autofillData: JSON.stringify({
-                            walletId: 86,
-                            category: {
-                                category_id: "cat_001",
-                                category_name: JSON.stringify({ vi: "Tiền điện", en: "Electricity" }),
-                                category_type: "EXPENSE",
-                                icon: "bolt",
-                                color: "#FFB800"
-                            },
-                            amount: 150000,
-                            date: "2026-02-15",
-                            note: "Tiền điện tháng 2",
-                            recurring: {
-                                type: "monthly",
-                                count: 12,
-                                isForever: false,
-                                selectedDays: [1]
-                            }
-                        })
+                        autofillData: JSON.stringify(autofillData)
                     }
                 });
-            }, 2000); // Fake 2 seconds processing
+            } else {
+                throw new Error(result?.error_message || t("invoice.scan_failed_desc"));
+            }
         } catch (err: any) {
             console.error("[ScanInvoice] Error:", err);
             setScanState("error");
@@ -185,7 +205,7 @@ const ScanInvoiceScreen = () => {
                 ]
             );
         }
-    }, [scanState, flashOn, t]);
+    }, [scanState, flashOn, t, categories]);
 
     // ── Retry ──────────────────────────────────────────────────────────────────
     const handleRetry = useCallback(() => {
@@ -242,8 +262,12 @@ const ScanInvoiceScreen = () => {
                 ref={camera}
                 style={StyleSheet.absoluteFill}
                 device={device}
+                format={format}
+                photoQualityBalance="quality"
+                photoHdr={format?.supportsPhotoHdr}
                 isActive={isCameraActive}
-                photo
+                photo={true}
+                enableZoomGesture
             />
 
             {/* Photo preview overlay (shown when scanning) */}

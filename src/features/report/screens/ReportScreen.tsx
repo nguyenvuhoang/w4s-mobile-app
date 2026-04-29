@@ -14,6 +14,7 @@ import { useReport } from '../hooks/useReport';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dimensions,
   ScrollView,
@@ -25,7 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
-const generateTimePeriods = () => {
+const generateTimePeriods = (t: any) => {
   const periods = [];
   const today = new Date();
 
@@ -36,11 +37,11 @@ const generateTimePeriods = () => {
 
     let label = '';
     if (isCurrentMonth) {
-      label = 'Tháng này';
+      label = t('report.this_month');
     } else {
       const month = d.getMonth() + 1;
       const year = d.getFullYear().toString().slice(-2);
-      label = `TH${month.toString().padStart(2, '0')}/${year}`;
+      label = `${t('report.month_short')} ${month.toString().padStart(2, '0')}/${year}`;
     }
     const year = d.getFullYear();
     const month = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -56,7 +57,7 @@ const generateTimePeriods = () => {
   return periods;
 };
 
-const TIME_PERIODS = generateTimePeriods();
+// Removed static TIME_PERIODS to generate it inside component with 't'
 
 // Helper: parse category_name JSON {"vi":"...","en":"..."}
 const parseCategoryName = (nameJson: string, lang: string = 'vi'): string => {
@@ -72,15 +73,19 @@ const parseCategoryName = (nameJson: string, lang: string = 'vi'): string => {
 /* ================= SCREEN ================= */
 
 
-import { useWalletOpeningClosingBalance } from '@/features/home/hooks/Usefinancesummary';
+import { useWalletIncomeExpenseSummary, useWalletOpeningClosingBalance } from '@/features/home/hooks/Usefinancesummary';
 
 const ReportScreen = () => {
+  const { t } = useTranslation();
   const { colors } = useAppTheme();
   const { wallets, defaultWallet, loading } = useWallet();
   const [selectedWallet, setSelectedWallet] = useState<WalletSummary | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState(TIME_PERIODS[TIME_PERIODS.length - 1]);
+
+  const timePeriods = React.useMemo(() => generateTimePeriods(t), [t]);
+  const [selectedPeriod, setSelectedPeriod] = useState(timePeriods[timePeriods.length - 1]);
 
   const { fetchBalance, data: balanceData, loading: balanceLoading } = useWalletOpeningClosingBalance();
+  const { fetchWalletSummary, data: walletSummaryData, loading: walletSummaryLoading } = useWalletIncomeExpenseSummary();
   const { analyzeCategory, categoryAnalysis, analyzing } = useCategory({ autoFetch: false });
   const { fetchMonthlyDebitSummary, debitSummary, loading: debitLoading } = useReport();
 
@@ -102,6 +107,12 @@ const ReportScreen = () => {
         wallet_id: selectedWallet.walletId
       });
 
+      fetchWalletSummary({
+        wallet_id: selectedWallet.walletId,
+        anchor_date: selectedPeriod.date,
+        period_type: 'M',
+      });
+
       analyzeCategory({
         wallet_id: selectedWallet.walletId,
         anchor_date: selectedPeriod.date,
@@ -113,7 +124,7 @@ const ReportScreen = () => {
         anchor_date: selectedPeriod.date.slice(0, 7),
       });
     }
-  }, [selectedWallet?.walletId, selectedPeriod?.id, fetchBalance, analyzeCategory, fetchMonthlyDebitSummary]);
+  }, [selectedWallet?.walletId, selectedPeriod?.id, fetchBalance, fetchWalletSummary, analyzeCategory, fetchMonthlyDebitSummary]);
 
   useFocusEffect(
     useCallback(() => {
@@ -145,7 +156,7 @@ const ReportScreen = () => {
   // Tự động cuộn đến phần tử đang chọn
   useEffect(() => {
     if (selectedPeriod && scrollRef.current) {
-      const index = TIME_PERIODS.findIndex(p => p.id === selectedPeriod.id);
+      const index = timePeriods.findIndex(p => p.id === selectedPeriod.id);
       if (index !== -1) {
         // Một cách đơn giản để cuộn đến vị trí gần đúng (với 4-5 phần tử)
         // Nếu cần chính xác hơn có thể dùng onLayout của từng item
@@ -155,7 +166,7 @@ const ReportScreen = () => {
         });
       }
     }
-  }, [selectedPeriod?.id]);
+  }, [selectedPeriod?.id, timePeriods]);
 
   const getBalanceValue = (key: 'opening' | 'closing') => {
     if (balanceData?.net_balance?.details) {
@@ -167,15 +178,15 @@ const ReportScreen = () => {
     return key === 'opening' ? (balanceData?.opening_balance ?? 0) : (balanceData?.closing_balance ?? 0);
   };
 
-  const totalExpense = balanceData?.expense_amount ?? 0;
-  const totalIncome = balanceData?.income_amount ?? 0;
+  const totalExpense = walletSummaryData?.expense?.total ?? 0;
+  const totalIncome = walletSummaryData?.income?.total ?? 0;
   const netBalance = balanceData?.net_balance?.total ?? ((balanceData?.closing_balance || 0) - (balanceData?.opening_balance || 0));
 
   const openingBalance = getBalanceValue('opening');
   const closingBalance = getBalanceValue('closing');
 
-  const expenseChange = 0;
-  const incomeChange = 0;
+  const expenseChange = walletSummaryData?.expense?.change_percent ?? 0;
+  const incomeChange = walletSummaryData?.income?.change_percent ?? 0;
 
   const formatCurrency = (v: number, currency: string = 'đ') => v.toLocaleString('vi-VN') + ' ' + currency;
 
@@ -213,7 +224,7 @@ const ReportScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader title="Báo cáo" showBackButton />
+      <AppHeader title={t('report.title')} showBackButton />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* ===== HEADER: WALLET SELECTOR ===== */}
         <TouchableOpacity
@@ -228,7 +239,7 @@ const ReportScreen = () => {
               color={selectedWallet?.color || colors.tint}
             />
             <CustomText type="medium" size={15}>
-              {selectedWallet?.name || 'Chọn ví'}
+              {selectedWallet?.name || t('report.select_wallet')}
             </CustomText>
             <FontAwesome6 name="chevron-down" size={normalize(14)} color={colors.tint} />
           </View>
@@ -242,7 +253,7 @@ const ReportScreen = () => {
           contentContainerStyle={styles.periodTabsContainer}
           style={styles.periodTabsScroll}
         >
-          {TIME_PERIODS.map(period => (
+          {timePeriods.map(period => (
             <TouchableOpacity
               key={period.id}
               style={[
@@ -269,7 +280,7 @@ const ReportScreen = () => {
         </ScrollView>
 
         {/* ===== INCOME/EXPENSE SUMMARY ===== */}
-        <SectionHeader title="Thu nhập ròng" />
+        <SectionHeader title={t('report.net_income_title')} />
 
         <View style={styles.summaryRow}>
           {/* Total Expense */}
@@ -278,15 +289,19 @@ const ReportScreen = () => {
               <View style={[styles.summaryIcon, { backgroundColor: '#FFE4E1' }]}>
                 <FontAwesome6 name="arrow-trend-down" size={normalize(16)} color="#F44336" />
               </View>
-              <CustomText size={14}>Tổng chi tiêu</CustomText>
+              <CustomText size={14}>{t('report.total_expense')}</CustomText>
             </View>
-            <CustomText type="bold" size={20} style={{ marginTop: normalize(8) }}>
-              {formatCurrency(totalExpense, selectedWallet?.currency)}
+            <CustomText type="bold" size={20} style={{ marginTop: normalize(8) }} numberOfLines={1} adjustsFontSizeToFit>
+              {walletSummaryLoading ? t('common.loading') : formatCurrency(totalExpense, selectedWallet?.currency)}
             </CustomText>
             <View style={styles.changeIndicator}>
-              <FontAwesome6 name="arrow-down" size={normalize(10)} color="#F44336" />
-              <CustomText size={12} style={{ color: '#F44336' }}>
-                {Math.abs(expenseChange)}% tháng trước
+              <FontAwesome6
+                name={expenseChange === 0 ? 'minus' : (expenseChange > 0 ? 'arrow-up' : 'arrow-down')}
+                size={normalize(10)}
+                color={expenseChange === 0 ? colors.icon : (expenseChange > 0 ? '#F44336' : '#4CAF50')}
+              />
+              <CustomText size={12} style={{ color: expenseChange === 0 ? colors.icon : (expenseChange > 0 ? '#F44336' : '#4CAF50') }}>
+                {Math.abs(expenseChange)}% {t('report.previous_month')}
               </CustomText>
             </View>
           </View>
@@ -297,15 +312,19 @@ const ReportScreen = () => {
               <View style={[styles.summaryIcon, { backgroundColor: '#E8F5E9' }]}>
                 <FontAwesome6 name="arrow-trend-up" size={normalize(16)} color="#4CAF50" />
               </View>
-              <CustomText size={14}>Tổng thu nhập</CustomText>
+              <CustomText size={14}>{t('report.total_income')}</CustomText>
             </View>
-            <CustomText type="bold" size={20} style={{ marginTop: normalize(8) }}>
-              {formatCurrency(totalIncome, selectedWallet?.currency)}
+            <CustomText type="bold" size={20} style={{ marginTop: normalize(8) }} numberOfLines={1} adjustsFontSizeToFit>
+              {walletSummaryLoading ? t('common.loading') : formatCurrency(totalIncome, selectedWallet?.currency)}
             </CustomText>
             <View style={styles.changeIndicator}>
-              <FontAwesome6 name="arrow-up" size={normalize(10)} color="#4CAF50" />
-              <CustomText size={12} style={{ color: '#4CAF50' }}>
-                +{incomeChange}% tháng trước
+              <FontAwesome6
+                name={incomeChange === 0 ? 'minus' : (incomeChange > 0 ? 'arrow-up' : 'arrow-down')}
+                size={normalize(10)}
+                color={incomeChange === 0 ? colors.icon : (incomeChange > 0 ? '#4CAF50' : '#F44336')}
+              />
+              <CustomText size={12} style={{ color: incomeChange === 0 ? colors.icon : (incomeChange > 0 ? '#4CAF50' : '#F44336') }}>
+                {incomeChange > 0 ? '+' : ''}{incomeChange}% {t('report.previous_month')}
               </CustomText>
             </View>
           </View>
@@ -317,21 +336,21 @@ const ReportScreen = () => {
             <View style={[styles.balanceIcon, { backgroundColor: colors.tint + '20' }]}>
               <FontAwesome6 name="shield-halved" size={normalize(16)} color={colors.tint} />
             </View>
-            <CustomText size={14}>Tổng số dư ròng</CustomText>
+            <CustomText size={14}>{t('report.total_net_balance')}</CustomText>
           </View>
           <CustomText type="bold" size={24} style={{ marginTop: normalize(8) }}>
-            {balanceLoading ? "Loading..." : formatCurrency(netBalance, selectedWallet?.currency)}
+            {balanceLoading ? t('common.loading') : formatCurrency(netBalance, selectedWallet?.currency)}
           </CustomText>
 
           <View style={styles.balanceDetails}>
             <View style={styles.balanceDetailRow}>
-              <CustomText size={13}>Số dư đầu</CustomText>
+              <CustomText size={13}>{t('report.opening_balance')}</CustomText>
               <CustomText type="medium" size={13}>
                 {formatCurrency(openingBalance, selectedWallet?.currency)}
               </CustomText>
             </View>
             <View style={styles.balanceDetailRow}>
-              <CustomText size={13}>Số dư cuối</CustomText>
+              <CustomText size={13}>{t('report.closing_balance')}</CustomText>
               <CustomText type="medium" size={13}>
                 {formatCurrency(closingBalance, selectedWallet?.currency)}
               </CustomText>
@@ -342,7 +361,7 @@ const ReportScreen = () => {
         {/* ===== DEBT SECTION ===== */}
         <View style={[styles.debtCard, { backgroundColor: colors.card }]}>
           {debitLoading ? (
-            <CustomText size={14} style={{ textAlign: 'center' }}>Đang tải...</CustomText>
+            <CustomText size={14} style={{ textAlign: 'center' }}>{t('common.loading')}</CustomText>
           ) : (
             debitSummary.length > 0 ? (
               debitSummary.map((item, index) => (
@@ -354,15 +373,15 @@ const ReportScreen = () => {
                 </View>
               ))
             ) : (
-              <CustomText size={14} style={{ textAlign: 'center', opacity: 0.5 }}>Không có dữ liệu công nợ</CustomText>
+              <CustomText size={14} style={{ textAlign: 'center', opacity: 0.5 }}>{t('report.no_debt_data')}</CustomText>
             )
           )}
         </View>
 
         <SectionHeader
-          title="Báo cáo theo nhóm"
+          title={t('report.group_report')}
           showAction={true}
-          actionText='Xem chi tiết'
+          actionText={t('report.view_detail')}
           onPressAction={handleViewDetail}
         />
 
@@ -371,7 +390,7 @@ const ReportScreen = () => {
           {analyzing ? (
             <View style={[styles.loadingCard, { backgroundColor: colors.card }]}>
               <CustomText size={14} style={{ color: colors.text, textAlign: 'center' }}>
-                Đang tải dữ liệu...
+                {t('common.loading')}
               </CustomText>
             </View>
           ) : (
@@ -379,28 +398,28 @@ const ReportScreen = () => {
               {expensePieData.length > 0 ? (
                 <PieChartWithLabels
                   data={expensePieData}
-                  title="Khoản chi"
+                  title={t('report.expense_items')}
                   backgroundColor={colors.card}
                 />
               ) : (
                 <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
                   <FontAwesome6 name="chart-pie" size={normalize(32)} color={colors.icon} />
                   <CustomText size={14} style={{ color: colors.text, marginTop: normalize(8) }}>
-                    Không có dữ liệu chi tiêu
+                    {t('report.no_expense_data')}
                   </CustomText>
                 </View>
               )}
               {incomePieData.length > 0 ? (
                 <PieChartWithLabels
                   data={incomePieData}
-                  title="Khoản thu"
+                  title={t('report.income_items')}
                   backgroundColor={colors.card}
                 />
               ) : (
                 <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
                   <FontAwesome6 name="chart-pie" size={normalize(32)} color={colors.icon} />
                   <CustomText size={14} style={{ color: colors.text, marginTop: normalize(8) }}>
-                    Không có dữ liệu thu nhập
+                    {t('report.no_income_data')}
                   </CustomText>
                 </View>
               )}

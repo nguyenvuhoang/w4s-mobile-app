@@ -13,6 +13,8 @@ export interface FinanceSummaryRequest {
   period_type: PeriodType;
   month?: number;
   year?: number;
+  wallet_id?: number;
+  anchor_date?: string;
 }
 
 export interface GetWalletOpeningClosingBalancePayload {
@@ -44,6 +46,8 @@ export const financeSummaryRepository = {
         {
           usercode: params.usercode,
           period_type: params.period_type,
+          wallet_id: params.wallet_id,
+          anchor_date: params.anchor_date,
         },
         false,
         true,

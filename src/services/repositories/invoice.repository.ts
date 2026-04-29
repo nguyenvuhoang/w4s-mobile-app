@@ -41,7 +41,6 @@ export const invoiceRepository = {
           due_at_utc: data.due_at_utc,
           note: data.note,
           contract_number: data.contract_number,
-          category_code: data.category_code,
         },
         false
       );
@@ -77,7 +76,6 @@ export const invoiceRepository = {
           due_at_utc: data.due_at_utc,
           note: data.note,
           contract_number: data.contract_number,
-          category_code: data.category_code,
         },
         false
       );

@@ -137,6 +137,83 @@ export const useFinanceSummary = (): UseFinanceSummaryReturn => {
   };
 };
 
+/**
+ * Hook for fetching wallet-specific income and expense summary
+ */
+export const useWalletIncomeExpenseSummary = () => {
+  const [data, setData] = useState<IncomeExpenseSummary | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const lastParams = useRef<{
+    wallet_id?: number;
+    anchor_date?: string;
+    period_type: string;
+  } | null>(null);
+
+  const fetchWalletSummary = useCallback(
+    async (params: {
+      wallet_id?: number;
+      anchor_date?: string;
+      period_type: string;
+    }) => {
+      lastParams.current = params;
+      try {
+        setLoading(true);
+        setError(null);
+
+        const userCode = await StorageService.getItem(StorageKey.userCode);
+        if (!userCode) {
+          throw new Error("Missing user code");
+        }
+
+        const response = await financeSummaryRepository.getIncomeExpenseSummary({
+          usercode: userCode,
+          period_type: params.period_type as any,
+          wallet_id: params.wallet_id,
+          anchor_date: params.anchor_date,
+        });
+
+        if (response.isSuccess() && response.data) {
+          setData(response.data.income_expense_summary);
+        } else {
+          setError(response.message || "Failed to fetch wallet summary");
+        }
+      } catch (err: any) {
+        setError(
+          err.message || "An error occurred while fetching wallet summary"
+        );
+        console.error("Error fetching wallet summary:", err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    const handleTransactionChanged = () => {
+      if (lastParams.current) {
+        fetchWalletSummary(lastParams.current);
+      }
+    };
+
+    TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
+    CurrencyEventEmitter.onCurrencyChanged(handleTransactionChanged);
+
+    return () => {
+      TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
+      CurrencyEventEmitter.offCurrencyChanged(handleTransactionChanged);
+    };
+  }, [fetchWalletSummary]);
+
+  return {
+    data,
+    loading,
+    error,
+    fetchWalletSummary,
+  };
+};
+
 
 export interface BalanceDetail {
     label: string;
