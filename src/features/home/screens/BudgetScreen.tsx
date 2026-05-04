@@ -215,7 +215,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         variant="gradient"
         showBackButton={false}
       />
-      <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: normalize(25) }}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ paddingTop: normalize(25) }}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity

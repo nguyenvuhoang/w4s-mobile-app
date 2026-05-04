@@ -289,7 +289,7 @@ const StatisticsScreen = () => {
         variant="gradient"
         showBackButton={false}
       />
-      <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: normalize(25) }}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ paddingTop: normalize(25) }}>
         {/* ===== TOTAL BALANCE ===== */}
         <LinearGradient
           colors={["#1DA1F2", "#00CFDD"]}

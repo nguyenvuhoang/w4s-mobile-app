@@ -1,3 +1,4 @@
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import FeatureSearchModal from "@/components/modals/FeatureSearchModal";
 import { GlobalContext } from "@/contexts/GlobalContext";
@@ -15,7 +16,6 @@ import { styles } from "@/features/home/styles/HomeScreen.Style";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { getValidIconName } from "@/utils/iconMapper";
 import { hp, normalize } from "@/utils/layout";
-import AppIcon from "@/components/base/AppIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useCallback, useContext, useMemo } from "react";
@@ -463,7 +463,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               end={{ x: 1, y: 1 }}
               style={styles.actionIcon}
             >
-              <AppIcon name="arrow-up" size={normalize(24)} color="#fff" type="Ionicons" />
+              <AppIcon name="system_send" size={normalize(28)} color="#fff" />
             </LinearGradient>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
               {t("home.send")}
@@ -476,10 +476,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <AppIcon
-                name="arrow-down"
-                size={normalize(24)}
+                name="system_revice"
+                size={normalize(32)}
                 color={colors.tint}
-                type="Ionicons"
               />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
@@ -493,10 +492,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <AppIcon
-                name="card-outline"
+                name="system_card"
                 size={normalize(24)}
                 color={colors.tint}
-                type="Ionicons"
               />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>
@@ -510,10 +508,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.card }]}>
               <AppIcon
-                name="ellipsis-horizontal"
+                name="system_more"
                 size={normalize(24)}
                 color={colors.tint}
-                type="Ionicons"
               />
             </View>
             <CustomText style={[styles.actionLabel, { color: colors.text }]}>

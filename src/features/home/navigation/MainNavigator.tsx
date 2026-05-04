@@ -135,9 +135,35 @@ const CustomTabBarButton = ({ children }: any) => {
 };
 
 export default function MainNavigator() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+
+  const renderTabIcon = (
+    name: string,
+    inactiveName: string,
+    color: string,
+    focused: boolean
+  ) => (
+    <View style={{ alignItems: "center", justifyContent: "center" }}>
+      <AppIcon
+        name={focused ? name : inactiveName}
+        size={normalize(26)}
+        color={color}
+      />
+      {focused && (
+        <View
+          style={{
+            width: normalize(18),
+            height: normalize(3),
+            borderRadius: normalize(2),
+            backgroundColor: color,
+            marginTop: normalize(4),
+          }}
+        />
+      )}
+    </View>
+  );
 
   return (
     <Tab.Navigator
@@ -147,7 +173,7 @@ export default function MainNavigator() {
         tabBarStyle: [
           styles.tabBar,
           {
-            backgroundColor: colors.background,
+            backgroundColor: isDark ? colors.background : '#FFFFFF',
             borderTopColor: colors.border,
             height: Platform.OS === "ios" ? hp(11) : hp(9) + insets.bottom,
             paddingBottom: Platform.OS === "ios" ? getBottomSpace() : hp(1.5) + insets.bottom,
@@ -155,21 +181,15 @@ export default function MainNavigator() {
         ],
         tabBarActiveTintColor: colors.tint,
         tabBarInactiveTintColor: colors.tabIconDefault,
-        tabBarLabelStyle: styles.tabBarLabel,
+        tabBarShowLabel: false,
       }}
     >
       <Tab.Screen
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarLabel: t("navigation.home"),
-          tabBarIcon: ({ color, focused }) => (
-            <AppIcon
-              name="essentional__ui_home_angle"
-              size={normalize(22)}
-              color={color}
-            />
-          ),
+          tabBarIcon: ({ color, focused }) =>
+            renderTabIcon("essentional__ui_home_angle", "system_home", color, focused),
         }}
       />
 
@@ -177,14 +197,8 @@ export default function MainNavigator() {
         name="Statistics"
         component={StatisticsScreen}
         options={{
-          tabBarLabel: t("navigation.statistics"),
-          tabBarIcon: ({ color, focused }) => (
-            <AppIcon
-              name="business__statistic_pie_chart_2"
-              size={normalize(22)}
-              color={color}
-            />
-          ),
+          tabBarIcon: ({ color, focused }) =>
+            renderTabIcon("business__statistic_pie_chart_2", "system_pie", color, focused),
         }}
       />
 
@@ -214,14 +228,8 @@ export default function MainNavigator() {
         name="Budget"
         component={BudgetScreen}
         options={{
-          tabBarLabel: t("navigation.budget"),
-          tabBarIcon: ({ color, focused }) => (
-            <AppIcon
-              name="wallet_wallet"
-              size={normalize(22)}
-              color={color}
-            />
-          ),
+          tabBarIcon: ({ color, focused }) =>
+            renderTabIcon("wallet_wallet", "system_wallet", color, focused),
         }}
       />
 
@@ -229,14 +237,13 @@ export default function MainNavigator() {
         name="Settings"
         component={SettingsScreen}
         options={{
-          tabBarLabel: t("navigation.settings"),
-          tabBarIcon: ({ color, focused }) => (
-            <AppIcon
-              name="settings__fine_tuning_local_settings_fine_tuning_settings"
-              size={normalize(22)}
-              color={color}
-            />
-          ),
+          tabBarIcon: ({ color, focused }) =>
+            renderTabIcon(
+              "settings__fine_tuning_local_settings_fine_tuning_settings",
+              "system_setting",
+              color,
+              focused
+            ),
         }}
       />
     </Tab.Navigator>
@@ -307,7 +314,7 @@ const styles = StyleSheet.create({
     height: normalize(50),
   },
   addIconStyle: {
-    marginTop: normalize(20),
+    marginTop: normalize(10),
     marginLeft: normalize(14),
   },
 });

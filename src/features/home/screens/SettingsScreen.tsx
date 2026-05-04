@@ -205,7 +205,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         variant="gradient"
         showBackButton={false}
       />
-      <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: normalize(25) }}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ paddingTop: normalize(25) }}>
 
         {/* Profile Section */}
         <View style={[styles.profileSection, { backgroundColor: colors.card }]}>
