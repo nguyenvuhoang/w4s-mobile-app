@@ -567,8 +567,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: wp(5),
-    paddingTop: hp(1),
-    paddingBottom: hp(2),
+    paddingBottom: hp(1),
   },
   createButton: {
     borderRadius: normalize(24),
@@ -616,7 +615,7 @@ const styles = StyleSheet.create({
   },
   periodCard: {
     marginHorizontal: wp(5),
-    marginBottom: hp(2),
+    marginBottom: hp(1),
     borderWidth: 1,
     borderRadius: normalize(24),
     paddingVertical: normalize(4),
