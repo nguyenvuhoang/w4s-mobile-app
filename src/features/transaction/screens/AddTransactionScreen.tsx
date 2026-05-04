@@ -114,6 +114,9 @@ interface AutofillData {
   location?: string;
   reminderDate?: string | Date;
   loan?: Loan;
+  images?: string[];
+  participants?: Participant[];
+  includeInReport?: boolean;
 }
 
 const AddTransactionScreen = () => {
@@ -338,6 +341,19 @@ const AddTransactionScreen = () => {
           if (reminder instanceof Date && !isNaN(reminder.getTime())) {
             setReminderDate(reminder);
           }
+        }
+
+        if (autofillData.images && autofillData.images.length > 0) {
+          setImageUri(autofillData.images[0]);
+          setUploadedImageUrl(autofillData.images[0]);
+        }
+
+        if (autofillData.participants) {
+          setParticipants(autofillData.participants);
+        }
+
+        if (autofillData.includeInReport !== undefined) {
+          setIncludeInReport(autofillData.includeInReport);
         }
       } catch (error) {
         console.error("[AddTransaction] Failed to parse autofill data:", error);

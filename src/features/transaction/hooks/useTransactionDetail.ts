@@ -4,6 +4,7 @@ import StorageService from '@/services/StorageService';
 import { useCallback, useEffect, useState } from 'react';
 
 export interface WalletCategory {
+    id: number;
     category_name: string;
     icon: string;
     color: string;

@@ -1,7 +1,7 @@
 import { FontAwesome6 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
@@ -151,6 +151,12 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
     const { transaction, loading, error, refetch } = useTransactionDetail(transactionId);
     const { deleteTransaction, refundTransaction } = useTransaction();
 
+    useFocusEffect(
+        useCallback(() => {
+            if (transactionId) refetch();
+        }, [transactionId, refetch])
+    );
+
     const formatDate = (dateString: string) => {
         try {
             return new Date(dateString).toLocaleDateString(
@@ -258,13 +264,56 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
         if (!transactionId) return;
         router.push({
             pathname: '/(protected)/edit-transaction',
-            params: { 
+            params: {
                 transactionId,
                 transaction: JSON.stringify(transaction)
             },
         });
     };
-    const handleDuplicate = () => console.log('Duplicate:', transactionId);
+    const handleDuplicate = () => {
+        if (!transaction) return;
+
+        const typeMap: Record<string, 'income' | 'expense' | 'inout'> = {
+            '01': 'income',
+            '02': 'expense',
+        };
+
+        const autofillData = {
+            type: typeMap[transaction.transactioncode] || (transaction.walletcategory?.category_group === 'LOAN' ? 'inout' : 'expense'),
+            walletId: parseInt(transaction.walletid, 10),
+            category: transaction.walletcategory ? {
+                id: transaction.walletcategory.id,
+                category_id: transaction.walletcategory.category_code,
+                category_code: transaction.walletcategory.category_code,
+                category_name: transaction.walletcategory.category_name,
+                category_type: transaction.walletcategory.category_type,
+                category_group: transaction.walletcategory.category_group,
+                icon: transaction.walletcategory.icon,
+                color: transaction.walletcategory.color,
+            } : undefined,
+            amount: transaction.amount,
+            note: transaction.trandesc,
+            date: new Date(),
+            currency: {
+                currencyId: transaction.ccyid,
+                symbol: transaction.ccyid === 'VND' ? 'đ' : (transaction.ccyid === 'USD' ? '$' : transaction.ccyid),
+                name: transaction.ccyid,
+            },
+            event: transaction.walletevent && transaction.walletevent.id !== 0 ? {
+                eventId: transaction.walletevent.id,
+                eventName: transaction.walletevent.title,
+                icon: transaction.walletevent.icon,
+                color: transaction.walletevent.color,
+            } : undefined,
+            images: transaction.imageurl ? [transaction.imageurl] : [],
+            includeInReport: true,
+        };
+
+        router.push({
+            pathname: '/(protected)/transaction/add-transaction',
+            params: { autofillData: JSON.stringify(autofillData) },
+        });
+    };
 
     // --- Loading ---
     if (loading) {
@@ -427,9 +476,9 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
             </ScrollView>
 
             {showMenu && (
-                <Pressable 
-                    style={[StyleSheet.absoluteFill, { zIndex: 999 }]} 
-                    onPress={() => setShowMenu(false)} 
+                <Pressable
+                    style={[StyleSheet.absoluteFill, { zIndex: 999 }]}
+                    onPress={() => setShowMenu(false)}
                 />
             )}
 
