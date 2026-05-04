@@ -1,3 +1,4 @@
+import { AppConfig } from "@/config/AppConfig";
 import { initializeTranslations } from "@/core/i18n/i18n";
 import { AppProviders } from "@/core/providers/AppProviders";
 import { useAppTheme } from "@/core/theme/ThemeContext";
@@ -14,6 +15,14 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+
+if (AppConfig.IS_PRODUCTION) {
+  console.log = () => { };
+  console.info = () => { };
+  console.warn = () => { };
+  console.debug = () => { };
+}
+
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -69,21 +78,21 @@ function RootStack() {
           },
         }}
       >
-      <Stack.Screen
-        name="index"
-        options={{
-          animation: "fade",
-        }}
-      />
-      <Stack.Screen
-        name="(auth)"
-        options={{
-          animation: "fade",
-          animationDuration: 200,
-        }}
-      />
-      <Stack.Screen name="(protected)" />
-    </Stack>
+        <Stack.Screen
+          name="index"
+          options={{
+            animation: "fade",
+          }}
+        />
+        <Stack.Screen
+          name="(auth)"
+          options={{
+            animation: "fade",
+            animationDuration: 200,
+          }}
+        />
+        <Stack.Screen name="(protected)" />
+      </Stack>
     </>
   );
 }
