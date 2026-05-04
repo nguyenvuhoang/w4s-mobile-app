@@ -1,13 +1,17 @@
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
+import StorageKey from "@/constants/StorageKey";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import { categoryCache } from "@/features/category/hooks/useCategorycache";
 import type {
   Loan,
   LoanFilterType,
   LoanSummary
 } from "@/features/paybook/types";
 import { useCategory } from "@/hooks/useCategory";
+import StorageService from "@/services/StorageService";
+import { categoryRepository } from "@/services/repositories/category.repository";
 import { paybookRepository } from "@/services/repositories/paybook.repository";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
@@ -111,6 +115,34 @@ const PaybookListScreen = () => {
           paid_installments: item.paid_installments ?? item.paid_installment ?? 0,
         }));
         setLoans(items);
+
+        // Pre-fetch categories cho tất cả wallet IDs trong loan list
+        // để getCategoryByCode(walletId, "LOAN_COLLECT"/"LOAN_REPAY") có dữ liệu trong cache.
+        const uniqueWalletIds = [...new Set(items.map((l) => l.wallet_id).filter(Boolean))];
+        const uncachedWalletIds = uniqueWalletIds.filter((wId) => !categoryCache.hasWallet(wId));
+        if (uncachedWalletIds.length > 0) {
+          try {
+            const userCode = await StorageService.getItem(StorageKey.userCode);
+            const appInfoStr = await StorageService.getItem(StorageKey.appInfo);
+            let contractNumber = '';
+            if (appInfoStr) {
+              try { contractNumber = JSON.parse(appInfoStr)?.contract_number || ''; } catch { }
+            }
+            await Promise.all(
+              uncachedWalletIds.map(async (wId) => {
+                const res2 = await categoryRepository.getCategories(userCode?.toString() || '', wId, contractNumber);
+                if (res2.isSuccess?.() && res2.data) {
+                  const flat = (res2.data.data || []).flatMap((c: any) =>
+                    [c, ...(c.children || [])]
+                  );
+                  categoryCache.set(wId, flat);
+                }
+              })
+            );
+          } catch (catErr) {
+            console.warn('[PaybookListScreen] Failed to pre-fetch categories:', catErr);
+          }
+        }
 
         const sum: LoanSummary = res.data.summary ?? {
           total_lend: items
@@ -226,6 +258,7 @@ const PaybookListScreen = () => {
         walletId: loan.wallet_id,
         ...(category && { category }),
         amount: String(loan.remaining_amount),
+        loan: loan,
         note: loan.counterparty_name
           ? `${isLend ? t("paybook.collect_from") : t("paybook.repay_to")} ${loan.counterparty_name}`
           : "",

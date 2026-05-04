@@ -19,7 +19,6 @@ import { useSpendingLimit } from "@/hooks/useSpendingLimit";
 import StorageService from "@/services/StorageService";
 import { hp, normalize } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
-import DatePicker from "react-native-date-picker";
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, {
@@ -43,6 +42,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import DatePicker from "react-native-date-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface SelectedCategoryData {
@@ -113,6 +113,7 @@ interface AutofillData {
   };
   location?: string;
   reminderDate?: string | Date;
+  loan?: Loan;
 }
 
 const AddTransactionScreen = () => {
@@ -124,7 +125,7 @@ const AddTransactionScreen = () => {
   const { defaultCurrency } = useDefaultCurrency();
   const { createTransaction, loading: creatingTransaction } = useTransaction();
   const { showNotification } = useNotification();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { appInfo } = useContext(GlobalContext);
   const { fetchLimits, checkTransactionLimit } = useSpendingLimit();
   const { getLoans } = usePaybookDetail();
@@ -287,9 +288,21 @@ const AddTransactionScreen = () => {
         if (autofillData.type) setSelectedType(autofillData.type);
         if (autofillData.walletId !== undefined) {
           setSourceWalletId(autofillData.walletId);
-          prevWalletIdRef.current = autofillData.walletId;
         }
-        if (autofillData.category) setSelectedCategoryData(autofillData.category);
+        if (autofillData.category) {
+          const rawName = autofillData.category.category_name;
+          let resolvedName = rawName;
+          try {
+            const parsed = JSON.parse(rawName);
+            if (parsed && typeof parsed === "object") {
+              resolvedName = parsed[i18n.language] || parsed.vi || parsed.en || rawName;
+            }
+          } catch { /* not JSON — use rawName as-is */ }
+          setSelectedCategoryData({
+            ...autofillData.category,
+            category_name: resolvedName,
+          });
+        }
         if (autofillData.amount !== undefined) setAmount(String(autofillData.amount));
 
         if (autofillData.date) {
@@ -315,6 +328,7 @@ const AddTransactionScreen = () => {
         }
 
         if (autofillData.location) setLocation(autofillData.location);
+        if (autofillData.loan) setSelectedLoan(autofillData.loan);
 
         if (autofillData.reminderDate) {
           const reminder =
@@ -669,9 +683,12 @@ const AddTransactionScreen = () => {
   const parseCategoryNameJSON = (nameJson: string) => {
     try {
       const parsed = JSON.parse(nameJson);
-      return parsed.vi || parsed.en || t("transaction.select_category");
+      if (parsed && typeof parsed === "object") {
+        return parsed[i18n.language] || parsed.vi || parsed.en || nameJson;
+      }
+      return nameJson || t("transaction.select_category");
     } catch {
-      return t("transaction.select_category");
+      return nameJson || t("transaction.select_category");
     }
   };
 

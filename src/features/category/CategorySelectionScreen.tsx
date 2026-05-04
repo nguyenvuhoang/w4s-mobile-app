@@ -16,6 +16,7 @@ import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
 import i18n from "@/core/i18n/i18n";
 import { useAppTheme } from "@/core/theme/ThemeContext";
+import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCategory } from "@/hooks/useCategory";
 import { Category } from "@/services/repositories/category.repository";
 import StorageService from "@/services/StorageService";
@@ -33,32 +34,32 @@ type TabType = "INCOME" | "EXPENSE" | "LOAN";
 
 const STORAGE_KEY = "temp_selected_category";
 
-const STATIC_LOAN_CATEGORIES: Category[] = [
-  {
-    id: -1,
-    category_code: "LOAN_COLLECT",
-    wallet_id: 0,
-    parent_category_id: 0,
-    category_group: "LOAN",
-    category_type: "LOAN_COLLECT",
-    category_name: JSON.stringify({ vi: "Thu nợ", en: "Debt Collection" }),
-    icon: "hand-holding-dollar",
-    color: "#4CAF50",
-    web_icon: "",
-  },
-  {
-    id: -2,
-    category_code: "LOAN_REPAY",
-    wallet_id: 0,
-    parent_category_id: 0,
-    category_group: "LOAN",
-    category_type: "LOAN_REPAY",
-    category_name: JSON.stringify({ vi: "Trả nợ", en: "Debt Repayment" }),
-    icon: "money-bill-transfer",
-    color: "#F44336",
-    web_icon: "",
-  },
-];
+// const STATIC_LOAN_CATEGORIES: Category[] = [
+//   {
+//     id: -1,
+//     category_code: "LOAN_COLLECT",
+//     wallet_id: 0,
+//     parent_category_id: 0,
+//     category_group: "LOAN",
+//     category_type: "LOAN_COLLECT",
+//     category_name: JSON.stringify({ vi: "Thu nợ", en: "Debt Collection" }),
+//     icon: "hand-holding-dollar",
+//     color: "#4CAF50",
+//     web_icon: "",
+//   },
+//   {
+//     id: -2,
+//     category_code: "LOAN_REPAY",
+//     wallet_id: 0,
+//     parent_category_id: 0,
+//     category_group: "LOAN",
+//     category_type: "LOAN_REPAY",
+//     category_name: JSON.stringify({ vi: "Trả nợ", en: "Debt Repayment" }),
+//     icon: "money-bill-transfer",
+//     color: "#F44336",
+//     web_icon: "",
+//   },
+// ];
 
 /* =====================
    Screen
@@ -78,10 +79,14 @@ const CategorySelectionScreen: React.FC = () => {
   /* =====================
      Modes
   ===================== */
-  const walletId = useMemo(
-    () => (params.walletId ? parseInt(params.walletId) : undefined),
-    [params.walletId]
-  );
+  const { wallets, defaultWalletId } = useWallet();
+
+  const effectiveWalletId = useMemo(() => {
+    if (params.walletId === "all") return "all";
+    const paramWalletId = params.walletId ? parseInt(params.walletId) : 0;
+    if (paramWalletId !== 0 && !isNaN(paramWalletId)) return paramWalletId;
+    return defaultWalletId || (wallets.length > 0 ? wallets[0].walletId : 0);
+  }, [params.walletId, defaultWalletId, wallets]);
   const isSelectParent = useMemo(
     () => params.isSelectParent === "true",
     [params.isSelectParent]
@@ -126,8 +131,8 @@ const CategorySelectionScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const { categories, loading, error, refetch } = useCategory({
-    autoFetch: true,
-    walletId: walletId,
+    autoFetch: effectiveWalletId !== 0,
+    walletId: effectiveWalletId !== "all" ? Number(effectiveWalletId) : 0,
   });
 
   useEffect(() => {
@@ -160,9 +165,9 @@ const CategorySelectionScreen: React.FC = () => {
   const groupedCategories = useMemo(() => {
     let baseList = [...categories];
 
-    if (selectedTab === "LOAN") {
-      baseList = [...baseList, ...STATIC_LOAN_CATEGORIES];
-    }
+    // if (selectedTab === "LOAN") {
+    //   baseList = [...baseList, ...STATIC_LOAN_CATEGORIES];
+    // }
 
     // Deduplicate by category_code
     const uniqueBaseList = Array.from(
