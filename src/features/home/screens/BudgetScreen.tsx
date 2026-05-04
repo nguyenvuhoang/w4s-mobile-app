@@ -134,12 +134,16 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         todayProgress,
         currency: itemCurrency,
         // raw fields for detail screen
+        category_id: item.category_id,
+        category_type: cat?.category_type || item.category_type,
+        category_code: cat?.category_code || item.category_code,
         start_date: item.start_date,
         end_date: item.end_date,
         wallet_id: item.wallet_id,
         wallet_name: item.wallet_name,
         period_type: item.period_type,
         source_tracker: item.source_tracker,
+        budget_id: item.budget_id || item.wallet_budget_id || item.id,
       };
     });
   }, [budgetList, categories, colors.tint, t, i18n.language, converterReady, defaultCurrency.currencyId, convertBetween]);

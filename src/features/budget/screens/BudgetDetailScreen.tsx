@@ -1,15 +1,18 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
+import { Fonts } from '@/core/theme/font';
 import { useAppTheme } from '@/core/theme/ThemeContext';
+import { useBudget } from '@/features/budget/hooks/useBudget';
 import { useTransaction } from '@/features/transaction/hooks/useTransaction';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
-import { hp, normalize, wp } from '@/utils/layout';
 import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
+import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View, Pressable } from 'react-native';
+import { useNotification } from '@/contexts/NotificationContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Polyline, Stop, Text as SvgText } from 'react-native-svg';
 
@@ -276,9 +279,12 @@ const BudgetDetailScreen = () => {
   const { getWalletById } = useWallet();
   const { advancedSearchTransactions } = useTransaction();
   const { formatAmount } = useCurrencyConverter();
+  const { deleteBudget } = useBudget({ autoFetch: false });
+  const { showNotification } = useNotification();
 
   const [transactions, setTransactions] = useState<any[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const budget = useMemo(() => {
     try {
@@ -412,9 +418,107 @@ const BudgetDetailScreen = () => {
     return points;
   }, [transactions, startDate, endDate]);
 
+  const handleDeleteBudget = () => {
+    setShowMenu(false);
+    showNotification(
+      t('event.confirm_delete', { title: budget.categoryName || t('budget.detail.default_budget_name') }),
+      'warning',
+      undefined,
+      undefined,
+      async () => {
+        const budgetId = budget.budget_id || budget.wallet_budget_id || budget.id;
+        if (budgetId) {
+          const res = await deleteBudget(Number(budgetId));
+          if (res.isSuccess()) {
+            showNotification(t('budget.success_delete', { defaultValue: 'Xóa ngân sách thành công' }), 'success');
+            router.back();
+          } else {
+            showNotification(res.getError() || t('budget.error_delete', { defaultValue: 'Xóa ngân sách thất bại' }), 'error');
+          }
+        }
+      }
+    );
+  };
+
+  const handleEdit = () => {
+    setShowMenu(false);
+    router.push({
+      pathname: '/(protected)/budget/edit-budget',
+      params: {
+        autofillData: JSON.stringify({
+          budget_id: budget.budget_id || budget.wallet_budget_id || budget.id,
+          amount: total,
+          walletId: Number(budget.wallet_id),
+          category: {
+            id: budget.category_id,
+            category_id: budget.category_id,
+            category_code: budget.category_code,
+            category_name: budget.categoryName || budget.category_name,
+            category_type: budget.category_type || 'EXPENSE',
+            icon: budget.icon,
+            color: budget.iconColor,
+          },
+          startDate: budget.start_date,
+          endDate: budget.end_date,
+          periodType: budget.period_type,
+          note: budget.note,
+          includeInReport: budget.include_in_report,
+          autoRepeat: budget.is_auto_repeat,
+        }),
+        isEdit: 'true',
+      },
+    });
+  };
+
+  const handleGoToTransactions = () => {
+    setShowMenu(false);
+    router.push({
+      pathname: '/(protected)/budget/budget-transactions',
+      params: {
+        budgetId: budget.budget_id || budget.wallet_budget_id || budget.id,
+        walletId: budget.wallet_id,
+        categoryName: budget.categoryName || budget.category_name || t('budget.detail.default_budget_name'),
+        fromDate: budget.start_date,
+        toDate: budget.end_date,
+      },
+    });
+  };
+
+  const MenuDropdown = () => {
+    if (!showMenu) return null;
+    return (
+      <View style={[styles.menuDropdown, { backgroundColor: colors.card, shadowColor: colors.text }]}>
+        <TouchableOpacity style={styles.menuItem} onPress={handleEdit}>
+          <FontAwesome6 name="pen-to-square" size={normalize(15)} color={colors.text} />
+          <CustomText style={[styles.menuItemText, { color: colors.text }]}>{t('common.edit')}</CustomText>
+        </TouchableOpacity>
+        <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+        <TouchableOpacity style={styles.menuItem} onPress={handleGoToTransactions}>
+          <FontAwesome6 name="list-ul" size={normalize(15)} color={colors.text} />
+          <CustomText style={[styles.menuItemText, { color: colors.text }]}>{t('budget.detail.transaction_list')}</CustomText>
+        </TouchableOpacity>
+        <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+        <TouchableOpacity style={styles.menuItem} onPress={handleDeleteBudget}>
+          <FontAwesome6 name="trash-can" size={normalize(15)} color="#EF4444" />
+          <CustomText style={[styles.menuItemText, { color: '#EF4444' }]}>{t('common.delete')}</CustomText>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader title={t('budget.detail.title')} />
+      <AppHeader
+        title={t('budget.detail.title')}
+        rightComponent={
+          <TouchableOpacity
+            onPress={() => setShowMenu(!showMenu)}
+            style={{ width: normalize(40), height: normalize(40), alignItems: 'flex-end', justifyContent: 'center' }}
+          >
+            <FontAwesome6 name="ellipsis-vertical" size={normalize(20)} color={colors.text} />
+          </TouchableOpacity>
+        }
+      />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
         {/* ── 1. Budget Header Card ─────────────────────────────────────────────── */}
@@ -611,6 +715,15 @@ const BudgetDetailScreen = () => {
 
         <View style={{ height: hp(6) }} />
       </ScrollView>
+
+      {showMenu && (
+        <Pressable
+          style={[StyleSheet.absoluteFill, { zIndex: 999 }]}
+          onPress={() => setShowMenu(false)}
+        />
+      )}
+
+      <MenuDropdown />
     </SafeAreaView>
   );
 };
@@ -722,6 +835,21 @@ const styles = StyleSheet.create({
     gap: normalize(12),
   },
   transactionBtnText: { flex: 1, color: '#fff', fontSize: normalize(16), fontWeight: '600' },
+
+  // Menu dropdown (matching transaction detail pattern)
+  menuDropdown: {
+    position: 'absolute', top: hp(8), right: wp(5),
+    borderRadius: normalize(14), paddingVertical: normalize(6),
+    minWidth: normalize(180),
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12,
+    elevation: 8, zIndex: 1000,
+  },
+  menuItem: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: normalize(16), paddingVertical: normalize(12), gap: normalize(12),
+  },
+  menuItemText: { fontSize: normalize(14), fontFamily: Fonts.medium },
+  menuDivider: { height: StyleSheet.hairlineWidth, marginHorizontal: normalize(12) },
 });
 
 export default BudgetDetailScreen;

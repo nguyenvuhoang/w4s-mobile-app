@@ -1,5 +1,6 @@
 import { AppConfig } from "@/config/AppConfig";
 import StorageKey from "@/constants/StorageKey";
+import { GlobalContext } from "@/contexts/GlobalContext";
 import { BaseResponseModel } from "@/core/api/models/ClientModel";
 import {
   AdvancedSearchBudgetParams,
@@ -9,8 +10,7 @@ import {
   UpdateBudgetPayload,
 } from "@/services/repositories/budget.repository";
 import StorageService from "@/services/StorageService";
-import { useCallback, useEffect, useMemo, useState, useContext } from "react";
-import { GlobalContext } from "@/contexts/GlobalContext";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 const PAGE_SIZE = 9999;
 
@@ -70,6 +70,7 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
   const [loading, setLoading] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   /**
@@ -233,6 +234,49 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
   );
 
   /**
+   * Delete a budget
+   */
+  const deleteBudget = useCallback(
+    async (budgetId: number): Promise<BaseResponseModel> => {
+      try {
+        setError(null);
+        setDeleting(true);
+        console.log("[useBudget] Deleting budget ID:", budgetId);
+
+        const response = await budgetRepository.deleteBudget(budgetId);
+
+        if (response.isSuccess()) {
+          console.log("[useBudget] Budget deleted, clearing cache and refreshing");
+          sessionCache = null;
+          await fetchAllBudgets(true);
+        } else {
+          setError(response.getError() || "Xóa ngân sách thất bại");
+        }
+
+        return response;
+      } catch (err) {
+        console.error("[useBudget] Delete budget network/unexpected error:", err);
+        const errorMessage =
+          err instanceof Error ? err.message : "Không thể xóa ngân sách";
+        setError(errorMessage);
+        return new BaseResponseModel({
+          success: false,
+          message: errorMessage,
+          code: "ERROR",
+          data: null,
+          execution_id: "",
+          timestamp: new Date().toISOString(),
+          errors: [],
+          metadata: {},
+        });
+      } finally {
+        setDeleting(false);
+      }
+    },
+    [fetchAllBudgets]
+  );
+
+  /**
    * Fetch budget summary
    */
   const fetchBudgetSummary = useCallback(
@@ -373,9 +417,11 @@ export const useBudget = (options: UseBudgetOptions = {}) => {
     loading,
     summaryLoading,
     creating,
+    deleting,
     error,
     createBudget,
     updateBudget,
+    deleteBudget,
     fetchAllBudgets, // Deprecated - dùng refetch thay thế
     fetchBudgetSummary,
     advancedSearchBudgets,

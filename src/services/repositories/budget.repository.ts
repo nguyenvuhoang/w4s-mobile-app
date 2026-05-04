@@ -230,20 +230,20 @@ export const budgetRepository = {
   /**
    * Delete budget
    */
-  //   async deleteBudget(budgetId: number): Promise<BaseResponseModel> {
-  //     try {
-  //       return await apiService.executeWorkflow(
-  //         WORKFLOWCODE.WF_EVENT_DELETE,
-  //         {
-  //           budget_id: budgetId,
-  //         },
-  //         false
-  //       );
-  //     } catch (error) {
-  //       console.error("[budgetRepository] Error deleting budget:", error);
-  //       throw error;
-  //     }
-  //   },
+  async deleteBudget(budgetId: number): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_DELETE_WALLET_BUDGET,
+        {
+          budget_id: budgetId,
+        },
+        false
+      );
+    } catch (error) {
+      console.error("[budgetRepository] Error deleting budget:", error);
+      throw error;
+    }
+  },
 
   /**
    * Complete budget (update status to COMPLETED)
