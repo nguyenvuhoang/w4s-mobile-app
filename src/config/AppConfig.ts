@@ -1,6 +1,6 @@
 
 export const AppConfig = {
-  IS_PRODUCTION: false,
+  IS_PRODUCTION: true,
 
   FEATURES: {
     ENABLE_FIAT: false,
