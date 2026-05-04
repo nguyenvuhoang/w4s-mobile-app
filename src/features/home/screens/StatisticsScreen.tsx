@@ -18,6 +18,7 @@ import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import { t } from "i18next";
+import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
@@ -284,6 +285,7 @@ const StatisticsScreen = () => {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["bottom"]}
     >
+      <StatusBar style="light" />
       <AppHeader
         title={t("statistics.title") || "Thống kê"}
         variant="gradient"

@@ -24,6 +24,7 @@ import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import * as ImagePicker from "expo-image-picker";
+import { StatusBar } from "expo-status-bar";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -200,6 +201,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["bottom"]}
     >
+      <StatusBar style="light" />
       <AppHeader
         title={t("settings.titleheader")}
         variant="gradient"

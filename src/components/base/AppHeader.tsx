@@ -42,7 +42,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   titleStyle,
   backgroundColor,
   showBorder = true,
-  backIconName = "arrow-left",
+  backIconName = "system_back",
   backIconSize,
   backIconColor,
   variant = "default",
@@ -88,7 +88,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             >
               <AppIcon
                 name={backIconName}
-                size={backIconSize || normalize(20)}
+                size={backIconSize || normalize(30)}
                 color={backIconColor || "#fff"}
               />
             </TouchableOpacity>
@@ -135,7 +135,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       ]}
     >
       {/* Left - Back Button */}
-      <View style={[styles.leftContainer, { backgroundColor: colors.card }]}>
+      <View style={[styles.leftContainer]}>
         {showBackButton && (
           <TouchableOpacity
             onPress={handleBack}
@@ -144,8 +144,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           >
             <AppIcon
               name={backIconName}
-              size={backIconSize || normalize(20)}
-              color={backIconColor || colors.text}
+              size={backIconSize || normalize(30)}
+              color={backIconColor || colors.tint}
             />
           </TouchableOpacity>
         )}
