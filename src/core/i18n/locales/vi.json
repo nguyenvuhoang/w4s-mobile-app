@@ -386,6 +386,7 @@
     "description": "Vui lòng đăng nhập để sử dụng ứng dụng quản lý tài chính W4S."
   },
   "settings": {
+    "titleheader":"Tài khoản",
     "title": "Cài đặt",
     "account": "Tài khoản",
     "personal_info": "Thông tin cá nhân",
@@ -497,6 +498,7 @@
     "title": "Lịch sử giao dịch"
   },
   "statistics": {
+    "title": "Tổng quan",
     "my_wallets": "Ví của tôi",
     "monthly_report": "Báo cáo tháng này",
     "view_report": "Xem báo cáo",
@@ -504,6 +506,7 @@
     "daily_expenses": "Chi phí hằng đầu"
   },
   "budget": {
+    "title": "Ngân sách",
     "limit": "Hạn mức",
     "used": "đã dùng",
     "create_budget": "Tạo ngân sách",

@@ -1,3 +1,4 @@
+import AppHeader from "@/components/base/AppHeader";
 import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import BottomActionModal, { ActionItem } from "@/components/modals/BottomActionModal";
@@ -197,14 +198,14 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["bottom"]}
     >
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <CustomText style={[styles.headerTitle, { color: colors.text }]}>
-            {t("settings.title")}
-          </CustomText>
-        </View>
+      <AppHeader
+        title={t("settings.titleheader")}
+        variant="gradient"
+        showBackButton={false}
+      />
+      <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: normalize(25) }}>
 
         {/* Profile Section */}
         <View style={[styles.profileSection, { backgroundColor: colors.card }]}>
@@ -624,7 +625,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: normalize(16),
-    borderBottomWidth: 1,
   },
   settingLeft: {
     flexDirection: "row",

@@ -1,3 +1,4 @@
+import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import WalletPickerModal, { WalletPickerId } from '@/components/modals/WalletPickerModal';
 import { useAppTheme } from '@/core/theme/ThemeContext';
@@ -208,8 +209,13 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["bottom"]}>
+      <AppHeader
+        title={t("budget.title") || "Ngân sách"}
+        variant="gradient"
+        showBackButton={false}
+      />
+      <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: normalize(25) }}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity

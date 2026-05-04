@@ -1,3 +1,4 @@
+import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
 import SectionHeader from "@/components/base/SectionHeader";
 import LineChartCard from "@/components/chart/LineChartCard";
@@ -8,8 +9,8 @@ import { useTopSpendingCategories } from "@/features/home/hooks/useTopSpendingCa
 import { useTransaction } from "@/features/transaction/hooks/useTransaction";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCategory } from "@/hooks/useCategory";
-import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
+import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { hp, normalize, wp } from "@/utils/layout";
@@ -189,9 +190,9 @@ const StatisticsScreen = () => {
   const formatCurrency = (amount: number, currencyCode?: string) => {
     // If we have currency metadata from useCurrencyConverter, use its formatAmount
     if (converterReady && (!currencyCode || currencyCode === defaultCurrency.currencyId)) {
-        return formatAmount(amount);
+      return formatAmount(amount);
     }
-    
+
     // Fallback or specific currency formatting
     const code = currencyCode || defaultCurrency.currencyId || "VND";
     const symbol = code === defaultCurrency.currencyId ? defaultCurrency.symbol : code;
@@ -281,8 +282,14 @@ const StatisticsScreen = () => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["bottom"]}
     >
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <AppHeader
+        title={t("statistics.title") || "Thống kê"}
+        variant="gradient"
+        showBackButton={false}
+      />
+      <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: normalize(25) }}>
         {/* ===== TOTAL BALANCE ===== */}
         <LinearGradient
           colors={["#1DA1F2", "#00CFDD"]}
@@ -572,13 +579,13 @@ const StatisticsScreen = () => {
                     style={{ color: "#FF6B6B" }}
                   >
                     -{(() => {
-                        const itemCurrency = item.currency || item.ccyid || "VND";
-                        let finalAmount = amount;
-                        if (itemCurrency !== defaultCurrency.currencyId) {
-                            const converted = convertBetween(amount, itemCurrency, defaultCurrency.currencyId);
-                            if (converted !== null) finalAmount = converted;
-                        }
-                        return formatAmount(finalAmount);
+                      const itemCurrency = item.currency || item.ccyid || "VND";
+                      let finalAmount = amount;
+                      if (itemCurrency !== defaultCurrency.currencyId) {
+                        const converted = convertBetween(amount, itemCurrency, defaultCurrency.currencyId);
+                        if (converted !== null) finalAmount = converted;
+                      }
+                      return formatAmount(finalAmount);
                     })()}
                   </CustomText>
                 </TouchableOpacity>

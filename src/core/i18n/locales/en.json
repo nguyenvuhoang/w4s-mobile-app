@@ -385,6 +385,7 @@
     "description": "Please log in to use the W4S financial management application."
   },
   "settings": {
+    "titleheader":"Account",
     "title": "Settings",
     "account": "Account",
     "personal_info": "Personal Information",
@@ -496,6 +497,7 @@
     "title": "Transaction History"
   },
   "statistics": {
+    "title": "statistics",
     "my_wallets": "My Wallets",
     "monthly_report": "Monthly Report",
     "view_report": "View Report",
@@ -503,6 +505,7 @@
     "daily_expenses": "Top Expenses"
   },
   "budget": {
+    "title": "Budget",
     "limit": "Limit",
     "used": "used",
     "create_budget": "Create Budget",
