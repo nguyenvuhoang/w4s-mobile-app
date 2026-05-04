@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
   },
   profileSection: {
     borderRadius: normalize(20),
-    padding: normalize(24),
+    padding: normalize(12),
     marginHorizontal: normalize(20),
     marginBottom: normalize(24),
     alignItems: "center",
@@ -624,7 +624,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: normalize(16),
+    paddingHorizontal: normalize(16),
+    paddingVertical: normalize(14),
   },
   settingLeft: {
     flexDirection: "row",
