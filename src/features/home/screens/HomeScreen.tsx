@@ -349,16 +349,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             width: 38,
             height: 38,
             borderRadius: 19,
-            backgroundColor: colors.card,
             justifyContent: 'center',
             alignItems: 'center',
           }}
         >
           <AppIcon
-            name="notifications-outline"
-            size={normalize(22)}
-            color={colors.text}
-            type="Ionicons"
+            name="system_noti"
+            size={normalize(24)}
+            color={colors.tint}
           />
         </TouchableOpacity>
       </View>
