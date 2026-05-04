@@ -7,6 +7,7 @@ import { Images } from '@/utils/images';
 import { hp, normalize, wp } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -35,7 +36,7 @@ const InfoTile = ({
     fullWidth?: boolean;
 }) => (
     <View style={[styles.tile, fullWidth && styles.tileFull, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Ionicons name={icon} size={normalize(18)} color={Tokens.colors.foundation.primary['primary-1']} style={{ marginBottom: 6 }} />
+        <Ionicons name={icon} size={normalize(18)} color={colors.tint} style={{ marginBottom: 6 }} />
         <CustomText style={[styles.tileLabel, { color: colors.icon }]}>{label}</CustomText>
         <CustomText style={[styles.tileValue, { color: colors.text }]} numberOfLines={1}>
             {value}
@@ -72,8 +73,8 @@ const ActionItem = ({
                 onPress={onPress}
                 style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
-                <View style={[styles.actionIconWrap, { backgroundColor: Tokens.colors.foundation.primary['primary-1'] + '15' }]}>
-                    <Ionicons name={icon} size={normalize(20)} color={Tokens.colors.foundation.primary['primary-1']} />
+                <View style={[styles.actionIconWrap, { backgroundColor: colors.tint + '15' }]}>
+                    <Ionicons name={icon} size={normalize(20)} color={colors.tint} />
                 </View>
                 <View style={{ flex: 1, paddingLeft: normalize(12) }}>
                     <CustomText style={[styles.actionTitle, { color: colors.text }]}>{title}</CustomText>
@@ -97,6 +98,7 @@ const AppInfoScreen = () => {
     const appVersion = Constants.expoConfig?.version || '1.0.0';
     const buildNumber = Platform.OS === 'ios' ? (Constants.expoConfig?.ios?.buildNumber || '1') : (Constants.expoConfig?.android?.versionCode?.toString() || '1');
     const sdkVersion = Constants.expoConfig?.sdkVersion || '50.0.0';
+    const updateId = Updates.updateId ? Updates.updateId.slice(0, 8) : 'dev';
 
     useEffect(() => {
         Animated.sequence([
@@ -140,7 +142,7 @@ const AppInfoScreen = () => {
             >
                 {/* Logo & Branding */}
                 <Animated.View style={[styles.brandContainer, { opacity: logoAnim, transform: [{ scale: logoScale }] }]}>
-                    <View style={[styles.logoWrapper, { backgroundColor: colors.card, shadowColor: Tokens.colors.foundation.primary['primary-1'] }]}>
+                    <View style={[styles.logoWrapper, { backgroundColor: colors.card, shadowColor: colors.tint }]}>
                         <Image
                             source={isDark ? Images.appLogoLight : Images.appLogoDark}
                             style={{ width: normalize(60), height: normalize(60) }}
@@ -150,8 +152,8 @@ const AppInfoScreen = () => {
                     <CustomText style={[styles.appName, { color: colors.text }]}>
                         W4S Mobile
                     </CustomText>
-                    <View style={[styles.badge, { backgroundColor: Tokens.colors.foundation.primary['primary-1'] + '20' }]}>
-                        <CustomText style={[styles.badgeText, { color: Tokens.colors.foundation.primary['primary-1'] }]}>
+                    <View style={[styles.badge, { backgroundColor: colors.tint + '15' }]}>
+                        <CustomText style={[styles.badgeText, { color: colors.tint }]}>
                             {t('settings.version')} {appVersion}
                         </CustomText>
                     </View>
@@ -216,6 +218,9 @@ const AppInfoScreen = () => {
                         <Ionicons name="shield-checkmark-outline" size={normalize(24)} color={colors.icon} style={{ marginBottom: 10 }} />
                         <CustomText style={[styles.copyright, { color: colors.icon }]}>
                             © {new Date().getFullYear()} W4S. All rights reserved.
+                        </CustomText>
+                        <CustomText style={[styles.otaText, { color: colors.icon }]}>
+                            OTA ID: {updateId}
                         </CustomText>
                     </View>
                 </Animated.View>
@@ -350,6 +355,13 @@ const styles = StyleSheet.create({
         fontSize: normalize(12),
         fontFamily: Fonts.medium,
         textAlign: 'center',
+    },
+    otaText: {
+        fontSize: normalize(10),
+        fontFamily: Fonts.regular,
+        textAlign: 'center',
+        marginTop: 4,
+        opacity: 0.6,
     }
 });
 
