@@ -11,6 +11,7 @@ import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -314,10 +315,16 @@ export default function InvoiceListScreen() {
             {/* Pay button */}
             {payable && (
               <TouchableOpacity
-                style={[styles.payBtn, { backgroundColor: colors.tint }]}
+                style={styles.payBtn}
                 onPress={() => openPay(bill)}
                 activeOpacity={0.8}
               >
+                <LinearGradient
+                  colors={colors.gradianBase}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[StyleSheet.absoluteFill, { borderRadius: normalize(8) }]}
+                />
                 <FontAwesome6 name="bolt" size={normalize(10)} color="#fff" solid />
                 <CustomText style={styles.payBtnText}>{t("invoice.pay_now")}</CustomText>
               </TouchableOpacity>
@@ -440,15 +447,22 @@ export default function InvoiceListScreen() {
           <TouchableOpacity
             style={[
               styles.confirmBtn,
-              { backgroundColor: colors.tint },
               paying && { opacity: 0.55 },
             ]}
             onPress={confirmPay}
             disabled={paying}
             activeOpacity={0.8}
           >
+            {!paying && (
+              <LinearGradient
+                colors={colors.gradianBase}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[StyleSheet.absoluteFill, { borderRadius: normalize(16) }]}
+              />
+            )}
             {paying ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.tint} />
             ) : (
               <>
                 <FontAwesome6 name="bolt" size={normalize(14)} color="#fff" solid />
@@ -486,9 +500,17 @@ export default function InvoiceListScreen() {
           return (
             <TouchableOpacity
               key={key}
-              style={[styles.tab, active && styles.tabActive]}
+              style={[styles.tab]}
               onPress={() => setTab(key)}
             >
+              {active && (
+                <LinearGradient
+                  colors={colors.gradianBase}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[StyleSheet.absoluteFill, { borderRadius: normalize(12) }]}
+                />
+              )}
               <CustomText
                 style={[styles.tabText, active && styles.tabTextActive]}
               >
@@ -498,10 +520,10 @@ export default function InvoiceListScreen() {
                 <View
                   style={[
                     styles.badge,
-                    { backgroundColor: active ? "rgba(255,255,255,0.3)" : colors.tint },
+                    { backgroundColor: active ? "#fff" : colors.tint },
                   ]}
                 >
-                  <CustomText style={styles.badgeText}>{count}</CustomText>
+                  <CustomText style={[styles.badgeText, active && { color: colors.tint }]}>{count}</CustomText>
                 </View>
               )}
             </TouchableOpacity>
@@ -547,10 +569,16 @@ export default function InvoiceListScreen() {
       {/* FAB */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
-          style={[styles.fab, { backgroundColor: colors.tint }]}
+          style={styles.fab}
           onPress={() => router.push("/(protected)/invoice/create-invoice")}
           activeOpacity={0.8}
         >
+          <LinearGradient
+            colors={colors.gradianBase}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: normalize(16) }]}
+          />
           <FontAwesome6 name="plus" size={normalize(15)} color="#fff" />
           <CustomText style={styles.fabText}>{t("invoice.create_invoice")}</CustomText>
         </TouchableOpacity>
@@ -582,10 +610,10 @@ const createStyles = (colors: any) =>
       justifyContent: "center",
       gap: wp(1.5),
       paddingVertical: hp(1.2),
-      borderRadius: normalize(12),
+      borderRadius: normalize(25),
       backgroundColor: colors.card,
+      overflow: "hidden", // Ensure gradient doesn't bleed out
     },
-    tabActive: { backgroundColor: colors.tint },
     tabText: { fontSize: normalize(13), color: colors.text, fontFamily: Fonts.regular },
     tabTextActive: { color: "#fff", fontFamily: Fonts.semiBold },
     badge: {
@@ -658,10 +686,12 @@ const createStyles = (colors: any) =>
       gap: wp(1),
       paddingHorizontal: wp(2.5),
       paddingVertical: hp(0.55),
-      borderRadius: normalize(8),
+      borderRadius: normalize(20),
       marginTop: hp(0.3),
+      overflow: "hidden",
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
+      shadowOpacity: 0.15,
       shadowRadius: 4,
       elevation: 3,
     },
@@ -681,9 +711,11 @@ const createStyles = (colors: any) =>
       justifyContent: "center",
       gap: wp(2),
       paddingVertical: hp(1.8),
-      borderRadius: normalize(16),
+      borderRadius: normalize(25),
+      overflow: "hidden",
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
+      shadowOpacity: 0.2,
       shadowRadius: 8,
       elevation: 8,
     },
@@ -772,9 +804,11 @@ const createStyles = (colors: any) =>
       justifyContent: "center",
       gap: wp(2),
       paddingVertical: hp(1.8),
-      borderRadius: normalize(16),
+      borderRadius: normalize(25),
+      overflow: "hidden",
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
+      shadowOpacity: 0.2,
       shadowRadius: 8,
       elevation: 8,
       marginBottom: hp(0.5),

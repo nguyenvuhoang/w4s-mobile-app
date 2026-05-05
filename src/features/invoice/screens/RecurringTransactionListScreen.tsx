@@ -12,6 +12,7 @@ import { invoiceRepository } from "@/services/repositories/invoice.repository";
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -394,6 +395,12 @@ const RecurringTransactionListScreen = () => {
           onPress={handleCreateRecurringTransaction}
           activeOpacity={0.8}
         >
+          <LinearGradient
+            colors={colors.gradianBase}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: normalize(25) }]}
+          />
           <FontAwesome6 name="plus" size={normalize(15)} color="#fff" />
           <CustomText style={styles.createButtonText}>{t("invoice.create_recurring")}</CustomText>
         </TouchableOpacity>
@@ -540,16 +547,16 @@ const createStyles = (colors: any) =>
       borderTopColor: colors.border,
     },
     createButton: {
-      backgroundColor: colors.tint,
       paddingVertical: hp(1.8),
-      borderRadius: normalize(16),
+      borderRadius: normalize(25),
       alignItems: "center",
       justifyContent: "center",
       flexDirection: "row",
       gap: wp(2),
-      shadowColor: colors.tint,
+      overflow: "hidden",
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
+      shadowOpacity: 0.2,
       shadowRadius: 8,
       elevation: 8,
     },

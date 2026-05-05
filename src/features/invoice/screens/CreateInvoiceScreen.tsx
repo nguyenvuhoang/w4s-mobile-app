@@ -17,6 +17,7 @@ import StorageService from "@/services/StorageService";
 import { invoiceRepository } from "@/services/repositories/invoice.repository";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -869,13 +870,32 @@ const CreateRecurringInvoiceScreen = () => {
           <TouchableOpacity
             style={[
               styles.createBtn,
-              { backgroundColor: (isValid && !creating) ? colors.tint : colors.border },
+              { opacity: (isValid && !creating) ? 1 : 0.6 }
             ]}
             onPress={handleCreate}
             disabled={!isValid || creating}
           >
+            {(isValid && !creating) ? (
+              <LinearGradient
+                colors={colors.gradianBase}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[StyleSheet.absoluteFill, { borderRadius: normalize(25) }]}
+              />
+            ) : (
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  { backgroundColor: colors.border, borderRadius: normalize(25) },
+                ]}
+              />
+            )}
             <CustomText style={styles.createText}>
-              {creating ? t("invoice.processing") : (isEditMode ? t("invoice.save") : t("invoice.create"))}
+              {creating
+                ? t("invoice.processing")
+                : isEditMode
+                  ? t("invoice.save")
+                  : t("invoice.create")}
             </CustomText>
           </TouchableOpacity>
         </View>
@@ -1033,7 +1053,7 @@ const createStyles = (colors: any) =>
     bottomBar: {
       backgroundColor: colors.background,
       paddingHorizontal: wp(4),
-      paddingVertical: hp(1.5),
+      // paddingVertical: hp(1.5),
       borderTopWidth: 1,
       borderTopColor: colors.border,
       flexDirection: "row",
@@ -1042,7 +1062,7 @@ const createStyles = (colors: any) =>
     cancelBtn: {
       flex: 1,
       paddingVertical: hp(1.5),
-      borderRadius: normalize(12),
+      borderRadius: normalize(25),
       borderWidth: 2,
       borderColor: colors.tint,
       alignItems: "center",
@@ -1056,9 +1076,14 @@ const createStyles = (colors: any) =>
     createBtn: {
       flex: 1,
       paddingVertical: hp(1.5),
-      borderRadius: normalize(12),
+      borderRadius: normalize(25),
       alignItems: "center",
       justifyContent: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 4,
     },
     createText: {
       fontSize: normalize(16),

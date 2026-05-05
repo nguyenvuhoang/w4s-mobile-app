@@ -5,11 +5,13 @@ import BottomActionModal, {
 } from "@/components/modals/BottomActionModal";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
+import { Fonts } from "@/core/theme/font";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Event } from "@/features/event/types/Event";
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -21,7 +23,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEvent } from "../hooks/useEvent";
 
@@ -327,14 +328,20 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === "ACTIVE" && [
-              styles.activeTab,
-              { backgroundColor: colors.tint },
-            ],
+            { backgroundColor: activeTab === "ACTIVE" ? "transparent" : colors.card },
+            activeTab === "ACTIVE" && styles.activeTab,
           ]}
           onPress={() => handleTabChange("ACTIVE")}
           activeOpacity={0.7}
         >
+          {activeTab === "ACTIVE" && (
+            <LinearGradient
+              colors={colors.gradianBase}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[StyleSheet.absoluteFill, { borderRadius: normalize(25) }]}
+            />
+          )}
           <CustomText
             style={[
               styles.tabText,
@@ -342,21 +349,44 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
             ]}
             type="semiBold"
           >
-            {t("event.active_count", { count: activeEvents.length })}
+            {t("event.active")}
           </CustomText>
+          {activeEvents.length > 0 && (
+            <View
+              style={[
+                styles.badge,
+                { backgroundColor: activeTab === "ACTIVE" ? "#fff" : colors.tint },
+              ]}
+            >
+              <CustomText
+                style={[
+                  styles.badgeText,
+                  activeTab === "ACTIVE" && { color: colors.tint },
+                ]}
+              >
+                {activeEvents.length}
+              </CustomText>
+            </View>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === "COMPLETED" && [
-              styles.activeTab,
-              { backgroundColor: colors.tint },
-            ],
+            { backgroundColor: activeTab === "COMPLETED" ? "transparent" : colors.card },
+            activeTab === "COMPLETED" && styles.activeTab,
           ]}
           onPress={() => handleTabChange("COMPLETED")}
           activeOpacity={0.7}
         >
+          {activeTab === "COMPLETED" && (
+            <LinearGradient
+              colors={colors.gradianBase}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[StyleSheet.absoluteFill, { borderRadius: normalize(25) }]}
+            />
+          )}
           <CustomText
             style={[
               styles.tabText,
@@ -364,8 +394,25 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
             ]}
             type="semiBold"
           >
-            {t("event.completed_count", { count: completedEvents.length })}
+            {t("event.completed")}
           </CustomText>
+          {completedEvents.length > 0 && (
+            <View
+              style={[
+                styles.badge,
+                { backgroundColor: activeTab === "COMPLETED" ? "#fff" : colors.tint },
+              ]}
+            >
+              <CustomText
+                style={[
+                  styles.badgeText,
+                  activeTab === "COMPLETED" && { color: colors.tint },
+                ]}
+              >
+                {completedEvents.length}
+              </CustomText>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
     );
@@ -602,10 +649,12 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
+    flexDirection: "row",
     paddingVertical: normalize(12),
-    borderRadius: normalize(12),
+    borderRadius: normalize(25),
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   activeTab: {
     shadowColor: "#000",
@@ -615,7 +664,20 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   tabText: {
-    fontSize: normalize(15),
+    fontSize: normalize(13),
+  },
+  badge: {
+    borderRadius: normalize(10),
+    paddingHorizontal: wp(1.5),
+    minWidth: normalize(18),
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: wp(1),
+  },
+  badgeText: {
+    fontSize: normalize(10),
+    color: "#fff",
+    fontFamily: Fonts.bold,
   },
   listContent: {
     paddingHorizontal: wp(5),

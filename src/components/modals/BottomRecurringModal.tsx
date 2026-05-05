@@ -105,6 +105,7 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
     };
   }, []);
 
+
   // Initialize state when modal opens
   useEffect(() => {
     if (visible) {
@@ -236,8 +237,9 @@ const BottomRecurringModal: React.FC<BottomRecurringModalProps> = ({
       backgroundStyle={{ backgroundColor: colors.card }}
       handleIndicatorStyle={{ backgroundColor: colors.border }}
       maxDynamicContentSize={SCREEN_HEIGHT * 0.8}
+      bottomInset={insets.bottom + keyboardHeight}
     >
-      <BottomSheetView style={{ paddingBottom: keyboardHeight }}>
+      <BottomSheetView>
         {/* Modal Header */}
         <View
           style={[styles.modalHeader, { borderBottomColor: colors.border }]}

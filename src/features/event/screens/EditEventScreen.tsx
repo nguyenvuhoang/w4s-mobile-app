@@ -15,8 +15,10 @@ import { WalletSummary } from "@/types/wallet";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -32,10 +34,23 @@ import { useEvent } from "../hooks/useEvent";
 
 const EditEventScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const { showNotification } = useNotification();
   const params = useLocalSearchParams();
   const eventId = params.id ? parseInt(params.id as string) : null;
   const insets = useSafeAreaInsets();
+
+  /** Parses multi-language JSON string e.g. {"vi": "...", "en": "..."} */
+  const parseLocalizedName = useCallback((nameStr: string): string => {
+    if (!nameStr) return "";
+    if (!nameStr.startsWith("{")) return nameStr; // Not JSON
+    try {
+      const parsed = JSON.parse(nameStr);
+      return parsed[i18n.language] || parsed.vi || parsed.en || nameStr;
+    } catch {
+      return nameStr;
+    }
+  }, [i18n.language]);
 
   const { wallets } = useWallet();
   const {
@@ -76,7 +91,7 @@ const EditEventScreen: React.FC = () => {
       setEvent(foundEvent);
       setIcon(foundEvent.icon);
       setColor(foundEvent.color);
-      setEventName(foundEvent.title);
+      setEventName(parseLocalizedName(foundEvent.title));
       setEndDate(new Date(foundEvent.end_on_utc));
       setCurrency(foundEvent.currency_code || "VND");
 
@@ -90,7 +105,7 @@ const EditEventScreen: React.FC = () => {
       setLoading(false);
     } else if (!eventsLoading) {
       setLoading(false);
-      showNotification("Không tìm thấy sự kiện", "error");
+      showNotification(t("event.not_found"), "error");
       router.back();
     }
   }, [eventId, allEvents, wallets, eventsLoading]);
@@ -161,12 +176,12 @@ const EditEventScreen: React.FC = () => {
 
   const handleSave = async () => {
     if (!eventName.trim()) {
-      showNotification("Vui lòng nhập tên sự kiện", "error");
+      showNotification(t("event.error_name"), "error");
       return;
     }
 
     if (!selectedWallet) {
-      showNotification("Vui lòng chọn nguồn tiền", "error");
+      showNotification(t("event.error_wallet"), "error");
       return;
     }
 
@@ -193,11 +208,11 @@ const EditEventScreen: React.FC = () => {
 
       if (success) {
         router.back();
-        showNotification("Đã cập nhật sự kiện", "success");
+        showNotification(t("event.update_success"), "success");
       }
     } catch (error) {
       console.error("[EditEvent] Update failed:", error);
-      showNotification("Không thể cập nhật sự kiện. Vui lòng thử lại.", "error");
+      showNotification(t("event.update_failed"), "error");
     } finally {
       setSaving(false);
     }
@@ -254,14 +269,14 @@ const EditEventScreen: React.FC = () => {
         style={[styles.container, { backgroundColor: colors.background }]}
         edges={["top", "bottom"]}
       >
-        <AppHeader title="Sửa sự kiện" showBackButton />
+        <AppHeader title={t("event.edit_event")} showBackButton />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.tint} />
           <CustomText
             style={{ marginTop: normalize(12), color: colors.text }}
             type="regular"
           >
-            Đang tải...
+            {t("common.loading")}
           </CustomText>
         </View>
       </SafeAreaView>
@@ -273,7 +288,7 @@ const EditEventScreen: React.FC = () => {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["top", "bottom"]}
     >
-      <AppHeader title="Sửa sự kiện" showBackButton />
+      <AppHeader title={t("event.edit_event")} showBackButton />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -352,7 +367,7 @@ const EditEventScreen: React.FC = () => {
               style={[styles.label, { color: colors.text }]}
               type="semiBold"
             >
-              Tên Sự kiện
+              {t("event.event_name")}
             </CustomText>
             <View
               style={[
@@ -362,7 +377,7 @@ const EditEventScreen: React.FC = () => {
             >
               <TextInput
                 style={[styles.input, { color: colors.text }]}
-                placeholder="Tổ chức tour"
+                placeholder={t("event.event_name_placeholder")}
                 placeholderTextColor={colors.icon}
                 value={eventName}
                 onChangeText={setEventName}
@@ -376,7 +391,7 @@ const EditEventScreen: React.FC = () => {
               style={[styles.label, { color: colors.text }]}
               type="semiBold"
             >
-              Nguồn tiền áp dụng
+              {t("event.source_wallet")}
             </CustomText>
             <TouchableOpacity
               style={[
@@ -424,7 +439,7 @@ const EditEventScreen: React.FC = () => {
                     style={[styles.walletPlaceholder, { color: colors.icon }]}
                     type="regular"
                   >
-                    Chọn nguồn tiền
+                    {t("wallet.select_wallet")}
                   </CustomText>
                 </View>
               )}
@@ -443,7 +458,7 @@ const EditEventScreen: React.FC = () => {
               style={[styles.label, { color: colors.text }]}
               type="semiBold"
             >
-              Ngày kết thúc
+              {t("event.end_date")}
             </CustomText>
             <TouchableOpacity
               style={[
@@ -487,7 +502,7 @@ const EditEventScreen: React.FC = () => {
             {
               backgroundColor: colors.background,
               borderTopColor: colors.border,
-              paddingBottom: insets.bottom > 0 ? insets.bottom + hp(1) : hp(2),
+              paddingBottom: insets.bottom > 0 ? insets.bottom : hp(2),
             },
           ]}
         >
@@ -500,7 +515,7 @@ const EditEventScreen: React.FC = () => {
               style={[styles.cancelButtonText, { color: colors.text }]}
               type="semiBold"
             >
-              Hủy
+              {t("common.cancel")}
             </CustomText>
           </TouchableOpacity>
 
@@ -508,7 +523,6 @@ const EditEventScreen: React.FC = () => {
             style={[
               styles.createButton,
               {
-                backgroundColor: colors.tint,
                 opacity:
                   saving || !eventName.trim() || !selectedWallet ? 0.5 : 1,
               },
@@ -516,8 +530,14 @@ const EditEventScreen: React.FC = () => {
             onPress={handleSave}
             disabled={saving || !eventName.trim() || !selectedWallet}
           >
+            <LinearGradient
+              colors={colors.gradianBase}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
             <CustomText style={styles.createButtonText} type="bold">
-              {saving ? "Đang lưu..." : "Lưu"}
+              {saving ? t("event.saving") : t("common.save")}
             </CustomText>
           </TouchableOpacity>
         </View>
@@ -643,14 +663,14 @@ const styles = StyleSheet.create({
   bottomButtons: {
     flexDirection: "row",
     paddingHorizontal: wp(5),
-    paddingVertical: hp(2),
+    paddingTop: hp(1.5),
     gap: normalize(12),
     borderTopWidth: 1,
   },
   cancelButton: {
     flex: 1,
     paddingVertical: normalize(14),
-    borderRadius: normalize(12),
+    borderRadius: normalize(25),
     alignItems: "center",
     borderWidth: 1.5,
   },
@@ -660,8 +680,9 @@ const styles = StyleSheet.create({
   createButton: {
     flex: 1,
     paddingVertical: normalize(14),
-    borderRadius: normalize(12),
+    borderRadius: normalize(25),
     alignItems: "center",
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,

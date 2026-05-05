@@ -299,7 +299,7 @@ const CreateEventScreen: React.FC = () => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
-      edges={["top", "bottom"]}
+      edges={["top"]}
     >
       <AppHeader title="Tạo sự kiện" showBackButton />
 
@@ -521,7 +521,7 @@ const CreateEventScreen: React.FC = () => {
             {
               backgroundColor: colors.background,
               borderTopColor: colors.border,
-              paddingBottom: insets.bottom > 0 ? insets.bottom + hp(1) : hp(2),
+              paddingBottom: insets.bottom > 0 ? insets.bottom : hp(2),
             },
           ]}
         >
@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
   bottomButtons: {
     flexDirection: "row",
     paddingHorizontal: wp(5),
-    paddingVertical: hp(2),
+    paddingTop: hp(1.5),
     gap: normalize(12),
     borderTopWidth: 1,
   },
