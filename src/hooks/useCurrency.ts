@@ -32,7 +32,7 @@ export const parseCurrencyName = (currency: Currency | any): string => {
   if (!currency) return '';
   
   try {
-    const rawName = currency.currency_name || currency.name;
+    const rawName = currency.currency_name || currency.name || currency.country_name;
     if (!rawName) return currency.currency_id || '';
 
     // If it's already an object
@@ -56,12 +56,9 @@ export const parseCurrencyName = (currency: Currency | any): string => {
  * Process raw currencies from API: parse names and sort by display order
  */
 const processCurrencies = (rawCurrencies: Currency[]): Currency[] => {
-  return rawCurrencies
-    .map((c) => ({
-      ...c,
-      displayName: parseCurrencyName(c),
-    }))
-    .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+  return [...rawCurrencies].sort(
+    (a, b) => (a.display_order || 0) - (b.display_order || 0),
+  );
 };
 
 interface FetchCurrenciesResult {

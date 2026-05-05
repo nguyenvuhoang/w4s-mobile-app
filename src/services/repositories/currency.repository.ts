@@ -7,9 +7,11 @@ export interface Currency {
   short_currency_id: string;
   currency_name: string;
   currency_number: number;
-  status_of_currency: string; 
+  status_of_currency: string;
   display_order: number;
   symbol: string;
+  country_code?: string;
+  country_name?: string;
 }
 
 export interface CurrencySearchParams {
@@ -30,6 +32,7 @@ export const currencyRepository = {
           search_text: params.search_text || "",
           page_index: params.page_index,
           page_size: params.page_size,
+          status_of_currency: "A"
         },
         false,
         true

@@ -5,6 +5,7 @@ import { useCurrency } from "@/hooks/useCurrency";
 import { Currency } from "@/services/repositories/currency.repository";
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from "@/utils/layout";
+import { getFlagEmoji } from "@/utils/Utils";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -102,18 +103,28 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
           activeOpacity={0.7}
         >
           <View style={styles.currencyLeft}>
-            <View style={styles.currencyIconWrapper}>
-              <CustomText
-                style={[
-                  styles.currencySymbol,
-                  {
-                    color: isSelected ? colors.tint : colors.tint,
-                  },
-                ]}
-                type="bold"
-              >
-                {item.symbol || item.currency_id}
-              </CustomText>
+            <View
+              style={[
+                styles.currencyIconWrapper,
+              ]}
+            >
+              {item.country_code ? (
+                <CustomText style={{ fontSize: normalize(24) }}>
+                  {getFlagEmoji(item.country_code)}
+                </CustomText>
+              ) : (
+                <CustomText
+                  style={[
+                    styles.currencySymbol,
+                    {
+                      color: isSelected ? colors.tint : colors.tint,
+                    },
+                  ]}
+                  type="bold"
+                >
+                  {item.symbol || item.currency_id}
+                </CustomText>
+              )}
             </View>
 
             <View style={styles.currencyInfo}>
@@ -126,8 +137,9 @@ const CurrencySelectScreen: React.FC<CurrencySelectScreenProps> = ({
               <CustomText
                 style={[styles.currencyName, { color: colors.icon }]}
                 type="regular"
+                numberOfLines={1}
               >
-                {displayName}
+                {displayName}{item.country_name ? ` • ${item.country_name}` : ""}
               </CustomText>
             </View>
           </View>
@@ -440,6 +452,7 @@ const styles = StyleSheet.create({
   currencyIconWrapper: {
     width: normalize(48),
     height: normalize(48),
+    borderRadius: normalize(24),
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: normalize(12),

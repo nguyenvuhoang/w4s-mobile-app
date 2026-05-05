@@ -152,3 +152,12 @@ export const maskPhoneNumber = (value: string) => {
 
 export const delay = (ms: number) =>
   new Promise(resolve => setTimeout(resolve, ms));
+
+export const getFlagEmoji = (countryCode: string): string => {
+  if (!countryCode || countryCode.length !== 2) return "";
+  const codePoints = countryCode
+    .toUpperCase()
+    .split("")
+    .map((char) => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+};

@@ -81,6 +81,8 @@ export const useCurrencyConverter = () => {
             status_of_currency: "active",
             display_order: 0,
             symbol: "₫",
+            country_code: "VN",
+            country_name: "Vietnam",
           };
 
           setAdditionalCurrency(mockVND);
