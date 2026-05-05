@@ -36,7 +36,10 @@
     "all": "Tất cả",
     "loading": "Đang tải...",
     "edit": "Chỉnh sửa",
-    "save": "Lưu"
+    "save": "Lưu",
+    "duplicate": "Tạo bản sao",
+    "refund": "Hoàn tác",
+    "status_new": "Mới"
   },
   "paybook": {
     "title": "Sổ nợ",
@@ -628,8 +631,12 @@
     "note_placeholder_optional": "Thêm ghi chú (tùy chọn)",
     "set_reminder_optional": "Đặt nhắc nhở (tùy chọn)",
     "image": "Hình ảnh",
+    "no_image": "Chưa có hình ảnh",
     "upload": "Tải lên",
     "include_in_report": "Tính vào báo cáo",
+    "detail_title": "Chi tiết giao dịch",
+    "type_wallet_opening": "Mở ví",
+    "fee": "Phí",
     "limit_exceeded_warning": "Vượt hạn mức: {{periods}}",
     "select_paybook": "Sổ nợ",
     "select_paybook_placeholder": "Chọn sổ nợ",

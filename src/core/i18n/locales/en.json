@@ -36,7 +36,10 @@
     "all": "All",
     "loading": "Loading...",
     "edit": "Edit",
-    "save": "Save"
+    "save": "Save",
+    "duplicate": "Duplicate",
+    "refund": "Refund",
+    "status_new": "New"
   },
   "paybook": {
     "title": "Paybook",
@@ -628,8 +631,12 @@
     "note_placeholder_optional": "Add note (Optional)",
     "set_reminder_optional": "Set Reminder (Optional)",
     "image": "Image",
+    "no_image": "No image",
     "upload": "Upload",
-    "include_in_report": "Include in report"
+    "include_in_report": "Include in report",
+    "detail_title": "Transaction Details",
+    "type_wallet_opening": "Wallet Opening",
+    "fee": "Fee"
   },
   "category": {
     "title": "Select Category",

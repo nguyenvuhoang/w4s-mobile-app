@@ -52,11 +52,10 @@ const MenuDropdown = ({ visible, onClose, onShare, onEdit, onDelete, onRefund, o
     return (
         <View style={[styles.menuDropdown, { backgroundColor: colors.card, shadowColor: colors.text }]}>
             {[
-                { icon: 'share-nodes', label: t('Share') || 'Share', onPress: onShare, color: colors.text },
-                { icon: 'pen-to-square', label: t('Edit') || 'Edit', onPress: onEdit, color: colors.text },
-                { icon: 'copy', label: t('Duplicate') || 'Duplicate', onPress: onDuplicate, color: colors.text },
-                { icon: 'arrow-rotate-left', label: t('Refund') || 'Refund', onPress: onRefund, color: colors.text },
-                { icon: 'trash-can', label: t('Delete') || 'Delete', onPress: onDelete, color: '#EF4444' },
+                { icon: 'share-nodes', label: t('paybook.share'), onPress: onShare, color: colors.text },
+                { icon: 'pen-to-square', label: t('common.edit'), onPress: onEdit, color: colors.text },
+                { icon: 'copy', label: t('common.duplicate'), onPress: onDuplicate, color: colors.text },
+                { icon: 'arrow-rotate-left', label: t('common.refund'), onPress: onRefund, color: '#EF4444' },
             ].map((item, i, arr) => (
                 <React.Fragment key={item.label}>
                     <TouchableOpacity style={styles.menuItem} onPress={() => { onClose(); item.onPress(); }}>
@@ -78,34 +77,34 @@ const GradientHeroCard = ({ visuals, currencyFormatted, transactionCode }: any) 
 
     return (
         <LinearGradient
-            colors={['#2563EB', '#1DA1F2']}
+            colors={['#0077FF', '#00C8FF']}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={styles.heroCard}
         >
-            <View style={styles.heroRow}>
-                {/* Left: white circle icon + type name */}
-                <View style={styles.heroLeft}>
-                    <View style={styles.heroIconWrap}>
-                        <FontAwesome6 name={arrowIcon} size={normalize(18)} color={arrowColor} solid />
+            <View style={styles.heroHeaderRow}>
+                <View style={styles.heroIconOuter}>
+                    <View style={[styles.heroIconInner, { backgroundColor: arrowColor }]}>
+                        <FontAwesome6 name={arrowIcon} size={normalize(12)} color="#fff" solid />
                     </View>
-                    <CustomText style={styles.heroTypeName}>{visuals.type}</CustomText>
                 </View>
-
-                {/* Right: amount */}
-                <CustomText style={styles.heroAmount}>{currencyFormatted.primary}</CustomText>
+                <CustomText style={styles.heroTypeName}>{visuals.type}</CustomText>
             </View>
 
-            {(currencyFormatted.secondary || currencyFormatted.fee) && (
-                <View style={styles.heroSecondRow}>
-                    {currencyFormatted.secondary && (
-                        <CustomText style={styles.heroSecondary}>{currencyFormatted.secondary}</CustomText>
-                    )}
-                    {currencyFormatted.fee && (
-                        <CustomText style={styles.heroFee}>{currencyFormatted.fee}</CustomText>
-                    )}
-                </View>
-            )}
+            <View style={styles.heroContent}>
+                <CustomText style={styles.heroAmount}>{currencyFormatted.primary}</CustomText>
+
+                {(currencyFormatted.secondary || currencyFormatted.fee) && (
+                    <View style={styles.heroDetailRow}>
+                        {currencyFormatted.secondary && (
+                            <CustomText style={styles.heroSecondary}>{currencyFormatted.secondary}</CustomText>
+                        )}
+                        {currencyFormatted.fee && (
+                            <CustomText style={styles.heroFee}>{currencyFormatted.fee}</CustomText>
+                        )}
+                    </View>
+                )}
+            </View>
         </LinearGradient>
     );
 };
@@ -174,20 +173,20 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
 
     const statusInfo = useMemo(() => {
         const map: Record<string, { label: string; color: string }> = {
-            'C': { label: t('Completed') || 'Hoàn thành', color: '#10B981' },
-            'N': { label: t('New') || 'Mới', color: '#3B82F6' },
-            'R': { label: t('Rejected') || 'Từ chối', color: '#F59E0B' },
-            'F': { label: t('Failed') || 'Thất bại', color: '#EF4444' },
+            'C': { label: t('event.completed'), color: '#10B981' },
+            'N': { label: t('common.status_new'), color: '#3B82F6' },
+            'R': { label: t('common.reject'), color: '#F59E0B' },
+            'F': { label: t('common.error'), color: '#EF4444' },
         };
         return map[transaction?.status || 'N'] || map['N'];
     }, [transaction?.status, t]);
 
     const visuals = useMemo((): Visuals => {
-        let res: Visuals = { type: t('Transaction') || 'Giao dịch', color: '#6B7280', bgColor: '#F3F4F6', icon: 'receipt' };
+        let res: Visuals = { type: t('home.transaction_default_name'), color: '#6B7280', bgColor: '#F3F4F6', icon: 'receipt' };
         const code = transaction?.transactioncode;
-        if (code === '01') res = { type: t('Income') || 'Thu nhập', color: '#10B981', bgColor: '#D1FAE5', icon: 'arrow-trend-up' };
-        else if (code === '02') res = { type: t('Expense') || 'Khoản chi', color: '#EF4444', bgColor: '#FEE2E2', icon: 'arrow-trend-down' };
-        else if (code === 'WALLET_OPENING') res = { type: t('Wallet Opening') || 'Mở ví', color: '#3B82F6', bgColor: '#DBEAFE', icon: 'wallet' };
+        if (code === '01') res = { type: t('transaction.type_income'), color: '#10B981', bgColor: '#D1FAE5', icon: 'arrow-trend-up' };
+        else if (code === '02') res = { type: t('transaction.type_expense'), color: '#EF4444', bgColor: '#FEE2E2', icon: 'arrow-trend-down' };
+        else if (code === 'WALLET_OPENING') res = { type: t('transaction.type_wallet_opening'), color: '#3B82F6', bgColor: '#DBEAFE', icon: 'wallet' };
         const cat = transaction?.walletcategory;
         if ((code === '01' || code === '02') && cat) {
             if (cat.color) { res.color = cat.color; res.bgColor = cat.color + '20'; }
@@ -207,7 +206,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
         return {
             primary: formatMoney(baseAmount, baseCcy),
             secondary: transCcy !== baseCcy ? formatMoney(amount, transCcy) : null,
-            fee: fee > 0 ? `${t('Fee')}: ${formatMoney(fee, transCcy)}` : null,
+            fee: fee > 0 ? `${t('transaction.fee')}: ${formatMoney(fee, transCcy)}` : null,
             color: isExpense ? '#EF4444' : '#10B981',
         };
     }, [transaction, defaultCurrency, t]);
@@ -216,31 +215,14 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
         try {
             await Share.share({
                 message: [
-                    t('Transaction Details') || 'Chi tiết giao dịch',
-                    `${t('Type')}: ${visuals.type}`,
-                    `${t('Amount')}: ${currencyInfo.primary}`,
-                    `${t('Date')}: ${formatDate(transaction?.transactiondate || '')}`,
+                    t('transaction.detail_title'),
+                    `${t('paybook.type')}: ${visuals.type}`,
+                    `${t('transaction.amount')}: ${currencyInfo.primary}`,
+                    `${t('transaction.date')}: ${formatDate(transaction?.transactiondate || '')}`,
                     `ID: ${transaction?.transactionid}`,
                 ].join('\n'),
             });
         } catch { }
-    };
-
-    const handleDelete = () => {
-        showNotification(
-            t('Are you sure you want to delete this transaction? This action cannot be undone.') || 'Bạn có chắc muốn xóa?',
-            'warning', undefined, undefined,
-            async () => {
-                if (!transactionId) return;
-                try {
-                    await deleteTransaction(transactionId);
-                    showNotification(t('Transaction deleted successfully') || 'Đã xóa', 'success');
-                    router.back();
-                } catch {
-                    showNotification(t('Could not delete transaction') || 'Không thể xóa', 'error');
-                }
-            }
-        );
     };
 
     const handleRefund = () => {
@@ -319,11 +301,11 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
     if (loading) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-                <AppHeader title={t('Transaction Details') || 'Chi tiết giao dịch'} showBackButton />
+                <AppHeader title={t('transaction.detail_title')} showBackButton />
                 <View style={styles.centerContent}>
                     <ActivityIndicator size="large" color={colors.tint} />
                     <CustomText style={[styles.loadingText, { color: colors.icon }]}>
-                        {t('Loading...') || 'Đang tải...'}
+                        {t('common.loading')}
                     </CustomText>
                 </View>
             </SafeAreaView>
@@ -334,20 +316,20 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
     if (error || !transaction) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-                <AppHeader title={t('Transaction Details') || 'Chi tiết giao dịch'} showBackButton />
+                <AppHeader title={t('transaction.detail_title')} showBackButton />
                 <View style={styles.centerContent}>
                     <View style={[styles.errorIconWrap, { backgroundColor: colors.card }]}>
                         <FontAwesome6 name="circle-exclamation" size={normalize(48)} color="#EF4444" />
                     </View>
                     <CustomText style={[styles.errorTitle, { color: colors.text }]}>
-                        {t('Transaction Not Found') || 'Không tìm thấy giao dịch'}
+                        {t('common.error')}
                     </CustomText>
                     <CustomText style={[styles.errorText, { color: colors.icon }]}>
                         {error || t('The transaction you are looking for does not exist or has been deleted.')}
                     </CustomText>
                     <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.tint }]} onPress={refetch}>
                         <FontAwesome6 name="rotate-right" size={normalize(16)} color="#fff" />
-                        <CustomText style={styles.retryButtonText}>{t('Retry') || 'Thử lại'}</CustomText>
+                        <CustomText style={styles.retryButtonText}>{t('home.retry')}</CustomText>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -362,7 +344,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             {/* Header giữ nguyên như code cũ */}
             <AppHeader
-                title={t('Transaction Details') || 'Chi tiết giao dịch'}
+                title={t('transaction.detail_title')}
                 showBackButton
                 rightComponent={
                     <TouchableOpacity style={styles.menuButton} onPress={() => setShowMenu(!showMenu)}>
@@ -386,7 +368,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                 {/* === Nhóm === */}
                 {transaction.walletcategory && (
                     <>
-                        <SectionLabel label={t('Category') || 'Nhóm'} />
+                        <SectionLabel label={t('transaction.category')} />
                         <ItemCard
                             icon={transaction.walletcategory.icon || 'tag'}
                             iconBg={transaction.walletcategory.color ? transaction.walletcategory.color + '25' : '#FEE2E2'}
@@ -411,7 +393,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                 {/* === Nguồn tiền === */}
                 {walletName && (
                     <>
-                        <SectionLabel label={t('Wallet') || 'Nguồn tiền'} />
+                        <SectionLabel label={t('transaction.source_wallet')} />
                         <ItemCard
                             icon="wallet"
                             iconBg="#D1FAE520"
@@ -425,7 +407,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                 {/* === Sự kiện === */}
                 {transaction.walletevent && transaction.walletevent.id !== 0 && (
                     <>
-                        <SectionLabel label={t('Event') || 'Sự kiện'} />
+                        <SectionLabel label={t('event.title')} />
                         <ItemCard
                             icon={transaction.walletevent.icon || 'calendar-day'}
                             iconBg={transaction.walletevent.color ? transaction.walletevent.color + '25' : '#DBEAFE'}
@@ -437,18 +419,18 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                 )}
 
                 {/* === Ghi chú === */}
-                <SectionLabel label={t('Note') || 'Ghi chú'} />
+                <SectionLabel label={t('transaction.note')} />
                 <View style={[styles.noteCard, { backgroundColor: colors.card }]}>
                     <CustomText style={[
                         styles.noteText,
                         { color: transaction.trandesc ? colors.text : colors.icon }
                     ]}>
-                        {transaction.trandesc || (t('No note') || 'Không có ghi chú')}
+                        {transaction.trandesc || t('paybook.no_note')}
                     </CustomText>
                 </View>
 
                 {/* === Ngày === */}
-                <SectionLabel label={t('Date') || 'Ngày'} />
+                <SectionLabel label={t('transaction.date')} />
                 <View style={[styles.dateCard, { backgroundColor: colors.card }]}>
                     <CustomText style={[styles.dateText, { color: colors.text }]}>
                         {formatDate(transaction.transactiondate)}
@@ -456,7 +438,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                 </View>
 
                 {/* === Hình ảnh === */}
-                <SectionLabel label={t('Image') || 'Hình ảnh'} />
+                <SectionLabel label={t('transaction.image')} />
                 <View style={[styles.imageCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     {hasImage ? (
                         <Image
@@ -468,7 +450,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                         <View style={styles.imagePlaceholder}>
                             <FontAwesome6 name="image" size={normalize(32)} color="#D1D5DB" />
                             <CustomText style={styles.imagePlaceholderText}>
-                                {t('No image') || 'Chưa có hình ảnh'}
+                                {t('transaction.no_image')}
                             </CustomText>
                         </View>
                     )}
@@ -488,7 +470,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                 onShare={handleShare}
                 onEdit={handleEdit}
                 onDuplicate={handleDuplicate}
-                onDelete={handleDelete}
+                // onDelete={handleDelete}
                 onRefund={handleRefund}
                 colors={colors}
                 t={t}
@@ -550,45 +532,50 @@ const styles = StyleSheet.create({
 
     // Gradient Hero Card
     heroCard: {
-        borderRadius: normalize(16),
-        paddingHorizontal: normalize(16),
-        paddingVertical: normalize(18),
-        marginBottom: normalize(4),
-    },
-    heroRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        borderRadius: normalize(24),
+        padding: normalize(20),
+        marginBottom: normalize(12),
+        minHeight: normalize(140),
         justifyContent: 'space-between',
     },
-    heroLeft: {
+    heroHeaderRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: normalize(10),
-        flex: 1,
+        gap: normalize(12),
     },
-    heroIconWrap: {
-        width: normalize(38),
-        height: normalize(38),
-        borderRadius: normalize(19),
+    heroIconOuter: {
+        width: normalize(44),
+        height: normalize(44),
+        borderRadius: normalize(22),
         backgroundColor: '#fff',
         alignItems: 'center',
         justifyContent: 'center',
     },
+    heroIconInner: {
+        width: normalize(28),
+        height: normalize(28),
+        borderRadius: normalize(14),
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     heroTypeName: {
-        fontSize: normalize(15),
+        fontSize: normalize(18),
         fontFamily: Fonts.semiBold,
         color: '#fff',
     },
+    heroContent: {
+        alignItems: 'flex-end',
+    },
     heroAmount: {
-        fontSize: normalize(22),
+        fontSize: normalize(32),
         fontFamily: Fonts.bold,
         color: '#fff',
         letterSpacing: -0.5,
     },
-    heroSecondRow: {
+    heroDetailRow: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        marginTop: normalize(6),
+        marginTop: normalize(4),
         gap: normalize(12),
     },
     heroSecondary: {
