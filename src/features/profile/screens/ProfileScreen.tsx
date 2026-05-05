@@ -220,7 +220,6 @@ const ProfileScreen = () => {
                                             <View
                                                 style={[
                                                     styles.iconWrapper,
-                                                    { backgroundColor: colors.background },
                                                 ]}
                                             >
                                                 <Ionicons

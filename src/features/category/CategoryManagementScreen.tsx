@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
@@ -41,6 +41,7 @@ type TabType = "INCOME" | "EXPENSE" | "LOAN";
 const CategoryManagementScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const {
     wallets,
@@ -400,7 +401,7 @@ const CategoryManagementScreen: React.FC = () => {
 
       {/* FLOATING ACTION BUTTON */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { bottom: Math.max(insets.bottom, normalize(16)) + normalize(16) }]}
         onPress={() => {
           router.push({
             pathname: "/(protected)/category/create-category",
@@ -461,7 +462,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: "row",
     paddingHorizontal: wp(5),
-    paddingVertical: hp(1),
+    marginBottom: hp(1.5),
     gap: normalize(8),
   },
   tab: {
@@ -474,7 +475,8 @@ const styles = StyleSheet.create({
   topActionsContainer: {
     flexDirection: "row",
     paddingHorizontal: wp(5),
-    paddingVertical: hp(1),
+    marginTop: hp(1.5),
+    marginBottom: hp(1.5),
     gap: normalize(10),
     alignItems: "center",
   },
@@ -501,9 +503,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: wp(5),
-    marginBottom: hp(2),
+    marginBottom: hp(1.5),
     paddingHorizontal: normalize(16),
-    paddingVertical: normalize(12),
+    paddingVertical: normalize(8),
     borderRadius: normalize(12),
     gap: normalize(8),
   },
