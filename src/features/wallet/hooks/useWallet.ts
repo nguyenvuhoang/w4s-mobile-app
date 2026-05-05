@@ -20,6 +20,7 @@ interface UseWalletResult {
   defaultWalletId: number | null;
   defaultWallet?: WalletSummary;
   setDefaultWalletId: (walletId: number | null) => void;
+  setPrimaryWallet: (walletId: number) => Promise<void>;
 }
 
 export const useWallet = (): UseWalletResult => {
@@ -34,6 +35,7 @@ export const useWallet = (): UseWalletResult => {
     defaultWalletId,
     defaultWallet,
     setDefaultWalletId,
+    setPrimaryWallet,
   } = useContext(GlobalContext);
 
   const refresh = () => fetchWallets(true);
@@ -58,5 +60,6 @@ export const useWallet = (): UseWalletResult => {
     defaultWalletId,
     defaultWallet,
     setDefaultWalletId,
+    setPrimaryWallet,
   };
 };

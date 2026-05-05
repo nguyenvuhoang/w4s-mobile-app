@@ -69,7 +69,7 @@ const SparklineChart: React.FC<SparklineProps> = ({
   const CHART_H = normalize(170);
   const PAD_TOP = normalize(12);
   const PAD_BOTTOM = normalize(8);
-  const PAD_LEFT = normalize(52);   // room for Y-axis labels
+  const PAD_LEFT = normalize(20);   // room for Y-axis labels
   const PAD_RIGHT = normalize(10);
 
   const innerW = CHART_W - PAD_LEFT - PAD_RIGHT;
@@ -162,11 +162,11 @@ const SparklineChart: React.FC<SparklineProps> = ({
               strokeOpacity={0.25}
             />
             <SvgText
-              x={PAD_LEFT - normalize(5)}
-              y={y + normalize(4)}
+              x={PAD_LEFT - normalize(15)}
+              y={y + normalize(3)}
               fontSize={normalize(9)}
               fill="#888"
-              textAnchor="end"
+              textAnchor="start"
             >
               {formatMoneyShort(convertFromVND(tick))}{currencySymbol}
             </SvgText>

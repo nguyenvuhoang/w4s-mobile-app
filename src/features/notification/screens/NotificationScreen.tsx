@@ -112,7 +112,7 @@ export default function NotificationScreen() {
         rightComponent={
           <TouchableOpacity
             onPress={markReadAll}
-            style={[styles.headerButton, { backgroundColor: colorScheme === 'dark' ? '#2A3347' : '#F5F6FA' }]}
+            style={[styles.headerButton]}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <AppIcon name="check-double" size={22} color={themeColors.tint} />

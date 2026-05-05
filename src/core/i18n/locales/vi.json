@@ -469,6 +469,8 @@
   "home": {
     "uncategorized": "Chưa phân loại",
     "greeting": "Chào, ",
+    "greeting_name": "Xin chào, {{name}}",
+    "good_day": "Chúc bạn một ngày tốt lành!",
     "loading_data": "Đang tải dữ liệu...",
     "load_error": "Lỗi tải dữ liệu",
     "retry": "Thử lại",
@@ -544,6 +546,7 @@
     "days_left": "Thời gian còn lại",
     "days": "Ngày",
     "percent_used": "% đã sử dụng",
+    "overspent": "Bội chi",
     "no_budget_created": "Bạn chưa tạo ngân sách nào.",
     "create_budget_prompt": "Bạn chưa tạo ngân sách. Hãy tạo ngay để bắt đầu quản lý chi tiêu.",
     "create_now": "Tạo ngay",
@@ -710,7 +713,10 @@
     "create": "Tạo",
     "color": "Màu sắc",
     "error_create_wallet": "Không thể tạo ví lúc này. Vui lòng thử lại.",
-    "error_wallet_name_required": "Vui lòng nhập tên ví"
+    "error_wallet_name_required": "Vui lòng nhập tên ví",
+    "setting_primary_wallet": "Đang đặt ví mặc định...",
+    "set_primary_success": "Đặt ví mặc định thành công",
+    "set_primary_error": "Lỗi khi đặt ví mặc định"
   },
   "ai_chat": {
     "title": "O24 Nexus AI",
@@ -1077,6 +1083,9 @@
     "income_items": "Khoản thu",
     "no_expense_data": "Không có dữ liệu chi tiêu",
     "no_income_data": "Không có dữ liệu thu nhập",
-    "group_unit": "nhóm"
+    "group_unit": "nhóm",
+    "debit_borrow": "Đi vay",
+    "debit_lend": "Cho vay",
+    "debit_other": "Khác"
   }
 }

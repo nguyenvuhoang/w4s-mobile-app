@@ -1,3 +1,4 @@
+import { Fonts } from "@/core/theme/font";
 import { hp, normalize, wp } from "@/utils/layout";
 import { StyleSheet } from "react-native";
 
@@ -11,7 +12,40 @@ export const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: wp(5),
-    paddingVertical: normalize(16),
+    paddingTop: normalize(12),
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerAvatar: {
+    width: normalize(44),
+    height: normalize(44),
+    borderRadius: normalize(22),
+    backgroundColor: "#f0f0f0",
+  },
+  notificationBtn: {
+    width: normalize(40),
+    height: normalize(40),
+    borderRadius: normalize(20),
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  greetingSection: {
+    paddingHorizontal: wp(5),
+    marginTop: normalize(6),
+    marginBottom: normalize(20),
+  },
+  greetingText: {
+    fontSize: normalize(18),
+    fontFamily: Fonts.bold,
+    marginBottom: normalize(4),
+  },
+  greetingSubText: {
+    fontSize: normalize(14),
+    fontFamily: Fonts.medium,
+    color: "#666",
+    opacity: 0.8,
   },
   userInfo: {
     flexDirection: "row",
@@ -32,14 +66,19 @@ export const styles = StyleSheet.create({
     marginTop: normalize(2),
   },
   balanceCard: {
-    borderRadius: normalize(24),
-    paddingTop: normalize(20),
-    paddingBottom: normalize(24),
+    borderRadius: normalize(32),
+    paddingTop: normalize(24),
+    paddingBottom: normalize(20),
     paddingHorizontal: normalize(24),
     marginHorizontal: wp(5),
     marginBottom: hp(2.5),
     alignItems: "center",
     overflow: "hidden",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
   },
   /* Top-left concentric circles */
   balanceDecorOuterTL: {
@@ -49,7 +88,7 @@ export const styles = StyleSheet.create({
     borderRadius: normalize(70),
     borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.25)",
-    top: normalize(-45),
+    bottom: normalize(-40),
     left: normalize(-45),
   },
   balanceDecorInnerTL: {
@@ -58,7 +97,7 @@ export const styles = StyleSheet.create({
     height: normalize(90),
     borderRadius: normalize(45),
     backgroundColor: "rgba(255,255,255,0.10)",
-    top: normalize(-20),
+    bottom: normalize(-15),
     left: normalize(-20),
   },
   /* Bottom-right concentric circles */
@@ -69,7 +108,8 @@ export const styles = StyleSheet.create({
     borderRadius: normalize(60),
     borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.25)",
-    bottom: normalize(-40),
+    top: normalize(-45),
+
     right: normalize(-40),
   },
   balanceDecorInnerBR: {
@@ -78,21 +118,22 @@ export const styles = StyleSheet.create({
     height: normalize(75),
     borderRadius: normalize(37.5),
     backgroundColor: "rgba(255,255,255,0.10)",
-    bottom: normalize(-15),
+    top: normalize(-20),
+
     right: normalize(-15),
   },
   balanceLabelPill: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "rgba(0, 0, 0, 0.25)",
     borderRadius: normalize(20),
     paddingHorizontal: normalize(16),
-    paddingVertical: normalize(5),
-    marginBottom: normalize(12),
+    paddingVertical: normalize(6),
+    marginBottom: normalize(16),
   },
   balanceLabel: {
-    fontSize: normalize(13),
+    fontSize: normalize(14),
     color: "#fff",
-    fontWeight: "500",
-    letterSpacing: 0.3,
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
   balanceAmount: {
     fontSize: normalize(34),
@@ -133,10 +174,11 @@ export const styles = StyleSheet.create({
     color: "#fff",
   },
   month: {
-    fontSize: normalize(12),
-    color: "rgba(255,255,255,0.75)",
+    fontSize: normalize(13),
+    color: "rgba(255,255,255,0.7)",
     textAlign: "center",
-    marginTop: normalize(12),
+    marginTop: normalize(16),
+    fontWeight: "500",
   },
   quickActions: {
     flexDirection: "row",

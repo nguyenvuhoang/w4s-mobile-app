@@ -67,6 +67,7 @@ interface GlobalContextType {
   // 🔹 ADD — Default wallet
   defaultWalletId: number | null;
   setDefaultWalletId: (walletId: number | null) => void;
+  setPrimaryWallet: (walletId: number) => Promise<void>;
   defaultWallet?: WalletSummary;
 }
 
@@ -115,6 +116,7 @@ const GlobalContext = createContext<GlobalContextType>({
   // 🔹 ADD — Default wallet defaults
   defaultWalletId: null,
   setDefaultWalletId: () => { },
+  setPrimaryWallet: async () => { },
   defaultWallet: undefined,
 });
 
@@ -191,6 +193,22 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
           : w,
       ),
     );
+  };
+
+  // 🔹 ADD — Set primary wallet (API + local sync)
+  const setPrimaryWallet = async (walletId: number) => {
+    try {
+      showGlobalLoading({ text: t("wallet.setting_primary_wallet") || "Setting primary wallet..." });
+      await walletRepository.setPrimaryWallet(walletId);
+      setDefaultWalletId(walletId);
+      // Optional: force refresh wallets to see if primary status flag changed on server
+      await fetchWallets(true);
+    } catch (err) {
+      console.error("[GlobalContext] setPrimaryWallet error", err);
+      throw err;
+    } finally {
+      hideGlobalLoading();
+    }
   };
 
   // 🔹 ADD — Derived default wallet
@@ -373,6 +391,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
         // 🔹 ADD — Default wallet
         defaultWalletId,
         setDefaultWalletId,
+        setPrimaryWallet,
         defaultWallet,
       }}
     >

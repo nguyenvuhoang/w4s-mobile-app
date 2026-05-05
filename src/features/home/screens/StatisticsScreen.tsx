@@ -17,8 +17,8 @@ import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
-import { t } from "i18next";
 import { StatusBar } from "expo-status-bar";
+import { t } from "i18next";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
@@ -301,10 +301,17 @@ const StatisticsScreen = () => {
         >
           <View style={styles.balanceHeader}>
             <View style={styles.balanceIconCircle}>
-              <CustomText type="bold" size={18} style={{ color: "#1DA1F2" }}>$</CustomText>
+              <LinearGradient
+                colors={["#1DA1F2", "#00CFDD"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.innerGradientCircle}
+              >
+                <FontAwesome6 name="dollar-sign" size={normalize(12)} color="#fff" />
+              </LinearGradient>
             </View>
             <CustomText type="medium" size={14} style={{ color: "#fff", marginLeft: normalize(10), flex: 1 }}>
-              {t("home.total_balance")}
+              {t("report.total_net_balance")}
             </CustomText>
             <TouchableOpacity onPress={() => setBalanceVisible((v) => !v)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Ionicons
@@ -639,10 +646,17 @@ const styles = StyleSheet.create({
     marginBottom: normalize(14),
   },
   balanceIconCircle: {
-    width: normalize(36),
-    height: normalize(36),
-    borderRadius: normalize(18),
+    width: normalize(32),
+    height: normalize(32),
+    borderRadius: normalize(16),
     backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  innerGradientCircle: {
+    width: normalize(24),
+    height: normalize(24),
+    borderRadius: normalize(12),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -676,7 +690,6 @@ const styles = StyleSheet.create({
     width: normalize(28),
     height: normalize(28),
     borderRadius: normalize(14),
-    backgroundColor: "rgba(255,255,255,0.22)",
     alignItems: "center",
     justifyContent: "center",
     marginRight: normalize(10),

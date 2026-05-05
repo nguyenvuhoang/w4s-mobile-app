@@ -61,6 +61,7 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
     refresh,
     defaultWalletId,
     setDefaultWalletId,
+    setPrimaryWallet,
   } = useWallet();
 
   // ✅ WALLET TRACKER (create / delete)
@@ -170,10 +171,15 @@ const WalletListScreen: React.FC<WalletListScreenProps> = ({
     }, 300);
   };
 
-  const handleSetDefault = () => {
+  const handleSetDefault = async () => {
     if (!selectedWallet) return;
-    setDefaultWalletId(selectedWallet.walletId);
-    setShowActionModal(false);
+    try {
+      await setPrimaryWallet(selectedWallet.walletId);
+      setShowActionModal(false);
+      showNotification(t("wallet.set_primary_success") || "Đặt ví mặc định thành công", "success");
+    } catch (error) {
+      showNotification(t("wallet.set_primary_error") || "Lỗi khi đặt ví mặc định", "error");
+    }
   };
 
   const handleCreateWallet = () => {

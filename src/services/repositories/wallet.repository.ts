@@ -26,4 +26,21 @@ export const walletRepository = {
       throw error;
     }
   },
+  async setPrimaryWallet(walletId: number): Promise<void> {
+    try {
+      const res = await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_SET_PRIMARY_WALLET_PROFILE,
+        { wallet_id: walletId },
+        false,
+        true
+      );
+
+      if (!res?.isSuccess?.()) {
+        throw new Error(res?.message || "Set primary wallet failed");
+      }
+    } catch (error) {
+      console.error("[walletRepository] setPrimaryWallet error", error);
+      throw error;
+    }
+  },
 };

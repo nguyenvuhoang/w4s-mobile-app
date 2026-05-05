@@ -24,8 +24,8 @@ import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import * as ImagePicker from "expo-image-picker";
-import { StatusBar } from "expo-status-bar";
 import { router, useFocusEffect } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -414,14 +414,14 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               }}
               colors={colors}
             />
-            <SettingItem
+            {/* <SettingItem
               icon="setting_screen_login_info"
               title={t("settings.login_info")}
               onPress={() => {
                 router.push("/(protected)/login-info");
               }}
               colors={colors}
-            />
+            /> */}
             <SettingItem
               icon="setting_screen_app_info"
               title={t("settings.app_info")}

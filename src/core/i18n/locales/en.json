@@ -469,6 +469,8 @@
   "home": {
     "uncategorized": "Uncategorized",
     "greeting": "Hello, ",
+    "greeting_name": "Hello, {{name}}",
+    "good_day": "Have a great day!",
     "loading_data": "Loading data...",
     "load_error": "Data load error",
     "retry": "Retry",
@@ -544,6 +546,7 @@
     "days_left": "Time Left",
     "days": "Days",
     "percent_used": "% used",
+    "overspent": "Overspent",
     "no_budget_created": "No budget has been created yet.",
     "create_budget_prompt": "You haven't created any budget. Create one to start managing your expenses.",
     "create_now": "Create now",
@@ -703,8 +706,11 @@
     "creating": "Creating...",
     "create": "Create",
     "color": "Color",
-    "error_create_wallet": "Cannot create wallet at this time. Please try again.",
-    "error_wallet_name_required": "Please enter wallet name"
+    "error_create_wallet": "Could not create wallet at this time. Please try again.",
+    "error_wallet_name_required": "Please enter wallet name",
+    "setting_primary_wallet": "Setting primary wallet...",
+    "set_primary_success": "Set primary wallet successfully",
+    "set_primary_error": "Failed to set primary wallet"
   },
   "ai_chat": {
     "title": "O24 Nexus AI",
@@ -1071,6 +1077,9 @@
     "income_items": "Incomes",
     "no_expense_data": "No expense data",
     "no_income_data": "No income data",
-    "group_unit": "groups"
+    "group_unit": "groups",
+    "debit_borrow": "Borrow",
+    "debit_lend": "Lend",
+    "debit_other": "Other"
   }
 }

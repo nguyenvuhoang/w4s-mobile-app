@@ -15,6 +15,7 @@ import {
 import { styles } from "@/features/home/styles/HomeScreen.Style";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { getValidIconName } from "@/utils/iconMapper";
+import { Images } from "@/utils/images";
 import { hp, normalize } from "@/utils/layout";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -22,6 +23,7 @@ import React, { useCallback, useContext, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
+  Image,
   RefreshControl,
   ScrollView,
   TouchableOpacity,
@@ -78,7 +80,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   ) => {
     if (amount === undefined) return "...";
     const formatted = amount.toLocaleString();
-    return `${formatted} ${currencySymbol || defaultCurrency.symbol}`;
+    return `${formatted}${currencySymbol || defaultCurrency.symbol}`;
   }, [defaultCurrency.symbol]);
 
   // Format transaction amount with sign
@@ -86,7 +88,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     const isExpense = transaction.type === "EXPENSE";
     const sign = isExpense ? "-" : "+";
     const formatted = transaction.amount.toLocaleString();
-    return `${sign}${formatted} ${defaultCurrency.symbol}`;
+    return `${sign}${formatted}${defaultCurrency.symbol}`;
   }, [defaultCurrency.symbol]);
 
   // Format transaction time
@@ -330,37 +332,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      {/* Fixed Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={[styles.searchBar, { backgroundColor: colors.card }]}
-          onPress={() => setSearchVisible(true)}
-          activeOpacity={0.7}
-        >
-          <AppIcon name="search" size={normalize(20)} color={colors.text} style={{ opacity: 0.5 }} type="Ionicons" />
-          <CustomText style={[styles.searchPlaceholder, { color: colors.text }]}>
-            {t("common.search") || "Search"}
-          </CustomText>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => router.push('/notification')}
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: 19,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <AppIcon
-            name="system_noti"
-            size={normalize(24)}
-            color={colors.tint}
-          />
-        </TouchableOpacity>
-      </View>
-
       {/* Scrollable Content */}
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -372,6 +343,72 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           />
         }
       >
+        {/* Custom Header with Avatar */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <Image
+              source={
+                appInfo?.avatar?.startsWith("http")
+                  ? { uri: appInfo.avatar }
+                  : Images.placeholder.avatar
+              }
+              style={styles.headerAvatar}
+            />
+          </View>
+
+          <TouchableOpacity
+            onPress={() => router.push('/notification')}
+            style={styles.notificationBtn}
+          >
+            <AppIcon
+              name="system_noti"
+              size={normalize(24)}
+              color={colors.tint}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.greetingSection}>
+          <CustomText style={[styles.greetingText, { color: colors.tint }]}>
+            {t("home.greeting_name", { name: appInfo?.name?.toUpperCase() || 'USER' })}
+          </CustomText>
+          <CustomText style={styles.greetingSubText}>
+            {t("home.good_day")}
+          </CustomText>
+        </View>
+
+        {/* Commented Search Bar as requested */}
+        {/* 
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={[styles.searchBar, { backgroundColor: colors.card }]}
+            onPress={() => setSearchVisible(true)}
+            activeOpacity={0.7}
+          >
+            <AppIcon name="search" size={normalize(20)} color={colors.text} style={{ opacity: 0.5 }} type="Ionicons" />
+            <CustomText style={[styles.searchPlaceholder, { color: colors.text }]}>
+              {t("common.search") || "Search"}
+            </CustomText>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push('/notification')}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <AppIcon
+              name="system_noti"
+              size={normalize(24)}
+              color={colors.tint}
+            />
+          </TouchableOpacity>
+        </View>
+        */}
         {/* Balance Card */}
         {loading && !data ? (
           <View
@@ -444,7 +481,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </View>
 
             <CustomText style={styles.month}>
-              {new Date().toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US', { month: 'long', year: 'numeric' })}
+              {new Date().toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US', { month: 'long' })}
             </CustomText>
           </View>
         )}

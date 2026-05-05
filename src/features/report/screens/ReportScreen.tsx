@@ -387,14 +387,21 @@ const ReportScreen = () => {
             <CustomText size={14} style={{ textAlign: 'center' }}>{t('common.loading')}</CustomText>
           ) : (
             debitSummary.length > 0 ? (
-              debitSummary.map((item, index) => (
-                <View key={index} style={styles.debtRow}>
-                  <CustomText size={14}>{item.label}</CustomText>
-                  <CustomText type="medium" size={14}>
-                    {formatCurrency(item.amount)}
-                  </CustomText>
-                </View>
-              ))
+              debitSummary.map((item, index) => {
+                let displayLabel = item.label;
+                if (item.label === 'Borrow') displayLabel = t('report.debit_borrow');
+                else if (item.label === 'Lend') displayLabel = t('report.debit_lend');
+                else if (item.label === 'Other') displayLabel = t('report.debit_other');
+
+                return (
+                  <View key={index} style={styles.debtRow}>
+                    <CustomText size={14}>{displayLabel}</CustomText>
+                    <CustomText type="medium" size={14}>
+                      {formatCurrency(item.amount)}
+                    </CustomText>
+                  </View>
+                );
+              })
             ) : (
               <CustomText size={14} style={{ textAlign: 'center', opacity: 0.5 }}>{t('report.no_debt_data')}</CustomText>
             )

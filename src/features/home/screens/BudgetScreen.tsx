@@ -11,7 +11,6 @@ import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -390,7 +389,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 
                 {/* Center text */}
                 <View style={styles.circleCenter}>
-                  <CustomText style={[styles.circleLabelSmall, { color: colors.icon }]}>
+                  <CustomText style={[styles.circleLabelSmall, { color: colors.text }]}>
                     {t("budget.remaining_budget")}
                   </CustomText>
                   <CustomText type="bold" style={[styles.circleAmount, { color: isOverBudget ? "#EF4444" : colors.text }]}>
@@ -402,7 +401,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
               {/* Stats Row */}
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
-                  <CustomText style={[styles.statLabel, { color: colors.icon }]}>
+                  <CustomText style={[styles.statLabel, { color: colors.text }]}>
                     {t("budget.total_budget")}
                   </CustomText>
                   <CustomText type="semiBold" style={[styles.statValue, { color: colors.text }]}>
@@ -413,7 +412,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                 <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.statItem}>
-                  <CustomText style={[styles.statLabel, { color: colors.icon }]}>
+                  <CustomText style={[styles.statLabel, { color: colors.text }]}>
                     {t("budget.total_spent")}
                   </CustomText>
                   <CustomText type="semiBold" style={[styles.statValue, { color: colors.text }]}>
@@ -424,7 +423,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
                 <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.statItem}>
-                  <CustomText style={[styles.statLabel, { color: colors.icon }]}>
+                  <CustomText style={[styles.statLabel, { color: colors.text }]}>
                     {t("budget.days_left")}
                   </CustomText>
                   <CustomText type="semiBold" style={[styles.statValue, { color: colors.text }]}>
@@ -461,6 +460,7 @@ const BudgetItem = ({ budget, colors, onPress, formatAmount }: any) => {
   const { t } = useTranslation();
   const percentage = (budget.spent / budget.total) * 100;
   const isOverBudget = percentage > 100;
+  const remaining = budget.total - budget.spent;
 
   return (
     <TouchableOpacity
@@ -470,8 +470,11 @@ const BudgetItem = ({ budget, colors, onPress, formatAmount }: any) => {
         styles.budgetItem,
         {
           backgroundColor: colors.card,
-          borderColor: isOverBudget ? '#EF444450' : colors.border,
-          borderWidth: 1,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 10,
+          elevation: 2,
         }
       ]}
     >
@@ -488,7 +491,7 @@ const BudgetItem = ({ budget, colors, onPress, formatAmount }: any) => {
           </View>
 
           <View style={styles.budgetInfo}>
-            <CustomText style={[styles.budgetCategory, { color: colors.text }]} numberOfLines={1}>
+            <CustomText type="semiBold" style={[styles.budgetCategory, { color: colors.text }]} numberOfLines={1}>
               {budget.categoryName}
             </CustomText>
             <CustomText style={[styles.budgetSubcategory, { color: colors.icon }]} numberOfLines={1}>
@@ -498,62 +501,50 @@ const BudgetItem = ({ budget, colors, onPress, formatAmount }: any) => {
         </View>
 
         <View style={styles.budgetRight}>
-          <CustomText style={[styles.budgetSpentText, { color: colors.text }]}>
-            {formatAmount(budget.spent)}
+          <CustomText type="bold" style={[styles.budgetTotalText, { color: colors.text }]}>
+            {formatAmount(budget.total)}
+          </CustomText>
+          <CustomText
+            style={[
+              styles.budgetStatusText,
+              { color: isOverBudget ? '#EF4444' : colors.text }
+            ]}
+          >
+            {isOverBudget
+              ? `${t('budget.overspent') || 'Bội chi'}: ${formatAmount(Math.abs(remaining))}`
+              : `${t('budget.detail.remaining')}: ${formatAmount(remaining)}`}
           </CustomText>
         </View>
       </View>
 
       {/* Middle section: Progress bar and Today marker */}
-      <View style={styles.progressSection}>
-        <View style={[styles.progressBarBase, { backgroundColor: colors.border + '40' }]}>
+      <View style={styles.progressContainer}>
+        <View style={[styles.progressBarBase, { backgroundColor: colors.border + '50' }]}>
           <View
             style={[
               styles.progressBarFill,
               {
                 width: `${Math.min(percentage, 100)}%`,
-                backgroundColor: isOverBudget ? '#EF4444' : budget.iconColor,
+                backgroundColor: isOverBudget ? '#F97316' : '#10B981',
               },
             ]}
           />
         </View>
 
         {/* Today Marker */}
-        <View
-          style={[
-            styles.todayMarkerWrapper,
-            { left: `${Math.min(budget.todayProgress, 100)}%` }
-          ]}
-        >
-          <View style={[styles.todayMarkerLine, { backgroundColor: colors.text }]} />
-          <CustomText type="semiBold" style={[styles.todayMarkerLabel, { color: colors.text }]}>
-            {t("home.today")}
-          </CustomText>
-        </View>
-      </View>
-
-      {/* Bottom section: Percentage and Limit */}
-      <View style={styles.budgetFooter}>
-        <View style={styles.footerLeft}>
-          <CustomText style={[styles.usagePercentage, { color: colors.icon }]}>
-            {percentage.toFixed(0)}% {t("budget.used")}
-          </CustomText>
-          {isOverBudget && (
-            <View style={styles.overBudgetBadge}>
-              <FontAwesome6 name="circle-exclamation" size={normalize(10)} color="#EF4444" />
-              <CustomText type="semiBold" style={styles.overBudgetText}>{t('budget.detail.over_limit')}</CustomText>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.footerRight}>
-          <CustomText style={[styles.budgetLimitLabel, { color: colors.icon }]}>
-            {t('budget.limit')}:
-          </CustomText>
-          <CustomText style={[styles.budgetLimitValue, { color: colors.text }]}>
-            {formatAmount(budget.total)}
-          </CustomText>
-        </View>
+        {budget.todayProgress > 0 && budget.todayProgress <= 100 && (
+          <View
+            style={[
+              styles.todayMarkerWrapper,
+              { left: `${budget.todayProgress}%` }
+            ]}
+          >
+            <View style={[styles.todayMarkerLine, { backgroundColor: colors.border }]} />
+            <CustomText style={[styles.todayMarkerLabel, { color: colors.text }]}>
+              {t("home.today")}
+            </CustomText>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -700,24 +691,23 @@ const styles = StyleSheet.create({
   budgetItem: {
     borderRadius: normalize(16),
     padding: normalize(16),
-    marginBottom: normalize(12),
   },
   budgetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: normalize(12),
+    alignItems: 'center',
+    marginBottom: normalize(16),
   },
   budgetLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: normalize(10),
+    gap: normalize(12),
     flex: 1,
   },
   budgetIconWrapper: {
-    width: normalize(40),
-    height: normalize(40),
-    borderRadius: normalize(10),
+    width: normalize(44),
+    height: normalize(44),
+    borderRadius: normalize(12),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -727,75 +717,56 @@ const styles = StyleSheet.create({
   },
   budgetCategory: {
     fontSize: normalize(15),
-    fontWeight: 'bold',
   },
   budgetSubcategory: {
     fontSize: normalize(12),
-    opacity: 0.7,
   },
   budgetRight: {
     alignItems: 'flex-end',
   },
-  budgetSpentText: {
-    fontSize: normalize(16),
-    fontWeight: '700',
+  budgetTotalText: {
+    fontSize: normalize(15),
   },
-  budgetLimitText: {
+  budgetStatusText: {
     fontSize: normalize(11),
-    marginTop: normalize(1),
+    marginTop: normalize(2),
   },
-  progressSection: {
-    height: normalize(28),
-    justifyContent: 'center',
+  progressContainer: {
+    paddingTop: normalize(12),
+    paddingBottom: normalize(22),
     position: 'relative',
-    marginVertical: normalize(4),
+    justifyContent: 'center',
   },
   progressBarBase: {
     height: normalize(6),
-    borderRadius: normalize(3),
+    borderRadius: normalize(10),
     width: '100%',
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: normalize(3),
+    borderRadius: normalize(10),
   },
   todayMarkerWrapper: {
     position: 'absolute',
-    top: 0,
+    top: normalize(6),
     bottom: 0,
     alignItems: 'center',
-    width: normalize(40),
-    marginLeft: normalize(-20),
+    width: normalize(2),
     zIndex: 10,
   },
   todayMarkerLine: {
     width: normalize(1.5),
-    height: '100%',
-    opacity: 0.3,
+    height: normalize(14),
+    borderRadius: 1,
   },
   todayMarkerLabel: {
     position: 'absolute',
-    top: normalize(-12),
-    fontSize: normalize(8),
-    width: normalize(40),
+    bottom: 0,
+    fontSize: normalize(9),
+    width: normalize(60),
     textAlign: 'center',
-  },
-  budgetFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: normalize(4),
-  },
-  footerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(8),
-  },
-  footerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(4),
+    fontWeight: '600',
   },
   usagePercentage: {
     fontSize: normalize(12),
