@@ -1,5 +1,6 @@
 import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
+import { useNotification } from '@/contexts/NotificationContext';
 import { Fonts } from '@/core/theme/font';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useBudget } from '@/features/budget/hooks/useBudget';
@@ -11,8 +12,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View, Pressable } from 'react-native';
-import { useNotification } from '@/contexts/NotificationContext';
+import { ActivityIndicator, Dimensions, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Polyline, Stop, Text as SvgText } from 'react-native-svg';
 
@@ -51,6 +51,8 @@ interface SparklineProps {
   totalBudget: number;
   maxDay?: number;
   projectionAmount?: number;
+  convertFromVND: (val: number) => number;
+  currencySymbol: string;
 }
 
 const SparklineChart: React.FC<SparklineProps> = ({
@@ -59,6 +61,8 @@ const SparklineChart: React.FC<SparklineProps> = ({
   totalBudget,
   maxDay: propMaxDay,
   projectionAmount,
+  convertFromVND,
+  currencySymbol,
 }) => {
   const { t } = useTranslation();
   const CHART_W = SCREEN_WIDTH - wp(10) - normalize(32);
@@ -164,7 +168,7 @@ const SparklineChart: React.FC<SparklineProps> = ({
               fill="#888"
               textAnchor="end"
             >
-              {formatMoneyShort(tick)}
+              {formatMoneyShort(convertFromVND(tick))}{currencySymbol}
             </SvgText>
           </React.Fragment>
         );
@@ -278,7 +282,7 @@ const BudgetDetailScreen = () => {
   const params = useLocalSearchParams();
   const { getWalletById } = useWallet();
   const { advancedSearchTransactions } = useTransaction();
-  const { formatAmount } = useCurrencyConverter();
+  const { convertAndFormat, convertFromVND, defaultCurrency } = useCurrencyConverter();
   const { deleteBudget } = useBudget({ autoFetch: false });
   const { showNotification } = useNotification();
 
@@ -421,7 +425,7 @@ const BudgetDetailScreen = () => {
   const handleDeleteBudget = () => {
     setShowMenu(false);
     showNotification(
-      t('event.confirm_delete', { title: budget.categoryName || t('budget.detail.default_budget_name') }),
+      t('budget.confirm_delete', { title: budget.categoryName || t('budget.detail.default_budget_name') }),
       'warning',
       undefined,
       undefined,
@@ -554,20 +558,20 @@ const BudgetDetailScreen = () => {
           <View style={[styles.amountRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <View style={styles.amountBlock}>
               <CustomText style={[styles.amountLabel, { color: colors.icon }]}>{t('budget.total_budget')}</CustomText>
-              <CustomText style={[styles.amountValue, { color: colors.text }]}>{formatAmount(total)}</CustomText>
+              <CustomText style={[styles.amountValue, { color: colors.text }]}>{convertAndFormat(total)}</CustomText>
             </View>
             <View style={[styles.amountDivider, { backgroundColor: colors.border }]} />
             <View style={styles.amountBlock}>
               <CustomText style={[styles.amountLabel, { color: colors.icon }]}>{t('budget.total_spent')}</CustomText>
               <CustomText style={[styles.amountValue, { color: isOverBudget ? '#FF6B6B' : colors.text }]}>
-                {formatAmount(spent)}
+                {convertAndFormat(spent)}
               </CustomText>
             </View>
             <View style={[styles.amountDivider, { backgroundColor: colors.border }]} />
             <View style={styles.amountBlock}>
               <CustomText style={[styles.amountLabel, { color: colors.icon }]}>{t('budget.detail.remaining')}</CustomText>
               <CustomText style={[styles.amountValue, { color: remaining >= 0 ? '#27AE60' : '#FF6B6B' }]}>
-                {formatAmount(remaining)}
+                {convertAndFormat(remaining)}
               </CustomText>
             </View>
           </View>
@@ -632,6 +636,8 @@ const BudgetDetailScreen = () => {
                 totalBudget={total}
                 maxDay={totalDays}
                 projectionAmount={estimatedTotal}
+                convertFromVND={convertFromVND}
+                currencySymbol={defaultCurrency.symbol}
               />
             )}
           </View>
@@ -661,7 +667,7 @@ const BudgetDetailScreen = () => {
                 {t('budget.detail.daily_recommended')}
               </CustomText>
               <CustomText style={[styles.recommendAmount, { color: colors.text }]}>
-                <CustomText style={{ color: colors.tint }}>{formatAmount(Math.round(dailyRecommended))}</CustomText>{t('budget.detail.per_day')}
+                <CustomText style={{ color: colors.tint }}>{convertAndFormat(Math.round(dailyRecommended))}</CustomText>{t('budget.detail.per_day')}
               </CustomText>
               <CustomText style={[styles.recommendSub, { color: colors.icon }]}>
                 {t('budget.detail.days_left_prefix')} {daysLeft} {t('budget.detail.days_left_suffix')}
@@ -675,16 +681,16 @@ const BudgetDetailScreen = () => {
           <CustomText style={[styles.sectionTitle, { color: colors.text }]}>{t('budget.detail.status_summary')}</CustomText>
           <View style={styles.summaryGrid}>
             <SummaryBlock label={t('budget.detail.estimated_spending')}
-              value={formatAmount(Math.round(estimatedTotal))} icon="chart-line"
+              value={convertAndFormat(Math.round(estimatedTotal))} icon="chart-line"
               iconBg="#F39C1218" iconColor="#F39C12"
               textColor={colors.text} subColor={colors.icon} note={t('budget.detail.current_pace')} />
             <SummaryBlock label={t('budget.detail.actual_spending')}
-              value={formatAmount(spent)} icon="receipt"
+              value={convertAndFormat(spent)} icon="receipt"
               iconBg={isOverBudget ? '#FF6B6B18' : colors.tint + '18'}
               iconColor={isOverBudget ? '#FF6B6B' : colors.tint}
               textColor={colors.text} subColor={colors.icon} note={`${percentage.toFixed(1)}%`} />
             <SummaryBlock label={t('budget.detail.remaining_budget_label')}
-              value={formatAmount(Math.abs(remaining))} icon="piggy-bank"
+              value={convertAndFormat(Math.abs(remaining))} icon="piggy-bank"
               iconBg={remaining >= 0 ? '#27AE6018' : '#FF6B6B18'}
               iconColor={remaining >= 0 ? '#27AE60' : '#FF6B6B'}
               textColor={colors.text} subColor={colors.icon} note={remaining < 0 ? t('budget.detail.over_budget') : t('budget.detail.safe')} />

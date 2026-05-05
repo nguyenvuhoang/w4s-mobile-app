@@ -508,6 +508,7 @@
     "daily_expenses": "Chi phí hằng đầu"
   },
   "budget": {
+    "confirm_delete": "Bạn có chắc muốn xóa ngân sách \"{{title}}\"?",
     "title": "Ngân sách",
     "limit": "Hạn mức",
     "used": "đã dùng",

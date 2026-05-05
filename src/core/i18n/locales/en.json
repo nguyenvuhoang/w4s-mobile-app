@@ -508,6 +508,7 @@
     "daily_expenses": "Top Expenses"
   },
   "budget": {
+    "confirm_delete": "Are you sure you want to delete budget \"{{title}}\"?",
     "title": "Budget",
     "limit": "Limit",
     "used": "used",
