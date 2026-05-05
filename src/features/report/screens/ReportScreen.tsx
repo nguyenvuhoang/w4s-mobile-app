@@ -6,17 +6,20 @@ import STORAGE_KEY from '@/constants/StorageKey';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { useCategory } from '@/hooks/useCategory';
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import StorageService from '@/services/StorageService';
 import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
 import { useReport } from '../hooks/useReport';
 
 import { FontAwesome6 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Dimensions,
+  Pressable,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -80,6 +83,8 @@ const ReportScreen = () => {
   const { colors } = useAppTheme();
   const { wallets, defaultWallet, loading } = useWallet();
   const [selectedWallet, setSelectedWallet] = useState<WalletSummary | null>(null);
+  const [isNetBalanceVisible, setIsNetBalanceVisible] = useState(true);
+  const { defaultCurrency } = useDefaultCurrency();
 
   const timePeriods = React.useMemo(() => generateTimePeriods(t), [t]);
   const [selectedPeriod, setSelectedPeriod] = useState(timePeriods[timePeriods.length - 1]);
@@ -188,7 +193,7 @@ const ReportScreen = () => {
   const expenseChange = walletSummaryData?.expense?.change_percent ?? 0;
   const incomeChange = walletSummaryData?.income?.change_percent ?? 0;
 
-  const formatCurrency = (v: number, currency: string = 'đ') => v.toLocaleString('vi-VN') + ' ' + currency;
+  const formatCurrency = (v: number) => v.toLocaleString('vi-VN') + ' ' + defaultCurrency.symbol;
 
   // Tách EXPENSE / INCOME từ real data
   const expensePieData = categoryAnalysis
@@ -215,7 +220,7 @@ const ReportScreen = () => {
         wallet_id: selectedWallet?.walletId?.toString() ?? '',
         anchor_date: selectedPeriod.date,
         period_type: 'M',
-        currency: selectedWallet?.currency ?? 'đ',
+        currency: defaultCurrency.symbol,
         wallet_name: selectedWallet?.name ?? '',
         period_label: selectedPeriod.label,
       }
@@ -292,7 +297,7 @@ const ReportScreen = () => {
               <CustomText size={14}>{t('report.total_expense')}</CustomText>
             </View>
             <CustomText type="bold" size={20} style={{ marginTop: normalize(8) }} numberOfLines={1} adjustsFontSizeToFit>
-              {walletSummaryLoading ? t('common.loading') : formatCurrency(totalExpense, selectedWallet?.currency)}
+              {walletSummaryLoading ? t('common.loading') : formatCurrency(totalExpense)}
             </CustomText>
             <View style={styles.changeIndicator}>
               <FontAwesome6
@@ -315,7 +320,7 @@ const ReportScreen = () => {
               <CustomText size={14}>{t('report.total_income')}</CustomText>
             </View>
             <CustomText type="bold" size={20} style={{ marginTop: normalize(8) }} numberOfLines={1} adjustsFontSizeToFit>
-              {walletSummaryLoading ? t('common.loading') : formatCurrency(totalIncome, selectedWallet?.currency)}
+              {walletSummaryLoading ? t('common.loading') : formatCurrency(totalIncome)}
             </CustomText>
             <View style={styles.changeIndicator}>
               <FontAwesome6
@@ -331,30 +336,48 @@ const ReportScreen = () => {
         </View>
 
         {/* ===== NET BALANCE ===== */}
-        <View style={[styles.balanceCard, { backgroundColor: colors.card }]}>
-          <View style={styles.balanceHeader}>
-            <View style={[styles.balanceIcon, { backgroundColor: colors.tint + '20' }]}>
-              <FontAwesome6 name="shield-halved" size={normalize(16)} color={colors.tint} />
+        <LinearGradient
+          colors={['#0091FF', '#00C2FF']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.netBalanceGradient}
+        >
+          <View style={styles.netBalanceHeader}>
+            <View style={styles.netBalanceIconContainer}>
+              <FontAwesome6 name="dollar-sign" size={normalize(16)} color="#0091FF" />
             </View>
-            <CustomText size={14}>{t('report.total_net_balance')}</CustomText>
+            <CustomText size={15} style={{ color: '#FFFFFF', flex: 1 }}>{t('report.total_net_balance')}</CustomText>
+            <Pressable onPress={() => setIsNetBalanceVisible(!isNetBalanceVisible)}>
+              <FontAwesome6
+                name={isNetBalanceVisible ? 'eye' : 'eye-slash'}
+                size={normalize(18)}
+                color="#FFFFFF"
+                style={{ opacity: 0.8 }}
+              />
+            </Pressable>
           </View>
-          <CustomText type="bold" size={24} style={{ marginTop: normalize(8) }}>
-            {balanceLoading ? t('common.loading') : formatCurrency(netBalance, selectedWallet?.currency)}
-          </CustomText>
 
-          <View style={styles.balanceDetails}>
-            <View style={styles.balanceDetailRow}>
-              <CustomText size={13}>{t('report.opening_balance')}</CustomText>
-              <CustomText type="medium" size={13}>
-                {formatCurrency(openingBalance, selectedWallet?.currency)}
-              </CustomText>
-            </View>
-            <View style={styles.balanceDetailRow}>
-              <CustomText size={13}>{t('report.closing_balance')}</CustomText>
-              <CustomText type="medium" size={13}>
-                {formatCurrency(closingBalance, selectedWallet?.currency)}
-              </CustomText>
-            </View>
+          <View style={styles.netBalanceValueContainer}>
+            <CustomText type="bold" size={28} style={{ color: '#FFFFFF' }}>
+              {balanceLoading ? '...' : (isNetBalanceVisible ? formatCurrency(netBalance) : '******')}
+            </CustomText>
+          </View>
+        </LinearGradient>
+
+        {/* ===== BALANCE DETAILS CARD ===== */}
+        <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+          <View style={styles.infoRow}>
+            <CustomText size={14} style={{ color: colors.text }}>{t('report.opening_balance')}</CustomText>
+            <CustomText type="medium" size={14} style={{ color: colors.tint }}>
+              {formatCurrency(openingBalance)}
+            </CustomText>
+          </View>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <View style={styles.infoRow}>
+            <CustomText size={14} style={{ color: colors.text }}>{t('report.closing_balance')}</CustomText>
+            <CustomText type="medium" size={14} style={{ color: colors.tint }}>
+              {formatCurrency(closingBalance)}
+            </CustomText>
           </View>
         </View>
 
@@ -507,32 +530,50 @@ const styles = StyleSheet.create({
     marginTop: normalize(6),
   },
 
-  balanceCard: {
+  netBalanceGradient: {
     marginHorizontal: wp(5),
-    padding: normalize(16),
-    borderRadius: normalize(12),
-    marginBottom: normalize(16),
+    padding: normalize(18),
+    borderRadius: normalize(20),
+    marginBottom: normalize(12),
+    minHeight: normalize(120),
   },
-  balanceHeader: {
+  netBalanceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: normalize(8),
+    gap: normalize(10),
   },
-  balanceIcon: {
+  netBalanceIconContainer: {
     width: normalize(32),
     height: normalize(32),
-    borderRadius: normalize(8),
+    borderRadius: normalize(16),
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  balanceDetails: {
-    marginTop: normalize(16),
-    gap: normalize(8),
+  netBalanceValueContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
+    marginTop: normalize(10),
   },
-  balanceDetailRow: {
+
+  infoCard: {
+    marginHorizontal: wp(5),
+    paddingHorizontal: normalize(16),
+    paddingVertical: normalize(4),
+    borderRadius: normalize(16),
+    marginBottom: normalize(16),
+  },
+  infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: normalize(12),
+  },
+  divider: {
+    height: 1,
+    width: '100%',
+    opacity: 0.5,
   },
 
   debtCard: {
