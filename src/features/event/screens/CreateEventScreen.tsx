@@ -5,12 +5,11 @@ import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
-import { eventRepository } from "@/services/repositories/event.repository";
 import StorageService from "@/services/StorageService";
 import { WalletSummary } from "@/types/wallet";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
-import DatePicker from "react-native-date-picker";
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -22,7 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { LinearGradient } from 'expo-linear-gradient';
+import DatePicker from "react-native-date-picker";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEvent } from "../hooks/useEvent";
 
@@ -235,7 +234,7 @@ const CreateEventScreen: React.FC = () => {
       console.log("[CreateEvent] Creating event:", eventData);
 
       const success = await createEvent(eventData);
-      
+
       if (success) {
         showNotification("Đã tạo sự kiện mới", "success");
         router.back();
@@ -258,7 +257,7 @@ const CreateEventScreen: React.FC = () => {
   const handleSelectColor = () => {
     router.push({
       pathname: "/(protected)/select-color",
-      params: { 
+      params: {
         icon,
         type: 'CATEGORY',
       },
@@ -299,12 +298,12 @@ const CreateEventScreen: React.FC = () => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
-      edges={["top"]}
+      edges={["top", "bottom"]}
     >
       <AppHeader title="Tạo sự kiện" showBackButton />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboardView}
       >
         <ScrollView
@@ -521,7 +520,7 @@ const CreateEventScreen: React.FC = () => {
             {
               backgroundColor: colors.background,
               borderTopColor: colors.border,
-              paddingBottom: insets.bottom > 0 ? insets.bottom : hp(2),
+              paddingBottom: normalize(20),
             },
           ]}
         >

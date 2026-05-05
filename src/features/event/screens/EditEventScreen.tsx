@@ -291,7 +291,7 @@ const EditEventScreen: React.FC = () => {
       <AppHeader title={t("event.edit_event")} showBackButton />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboardView}
       >
         <ScrollView
@@ -502,7 +502,7 @@ const EditEventScreen: React.FC = () => {
             {
               backgroundColor: colors.background,
               borderTopColor: colors.border,
-              paddingBottom: insets.bottom > 0 ? insets.bottom : hp(2),
+              paddingBottom: normalize(12),
             },
           ]}
         >
