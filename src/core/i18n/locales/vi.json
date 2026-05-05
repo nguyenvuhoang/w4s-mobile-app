@@ -1095,6 +1095,7 @@
     "group_unit": "nhóm",
     "debit_borrow": "Đi vay",
     "debit_lend": "Cho vay",
-    "debit_other": "Khác"
+    "debit_other": "Khác",
+    "saving": "Tiết kiệm"
   }
 }

@@ -8,6 +8,7 @@ import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Modal,
@@ -16,7 +17,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 /* ================= TYPES ================= */
@@ -142,6 +142,7 @@ const CategoryReportDetailScreen = () => {
     period_type: string;
     currency: string;
     wallet_name: string;
+    active_tab?: 'EXPENSE' | 'INCOME';
   }>();
 
   const { analyzeCategory, categoryAnalysis, analyzing } = useCategory({ autoFetch: false });
@@ -194,7 +195,7 @@ const CategoryReportDetailScreen = () => {
   const [showPeriodModal, setShowPeriodModal] = useState(false);
 
   // ---- Tab state ----
-  const [activeTab, setActiveTab] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
+  const [activeTab, setActiveTab] = useState<'EXPENSE' | 'INCOME'>(params.active_tab || 'EXPENSE');
 
   const currency = selectedWallet?.currency || params.currency || 'đ';
 
@@ -400,7 +401,7 @@ const CategoryReportDetailScreen = () => {
             <View style={{ flex: 1 }}>
               <CustomText type="medium" size={14}>{w.name}</CustomText>
               <CustomText size={12} style={{ color: colors.text }}>
-                {w.walletId === 0 
+                {w.walletId === 0
                   ? t('report.all_wallets_summary')
                   : `${w.balance?.toLocaleString('vi-VN')} ${w.currency}`}
               </CustomText>

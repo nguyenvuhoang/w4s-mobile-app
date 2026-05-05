@@ -175,6 +175,7 @@ export const useWalletIncomeExpenseSummary = () => {
 
         if (response.isSuccess() && response.data) {
           setData(response.data.income_expense_summary);
+          return response.data.income_expense_summary;
         } else {
           setError(response.message || "Failed to fetch wallet summary");
         }

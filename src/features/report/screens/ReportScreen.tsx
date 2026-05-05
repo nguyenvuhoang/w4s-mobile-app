@@ -212,8 +212,24 @@ const ReportScreen = () => {
       color: c.color,
     }));
 
-  // Navigate sang màn chi tiết với context ví & kỳ đang chọn
-  const handleViewDetail = () => {
+  // Navigate sang màn chi tiết tổng hợp (Trend + Transactions)
+  const handleViewGroupDetail = (type: 'EXPENSE' | 'INCOME') => {
+    router.push({
+      pathname: '/(protected)/report/group-detail',
+      params: {
+        wallet_id: selectedWallet?.walletId?.toString() ?? '',
+        anchor_date: selectedPeriod.date,
+        period_type: 'M',
+        currency: defaultCurrency.symbol,
+        wallet_name: selectedWallet?.name ?? '',
+        period_label: selectedPeriod.label,
+        type: type,
+      }
+    } as any);
+  };
+
+  // Navigate sang màn chi tiết theo Category (Màn hình cũ)
+  const handleViewCategoryDetail = (type: 'EXPENSE' | 'INCOME') => {
     router.push({
       pathname: '/(protected)/report/category-report-detail',
       params: {
@@ -223,6 +239,7 @@ const ReportScreen = () => {
         currency: defaultCurrency.symbol,
         wallet_name: selectedWallet?.name ?? '',
         period_label: selectedPeriod.label,
+        active_tab: type,
       }
     } as any);
   };
@@ -289,7 +306,11 @@ const ReportScreen = () => {
 
         <View style={styles.summaryRow}>
           {/* Total Expense */}
-          <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
+          <TouchableOpacity 
+            style={[styles.summaryCard, { backgroundColor: colors.card }]}
+            onPress={() => handleViewGroupDetail('EXPENSE')}
+            activeOpacity={0.7}
+          >
             <View style={styles.summaryHeader}>
               <View style={[styles.summaryIcon, { backgroundColor: '#FFE4E1' }]}>
                 <FontAwesome6 name="arrow-trend-down" size={normalize(16)} color="#F44336" />
@@ -309,10 +330,14 @@ const ReportScreen = () => {
                 {Math.abs(expenseChange)}% {t('report.previous_month')}
               </CustomText>
             </View>
-          </View>
+          </TouchableOpacity>
 
           {/* Total Income */}
-          <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
+          <TouchableOpacity 
+            style={[styles.summaryCard, { backgroundColor: colors.card }]}
+            onPress={() => handleViewGroupDetail('INCOME')}
+            activeOpacity={0.7}
+          >
             <View style={styles.summaryHeader}>
               <View style={[styles.summaryIcon, { backgroundColor: '#E8F5E9' }]}>
                 <FontAwesome6 name="arrow-trend-up" size={normalize(16)} color="#4CAF50" />
@@ -332,7 +357,7 @@ const ReportScreen = () => {
                 {incomeChange > 0 ? '+' : ''}{incomeChange}% {t('report.previous_month')}
               </CustomText>
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* ===== NET BALANCE ===== */}
@@ -412,7 +437,7 @@ const ReportScreen = () => {
           title={t('report.group_report')}
           showAction={true}
           actionText={t('report.view_detail')}
-          onPressAction={handleViewDetail}
+          onPressAction={() => handleViewCategoryDetail('EXPENSE')}
         />
 
         {/* ===== PIE CHARTS ===== */}
