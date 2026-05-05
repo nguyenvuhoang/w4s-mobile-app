@@ -175,7 +175,7 @@ export default function MainNavigator() {
           {
             backgroundColor: isDark ? colors.background : '#FFFFFF',
             borderTopColor: colors.border,
-            height: Platform.OS === "ios" ? hp(11) : hp(9) + insets.bottom,
+            height: Platform.OS === "ios" ? hp(11) : hp(7) + insets.bottom,
             paddingBottom: Platform.OS === "ios" ? getBottomSpace() : hp(1.5) + insets.bottom,
           },
         ],
