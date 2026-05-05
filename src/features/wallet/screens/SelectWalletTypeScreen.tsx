@@ -109,15 +109,14 @@ const SelectWalletTypeScreen: React.FC = () => {
                       color="#fff"
                     />
                   </LinearGradient>
+                </View>
 
+                <View style={styles.rightContent}>
                   <CustomText
                     style={[styles.typeName, { color: colors.text }]}
                   >
                     {type.name}
                   </CustomText>
-                </View>
-
-                <View style={styles.rightContent}>
                   <CustomText
                     style={[
                       styles.typeDescription,
@@ -187,14 +186,15 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   leftContent: {
-    width: '30%',
+    width: '20%',
     alignItems: 'center',
-    gap: normalize(8),
+    justifyContent: 'center',
   },
   rightContent: {
-    width: '70%',
+    width: '80%',
     justifyContent: 'center',
-    paddingLeft: normalize(8),
+    paddingLeft: normalize(12),
+    gap: normalize(4),
   },
   iconContainer: {
     width: normalize(52),
@@ -204,24 +204,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   typeName: {
-    fontSize: normalize(14),
+    fontSize: normalize(16),
     fontWeight: '700',
-    textAlign: 'center',
+    textAlign: 'left',
   },
   typeDescription: {
     fontSize: normalize(13),
     lineHeight: normalize(18),
-    textAlign: 'center',
+    textAlign: 'left',
   },
   bottomButton: {
     paddingHorizontal: wp(5),
     paddingVertical: hp(2),
     borderTopWidth: 1,
   },
-  continueButton: { borderRadius: normalize(16) },
+  continueButton: { borderRadius: normalize(25) },
   continueButtonGradient: {
     paddingVertical: normalize(16),
-    borderRadius: normalize(16),
+    borderRadius: normalize(25),
     alignItems: 'center',
   },
   continueButtonText: {

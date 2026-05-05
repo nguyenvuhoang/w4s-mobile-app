@@ -22,6 +22,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEvent } from "../hooks/useEvent";
 
@@ -257,7 +258,10 @@ const CreateEventScreen: React.FC = () => {
   const handleSelectColor = () => {
     router.push({
       pathname: "/(protected)/select-color",
-      params: { icon },
+      params: { 
+        icon,
+        type: 'CATEGORY',
+      },
     });
   };
 
@@ -527,7 +531,7 @@ const CreateEventScreen: React.FC = () => {
             disabled={creating}
           >
             <CustomText
-              style={[styles.cancelButtonText, { color: colors.text }]}
+              style={[styles.cancelButtonText, { color: colors.tint }]}
               type="semiBold"
             >
               Hủy
@@ -538,7 +542,6 @@ const CreateEventScreen: React.FC = () => {
             style={[
               styles.createButton,
               {
-                backgroundColor: colors.tint,
                 opacity:
                   creating || !eventName.trim() || !selectedWallet ? 0.5 : 1,
               },
@@ -546,6 +549,12 @@ const CreateEventScreen: React.FC = () => {
             onPress={handleCreate}
             disabled={creating || !eventName.trim() || !selectedWallet}
           >
+            <LinearGradient
+              colors={colors.gradientPrimary || colors.gradianBase}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
             <CustomText style={styles.createButtonText} type="bold">
               {creating ? "Đang tạo..." : "Tạo"}
             </CustomText>
@@ -705,7 +714,7 @@ const styles = StyleSheet.create({
   cancelButton: {
     flex: 1,
     paddingVertical: normalize(14),
-    borderRadius: normalize(12),
+    borderRadius: normalize(25),
     alignItems: "center",
     borderWidth: 1.5,
   },
@@ -715,8 +724,9 @@ const styles = StyleSheet.create({
   createButton: {
     flex: 1,
     paddingVertical: normalize(14),
-    borderRadius: normalize(12),
+    borderRadius: normalize(25),
     alignItems: "center",
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,

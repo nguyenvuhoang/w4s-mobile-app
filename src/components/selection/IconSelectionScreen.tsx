@@ -6,6 +6,7 @@ import { useAppTheme } from '@/core/theme/ThemeContext';
 import StorageService from '@/services/StorageService';
 import * as LocalIcons from '@/utils/Icons';
 import { hp, normalize, wp } from '@/utils/layout';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -191,8 +192,8 @@ const SelectWalletIconScreen: React.FC = () => {
                   {
                     width: ITEM_SIZE,
                     height: ITEM_SIZE,
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
+                    backgroundColor: 'transparent',
+                    borderColor: 'transparent',
                   },
                   selectedIcon === icon && {
                     borderColor: colors.tint,
@@ -203,7 +204,7 @@ const SelectWalletIconScreen: React.FC = () => {
               >
                 <AppIcon
                   name={icon as any}
-                  size={normalize(24)}
+                  size={normalize(28)}
                   color={selectedIcon === icon ? colors.tint : colors.text}
                 />
               </TouchableOpacity>
@@ -232,15 +233,21 @@ const SelectWalletIconScreen: React.FC = () => {
           style={[styles.cancelButton, { borderColor: colors.border }]}
           onPress={() => router.back()}
         >
-          <CustomText style={[styles.cancelButtonText, { color: colors.text }]}>
+          <CustomText style={[styles.cancelButtonText, { color: colors.tint }]}>
             {t('selection.cancel')}
           </CustomText>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.confirmButton, { backgroundColor: colors.tint }]}
+          style={styles.confirmButton}
           onPress={handleContinue}
         >
+          <LinearGradient
+            colors={colors.gradientPrimary || colors.gradianBase}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
           <CustomText style={styles.confirmButtonText}>{t('selection.confirm')}</CustomText>
         </TouchableOpacity>
       </View>
@@ -324,7 +331,7 @@ const styles = StyleSheet.create({
   cancelButton: {
     flex: 1,
     paddingVertical: normalize(14),
-    borderRadius: normalize(12),
+    borderRadius: normalize(25),
     alignItems: 'center',
     borderWidth: 1,
   },
@@ -335,8 +342,9 @@ const styles = StyleSheet.create({
   confirmButton: {
     flex: 1,
     paddingVertical: normalize(14),
-    borderRadius: normalize(12),
+    borderRadius: normalize(25),
     alignItems: 'center',
+    overflow: 'hidden',
   },
   confirmButtonText: {
     fontSize: normalize(16),

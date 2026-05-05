@@ -9,6 +9,7 @@ import { useWalletTracker } from '@/features/wallet/hooks/useWalletTracker';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -298,7 +299,7 @@ const CreateWalletDetailsScreen: React.FC = () => {
             onPress={() => router.back()}
             disabled={creatingWallet}
           >
-            <CustomText style={[styles.cancelButtonText, { color: colors.text }]} type="semiBold">
+            <CustomText style={[styles.cancelButtonText, { color: colors.tint }]} type="semiBold">
               {t('common.cancel')}
             </CustomText>
           </TouchableOpacity>
@@ -307,13 +308,18 @@ const CreateWalletDetailsScreen: React.FC = () => {
             style={[
               styles.createButton,
               {
-                backgroundColor: colors.tint,
                 opacity: creatingWallet || !walletName.trim() ? 0.5 : 1
               }
             ]}
             onPress={handleCreate}
             disabled={creatingWallet || !walletName.trim()}
           >
+            <LinearGradient
+              colors={colors.gradianBase}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[StyleSheet.absoluteFill, { borderRadius: normalize(25) }]}
+            />
             <CustomText style={styles.createButtonText} type="bold">
               {creatingWallet ? t('wallet.creating') : t('wallet.create')}
             </CustomText>
@@ -458,7 +464,7 @@ const styles = StyleSheet.create({
   cancelButton: {
     flex: 1,
     paddingVertical: normalize(14),
-    borderRadius: normalize(12),
+    borderRadius: normalize(25),
     alignItems: 'center',
     borderWidth: 1.5,
   },
@@ -468,8 +474,9 @@ const styles = StyleSheet.create({
   createButton: {
     flex: 1,
     paddingVertical: normalize(14),
-    borderRadius: normalize(12),
+    borderRadius: normalize(25),
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,

@@ -21,6 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEvent } from "../hooks/useEvent";
 
@@ -459,12 +460,17 @@ const EventListScreen: React.FC<EventListScreenProps> = ({ onSelectEvent }) => {
         style={[
           styles.createButton,
           {
-            backgroundColor: colors.tint,
             bottom: insets.bottom > 0 ? insets.bottom + hp(1) : hp(3),
           },
         ]}
         onPress={handleCreateEvent}
       >
+        <LinearGradient
+          colors={colors.gradientPrimary || colors.gradianBase}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
         <CustomText style={styles.createButtonText} type="bold">
           {t("event.create_event")}
         </CustomText>
@@ -706,8 +712,9 @@ const styles = StyleSheet.create({
     left: wp(5),
     right: wp(5),
     paddingVertical: normalize(16),
-    borderRadius: normalize(16),
+    borderRadius: normalize(25),
     alignItems: "center",
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,

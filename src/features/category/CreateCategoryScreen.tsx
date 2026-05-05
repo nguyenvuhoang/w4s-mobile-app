@@ -21,6 +21,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface ParentCategory {
@@ -231,6 +232,7 @@ const CreateCategoryScreen: React.FC = () => {
             pathname: '/(protected)/select-color',
             params: {
                 icon,
+                type: 'CATEGORY',
             }
         });
     };
@@ -521,7 +523,7 @@ const CreateCategoryScreen: React.FC = () => {
                         onPress={() => router.back()}
                         disabled={loading}
                     >
-                        <CustomText style={[styles.cancelButtonText, { color: colors.text }]} type="semiBold">
+                        <CustomText style={[styles.cancelButtonText, { color: colors.tint }]} type="semiBold">
                             {t('common.cancel')}
                         </CustomText>
                     </TouchableOpacity>
@@ -530,13 +532,18 @@ const CreateCategoryScreen: React.FC = () => {
                         style={[
                             styles.createButton,
                             {
-                                backgroundColor: colors.tint,
                                 opacity: loading || !primaryName.trim() ? 0.5 : 1
                             }
                         ]}
                         onPress={handleCreate}
                         disabled={loading || !primaryName.trim()}
                     >
+                        <LinearGradient
+                            colors={colors.gradientPrimary || colors.gradianBase}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={StyleSheet.absoluteFill}
+                        />
                         <CustomText style={styles.createButtonText} type="bold">
                             {loading ? t('category.creating') : t('category.create')}
                         </CustomText>
@@ -710,7 +717,7 @@ const styles = StyleSheet.create({
     cancelButton: {
         flex: 1,
         paddingVertical: normalize(14),
-        borderRadius: normalize(12),
+        borderRadius: normalize(25),
         alignItems: 'center',
         borderWidth: 1.5,
     },
@@ -720,8 +727,9 @@ const styles = StyleSheet.create({
     createButton: {
         flex: 1,
         paddingVertical: normalize(14),
-        borderRadius: normalize(12),
+        borderRadius: normalize(25),
         alignItems: 'center',
+        overflow: 'hidden',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.15,

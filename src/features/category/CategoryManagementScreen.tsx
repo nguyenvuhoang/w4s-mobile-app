@@ -1,4 +1,5 @@
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -194,29 +195,6 @@ const CategoryManagementScreen: React.FC = () => {
       <AppHeader
         title={t("category.management_title") || "Quản lý danh mục"}
         showBackButton
-        rightComponent={
-          <TouchableOpacity
-            style={[
-              styles.headerWalletSelector,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-            onPress={() => setShowWalletModal(true)}
-          >
-            <FontAwesome6
-              name={(selectedWallet?.icon as any) ?? "wallet"}
-              size={normalize(14)}
-              color={selectedWallet?.color || colors.tint}
-            />
-            <CustomText style={styles.headerWalletText} numberOfLines={1}>
-              {selectedWallet?.name || t("wallet.select_wallet")}
-            </CustomText>
-            <FontAwesome6
-              name="chevron-down"
-              size={normalize(10)}
-              color={colors.tint}
-            />
-          </TouchableOpacity>
-        }
       />
 
       <WalletPickerModal
@@ -228,6 +206,55 @@ const CategoryManagementScreen: React.FC = () => {
         onClose={() => setShowWalletModal(false)}
       />
 
+      {/* TOP ACTIONS: CREATE NEW GROUP & WALLET SELECTOR */}
+      <View style={styles.topActionsContainer}>
+        <TouchableOpacity
+          style={styles.createGroupButton}
+          onPress={() => {
+            router.push({
+              pathname: "/(protected)/category/create-category",
+              params: {
+                type: selectedTab,
+                walletId:
+                  effectiveWalletId === "all" ? 0 : Number(effectiveWalletId),
+              },
+            });
+          }}
+        >
+          <LinearGradient
+            colors={colors.gradianBase}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: normalize(25) }]}
+          />
+          <CustomText style={styles.createGroupButtonText} type="semiBold">
+            {t("category.create_new_category")}
+          </CustomText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.walletSelector,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+          onPress={() => setShowWalletModal(true)}
+        >
+          <FontAwesome6
+            name={(selectedWallet?.icon as any) ?? "wallet"}
+            size={normalize(14)}
+            color={selectedWallet?.color || colors.tint}
+          />
+          <CustomText style={styles.walletSelectorText} numberOfLines={1}>
+            {selectedWallet?.name || t("wallet.select_wallet")}
+          </CustomText>
+          <FontAwesome6
+            name="chevron-down"
+            size={normalize(10)}
+            color={colors.tint}
+          />
+        </TouchableOpacity>
+      </View>
+
       {/* TABS */}
       <View style={styles.tabContainer}>
         {(["INCOME", "EXPENSE", "LOAN"] as TabType[]).map((tab) => (
@@ -236,10 +263,17 @@ const CategoryManagementScreen: React.FC = () => {
             style={[
               styles.tab,
               { backgroundColor: colors.card },
-              selectedTab === tab && { backgroundColor: colors.tint },
             ]}
             onPress={() => setSelectedTab(tab)}
           >
+            {selectedTab === tab && (
+              <LinearGradient
+                colors={colors.gradianBase}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[StyleSheet.absoluteFill, { borderRadius: normalize(100) }]}
+              />
+            )}
             <CustomText
               style={{ color: selectedTab === tab ? "#fff" : colors.text }}
             >
@@ -366,7 +400,7 @@ const CategoryManagementScreen: React.FC = () => {
 
       {/* FLOATING ACTION BUTTON */}
       <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.tint }]}
+        style={styles.fab}
         onPress={() => {
           router.push({
             pathname: "/(protected)/category/create-category",
@@ -378,6 +412,12 @@ const CategoryManagementScreen: React.FC = () => {
           });
         }}
       >
+        <LinearGradient
+          colors={colors.gradianBase}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[StyleSheet.absoluteFill, { borderRadius: normalize(28) }]}
+        />
         <Ionicons name="add" size={normalize(32)} color="#fff" />
       </TouchableOpacity>
     </SafeAreaView>
@@ -388,19 +428,19 @@ export default CategoryManagementScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerWalletSelector: {
+  walletSelector: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: normalize(8),
-    paddingVertical: normalize(4),
-    borderRadius: normalize(12),
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(14),
+    borderRadius: normalize(25),
     borderWidth: 1,
     gap: normalize(6),
-    maxWidth: wp(40),
+    width: wp(46),
   },
-  headerWalletText: {
-    fontSize: normalize(12),
-    maxWidth: wp(20),
+  walletSelectorText: {
+    flex: 1,
+    fontSize: normalize(13),
   },
   fab: {
     position: "absolute",
@@ -429,6 +469,33 @@ const styles = StyleSheet.create({
     paddingVertical: normalize(10),
     borderRadius: normalize(100),
     alignItems: "center",
+    overflow: "hidden",
+  },
+  topActionsContainer: {
+    flexDirection: "row",
+    paddingHorizontal: wp(5),
+    paddingVertical: hp(1),
+    gap: normalize(10),
+    alignItems: "center",
+  },
+  createGroupButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: normalize(14),
+    borderRadius: normalize(25),
+    gap: normalize(8),
+    overflow: "hidden",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  createGroupButtonText: {
+    color: "#fff",
+    fontSize: normalize(14),
   },
   searchContainer: {
     flexDirection: "row",

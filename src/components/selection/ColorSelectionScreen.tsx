@@ -1,10 +1,11 @@
 import AppHeader from '@/components/base/AppHeader';
+import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
 import WalletPreviewCard from '@/components/wallet/WalletPreviewCard';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import StorageService from '@/services/StorageService';
 import { hp, normalize, wp } from '@/utils/layout';
-import { FontAwesome6 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +35,7 @@ const SelectWalletColorScreen: React.FC = () => {
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const icon = params.icon as string;
+  const type = (params.type as string) || 'WALLET';
 
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
 
@@ -58,37 +60,51 @@ const SelectWalletColorScreen: React.FC = () => {
 
       {/* ===== MAIN CONTENT (NO SCROLL) ===== */}
       <View style={styles.content}>
-        {/* Preview */}
-        <WalletPreviewCard
-          icon={icon}
-          color={selectedColor}
-          walletType="Ví theo dõi"
-          walletName="Tên ví"
-        />
+        <View>
+          {/* Preview */}
+          {type === 'WALLET' ? (
+            <WalletPreviewCard
+              icon={icon}
+              color={selectedColor}
+              walletType="Ví theo dõi"
+              walletName="Tên ví"
+            />
+          ) : (
+            <View style={styles.categoryPreviewContainer}>
+              <View style={[styles.categoryIconPreview, { backgroundColor: selectedColor }]}>
+                <AppIcon
+                  name={icon as any}
+                  size={normalize(33)}
+                  color="#fff"
+                />
+              </View>
+            </View>
+          )}
 
-        {/* Color Picker */}
-        <View style={styles.pickerContainer}>
-          <ColorPicker
-            value={selectedColor}
-            style={styles.colorPicker}
-            onComplete={(color) => {
-              'worklet';
-              scheduleOnRN(updateColor, color.hex);
-            }}
-          >
-            <Panel1
-              style={[
-                styles.panel,
-                { width: pickerSize, height: pickerSize },
-              ]}
-            />
-            <HueSlider
-              style={[
-                styles.hueSlider,
-                { width: pickerSize, marginTop: normalize(14) },
-              ]}
-            />
-          </ColorPicker>
+          {/* Color Picker */}
+          <View style={styles.pickerContainer}>
+            <ColorPicker
+              value={selectedColor}
+              style={styles.colorPicker}
+              onComplete={(color) => {
+                'worklet';
+                scheduleOnRN(updateColor, color.hex);
+              }}
+            >
+              <Panel1
+                style={[
+                  styles.panel,
+                  { width: pickerSize, height: pickerSize },
+                ]}
+              />
+              <HueSlider
+                style={[
+                  styles.hueSlider,
+                  { width: pickerSize, marginTop: normalize(14) },
+                ]}
+              />
+            </ColorPicker>
+          </View>
         </View>
 
         {/* Preset colors */}
@@ -126,15 +142,21 @@ const SelectWalletColorScreen: React.FC = () => {
           style={[styles.cancelButton, { borderColor: colors.border }]}
           onPress={() => router.back()}
         >
-          <CustomText style={[styles.cancelButtonText, { color: colors.text }]}>
+          <CustomText style={[styles.cancelButtonText, { color: colors.tint }]}>
             {t('selection.cancel')}
           </CustomText>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.confirmButton, { backgroundColor: colors.tint }]}
+          style={styles.confirmButton}
           onPress={handleContinue}
         >
+          <LinearGradient
+            colors={colors.gradientPrimary || colors.gradianBase}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
           <CustomText style={styles.confirmButtonText}>{t('selection.confirm')}</CustomText>
         </TouchableOpacity>
       </View>
@@ -149,9 +171,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: wp(5),
-    justifyContent: 'space-between',
     paddingTop: hp(2),
     paddingBottom: hp(2),
+    gap: hp(2),
   },
 
   previewContainer: {
@@ -229,7 +251,7 @@ const styles = StyleSheet.create({
   cancelButton: {
     flex: 1,
     paddingVertical: normalize(14),
-    borderRadius: normalize(12),
+    borderRadius: normalize(25),
     alignItems: 'center',
     borderWidth: 1,
   },
@@ -242,14 +264,74 @@ const styles = StyleSheet.create({
   confirmButton: {
     flex: 1,
     paddingVertical: normalize(14),
-    borderRadius: normalize(12),
+    borderRadius: normalize(25),
     alignItems: 'center',
+    overflow: 'hidden',
   },
 
   confirmButtonText: {
     fontSize: normalize(16),
     fontWeight: '600',
     color: '#fff',
+  },
+
+  // Category Preview Styles (from CategoryDetailScreen)
+  summaryCard: {
+    marginHorizontal: wp(2),
+    marginTop: hp(1),
+    padding: normalize(20),
+    borderRadius: normalize(20),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: hp(2),
+  },
+  categoryInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: normalize(12),
+    marginBottom: normalize(16),
+  },
+  categoryIcon: {
+    width: normalize(48),
+    height: normalize(48),
+    borderRadius: normalize(14),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryInfo: {
+    flex: 1,
+  },
+  categoryName: {
+    fontSize: normalize(17),
+    fontWeight: '700',
+    marginBottom: normalize(3),
+  },
+  categoryMeta: {
+    fontSize: normalize(13),
+    lineHeight: normalize(18),
+  },
+  totalAmount: {
+    fontSize: normalize(28),
+    fontWeight: '700',
+  },
+  categoryPreviewContainer: {
+    alignItems: 'center',
+    paddingVertical: hp(3),
+  },
+  categoryIconPreview: {
+    width: normalize(80),
+    height: normalize(80),
+    borderRadius: normalize(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
   },
 });
 
