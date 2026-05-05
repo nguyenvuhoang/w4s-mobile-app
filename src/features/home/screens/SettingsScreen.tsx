@@ -568,6 +568,7 @@ const SettingItemWithSwitch = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginBottom: normalize(60),
   },
   header: {
     paddingHorizontal: normalize(20),

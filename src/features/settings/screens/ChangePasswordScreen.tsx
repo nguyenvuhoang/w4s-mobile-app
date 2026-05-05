@@ -24,11 +24,12 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ChangePasswordScreen = () => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const oldPassword = params.oldPassword as string | undefined;
   const isFirstLogin = params.isFirstLogin === 'true';
@@ -385,7 +386,8 @@ const ChangePasswordScreen = () => {
             styles.modalContainer,
             {
               backgroundColor: colors.card,
-              transform: [{ translateY }]
+              transform: [{ translateY }],
+              paddingBottom: Math.max(insets.bottom, normalize(24)),
             }
           ]}
         >

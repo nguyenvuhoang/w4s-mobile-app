@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -326,206 +328,168 @@ const EditCategoryScreen: React.FC = () => {
     >
       <AppHeader title="Chỉnh sửa nhóm" showBackButton />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : normalize(20)}
       >
-        {/* ICON PREVIEW */}
-        <View style={styles.previewContainer}>
-          <View style={[styles.iconPreview, { backgroundColor: color }]}>
-            <FontAwesome6
-              name={icon as any}
-              size={normalize(33)}
-              color="#fff"
-            />
-          </View>
-        </View>
-
-        {/* INFO CARD: Nhóm (readonly) */}
-        <View
-          style={[
-            styles.infoCard,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.infoRow}>
-            <CustomText style={[styles.infoLabel, { color: colors.icon }]}>
-              Nhóm
-            </CustomText>
-            <View style={styles.readonlyValue}>
-              <CustomText style={[styles.infoValue, { color: colors.text }]}>
-                {getCategoryGroupLabel(category.category_group)}
-              </CustomText>
-              <Ionicons
-                name="lock-closed-outline"
-                size={normalize(14)}
-                color={colors.icon}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* ICON & COLOR SELECTORS */}
-        <View style={styles.selectorRow}>
-          <TouchableOpacity
-            style={[
-              styles.selectorCard,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-            onPress={handleSelectIcon}
-          >
-            <CustomText style={[styles.selectorLabel, { color: colors.text }]}>
-              Icon
-            </CustomText>
-            <View style={styles.selectorValue}>
+          {/* ICON PREVIEW */}
+          <View style={styles.previewContainer}>
+            <View style={[styles.iconPreview, { backgroundColor: color }]}>
               <FontAwesome6
                 name={icon as any}
-                size={normalize(20)}
-                color={colors.text}
+                size={normalize(33)}
+                color="#fff"
               />
-              <FontAwesome6
-                name="chevron-right"
-                size={normalize(14)}
-                color={colors.icon}
-              />
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.selectorCard,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-            onPress={handleSelectColor}
-          >
-            <CustomText style={[styles.selectorLabel, { color: colors.text }]}>
-              Màu sắc
-            </CustomText>
-            <View style={styles.selectorValue}>
-              <View style={[styles.colorDot, { backgroundColor: color }]} />
-              <FontAwesome6
-                name="chevron-right"
-                size={normalize(14)}
-                color={colors.icon}
-              />
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Parent Category Selector - Optional */}
-        <View style={styles.parentSection}>
-          <CustomText style={[styles.label, { color: colors.text }]}>
-            Danh mục cha
-          </CustomText>
-          <TouchableOpacity
-            style={[
-              styles.parentField,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-            onPress={handleSelectParentCategory}
-          >
-            <View style={styles.parentFieldLeft}>
-              {parentCategory ? (
-                <>
-                  <View
-                    style={[
-                      styles.parentCategoryIcon,
-                      { backgroundColor: parentCategory.color },
-                    ]}
-                  >
-                    <FontAwesome6
-                      name={parentCategory.icon as any}
-                      size={normalize(18)}
-                      color="#fff"
-                    />
-                  </View>
-                  <CustomText style={[styles.parentFieldText, { color: colors.text }]}>
-                    {getLocalizedName(parentCategory.category_name)}
-                  </CustomText>
-                </>
-              ) : (
-                <>
-                  <View
-                    style={[
-                      styles.parentCategoryIcon,
-                      { backgroundColor: colors.border },
-                    ]}
-                  />
-                  <CustomText style={[styles.parentFieldText, { color: colors.icon }]}>
-                    Chọn danh mục cha (tùy chọn)
-                  </CustomText>
-                </>
-              )}
-            </View>
-            {parentCategory && (
-              <TouchableOpacity
-                onPress={(e) => {
-                  e.stopPropagation?.();
-                  handleClearParent();
-                }}
-                hitSlop={10}
-              >
-                <Ionicons name="close-circle" size={normalize(20)} color={colors.error} />
-              </TouchableOpacity>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* PRIMARY NAME (ngôn ngữ hiện tại) */}
-        <View style={styles.field}>
-          <View style={styles.labelRow}>
-            <CustomText style={[styles.label, { color: colors.text }]}>
-              {currentLang === 'vi' ? 'Tên nhóm (VI)' : 'Category name (EN)'}
-            </CustomText>
-            <View style={styles.langBadge}>
-              <CustomText style={styles.langBadgeText}>
-                {currentLang.toUpperCase()}
-              </CustomText>
             </View>
           </View>
+
+          {/* INFO CARD: Nhóm (readonly) */}
           <View
             style={[
-              styles.inputContainer,
+              styles.infoCard,
               { backgroundColor: colors.card, borderColor: colors.border },
             ]}
           >
-            <TextInput
-              value={primaryName}
-              onChangeText={(text) => {
-                setPrimaryName(text);
-                setIsEditingTranslation(false);
-              }}
-              placeholder={currentLang === 'vi' ? 'Nhập tên nhóm...' : 'Enter category name...'}
-              placeholderTextColor={colors.icon}
-              style={[styles.input, { color: colors.text }]}
-            />
-            {isTranslating && (
-              <ActivityIndicator size="small" color={colors.tint} />
-            )}
+            <View style={styles.infoRow}>
+              <CustomText style={[styles.infoLabel, { color: colors.icon }]}>
+                Nhóm
+              </CustomText>
+              <View style={styles.readonlyValue}>
+                <CustomText style={[styles.infoValue, { color: colors.text }]}>
+                  {getCategoryGroupLabel(category.category_group)}
+                </CustomText>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={normalize(14)}
+                  color={colors.icon}
+                />
+              </View>
+            </View>
           </View>
-        </View>
 
-        {/* TRANSLATED NAME (ngôn ngữ còn lại - auto) */}
-        {showTranslation && primaryName.trim() && (
+          {/* ICON & COLOR SELECTORS */}
+          <View style={styles.selectorRow}>
+            <TouchableOpacity
+              style={[
+                styles.selectorCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={handleSelectIcon}
+            >
+              <CustomText style={[styles.selectorLabel, { color: colors.text }]}>
+                Icon
+              </CustomText>
+              <View style={styles.selectorValue}>
+                <FontAwesome6
+                  name={icon as any}
+                  size={normalize(20)}
+                  color={colors.text}
+                />
+                <FontAwesome6
+                  name="chevron-right"
+                  size={normalize(14)}
+                  color={colors.icon}
+                />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.selectorCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={handleSelectColor}
+            >
+              <CustomText style={[styles.selectorLabel, { color: colors.text }]}>
+                Màu sắc
+              </CustomText>
+              <View style={styles.selectorValue}>
+                <View style={[styles.colorDot, { backgroundColor: color }]} />
+                <FontAwesome6
+                  name="chevron-right"
+                  size={normalize(14)}
+                  color={colors.icon}
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Parent Category Selector - Optional */}
+          <View style={styles.parentSection}>
+            <CustomText style={[styles.label, { color: colors.text }]}>
+              Danh mục cha
+            </CustomText>
+            <TouchableOpacity
+              style={[
+                styles.parentField,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={handleSelectParentCategory}
+            >
+              <View style={styles.parentFieldLeft}>
+                {parentCategory ? (
+                  <>
+                    <View
+                      style={[
+                        styles.parentCategoryIcon,
+                        { backgroundColor: parentCategory.color },
+                      ]}
+                    >
+                      <FontAwesome6
+                        name={parentCategory.icon as any}
+                        size={normalize(18)}
+                        color="#fff"
+                      />
+                    </View>
+                    <CustomText style={[styles.parentFieldText, { color: colors.text }]}>
+                      {getLocalizedName(parentCategory.category_name)}
+                    </CustomText>
+                  </>
+                ) : (
+                  <>
+                    <View
+                      style={[
+                        styles.parentCategoryIcon,
+                        { backgroundColor: colors.border },
+                      ]}
+                    />
+                    <CustomText style={[styles.parentFieldText, { color: colors.icon }]}>
+                      Chọn danh mục cha (tùy chọn)
+                    </CustomText>
+                  </>
+                )}
+              </View>
+              {parentCategory && (
+                <TouchableOpacity
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    handleClearParent();
+                  }}
+                  hitSlop={10}
+                >
+                  <Ionicons name="close-circle" size={normalize(20)} color={colors.error} />
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* PRIMARY NAME (ngôn ngữ hiện tại) */}
           <View style={styles.field}>
             <View style={styles.labelRow}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                {otherLang === 'vi' ? 'Tên nhóm (VI)' : 'Category name (EN)'}
+                {currentLang === 'vi' ? 'Tên nhóm (VI)' : 'Category name (EN)'}
               </CustomText>
-              <View style={[styles.langBadge, { backgroundColor: colors.border }]}>
-                <CustomText style={[styles.langBadgeText, { color: colors.text }]}>
-                  {otherLang.toUpperCase()}
+              <View style={styles.langBadge}>
+                <CustomText style={styles.langBadgeText}>
+                  {currentLang.toUpperCase()}
                 </CustomText>
               </View>
-              <TouchableOpacity
-                style={styles.autoTranslateTag}
-                onPress={handleRetryTranslation}
-              >
-                <Ionicons name="language" size={normalize(14)} color={colors.tint} />
-                <CustomText style={[styles.autoTranslateText, { color: colors.tint }]}>
-                  Tự động dịch
-                </CustomText>
-              </TouchableOpacity>
             </View>
             <View
               style={[
@@ -534,59 +498,104 @@ const EditCategoryScreen: React.FC = () => {
               ]}
             >
               <TextInput
-                value={translatedName}
+                value={primaryName}
                 onChangeText={(text) => {
-                  setTranslatedName(text);
-                  setIsEditingTranslation(true);
+                  setPrimaryName(text);
+                  setIsEditingTranslation(false);
                 }}
-                placeholder={otherLang === 'vi' ? 'Tên tiếng Việt...' : 'English name...'}
+                placeholder={currentLang === 'vi' ? 'Nhập tên nhóm...' : 'Enter category name...'}
                 placeholderTextColor={colors.icon}
                 style={[styles.input, { color: colors.text }]}
               />
-              {isEditingTranslation && (
-                <TouchableOpacity onPress={handleRetryTranslation} style={styles.refreshButton}>
-                  <Ionicons name="refresh" size={normalize(18)} color={colors.tint} />
-                </TouchableOpacity>
+              {isTranslating && (
+                <ActivityIndicator size="small" color={colors.tint} />
               )}
             </View>
-            <CustomText style={[styles.hintText, { color: colors.icon }]}>
-              Có thể chỉnh sửa thủ công nếu cần
-            </CustomText>
           </View>
-        )}
 
-        {/* SAVE */}
-        <TouchableOpacity
-          style={[
-            styles.saveButton,
-            { backgroundColor: updating ? colors.icon : colors.tint },
-          ]}
-          onPress={handleSave}
-          disabled={updating || deleting}
-        >
-          <CustomText style={styles.saveButtonText}>
-            {updating ? "Đang lưu..." : "Lưu thay đổi"}
-          </CustomText>
-        </TouchableOpacity>
+          {/* TRANSLATED NAME (ngôn ngữ còn lại - auto) */}
+          {showTranslation && primaryName.trim() && (
+            <View style={styles.field}>
+              <View style={styles.labelRow}>
+                <CustomText style={[styles.label, { color: colors.text }]}>
+                  {otherLang === 'vi' ? 'Tên nhóm (VI)' : 'Category name (EN)'}
+                </CustomText>
+                <View style={[styles.langBadge, { backgroundColor: colors.border }]}>
+                  <CustomText style={[styles.langBadgeText, { color: colors.text }]}>
+                    {otherLang.toUpperCase()}
+                  </CustomText>
+                </View>
+                <TouchableOpacity
+                  style={styles.autoTranslateTag}
+                  onPress={handleRetryTranslation}
+                >
+                  <Ionicons name="language" size={normalize(14)} color={colors.tint} />
+                  <CustomText style={[styles.autoTranslateText, { color: colors.tint }]}>
+                    Tự động dịch
+                  </CustomText>
+                </TouchableOpacity>
+              </View>
+              <View
+                style={[
+                  styles.inputContainer,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
+                <TextInput
+                  value={translatedName}
+                  onChangeText={(text) => {
+                    setTranslatedName(text);
+                    setIsEditingTranslation(true);
+                  }}
+                  placeholder={otherLang === 'vi' ? 'Tên tiếng Việt...' : 'English name...'}
+                  placeholderTextColor={colors.icon}
+                  style={[styles.input, { color: colors.text }]}
+                />
+                {isEditingTranslation && (
+                  <TouchableOpacity onPress={handleRetryTranslation} style={styles.refreshButton}>
+                    <Ionicons name="refresh" size={normalize(18)} color={colors.tint} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <CustomText style={[styles.hintText, { color: colors.icon }]}>
+                Có thể chỉnh sửa thủ công nếu cần
+              </CustomText>
+            </View>
+          )}
 
-        {/* DELETE */}
-        <TouchableOpacity
-          style={[styles.deleteButton, { opacity: deleting ? 0.5 : 1 }]}
-          onPress={handleDelete}
-          disabled={updating || deleting}
-        >
-          <Ionicons
-            name="trash-outline"
-            size={normalize(18)}
-            color={colors.error}
-          />
-          <CustomText style={[styles.deleteText, { color: colors.error }]}>
-            {deleting ? "Đang xóa..." : "Xóa nhóm"}
-          </CustomText>
-        </TouchableOpacity>
+          {/* SAVE */}
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              { backgroundColor: updating ? colors.icon : colors.tint },
+            ]}
+            onPress={handleSave}
+            disabled={updating || deleting}
+          >
+            <CustomText style={styles.saveButtonText}>
+              {updating ? "Đang lưu..." : "Lưu thay đổi"}
+            </CustomText>
+          </TouchableOpacity>
 
-        <View style={{ height: hp(4) }} />
-      </ScrollView>
+          {/* DELETE */}
+          <TouchableOpacity
+            style={[styles.deleteButton, { opacity: deleting ? 0.5 : 1 }]}
+            onPress={handleDelete}
+            disabled={updating || deleting}
+          >
+            <Ionicons
+              name="trash-outline"
+              size={normalize(18)}
+              color={colors.error}
+            />
+            <CustomText style={[styles.deleteText, { color: colors.error }]}>
+              {deleting ? "Đang xóa..." : "Xóa nhóm"}
+            </CustomText>
+          </TouchableOpacity>
+
+          <View style={{ height: hp(4) }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
