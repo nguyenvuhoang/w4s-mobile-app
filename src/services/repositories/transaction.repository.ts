@@ -1,6 +1,7 @@
 import { WORKFLOWCODE } from "@/constants/WorkflowCode";
 import { apiService } from "@/core/api";
 import { BaseResponseModel } from "@/core/api/models/ClientModel";
+import StorageService from "../StorageService";
 
 export interface TransactionParticipant {
   id?: number;
@@ -76,6 +77,9 @@ export interface AdvancedSearchTransactionPayload {
   to_transaction_date?: string;
   page_index: number;
   page_size: number;
+  description?: string;
+  transaction_description?: string;
+  contract_number?: string;
 }
 
 export interface RefundTransactionPayload {
@@ -219,7 +223,7 @@ export const transactionRepository = {
         },
         false,
       );
-    } catch (error) { 
+    } catch (error) {
       console.error(
         "[transactionRepository] Error getting transactions by transaction id:",
         error,
@@ -260,6 +264,7 @@ export const transactionRepository = {
     data: AdvancedSearchTransactionPayload,
   ): Promise<BaseResponseModel> {
     try {
+      const appInfo = await StorageService.getAppInfo();
       return await apiService.executeWorkflow(
         WORKFLOWCODE.WF_MB_ADVANCED_SEARCH_WALLET_TRANSACTION,
         {
@@ -274,6 +279,7 @@ export const transactionRepository = {
           to_transaction_date: data.to_transaction_date || "",
           page_index: data.page_index || 1,
           page_size: data.page_size || 10,
+          contract_number: appInfo?.contract_number || "",
         },
         false,
       );

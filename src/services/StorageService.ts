@@ -1,7 +1,7 @@
 import StorageKey from "@/constants/StorageKey";
 import { Session } from "@/core/api/models/SessionModel";
 import { UserSession } from "@/types/User";
-import { UserCommand } from "@/types/UserCommand";
+import { UserCommand, AppInfo } from "@/types/UserCommand";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from "react-native";
@@ -158,6 +158,11 @@ class StorageService {
 
   static async setBaseURL(baseURL: string): Promise<void> {
     await this.setItem(StorageKey.baseURL, baseURL);
+  }
+
+  static async getAppInfo(): Promise<AppInfo | null> {
+    const appInfo = await this.getItem(StorageKey.appInfo);
+    return appInfo ? JSON.parse(appInfo) : null;
   }
 }
 

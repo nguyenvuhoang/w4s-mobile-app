@@ -1,11 +1,15 @@
 import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
+import WalletPickerModal from "@/components/modals/WalletPickerModal";
+import { GlobalContext } from "@/contexts/GlobalContext";
+import { Fonts } from "@/core/theme/font";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useInfiniteTransactions } from "@/features/home/hooks/useInfiniteTransactions";
 import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
 import { styles as homeStyles } from "@/features/home/styles/HomeScreen.Style";
-import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
+import { useCategory } from "@/hooks/useCategory";
 import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
+import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { getValidIconName } from "@/utils/iconMapper";
 import { normalize, wp } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
@@ -17,6 +21,7 @@ import {
     FlatList,
     RefreshControl,
     StyleSheet,
+    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
@@ -33,6 +38,19 @@ const TransactionHistoryScreen: React.FC = () => {
     const { defaultCurrency } = useDefaultCurrency();
     const { convertBetween, formatAmount } = useCurrencyConverter();
 
+    // Ensure categories are fetched to populate the cache
+    useCategory({ autoFetch: true });
+
+    const { wallets } = React.useContext(GlobalContext);
+    const [selectedWalletId, setSelectedWalletId] = React.useState<number | "all">("all");
+    const [isWalletPickerVisible, setIsWalletPickerVisible] = React.useState(false);
+    const [searchQuery, setSearchQuery] = React.useState("");
+    const [isSearchVisible, setIsSearchVisible] = React.useState(false);
+
+    const currentWallet = React.useMemo(() =>
+        wallets.find(w => w.walletId === selectedWalletId),
+        [wallets, selectedWalletId]);
+
     const {
         transactions,
         totalCount,
@@ -41,7 +59,11 @@ const TransactionHistoryScreen: React.FC = () => {
         hasMore,
         refresh,
         loadMore,
-    } = useInfiniteTransactions(10);
+    } = useInfiniteTransactions(
+        10,
+        selectedWalletId === "all" ? undefined : selectedWalletId,
+        searchQuery
+    );
 
     const [refreshing, setRefreshing] = React.useState(false);
 
@@ -61,15 +83,15 @@ const TransactionHistoryScreen: React.FC = () => {
     const formatTransactionAmount = (transaction: RecentTransaction) => {
         const isExpense = transaction.type === "EXPENSE";
         const sign = isExpense ? "-" : "+";
-        
+
         const itemCurrency = transaction.currency || "VND";
         let finalAmount = transaction.amount;
-        
+
         if (itemCurrency !== defaultCurrency.currencyId) {
             const converted = convertBetween(transaction.amount, itemCurrency, defaultCurrency.currencyId);
             if (converted !== null) finalAmount = converted;
         }
-        
+
         return `${sign}${formatAmount(finalAmount)}`;
     };
 
@@ -313,7 +335,63 @@ const TransactionHistoryScreen: React.FC = () => {
             style={[localStyles.container, { backgroundColor: colors.background }]}
         >
             <AppHeader title={t("transaction_history.title")} />
+
+            <View style={localStyles.topBar}>
+                <TouchableOpacity
+                    style={[localStyles.walletSelector, { backgroundColor: colors.card }]}
+                    onPress={() => setIsWalletPickerVisible(true)}
+                    activeOpacity={0.7}
+                >
+                    <View style={[localStyles.walletIconContainer, { backgroundColor: (currentWallet?.color || colors.tint) + "22" }]}>
+                        <FontAwesome6
+                            name={selectedWalletId === "all" ? "layer-group" : (currentWallet?.icon || "wallet")}
+                            size={normalize(12)}
+                            color={currentWallet?.color || colors.tint}
+                        />
+                    </View>
+                    <CustomText style={[localStyles.walletName, { color: colors.text }]} numberOfLines={1}>
+                        {selectedWalletId === "all"
+                            ? t("wallet.all_wallets")
+                            : currentWallet?.name || t("wallet.all_wallets")
+                        }
+                    </CustomText>
+                    <Ionicons name="chevron-down" size={normalize(16)} color={colors.icon} />
+                </TouchableOpacity>
+
+                {/* <TouchableOpacity
+                    style={[localStyles.searchButton, { backgroundColor: colors.card }]}
+                    onPress={() => setIsSearchVisible(!isSearchVisible)}
+                >
+                    <Ionicons name={isSearchVisible ? "close" : "search"} size={normalize(20)} color={colors.icon} />
+                </TouchableOpacity> */}
+            </View>
+
+            {isSearchVisible && (
+                <View style={localStyles.searchContainer}>
+                    <TextInput
+                        style={[localStyles.searchInput, { color: colors.text, borderColor: colors.border }]}
+                        placeholder={t("common.search")}
+                        placeholderTextColor={colors.icon}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        autoFocus
+                    />
+                </View>
+            )}
+
             {renderContent()}
+
+            <WalletPickerModal
+                visible={isWalletPickerVisible}
+                wallets={wallets}
+                selectedId={selectedWalletId}
+                onSelect={(id) => {
+                    setSelectedWalletId(id);
+                    setIsWalletPickerVisible(false);
+                }}
+                onClose={() => setIsWalletPickerVisible(false)}
+                title={t("wallet.select_wallet")}
+            />
         </SafeAreaView>
     );
 };
@@ -357,6 +435,63 @@ const localStyles = StyleSheet.create({
     footerText: {
         marginTop: normalize(8),
         fontSize: normalize(14),
+    },
+    topBar: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: wp(5),
+        paddingVertical: normalize(10),
+        gap: normalize(12),
+    },
+    walletSelector: {
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(8),
+        borderRadius: normalize(24),
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    walletIconContainer: {
+        width: normalize(28),
+        height: normalize(28),
+        borderRadius: normalize(14),
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: normalize(8),
+    },
+    walletName: {
+        flex: 1,
+        fontSize: normalize(14),
+        fontFamily: Fonts.medium,
+    },
+    searchButton: {
+        width: normalize(44),
+        height: normalize(44),
+        borderRadius: normalize(22),
+        alignItems: "center",
+        justifyContent: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    searchContainer: {
+        paddingHorizontal: wp(5),
+        paddingBottom: normalize(10),
+    },
+    searchInput: {
+        // backgroundColor: colors.card,
+        borderRadius: normalize(12),
+        paddingHorizontal: normalize(15),
+        paddingVertical: normalize(10),
+        fontSize: normalize(14),
+        borderWidth: 1,
     },
 });
 
