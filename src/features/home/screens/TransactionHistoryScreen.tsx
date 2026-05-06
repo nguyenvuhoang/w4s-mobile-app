@@ -1,4 +1,5 @@
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import WalletPickerModal from "@/components/modals/WalletPickerModal";
 import { GlobalContext } from "@/contexts/GlobalContext";
@@ -236,7 +237,7 @@ const TransactionHistoryScreen: React.FC = () => {
                         { backgroundColor: iconColor + "1A" },
                     ]}
                 >
-                    <FontAwesome6 name={iconName} size={normalize(24)} color={iconColor} />
+                    <AppIcon name={iconName} size={normalize(24)} color={iconColor} />
                 </View>
                 <View style={homeStyles.transactionInfo}>
                     <CustomText style={[homeStyles.transactionName, { color: colors.text }]}>
@@ -353,7 +354,7 @@ const TransactionHistoryScreen: React.FC = () => {
                     activeOpacity={0.7}
                 >
                     <View style={[localStyles.walletIconContainer, { backgroundColor: (currentWallet?.color || colors.tint) + "22" }]}>
-                        <FontAwesome6
+                        <AppIcon
                             name={selectedWalletId === "all" ? "layer-group" : (currentWallet?.icon || "wallet")}
                             size={normalize(12)}
                             color={currentWallet?.color || colors.tint}

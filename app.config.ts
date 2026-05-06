@@ -22,7 +22,7 @@ export default () => {
         "W4S Mobile is a personal finance management application that helps you track, control, and optimize your cash flow comprehensively, from fiat currency to digital assets and DeFi - all in a single platform.",
       orientation: "portrait",
       icon: "./assets/app-icon.png",
-      userInterfaceStyle: "light",
+      userInterfaceStyle: "automatic",
       updates: {
         enabled: true,
         fallbackToCacheTimeout: 0,

@@ -39,6 +39,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface SelectedCurrency {
@@ -48,23 +49,6 @@ interface SelectedCurrency {
 }
 
 // ─── Option configs ───────────────────────────────────────────────────────────
-
-const INTEREST_CALC_METHODS: { key: InterestCalcMethod; label: string; desc: string }[] = [
-  { key: "REDUCING", label: "Dư nợ giảm dần", desc: "Lãi tính trên số dư còn lại" },
-  { key: "FLAT", label: "Lãi phẳng", desc: "Lãi tính theo số gốc ban đầu" },
-];
-
-const PAYMENT_TYPES: { key: PaymentType; label: string; icon: string; desc: string }[] = [
-  { key: "BULLET", label: "Trả 1 lần", icon: "circle-check", desc: "Trả toàn bộ cuối kỳ" },
-  { key: "INSTALLMENT", label: "Trả góp", icon: "calendar-days", desc: "Trả theo nhiều kỳ" },
-];
-
-const STATUS_OPTIONS: { key: LoanStatus; label: string; color: string }[] = [
-  { key: "ACTIVE", label: "Đang hoạt động", color: "#22C55E" },
-  { key: "COMPLETED", label: "Đã hoàn thành", color: "#6366F1" },
-  { key: "OVERDUE", label: "Quá hạn", color: "#EF4444" },
-  { key: "CANCELLED", label: "Đã huỷ", color: "#9CA3AF" },
-];
 
 // ─── CollapsibleSection ───────────────────────────────────────────────────────
 
@@ -202,12 +186,37 @@ const collapsibleStyles = StyleSheet.create({
 
 const EditPaybookScreen = () => {
   const { colors } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const { showNotification } = useNotification();
   const { wallets } = useWallet();
   const { loanId } = useLocalSearchParams<{ loanId: string }>();
   const { getLoanDetail, updateLoan, loading } = usePaybookDetail();
   const { defaultCurrency } = useDefaultCurrency();
   const hasManuallySelectedCurrencyRef = useRef(false);
+
+  // ─── Localized option configs ────────────────────────────────────────────────
+
+  const INTEREST_CALC_METHODS: { key: InterestCalcMethod; label: string; desc: string }[] = useMemo(() => [
+    { key: "REDUCING", label: t("paybook.reducing"), desc: t("paybook.reducing_desc") },
+    { key: "FLAT", label: t("paybook.flat"), desc: t("paybook.flat_desc") },
+  ], [t]);
+
+  const PAYMENT_TYPES: { key: PaymentType; label: string; icon: string; desc: string }[] = useMemo(() => [
+    { key: "BULLET", label: t("paybook.bullet"), icon: "circle-check", desc: t("paybook.bullet_desc") },
+    { key: "INSTALLMENT", label: t("paybook.installment_payment"), icon: "calendar-days", desc: t("paybook.installment_desc") },
+  ], [t]);
+
+  const STATUS_OPTIONS: { key: LoanStatus; label: string; color: string }[] = useMemo(() => [
+    { key: "ACTIVE", label: t("paybook.status_active"), color: "#22C55E" },
+    { key: "COMPLETED", label: t("paybook.status_completed"), color: "#6366F1" },
+    { key: "OVERDUE", label: t("paybook.status_overdue"), color: "#EF4444" },
+    { key: "CANCELLED", label: t("paybook.status_cancelled"), color: "#9CA3AF" },
+  ], [t]);
+
+  const LOAN_TYPE_LABELS = useMemo(() => ({
+    LEND: t("paybook.lend"),
+    BORROW: t("paybook.borrow"),
+  }), [t]);
 
   const [dataLoaded, setDataLoaded] = useState(false);
   const [interestEnabled, setInterestEnabled] = useState(false);
@@ -252,7 +261,7 @@ const EditPaybookScreen = () => {
     const fetchDetail = async () => {
       const detail = await getLoanDetail(Number(loanId));
       if (!detail) {
-        showNotification("Không tìm thấy khoản vay!", "error");
+        showNotification(t("paybook.not_found"), "error");
         router.back();
         return;
       }
@@ -323,15 +332,15 @@ const EditPaybookScreen = () => {
   const formatNum = useCallback((val: string) => {
     const raw = val.replace(/\D/g, "");
     if (!raw) return "";
-    return new Intl.NumberFormat("vi-VN").format(parseInt(raw, 10));
-  }, []);
+    return new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : "en-US").format(parseInt(raw, 10));
+  }, [i18n.language]);
 
   const formatNumRaw = (num: number) => {
-    return new Intl.NumberFormat("vi-VN").format(num);
+    return new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : "en-US").format(num);
   };
 
   const formatDate = (d: Date) =>
-    d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    d.toLocaleDateString(i18n.language === "vi" ? "vi-VN" : "en-US", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   const selectedWallet = useMemo(
     () => wallets.find((w) => w.walletId === walletId),
@@ -364,10 +373,10 @@ const EditPaybookScreen = () => {
   const handleUpdate = async () => {
     if (!maturityDate || !loanId) return;
     if (effectiveInterestRate < 0) {
-      return showNotification("Lãi suất không được là số âm!", "error");
+      return showNotification(t("paybook.error_negative_rate"), "error");
     }
     if (maturityDate <= startDate) {
-      return showNotification("Ngày đáo hạn phải sau ngày bắt đầu!", "error");
+      return showNotification(t("paybook.error_maturity_date"), "error");
     }
 
     try {
@@ -390,11 +399,11 @@ const EditPaybookScreen = () => {
           : undefined,
         note: note.trim() || "",
       });
-      showNotification("Cập nhật sổ nợ thành công!", "success");
+      showNotification(t("invoice.success_update"), "success");
       router.back();
     } catch (error) {
       showNotification(
-        error instanceof Error ? error.message : "Cập nhật sổ nợ thất bại!",
+        error instanceof Error ? error.message : t("invoice.error_update"),
         "error"
       );
     }
@@ -413,11 +422,11 @@ const EditPaybookScreen = () => {
   if (!dataLoaded) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-        <AppHeader title="Chỉnh sửa sổ nợ" />
+        <AppHeader title={t("paybook.edit")} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator size="large" color={accentColor} />
           <CustomText style={[styles.loadingText, { color: colors.icon }]}>
-            Đang tải dữ liệu...
+            {t("common.loading")}
           </CustomText>
         </View>
       </SafeAreaView>
@@ -426,7 +435,7 @@ const EditPaybookScreen = () => {
 
   // ── Render ────────────────────────────────────────────────────────────
   const typeColor = loanType === "LEND" ? "#22C55E" : "#EF4444";
-  const typeLabel = loanType === "LEND" ? "Cho vay" : "Đi vay";
+  const typeLabel = loanType === "LEND" ? LOAN_TYPE_LABELS.LEND : LOAN_TYPE_LABELS.BORROW;
   const typeIcon = loanType === "LEND" ? "arrow-trend-up" : "arrow-trend-down";
 
   return (
@@ -435,7 +444,7 @@ const EditPaybookScreen = () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.flex}
       >
-        <AppHeader title="Chỉnh sửa sổ nợ" />
+        <AppHeader title={t("paybook.edit")} />
 
         <ScrollView
           style={styles.flex}
@@ -468,7 +477,7 @@ const EditPaybookScreen = () => {
                   color={selectedWallet?.color || colors.icon}
                   style={{ marginRight: wp(2), width: normalize(20), textAlign: "center" }}
                 />
-                <CustomText style={[styles.readonlyLabel, { color: colors.icon }]}>Ví nguồn:</CustomText>
+                <CustomText style={[styles.readonlyLabel, { color: colors.icon }]}>{t("paybook.source_wallet")}</CustomText>
                 <CustomText style={[styles.readonlyValue, { color: colors.text }]}>
                   {selectedWallet?.name || `ID: ${walletId}`}
                 </CustomText>
@@ -483,7 +492,7 @@ const EditPaybookScreen = () => {
                     color={colors.icon}
                     style={{ marginRight: wp(2), width: normalize(20), textAlign: "center" }}
                   />
-                  <CustomText style={[styles.readonlyLabel, { color: colors.icon }]}>Mã sổ:</CustomText>
+                  <CustomText style={[styles.readonlyLabel, { color: colors.icon }]}>{t("paybook.loan_no_label")}</CustomText>
                   <CustomText style={[styles.readonlyValue, { color: colors.text }]}>
                     {loanNo}
                   </CustomText>
@@ -495,16 +504,20 @@ const EditPaybookScreen = () => {
           {/* ══════════════════════════════════════════════════════════════
               3. THÔNG TIN ĐỐI TÁC
           ══════════════════════════════════════════════════════════════ */}
-          <SectionHeader title="Thông tin đối tác" />
+          <SectionHeader title={t("paybook.partner_info")} />
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
-              Tên đối tác <CustomText style={{ color: "#EF4444" }}>*</CustomText>
+              {loanType === "LEND" ? t("paybook.debtor") : t("paybook.creditor")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
             </CustomText>
             <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <AppIcon name="user" size={normalize(16)} color={counterpartyName.trim() ? accentColor : colors.icon} style={styles.fieldIcon} />
               <TextInput
                 style={[styles.fieldInput, { color: colors.text }]}
-                placeholder="Tên người/đơn vị giao dịch..."
+                placeholder={
+                  loanType === "LEND"
+                    ? t("paybook.lend_placeholder")
+                    : t("paybook.borrow_placeholder")
+                }
                 placeholderTextColor={colors.icon}
                 value={counterpartyName}
                 onChangeText={setCounterpartyName}
@@ -516,16 +529,16 @@ const EditPaybookScreen = () => {
           {/* ══════════════════════════════════════════════════════════════
               4. THÔNG TIN KHOẢN VAY
           ══════════════════════════════════════════════════════════════ */}
-          <SectionHeader title="Thông tin khoản vay" />
+          <SectionHeader title={t("paybook.loan_info")} />
 
           {/* Mô tả */}
           <View style={styles.section}>
-            <CustomText style={[styles.label, { color: colors.text }]}>Mô tả khoản vay</CustomText>
+            <CustomText style={[styles.label, { color: colors.text }]}>{t("paybook.loan_description")}</CustomText>
             <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <AppIcon name="file-lines" size={normalize(16)} color={loanDescription.trim() ? accentColor : colors.icon} style={styles.fieldIcon} />
               <TextInput
                 style={[styles.fieldInput, { color: colors.text }]}
-                placeholder="Mô tả ngắn gọn mục đích..."
+                placeholder={t("paybook.desc_placeholder")}
                 placeholderTextColor={colors.icon}
                 value={loanDescription}
                 onChangeText={setLoanDescription}
@@ -544,13 +557,13 @@ const EditPaybookScreen = () => {
               hasManuallySelectedCurrencyRef.current = true;
               router.push("/(protected)/select-currency");
             }}
-            label="Số tiền gốc *"
+            label={t("paybook.principal_amount_label")}
           />
 
           {/* ══════════════════════════════════════════════════════════════
               5. HÌNH THỨC THANH TOÁN (Disabled in Edit)
           ══════════════════════════════════════════════════════════════ */}
-          <SectionHeader title="Hình thức thanh toán" />
+          <SectionHeader title={t("paybook.payment_type")} />
           <View style={styles.section}>
             <View style={styles.chipRow}>
               {PAYMENT_TYPES.map((pt) => {
@@ -585,20 +598,20 @@ const EditPaybookScreen = () => {
           {paymentType === "INSTALLMENT" && (
             <View style={styles.section}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                Số kỳ trả <CustomText style={{ color: "#EF4444" }}>*</CustomText>
+                {t("paybook.installments_count")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
               </CustomText>
               <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <AppIcon name="list-ol" size={normalize(15)} color={totalInstallments ? accentColor : colors.icon} style={styles.fieldIcon} />
                 <TextInput
                   style={[styles.fieldInput, { color: colors.text }]}
-                  placeholder="Ví dụ: 12"
+                  placeholder={t("paybook.installments_placeholder")}
                   placeholderTextColor={colors.icon}
                   value={totalInstallments}
                   onChangeText={setTotalInstallments}
                   keyboardType="number-pad"
                   returnKeyType="done"
                 />
-                <CustomText style={[styles.unitTag, { color: colors.icon }]}>kỳ</CustomText>
+                <CustomText style={[styles.unitTag, { color: colors.icon }]}>{t("paybook.installments")}</CustomText>
               </View>
             </View>
           )}
@@ -607,8 +620,8 @@ const EditPaybookScreen = () => {
               6. LÃI SUẤT — Toggle section
           ══════════════════════════════════════════════════════════════ */}
           <CollapsibleSection
-            title="Lãi suất"
-            subtitle={interestEnabled ? "Tuỳ chỉnh lãi suất & phương thức" : "Mặc định: không lãi suất (0%)"}
+            title={t("paybook.interest_rate")}
+            subtitle={interestEnabled ? t("paybook.custom_interest_hint") : t("paybook.default_interest_hint")}
             enabled={interestEnabled}
             onToggle={handleToggleInterest}
             accentColor={accentColor}
@@ -616,7 +629,7 @@ const EditPaybookScreen = () => {
           >
             {/* Lãi suất % */}
             <View style={styles.section}>
-              <CustomText style={[styles.label, { color: colors.text }]}>Lãi suất (%/năm)</CustomText>
+              <CustomText style={[styles.label, { color: colors.text }]}>{t("paybook.interest_rate_annual")}</CustomText>
               <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <AppIcon name="percent" size={normalize(14)} color={effectiveInterestRate > 0 ? accentColor : colors.icon} style={styles.fieldIcon} />
                 <TextInput
@@ -628,13 +641,13 @@ const EditPaybookScreen = () => {
                   keyboardType="decimal-pad"
                   returnKeyType="next"
                 />
-                <CustomText style={[styles.unitTag, { color: colors.icon }]}>%/năm</CustomText>
+                <CustomText style={[styles.unitTag, { color: colors.icon }]}>%/ {t("paybook.year")}</CustomText>
               </View>
             </View>
 
             {/* Phương pháp tính lãi */}
             <View style={styles.section}>
-              <CustomText style={[styles.label, { color: colors.text }]}>Phương pháp tính lãi</CustomText>
+              <CustomText style={[styles.label, { color: colors.text }]}>{t("paybook.interest_calc_method")}</CustomText>
               {INTEREST_CALC_METHODS.map((cm) => {
                 const isActive = interestCalcMethod === cm.key;
                 return (
@@ -665,11 +678,11 @@ const EditPaybookScreen = () => {
           {/* ══════════════════════════════════════════════════════════════
               7. THỜI HẠN
           ══════════════════════════════════════════════════════════════ */}
-          <SectionHeader title="Thời hạn" />
+          <SectionHeader title={t("paybook.term")} />
           <View style={[styles.section, { flexDirection: "row", gap: wp(3) }]}>
             <View style={{ flex: 1 }}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                Ngày bắt đầu <CustomText style={{ color: "#EF4444" }}>*</CustomText>
+                {t("paybook.start_date")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
               </CustomText>
               <TouchableOpacity
                 style={[styles.dateField, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -683,7 +696,7 @@ const EditPaybookScreen = () => {
 
             <View style={{ flex: 1 }}>
               <CustomText style={[styles.label, { color: colors.text }]}>
-                Đáo hạn <CustomText style={{ color: "#EF4444" }}>*</CustomText>
+                {t("paybook.maturity_date")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
               </CustomText>
               <TouchableOpacity
                 style={[
@@ -704,7 +717,7 @@ const EditPaybookScreen = () => {
                   style={{ marginRight: wp(2), opacity: paymentType === "INSTALLMENT" ? 0.5 : 1 }}
                 />
                 <CustomText style={[styles.dateText, { color: maturityDate ? colors.text : colors.icon, opacity: paymentType === "INSTALLMENT" ? 0.5 : 1 }]}>
-                  {maturityDate ? formatDate(maturityDate) : "Chọn ngày"}
+                  {maturityDate ? formatDate(maturityDate) : t("paybook.select_date")}
                 </CustomText>
               </TouchableOpacity>
             </View>
@@ -713,11 +726,11 @@ const EditPaybookScreen = () => {
           {/* ══════════════════════════════════════════════════════════════
               8. GHI CHÚ
           ══════════════════════════════════════════════════════════════ */}
-          <SectionHeader title="Ghi chú" />
+          <SectionHeader title={t("paybook.note")} />
           <View style={styles.section}>
             <TextInput
               style={[styles.noteInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-              placeholder="Thêm ghi chú (tùy chọn)"
+              placeholder={t("paybook.note_placeholder")}
               placeholderTextColor={colors.icon}
               multiline
               numberOfLines={3}
@@ -757,7 +770,7 @@ const EditPaybookScreen = () => {
         {Platform.OS === "ios" && (showStartPicker || showMaturityPicker) && (
           <View style={[styles.pickerToolbar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
             <TouchableOpacity onPress={() => { setShowStartPicker(false); setShowMaturityPicker(false); }} style={styles.pickerButton}>
-              <CustomText style={[styles.pickerButtonText, { color: colors.tint }]}>Xong</CustomText>
+              <CustomText style={[styles.pickerButtonText, { color: colors.tint }]}>{t("common.confirm")}</CustomText>
             </TouchableOpacity>
           </View>
         )}
@@ -770,7 +783,7 @@ const EditPaybookScreen = () => {
             disabled={loading}
             activeOpacity={0.7}
           >
-            <CustomText style={[styles.cancelText, { color: colors.tint }]}>Huỷ</CustomText>
+            <CustomText style={[styles.cancelText, { color: colors.tint }]}>{t("common.cancel")}</CustomText>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -787,7 +800,7 @@ const EditPaybookScreen = () => {
             ) : (
               <>
                 <AppIcon name="floppy-disk" size={normalize(15)} color="#fff" style={{ marginRight: wp(1.5) }} />
-                <CustomText style={styles.createText}>Lưu thay đổi</CustomText>
+                <CustomText style={styles.createText}>{t("common.save")}</CustomText>
               </>
             )}
           </TouchableOpacity>

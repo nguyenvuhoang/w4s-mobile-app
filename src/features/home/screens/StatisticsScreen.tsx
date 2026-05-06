@@ -1,4 +1,5 @@
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import SectionHeader from "@/components/base/SectionHeader";
 import LineChartCard from "@/components/chart/LineChartCard";
@@ -14,7 +15,6 @@ import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { hp, normalize, wp } from "@/utils/layout";
-import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -260,7 +260,7 @@ const StatisticsScreen = () => {
       borderWidth: 1,
       borderColor: colors.border
     }}>
-      <FontAwesome6 name="circle-exclamation" size={normalize(24)} color="#FF6B6B" style={{ marginBottom: normalize(10) }} />
+      <AppIcon name="circle-exclamation" size={normalize(24)} color="#FF6B6B" style={{ marginBottom: normalize(10) }} />
       <CustomText size={14} style={{ color: colors.icon, textAlign: 'center', marginBottom: normalize(12) }}>
         {error}
       </CustomText>
@@ -307,14 +307,15 @@ const StatisticsScreen = () => {
                 end={{ x: 1, y: 1 }}
                 style={styles.innerGradientCircle}
               >
-                <FontAwesome6 name="dollar-sign" size={normalize(12)} color="#fff" />
+                <AppIcon name="dollar-sign" size={normalize(12)} color="#fff" />
               </LinearGradient>
             </View>
             <CustomText type="medium" size={14} style={{ color: "#fff", marginLeft: normalize(10), flex: 1 }}>
               {t("report.total_net_balance")}
             </CustomText>
             <TouchableOpacity onPress={() => setBalanceVisible((v) => !v)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons
+              <AppIcon
+                type="Ionicons"
                 name={balanceVisible ? "eye-outline" : "eye-off-outline"}
                 size={normalize(20)}
                 color="rgba(255,255,255,0.85)"
@@ -371,7 +372,7 @@ const StatisticsScreen = () => {
                   {/* Top row: icon + type label + currency/name */}
                   <View style={styles.walletStackRow}>
                     <View style={styles.walletStackIconWrap}>
-                      <FontAwesome6
+                      <AppIcon
                         name={(w.icon as any) || "wallet"}
                         size={normalize(16)}
                         color="#fff"
@@ -568,7 +569,7 @@ const StatisticsScreen = () => {
                   }}
                 >
                   <View style={[styles.frequentIcon, { backgroundColor: iconColor + "1A" }]}>
-                    <FontAwesome6
+                    <AppIcon
                       name={(item.icon || "receipt") as any}
                       size={normalize(20)}
                       color={iconColor}

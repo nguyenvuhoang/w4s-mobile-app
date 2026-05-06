@@ -1,7 +1,9 @@
 import AppHeader from '@/components/base/AppHeader';
+import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useWalletIncomeExpenseSummary } from '@/features/home/hooks/Usefinancesummary';
+import { useInfiniteTransactions } from '@/features/home/hooks/useInfiniteTransactions';
 import { useTransaction } from '@/features/transaction/hooks/useTransaction';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { useCategory } from '@/hooks/useCategory';
@@ -13,7 +15,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
+  FlatList,
   Modal,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -139,14 +143,37 @@ const GroupDetailScreen = () => {
   const { categories: allCategories } = useCategory();
 
   // ─── Toàn bộ data màn hình nằm trong 1 state ───
-  const [screenData, setScreenData] = useState<ScreenData>({
+  const [screenData, setScreenData] = useState<Omit<ScreenData, 'transactions'>>({
     summary: { total: 0, changePercent: 0, savingAmount: 0 },
-    transactions: [],
     chartBars: [],
   });
-  const [loading, setLoading] = useState(false);
+  const [loadingSummary, setLoadingSummary] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
+
+  const fromToDate = useMemo(() => {
+    if (!selectedPeriod) return { fromDate: '', toDate: '' };
+    const anchorDt = new Date(selectedPeriod.date);
+    const year = anchorDt.getFullYear();
+    const month = anchorDt.getMonth();
+    const fromDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const toDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    return { fromDate, toDate };
+  }, [selectedPeriod]);
+
+  const {
+    transactions,
+    loading: loadingTransactions,
+    loadingMore,
+    hasMore,
+    refresh,
+    loadMore,
+  } = useInfiniteTransactions(
+    20,
+    selectedWallet?.walletId,
+    undefined,
+  );
 
   const scrollRef = useRef<ScrollView>(null);
 
@@ -188,44 +215,24 @@ const GroupDetailScreen = () => {
     if (!selectedWallet || !selectedPeriod) return;
 
     abortRef.current = false;
-    setLoading(true);
+    setLoadingSummary(true);
 
     try {
       const walletId = selectedWallet.walletId;
       const anchorDate = selectedPeriod.date;
-
-      // ── Tính date range cho transactions ──
-      const anchorDt = new Date(anchorDate);
-      const year = anchorDt.getFullYear();
-      const month = anchorDt.getMonth();
-      const fromDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-      const lastDay = new Date(year, month + 1, 0).getDate();
-      const toDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-
       const chartMonths = buildChartMonths(anchorDate, t);
-
-
 
       const [
         currentSummaryRes,
-        txnRes,
         chartMonth0Res,
         chartMonth1Res,
       ] = await Promise.all([
         fetchWalletSummary({ wallet_id: walletId, anchor_date: anchorDate, period_type: 'M' }),
-        advancedSearchTransactions({
-          wallet_id: walletId,
-          from_transaction_date: fromDate,
-          to_transaction_date: toDate,
-          page_index: 1,
-          page_size: 100,
-        }),
         fetchWalletSummary({
           wallet_id: walletId,
           anchor_date: chartMonths[0].date,
           period_type: 'M',
         }),
-
         fetchWalletSummary({
           wallet_id: walletId,
           anchor_date: chartMonths[1].date,
@@ -247,17 +254,6 @@ const GroupDetailScreen = () => {
       const expenseTotal: number = currentSummaryRes?.expense?.total ?? 0;
       const savingAmount: number = incomeTotal > expenseTotal ? incomeTotal - expenseTotal : 0;
 
-      // ── Xử lý transactions ──
-      const txnList: any[] = Array.isArray(txnRes)
-        ? txnRes
-        : (txnRes?.items ?? txnRes?.data ?? []);
-      const filteredTxns = txnList.filter((item: any) => {
-        const type = String(item.type || item.transaction_type || '').toUpperCase();
-        return isExpense
-          ? type === '02' || type === 'EXPENSE'
-          : type === '01' || type === 'INCOME';
-      });
-
       // ── Xử lý chart bars ──
       const extractAmount = (res: any) =>
         isExpense ? (res?.expense?.total ?? 0) : (res?.income?.total ?? 0);
@@ -271,7 +267,6 @@ const GroupDetailScreen = () => {
       // ── 1 lần setState duy nhất ──
       setScreenData({
         summary: { total: currentTotal, changePercent, savingAmount },
-        transactions: filteredTxns,
         chartBars,
       });
     } catch (err) {
@@ -280,10 +275,10 @@ const GroupDetailScreen = () => {
       }
     } finally {
       if (!abortRef.current) {
-        setLoading(false);
+        setLoadingSummary(false);
       }
     }
-  }, [selectedWallet, selectedPeriod, activeGroup, fetchWalletSummary, advancedSearchTransactions, t]);
+  }, [selectedWallet, selectedPeriod, activeGroup, fetchWalletSummary, t]);
 
   // Trigger load khi dependency thay đổi
   useEffect(() => {
@@ -295,13 +290,77 @@ const GroupDetailScreen = () => {
   }, [loadData]);
 
   /* ─── Derived values ─── */
-  const { summary, transactions, chartBars } = screenData;
+  const { summary, chartBars } = screenData;
   const groupLabel = activeGroup === 'EXPENSE' ? t('report.expense_items') : t('report.income_items');
 
   const formatCurrency = useCallback(
     (v: number) => v.toLocaleString('vi-VN') + ' ' + (selectedWallet?.currency || defaultCurrency.symbol),
     [selectedWallet, defaultCurrency.symbol],
   );
+
+  // Group transactions by date (copy logic from TransactionHistoryScreen)
+  const formatDateLabel = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+
+    if (date >= today) {
+      return t('home.today');
+    } else if (date >= yesterday) {
+      return t('home.yesterday');
+    } else {
+      return date.toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US', {
+        weekday: 'long',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    }
+  };
+
+  const groupedTransactions = useMemo(() => {
+    const groups: { [key: string]: any[] } = {};
+
+    const filtered = transactions.filter((transaction) => {
+      // Filter by Group Type (INCOME/EXPENSE)
+      const typeMatch = transaction.type === activeGroup;
+
+      // Filter by Date Period
+      const txDate = new Date(transaction.occurred_at);
+      const from = new Date(fromToDate.fromDate);
+      const to = new Date(fromToDate.toDate);
+      // Set time to start/end of day for accurate comparison
+      from.setHours(0, 0, 0, 0);
+      to.setHours(23, 59, 59, 999);
+      const dateMatch = txDate >= from && txDate <= to;
+
+      return typeMatch && dateMatch;
+    });
+
+    filtered.forEach((transaction) => {
+      const date = new Date(transaction.occurred_at);
+      const dateKey = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      ).toISOString();
+
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(transaction);
+    });
+
+    const sortedKeys = Object.keys(groups).sort(
+      (a, b) => new Date(b).getTime() - new Date(a).getTime()
+    );
+
+    return sortedKeys.map((key) => ({
+      title: formatDateLabel(key),
+      data: groups[key],
+    }));
+  }, [transactions, i18n.language, t, activeGroup, fromToDate]);
 
   const barData = useMemo(() => {
     const activeColor = activeGroup === 'EXPENSE' ? '#FF6B6B' : '#4CAF50';
@@ -319,177 +378,209 @@ const GroupDetailScreen = () => {
     }));
   }, [chartBars, activeGroup, colors.icon]);
 
+  const renderHeader = () => (
+    <View>
+      {/* ===== FILTERS ===== */}
+      <View style={styles.filterRow}>
+        <TouchableOpacity
+          style={[styles.filterChip, { backgroundColor: colors.card }]}
+          onPress={() => setShowGroupModal(true)}
+        >
+          <CustomText type="medium" size={14}>{groupLabel}</CustomText>
+          <FontAwesome6 name="chevron-down" size={normalize(12)} color={colors.icon} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.filterChip, { backgroundColor: colors.card }]}
+          onPress={() => setShowWalletModal(true)}
+        >
+          <AppIcon
+            name={selectedWallet?.icon || 'wallet'}
+            size={normalize(14)}
+            color={selectedWallet?.color || colors.tint}
+          />
+          <CustomText type="medium" size={14} numberOfLines={1} style={{ flex: 1, marginHorizontal: normalize(6) }}>
+            {selectedWallet?.name || t('report.select_wallet')}
+          </CustomText>
+          <FontAwesome6 name="chevron-down" size={normalize(12)} color={colors.icon} />
+        </TouchableOpacity>
+      </View>
+
+      {/* ===== PERIOD TABS ===== */}
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.periodScroll}
+        contentContainerStyle={styles.periodRow}
+      >
+        {timePeriods.map(p => (
+          <TouchableOpacity
+            key={p.id}
+            style={[
+              styles.periodTab,
+              { backgroundColor: colors.card },
+              selectedPeriod.id === p.id && [styles.periodTabActive, { backgroundColor: colors.tint }],
+            ]}
+            onPress={() => setSelectedPeriod(p)}
+          >
+            <CustomText
+              type="medium"
+              size={12}
+              style={{ color: selectedPeriod.id === p.id ? '#fff' : colors.text }}
+            >
+              {p.label}
+            </CustomText>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* ===== LOADING OVERLAY ===== */}
+      {(loadingSummary || (loadingTransactions && transactions.length === 0)) && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator color={colors.tint} />
+        </View>
+      )}
+
+      {/* ===== SUMMARY SECTION ===== */}
+      <View style={styles.sectionTitleContainer}>
+        <CustomText type="bold" size={18}>
+          {activeGroup === 'EXPENSE' ? t('budget.detail.spending_trend') : t('report.income_items')}
+        </CustomText>
+      </View>
+
+      <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
+        <View style={styles.summaryHeader}>
+          <View style={[styles.summaryIcon, { backgroundColor: activeGroup === 'EXPENSE' ? '#FFE4E1' : '#E8F5E9' }]}>
+            <FontAwesome6
+              name={activeGroup === 'EXPENSE' ? 'arrow-trend-down' : 'arrow-trend-up'}
+              size={normalize(18)}
+              color={activeGroup === 'EXPENSE' ? '#F44336' : '#4CAF50'}
+            />
+          </View>
+          <CustomText size={15}>
+            {activeGroup === 'EXPENSE' ? t('report.expense') : t('report.income')}
+          </CustomText>
+        </View>
+
+        <View style={styles.summaryContent}>
+          <CustomText type="bold" size={28}>
+            {formatCurrency(summary.total)}
+          </CustomText>
+          <View style={styles.trendRow}>
+            <FontAwesome6
+              name={summary.changePercent >= 0 ? 'arrow-up' : 'arrow-down'}
+              size={normalize(10)}
+              color={summary.changePercent >= 0 ? '#F44336' : '#4CAF50'}
+            />
+            <CustomText
+              size={12}
+              style={{ color: summary.changePercent >= 0 ? '#F44336' : '#4CAF50', marginLeft: normalize(4) }}
+            >
+              {Math.abs(summary.changePercent)}% {t('report.previous_month')}
+            </CustomText>
+
+            {activeGroup === 'EXPENSE' && summary.savingAmount > 0 && (
+              <CustomText size={12} style={{ color: colors.icon, marginLeft: normalize(12) }}>
+                {t('report.saving')}: {formatCurrency(summary.savingAmount)}
+              </CustomText>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {/* ===== CHART SECTION ===== */}
+      <View style={[styles.chartContainer, { backgroundColor: colors.card }]}>
+        {barData.length > 0 && (
+          <BarChart
+            data={barData}
+            barWidth={normalize(45)}
+            noOfSections={3}
+            barBorderRadius={normalize(25)}
+            spacing={normalize(40)}
+            initialSpacing={normalize(25)}
+            frontColor="lightgray"
+            yAxisThickness={0}
+            xAxisThickness={0}
+            hideRules
+            yAxisLabelPrefix=""
+            yAxisLabelSuffix=""
+            formatYLabel={(v) => {
+              const num = Number(v);
+              if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(0)}tr`;
+              if (num >= 1_000) return `${(num / 1_000).toFixed(0)}k`;
+              return v;
+            }}
+            xAxisLabelTextStyle={{ color: colors.text, fontSize: normalize(10) }}
+            yAxisTextStyle={{ color: colors.text, fontSize: normalize(10) }}
+            height={normalize(160)}
+          />
+        )}
+      </View>
+
+      {/* ===== TRANSACTION HISTORY TITLE ===== */}
+      <View style={styles.sectionTitleContainer}>
+        <CustomText type="bold" size={18}>{t('paybook.transaction_history')}</CustomText>
+      </View>
+    </View>
+  );
+
+  const renderFooter = () => {
+    if (!loadingMore) return <View style={{ height: hp(5) }} />;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color={colors.tint} />
+      </View>
+    );
+  };
+
   /* ─── Render ─── */
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <AppHeader title={t('home.category_detail_title')} showBackButton />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-
-        {/* ===== FILTERS ===== */}
-        <View style={styles.filterRow}>
-          <TouchableOpacity
-            style={[styles.filterChip, { backgroundColor: colors.card }]}
-            onPress={() => setShowGroupModal(true)}
-          >
-            <CustomText type="medium" size={14}>{groupLabel}</CustomText>
-            <FontAwesome6 name="chevron-down" size={normalize(12)} color={colors.icon} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterChip, { backgroundColor: colors.card }]}
-            onPress={() => setShowWalletModal(true)}
-          >
-            <FontAwesome6
-              name={(selectedWallet?.icon as any) || 'wallet'}
-              size={normalize(14)}
-              color={selectedWallet?.color || colors.tint}
-            />
-            <CustomText type="medium" size={14} numberOfLines={1} style={{ flex: 1, marginHorizontal: normalize(6) }}>
-              {selectedWallet?.name || t('report.select_wallet')}
-            </CustomText>
-            <FontAwesome6 name="chevron-down" size={normalize(12)} color={colors.icon} />
-          </TouchableOpacity>
-        </View>
-
-        {/* ===== PERIOD TABS ===== */}
-        <ScrollView
-          ref={scrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.periodScroll}
-          contentContainerStyle={styles.periodRow}
-        >
-          {timePeriods.map(p => (
-            <TouchableOpacity
-              key={p.id}
-              style={[
-                styles.periodTab,
-                { backgroundColor: colors.card },
-                selectedPeriod.id === p.id && [styles.periodTabActive, { backgroundColor: colors.tint }],
-              ]}
-              onPress={() => setSelectedPeriod(p)}
-            >
-              <CustomText
-                type="medium"
-                size={12}
-                style={{ color: selectedPeriod.id === p.id ? '#fff' : colors.text }}
-              >
-                {p.label}
+      <FlatList
+        data={groupedTransactions}
+        keyExtractor={(item, index) => `group-${index}`}
+        ListHeaderComponent={renderHeader}
+        ListFooterComponent={renderFooter}
+        renderItem={({ item: group }) => (
+          <View style={styles.transactionList}>
+            <View style={styles.sectionHeader}>
+              <CustomText style={[styles.sectionTitle, { color: colors.text }]}>
+                {group.title}
               </CustomText>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* ===== LOADING OVERLAY ===== */}
-        {loading && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator color={colors.tint} />
-          </View>
-        )}
-
-        {/* ===== SUMMARY SECTION ===== */}
-        <View style={styles.sectionTitleContainer}>
-          <CustomText type="bold" size={18}>
-            {activeGroup === 'EXPENSE' ? t('budget.detail.spending_trend') : t('report.income_items')}
-          </CustomText>
-        </View>
-
-        <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
-          <View style={styles.summaryHeader}>
-            <View style={[styles.summaryIcon, { backgroundColor: activeGroup === 'EXPENSE' ? '#FFE4E1' : '#E8F5E9' }]}>
-              <FontAwesome6
-                name={activeGroup === 'EXPENSE' ? 'arrow-trend-down' : 'arrow-trend-up'}
-                size={normalize(18)}
-                color={activeGroup === 'EXPENSE' ? '#F44336' : '#4CAF50'}
-              />
             </View>
-            <CustomText size={15}>
-              {activeGroup === 'EXPENSE' ? t('report.expense') : t('report.income')}
-            </CustomText>
-          </View>
-
-          <View style={styles.summaryContent}>
-            <CustomText type="bold" size={28}>
-              {formatCurrency(summary.total)}
-            </CustomText>
-            <View style={styles.trendRow}>
-              <FontAwesome6
-                name={summary.changePercent >= 0 ? 'arrow-up' : 'arrow-down'}
-                size={normalize(10)}
-                color={summary.changePercent >= 0 ? '#F44336' : '#4CAF50'}
-              />
-              <CustomText
-                size={12}
-                style={{ color: summary.changePercent >= 0 ? '#F44336' : '#4CAF50', marginLeft: normalize(4) }}
-              >
-                {Math.abs(summary.changePercent)}% {t('report.previous_month')}
-              </CustomText>
-
-              {activeGroup === 'EXPENSE' && summary.savingAmount > 0 && (
-                <CustomText size={12} style={{ color: colors.icon, marginLeft: normalize(12) }}>
-                  {t('report.saving')}: {formatCurrency(summary.savingAmount)}
-                </CustomText>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* ===== CHART SECTION ===== */}
-        <View style={[styles.chartContainer, { backgroundColor: colors.card }]}>
-          {barData.length > 0 && (
-            <BarChart
-              data={barData}
-              barWidth={normalize(45)}
-              noOfSections={3}
-              barBorderRadius={normalize(25)}
-              spacing={normalize(40)}
-              initialSpacing={normalize(25)}
-              frontColor="lightgray"
-              yAxisThickness={0}
-              xAxisThickness={0}
-              hideRules
-              yAxisLabelPrefix=""
-              yAxisLabelSuffix=""
-              formatYLabel={(v) => {
-                const num = Number(v);
-                if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(0)}tr`;
-                if (num >= 1_000) return `${(num / 1_000).toFixed(0)}k`;
-                return v;
-              }}
-              xAxisLabelTextStyle={{ color: colors.text, fontSize: normalize(10) }}
-              yAxisTextStyle={{ color: colors.text, fontSize: normalize(10) }}
-              height={normalize(160)}
-            />
-          )}
-        </View>
-
-        {/* ===== TRANSACTION HISTORY ===== */}
-        <View style={styles.sectionTitleContainer}>
-          <CustomText type="bold" size={18}>{t('paybook.transaction_history')}</CustomText>
-        </View>
-
-        <View style={styles.transactionList}>
-          {!loading && transactions.length === 0 ? (
-            <View style={styles.emptyState}>
-              <CustomText style={{ color: colors.icon }}>{t('home.no_transactions')}</CustomText>
-            </View>
-          ) : (
-            transactions.map((item, index) => (
+            {group.data.map((txn: any) => (
               <TransactionItem
-                key={item.transaction_id || index}
-                item={item}
+                key={txn.transaction_id}
+                item={txn}
                 colors={colors}
                 lang={i18n.language}
                 allCategories={allCategories}
                 formatCurrency={formatCurrency}
               />
-            ))
-          )}
-        </View>
-
-        <View style={{ height: hp(5) }} />
-      </ScrollView>
+            ))}
+          </View>
+        )}
+        onEndReached={() => {
+          if (hasMore && !loadingMore && !loadingTransactions) {
+            loadMore();
+          }
+        }}
+        onEndReachedThreshold={0.3}
+        refreshControl={
+          <RefreshControl
+            refreshing={loadingSummary || (loadingTransactions && transactions.length === 0)}
+            onRefresh={() => {
+              loadData();
+              refresh();
+            }}
+            tintColor={colors.tint}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      />
 
       {/* ===== GROUP MODAL ===== */}
       <BottomSheetModal
@@ -541,8 +632,8 @@ const GroupDetailScreen = () => {
             onPress={() => { setSelectedWallet(w); setShowWalletModal(false); }}
           >
             <View style={[styles.modalItemIcon, { backgroundColor: (w.color || colors.tint) + '15' }]}>
-              <FontAwesome6
-                name={(w.icon as any) || 'wallet'}
+              <AppIcon
+                name={w.icon || 'wallet'}
                 size={normalize(16)}
                 color={w.color || colors.tint}
               />
@@ -592,58 +683,70 @@ const BottomSheetModal = ({
 );
 
 const TransactionItem = ({ item, colors, lang, allCategories, formatCurrency }: any) => {
-  const catId = item.category_id || item.cat_id;
-  const category = allCategories.find((c: any) => Number(c.id) === Number(catId));
-  const amount = Number(item.amount || 0);
-  const isExpense =
-    amount < 0 || String(item.type).includes('02') || String(item.type).includes('EXPENSE');
+  const isExpense = item.type === 'EXPENSE';
+  const iconName = item.icon || 'receipt';
+  const iconColor = item.color || colors.tint;
 
   return (
     <TouchableOpacity
       style={[styles.transactionCard, { backgroundColor: colors.card }]}
-      onPress={() =>
+      onPress={() => {
+        const detailData = {
+          transactionid: item.transaction_id,
+          transactiondate: item.occurred_at,
+          transactionname: item.title,
+          transactioncode: item.type === "INCOME" ? "01" : "02",
+          nu_m01: item.amount,
+          nu_m02: 0,
+          ccyid: item.currency || "VND",
+          cha_r01: "",
+          cha_r02: "",
+          sourcetranref: "",
+          sourceid: "",
+          trandesc: item.title,
+          status: "Completed",
+          icon: iconName,
+          color: iconColor,
+        };
         router.push({
           pathname: '/(protected)/transaction-detail',
-          params: { transaction: JSON.stringify(item) },
-        })
-      }
+          params: { transaction: JSON.stringify(detailData) },
+        });
+      }}
     >
-      <View style={[styles.iconBox, { backgroundColor: (category?.color || colors.tint) + '20' }]}>
-        <FontAwesome6
-          name={(category?.icon as any) || 'receipt'}
+      <View style={[styles.iconBox, { backgroundColor: iconColor + '20' }]}>
+        <AppIcon
+          name={iconName}
           size={normalize(18)}
-          color={category?.color || colors.tint}
+          color={iconColor}
         />
       </View>
       <View style={{ flex: 1 }}>
         <CustomText type="bold" size={15} numberOfLines={1}>
-          {item.transaction_description ||
-            parseCategoryName(category?.category_name || item.name || '', lang)}
+          {item.title}
         </CustomText>
         <CustomText size={12} style={{ color: colors.icon }}>
-          {category ? parseCategoryName(category.category_name, lang) : ''}
+          {item.category_name}
         </CustomText>
-        <CustomText size={11} style={{ color: colors.icon, marginTop: 2 }}>
-          {item.transaction_description
-            ? category
-              ? parseCategoryName(category.category_name, lang) + ' tại ' + item.location
-              : item.location
-            : ''}
-        </CustomText>
+        {item.description && (
+          <CustomText size={11} style={{ color: colors.icon, marginTop: 2 }}>
+            {item.description}
+          </CustomText>
+        )}
       </View>
       <View style={{ alignItems: 'flex-end' }}>
         <CustomText type="bold" size={15} style={{ color: isExpense ? '#F44336' : '#4CAF50' }}>
-          {isExpense ? '-' : '+'}{formatCurrency(Math.abs(amount))}
+          {isExpense ? '-' : '+'}{formatCurrency(Math.abs(item.amount))}
         </CustomText>
         <CustomText size={11} style={{ color: colors.icon }}>
-          {new Date(item.recorded_at || item.transaction_date).toLocaleDateString('vi-VN', {
+          {new Date(item.occurred_at).toLocaleDateString('vi-VN', {
             day: '2-digit',
             month: 'short',
             year: 'numeric',
           })}
         </CustomText>
         <CustomText size={11} style={{ color: colors.icon }}>
-          {new Date(item.recorded_at || item.transaction_date).toLocaleTimeString('vi-VN', {
+          {new Date(item.occurred_at).toLocaleTimeString('vi-VN', {
             hour: '2-digit',
             minute: '2-digit',
           })}
@@ -774,6 +877,19 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     paddingVertical: normalize(40),
+  },
+  sectionHeader: {
+    paddingVertical: normalize(12),
+    marginTop: normalize(4),
+  },
+  sectionTitle: {
+    fontSize: normalize(15),
+    fontWeight: "600",
+    opacity: 0.7,
+  },
+  footerLoader: {
+    paddingVertical: normalize(20),
+    alignItems: "center",
   },
 
   modalOverlay: {

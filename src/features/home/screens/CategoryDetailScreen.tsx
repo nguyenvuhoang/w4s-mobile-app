@@ -1,4 +1,5 @@
 import AppHeader from '@/components/base/AppHeader';
+import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { hp, normalize, wp } from '@/utils/layout';
@@ -293,7 +294,7 @@ const CategoryDetailScreen: React.FC = () => {
                     {/* Category Info Row */}
                     <View style={styles.categoryInfoRow}>
                         <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
-                            <FontAwesome6
+                            <AppIcon
                                 name={category.icon || 'tag'}
                                 size={normalize(22)}
                                 color="#fff"
@@ -388,7 +389,7 @@ const CategoryDetailScreen: React.FC = () => {
                                             { backgroundColor: transaction.iconColor + '1A' },
                                         ]}
                                     >
-                                        <FontAwesome6
+                                        <AppIcon
                                             name={transaction.icon}
                                             size={normalize(20)}
                                             color={transaction.iconColor}

@@ -1,4 +1,5 @@
 import AppHeader from '@/components/base/AppHeader';
+import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
 import SectionHeader from '@/components/base/SectionHeader';
 import PieChartWithLabels from '@/components/chart/PieChartCard';
@@ -255,8 +256,8 @@ const ReportScreen = () => {
           activeOpacity={0.7}
         >
           <View style={styles.walletSelector}>
-            <FontAwesome6
-              name={selectedWallet?.icon ? selectedWallet.icon as any : 'wallet'}
+            <AppIcon
+              name={selectedWallet?.icon || 'wallet'}
               size={normalize(16)}
               color={selectedWallet?.color || colors.tint}
             />
