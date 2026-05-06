@@ -154,7 +154,7 @@ const AppInfoScreen = () => {
                     </CustomText>
                     <View style={[styles.badge, { backgroundColor: colors.tint + '15' }]}>
                         <CustomText style={[styles.badgeText, { color: colors.tint }]}>
-                            {t('settings.version')} {appVersion}
+                            {t('settings.version')} {appVersion} ({updateId})
                         </CustomText>
                     </View>
                 </Animated.View>
@@ -218,9 +218,6 @@ const AppInfoScreen = () => {
                         <Ionicons name="shield-checkmark-outline" size={normalize(24)} color={colors.icon} style={{ marginBottom: 10 }} />
                         <CustomText style={[styles.copyright, { color: colors.icon }]}>
                             © {new Date().getFullYear()} W4S. All rights reserved.
-                        </CustomText>
-                        <CustomText style={[styles.otaText, { color: colors.icon }]}>
-                            OTA ID: {updateId}
                         </CustomText>
                     </View>
                 </Animated.View>
