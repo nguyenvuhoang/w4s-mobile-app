@@ -88,7 +88,10 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 
   const displayBudgets = useMemo(() => {
     return budgetList.map(item => {
-      const cat = categories.find(c => c.id === item.category_id);
+      let cat = categories.find(c => c.id === item.category_id);
+      if (!cat && item.category_code) {
+        cat = categories.find(c => c.category_code === item.category_code);
+      }
 
       let todayProgress = 0;
       if (item.start_date && item.end_date) {
@@ -145,6 +148,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         period_type: item.period_type,
         source_tracker: item.source_tracker,
         budget_id: item.budget_id || item.wallet_budget_id || item.id,
+        wallet_contract_id: item.wallet_contract_id,
       };
     });
   }, [budgetList, categories, colors.tint, t, i18n.language, converterReady, defaultCurrency.currencyId, convertBetween]);

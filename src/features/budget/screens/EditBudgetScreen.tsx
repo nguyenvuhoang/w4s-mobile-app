@@ -56,6 +56,7 @@ interface AutofillData {
     note?: string;
     includeInReport?: boolean;
     autoRepeat?: boolean;
+    wallet_contract_id?: number | string;
 }
 
 const CATEGORY_STORAGE_KEY = "temp_selected_category";
@@ -199,6 +200,7 @@ const EditBudgetScreen = () => {
             include_in_report: includeInReport,
             is_auto_repeat: autoRepeat,
             currency_code: inputCurrency.currencyId,
+            wallet_contract_id: initialAutofillData.wallet_contract_id,
         };
         const response = await updateBudget(payload as any);
         if (response.isSuccess()) { showNotification(t("budget.success_update", { defaultValue: "Cập nhật ngân sách thành công!" }), "success"); router.back(); }

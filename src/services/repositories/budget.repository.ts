@@ -65,6 +65,7 @@ export interface UpdateBudgetPayload {
   include_in_report?: boolean;
   is_auto_repeat?: boolean;
   currency_code?: string;
+  wallet_contract_id?: number | string;
 }
 
 export interface UpdateBudgetParams {
@@ -218,6 +219,7 @@ export const budgetRepository = {
           is_auto_repeat: data.is_auto_repeat,
           currency_code: data.currency_code,
           category_code: data.category_code,
+          wallet_contract_id: data.wallet_contract_id,
         },
         false
       );

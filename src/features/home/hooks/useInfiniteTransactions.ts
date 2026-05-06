@@ -27,6 +27,9 @@ export const useInfiniteTransactions = (
     pageSize: number = 10,
     walletId?: number,
     searchQuery?: string,
+    transactionCode?: string,
+    fromDate?: string,
+    toDate?: string,
 ): UseInfiniteTransactionsReturn => {
     const [transactions, setTransactions] = useState<RecentTransaction[]>([]);
     const [totalCount, setTotalCount] = useState(0);
@@ -56,10 +59,13 @@ export const useInfiniteTransactions = (
                     page_index: pageIndex + 1,
                     page_size: pageSize,
                 });
-            } else if (walletId) {
-                // If walletId is provided, use advanced search
+            } else if (walletId || transactionCode || fromDate || toDate) {
+                // If walletId or transactionCode is provided, use advanced search
                 response = await transactionRepository.advancedSearchTransactions({
                     wallet_id: walletId,
+                    transaction_code: transactionCode,
+                    from_transaction_date: fromDate,
+                    to_transaction_date: toDate,
                     page_index: pageIndex + 1,
                     page_size: pageSize,
                 });
@@ -75,7 +81,7 @@ export const useInfiniteTransactions = (
                 let transactionList: RecentTransaction[] = [];
                 let total = 0;
 
-                if (walletId || searchQuery) {
+                if (walletId || searchQuery || transactionCode || fromDate || toDate) {
                     // Map advanced search response structure
                     const anyData = response.data as any;
                     if (Array.isArray(anyData)) {
@@ -153,7 +159,7 @@ export const useInfiniteTransactions = (
             setLoading(false);
             setLoadingMore(false);
         }
-    }, [pageSize, walletId, searchQuery]);
+    }, [pageSize, walletId, searchQuery, transactionCode, fromDate, toDate]);
 
     const refresh = useCallback(async () => {
         await fetchTransactions(0, false);

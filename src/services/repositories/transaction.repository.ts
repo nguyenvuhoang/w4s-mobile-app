@@ -80,6 +80,7 @@ export interface AdvancedSearchTransactionPayload {
   description?: string;
   transaction_description?: string;
   contract_number?: string;
+  transaction_code?: string;
 }
 
 export interface RefundTransactionPayload {
@@ -280,6 +281,7 @@ export const transactionRepository = {
           page_index: data.page_index || 1,
           page_size: data.page_size || 10,
           contract_number: appInfo?.contract_number || "",
+          type: data.transaction_code || "",
         },
         false,
       );

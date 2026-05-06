@@ -173,6 +173,9 @@ const GroupDetailScreen = () => {
     20,
     selectedWallet?.walletId,
     undefined,
+    activeGroup === 'EXPENSE' ? '02' : '01',
+    fromToDate.fromDate,
+    fromToDate.toDate
   );
 
   const scrollRef = useRef<ScrollView>(null);
@@ -322,23 +325,7 @@ const GroupDetailScreen = () => {
   const groupedTransactions = useMemo(() => {
     const groups: { [key: string]: any[] } = {};
 
-    const filtered = transactions.filter((transaction) => {
-      // Filter by Group Type (INCOME/EXPENSE)
-      const typeMatch = transaction.type === activeGroup;
-
-      // Filter by Date Period
-      const txDate = new Date(transaction.occurred_at);
-      const from = new Date(fromToDate.fromDate);
-      const to = new Date(fromToDate.toDate);
-      // Set time to start/end of day for accurate comparison
-      from.setHours(0, 0, 0, 0);
-      to.setHours(23, 59, 59, 999);
-      const dateMatch = txDate >= from && txDate <= to;
-
-      return typeMatch && dateMatch;
-    });
-
-    filtered.forEach((transaction) => {
+    transactions.forEach((transaction) => {
       const date = new Date(transaction.occurred_at);
       const dateKey = new Date(
         date.getFullYear(),
@@ -360,7 +347,7 @@ const GroupDetailScreen = () => {
       title: formatDateLabel(key),
       data: groups[key],
     }));
-  }, [transactions, i18n.language, t, activeGroup, fromToDate]);
+  }, [transactions, i18n.language, t]);
 
   const barData = useMemo(() => {
     const activeColor = activeGroup === 'EXPENSE' ? '#FF6B6B' : '#4CAF50';

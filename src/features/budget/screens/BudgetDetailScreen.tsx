@@ -469,6 +469,7 @@ const BudgetDetailScreen = () => {
           note: budget.note,
           includeInReport: budget.include_in_report,
           autoRepeat: budget.is_auto_repeat,
+          wallet_contract_id: budget.wallet_contract_id,
         }),
         isEdit: 'true',
       },
