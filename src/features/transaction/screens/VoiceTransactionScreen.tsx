@@ -1,3 +1,4 @@
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import { apiClient } from "@/core/api/ApiClient";
 import { useAppTheme } from "@/core/theme/ThemeContext";
@@ -292,7 +293,7 @@ const VoiceTransactionScreen = () => {
                                     handleSendToServer(clean);
                                 }}
                             >
-                                <FontAwesome6 name="lightbulb" size={normalize(12)} color={colors.tint} solid />
+                                <AppIcon name="lightbulb" size={normalize(12)} color={colors.tint} />
                                 <CustomText style={[styles.exampleText, { color: colors.text }]}>{ex}</CustomText>
                             </TouchableOpacity>
                         ))}

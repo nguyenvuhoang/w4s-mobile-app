@@ -1,4 +1,5 @@
 import AppHeader from '@/components/base/AppHeader';
+import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
 import { useNotification } from '@/contexts/NotificationContext';
 import { Fonts } from '@/core/theme/font';
@@ -244,7 +245,7 @@ interface InfoRowProps {
 const InfoRow: React.FC<InfoRowProps> = ({ icon, label, value, iconBg, iconColor, textColor, subColor }) => (
   <View style={styles.infoRow}>
     <View style={[styles.infoIconBox, { backgroundColor: iconBg }]}>
-      <FontAwesome6 name={icon as any} size={normalize(14)} color={iconColor} />
+      <AppIcon name={icon as any} size={normalize(14)} color={iconColor} />
     </View>
     <View style={{ flex: 1 }}>
       <CustomText style={[styles.infoLabel, { color: subColor }]}>{label}</CustomText>
@@ -267,7 +268,7 @@ interface SummaryBlockProps {
 const SummaryBlock: React.FC<SummaryBlockProps> = ({ label, value, icon, iconBg, iconColor, textColor, subColor, note }) => (
   <View style={styles.summaryBlock}>
     <View style={[styles.summaryIconBox, { backgroundColor: iconBg }]}>
-      <FontAwesome6 name={icon as any} size={normalize(16)} color={iconColor} />
+      <AppIcon name={icon as any} size={normalize(16)} color={iconColor} />
     </View>
     <CustomText style={[styles.summaryLabel, { color: subColor }]}>{label}</CustomText>
     <CustomText style={[styles.summaryValue, { color: textColor }]}>{value}</CustomText>
@@ -529,7 +530,7 @@ const BudgetDetailScreen = () => {
         <View style={[styles.headerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.categoryRow}>
             <View style={[styles.iconCircle, { backgroundColor: accentColor + '22' }]}>
-              <FontAwesome6 name={budget.icon || 'wallet'} size={normalize(24)} color={accentColor} />
+              <AppIcon name={budget.icon || 'wallet'} size={normalize(24)} color={accentColor} />
             </View>
             <View style={{ flex: 1 }}>
               <CustomText style={[styles.categoryName, { color: colors.text }]}>

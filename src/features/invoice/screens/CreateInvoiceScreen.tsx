@@ -1,4 +1,5 @@
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import BottomRecurringModal, {
   RecurringResult,
@@ -417,7 +418,7 @@ const CreateRecurringInvoiceScreen = () => {
               style={styles.scanBtn}
               activeOpacity={0.7}
             >
-              <FontAwesome6 name="expand" size={normalize(18)} color={colors.tint} solid />
+              <AppIcon name="expand" size={normalize(18)} color={colors.tint} />
             </TouchableOpacity>
           )
         }
@@ -446,17 +447,16 @@ const CreateRecurringInvoiceScreen = () => {
               onPress={() => router.push("/(protected)/wallet/wallet-list?mode=select")}
             >
               <View style={styles.fieldLeft}>
-                <FontAwesome6
+                <AppIcon
                   name={(selectedWallet?.icon as any) || "wallet"}
                   size={normalize(18)}
                   color={selectedWallet?.color || colors.icon}
-                  solid
                 />
                 <CustomText style={styles.fieldText}>
                   {selectedWallet?.name || t("transaction.select_wallet")}
                 </CustomText>
               </View>
-              <FontAwesome6 name="chevron-right" size={normalize(16)} color={colors.icon} />
+              <AppIcon name="chevron-right" size={normalize(16)} color={colors.icon} />
             </TouchableOpacity>
           </View>
 
@@ -488,7 +488,7 @@ const CreateRecurringInvoiceScreen = () => {
                 {selectedCategoryData ? (
                   <>
                     <View style={[styles.categoryIcon, { backgroundColor: selectedCategoryData.color }]}>
-                      <FontAwesome6
+                      <AppIcon
                         name={selectedCategoryData.icon as any}
                         size={normalize(18)}
                         color="#fff"
@@ -507,7 +507,7 @@ const CreateRecurringInvoiceScreen = () => {
                   </>
                 )}
               </View>
-              <FontAwesome6 name="chevron-right" size={normalize(16)} color={colors.icon} />
+              <AppIcon name="chevron-right" size={normalize(16)} color={colors.icon} />
             </TouchableOpacity>
           </View>
 
@@ -533,11 +533,10 @@ const CreateRecurringInvoiceScreen = () => {
             <CustomText style={styles.label}>{t("invoice.recurring_cycle")}</CustomText>
             <TouchableOpacity style={styles.field} onPress={() => setShowRecurringModal(true)}>
               <View style={styles.fieldLeft}>
-                <FontAwesome6
+                <AppIcon
                   name="rotate"
                   size={normalize(18)}
                   color={recurringType !== "none" ? colors.tint : colors.icon}
-                  solid
                 />
                 <CustomText
                   style={[styles.fieldText, recurringType === "none" && { color: colors.icon }]}
@@ -545,7 +544,7 @@ const CreateRecurringInvoiceScreen = () => {
                   {recurringLabel}
                 </CustomText>
               </View>
-              <FontAwesome6 name="chevron-right" size={normalize(16)} color={colors.icon} />
+              <AppIcon name="chevron-right" size={normalize(16)} color={colors.icon} />
             </TouchableOpacity>
           </View>
 
@@ -562,7 +561,7 @@ const CreateRecurringInvoiceScreen = () => {
                   setSelectedDate(d);
                 }}
               >
-                <FontAwesome6 name="chevron-left" size={normalize(16)} color={colors.text} />
+                <AppIcon name="chevron-left" size={normalize(16)} color={colors.text} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setShowDatePicker(true)}>
                 <CustomText style={styles.dateText}>{formatDate(selectedDate)}</CustomText>
@@ -574,7 +573,7 @@ const CreateRecurringInvoiceScreen = () => {
                   setSelectedDate(d);
                 }}
               >
-                <FontAwesome6 name="chevron-right" size={normalize(16)} color={colors.text} />
+                <AppIcon name="chevron-right" size={normalize(16)} color={colors.text} />
               </TouchableOpacity>
             </View>
           </View>
@@ -600,7 +599,7 @@ const CreateRecurringInvoiceScreen = () => {
           {/* Info box */}
           {recurringType !== "none" && (
             <View style={styles.infoBox}>
-              <FontAwesome6 name="circle-info" size={normalize(16)} color={colors.tint} solid />
+              <AppIcon name="circle-info" size={normalize(16)} color={colors.tint} />
               <View style={styles.infoTextContainer}>
                 <CustomText style={styles.infoText}>{t("invoice.info_auto_create")}</CustomText>
                 {recurringType === "weekly" && selectedDays.length > 0 && (
@@ -627,7 +626,7 @@ const CreateRecurringInvoiceScreen = () => {
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, normalize(16)) + normalize(12) }]}>
         {isEditMode ? (
           <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete} disabled={creating}>
-            <FontAwesome6 name="trash-can" size={normalize(16)} color="#EF4444" solid />
+            <AppIcon name="trash-can" size={normalize(16)} color="#EF4444" />
             <CustomText style={styles.deleteText}>{t("invoice.delete")}</CustomText>
           </TouchableOpacity>
         ) : (

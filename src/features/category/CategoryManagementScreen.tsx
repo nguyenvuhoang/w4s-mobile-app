@@ -1,4 +1,3 @@
-import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -14,6 +13,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import WalletPickerModal, { WalletPickerId } from "@/components/modals/WalletPickerModal";
 import i18n from "@/core/i18n/i18n";
@@ -240,7 +240,7 @@ const CategoryManagementScreen: React.FC = () => {
           ]}
           onPress={() => setShowWalletModal(true)}
         >
-          <FontAwesome6
+          <AppIcon
             name={(selectedWallet?.icon as any) ?? "wallet"}
             size={normalize(14)}
             color={selectedWallet?.color || colors.tint}
@@ -248,7 +248,7 @@ const CategoryManagementScreen: React.FC = () => {
           <CustomText style={styles.walletSelectorText} numberOfLines={1}>
             {selectedWallet?.name || t("wallet.select_wallet")}
           </CustomText>
-          <FontAwesome6
+          <AppIcon
             name="chevron-down"
             size={normalize(10)}
             color={colors.tint}
@@ -290,7 +290,7 @@ const CategoryManagementScreen: React.FC = () => {
 
       {/* SEARCH */}
       <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
-        <Ionicons name="search" size={normalize(20)} color={colors.icon} />
+        <AppIcon name="magnifying-glass" size={normalize(20)} color={colors.icon} />
         <TextInput
           style={[styles.searchInput, { color: colors.text }]}
           placeholder={t("category.search_category_placeholder")}
@@ -330,7 +330,7 @@ const CategoryManagementScreen: React.FC = () => {
                       { backgroundColor: parent.color },
                     ]}
                   >
-                    <FontAwesome6
+                    <AppIcon
                       name={parent.icon as any}
                       size={normalize(20)}
                       color="#fff"
@@ -346,8 +346,8 @@ const CategoryManagementScreen: React.FC = () => {
                     {getCategoryName(parent.category_name)}
                   </CustomText>
 
-                  <Ionicons
-                    name="chevron-forward"
+                  <AppIcon
+                    name="chevron-right"
                     size={normalize(18)}
                     color={colors.icon}
                   />
@@ -368,7 +368,7 @@ const CategoryManagementScreen: React.FC = () => {
                             { backgroundColor: child.color },
                           ]}
                         >
-                          <FontAwesome6
+                          <AppIcon
                             name={child.icon as any}
                             size={normalize(16)}
                             color="#fff"
@@ -384,8 +384,8 @@ const CategoryManagementScreen: React.FC = () => {
                           {getCategoryName(child.category_name)}
                         </CustomText>
 
-                        <Ionicons
-                          name="chevron-forward"
+                        <AppIcon
+                          name="chevron-right"
                           size={normalize(18)}
                           color={colors.icon}
                         />
@@ -419,7 +419,7 @@ const CategoryManagementScreen: React.FC = () => {
           end={{ x: 1, y: 0 }}
           style={[StyleSheet.absoluteFill, { borderRadius: normalize(28) }]}
         />
-        <Ionicons name="add" size={normalize(32)} color="#fff" />
+        <AppIcon name="plus" size={normalize(32)} color="#fff" />
       </TouchableOpacity>
     </SafeAreaView>
   );

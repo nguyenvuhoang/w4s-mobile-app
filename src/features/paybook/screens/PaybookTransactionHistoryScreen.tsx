@@ -1,4 +1,5 @@
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
@@ -170,7 +171,7 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
                             { backgroundColor: iconColor + "1A" },
                         ]}
                     >
-                        <FontAwesome6 name={iconName} size={normalize(22)} color={iconColor} />
+                        <AppIcon name={iconName as any} size={normalize(22)} color={iconColor} />
                     </View>
                     <View style={localStyles.transactionInfo}>
                         <CustomText style={[localStyles.transactionTitle, { color: colors.text }]} type="bold" numberOfLines={1}>
@@ -268,7 +269,7 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
                 ListEmptyComponent={
                     !loading ? (
                         <View style={localStyles.emptyContainer}>
-                             <Ionicons name="receipt-outline" size={60} color={colors.icon} />
+                             <AppIcon name="receipt" size={60} color={colors.icon} />
                              <CustomText style={{ color: colors.icon, marginTop: 10 }}>{t('paybook.history.empty')}</CustomText>
                         </View>
                     ) : null

@@ -292,6 +292,34 @@ export const transactionRepository = {
     }
   },
   /**
+   * Simple search transaction
+   * @param data Payload
+   * @returns API response
+   */
+  async simpleSearchTransactions(data: {
+    search_text: string;
+    page_index: number;
+    page_size: number;
+  }): Promise<BaseResponseModel> {
+    try {
+      return await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_SIMPLE_SEARCH_WALLET_TRANSACTION,
+        {
+          search_text: data.search_text,
+          page_index: data.page_index,
+          page_size: data.page_size,
+        },
+        false,
+      );
+    } catch (error) {
+      console.error(
+        "[transactionRepository] Error simple searching transactions:",
+        error,
+      );
+      throw error;
+    }
+  },
+  /**
    * Refund transaction
    * @param data Payload
    * @returns API response

@@ -1,3 +1,4 @@
+import AppIcon from '@/components/base/AppIcon';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -119,7 +120,7 @@ const SectionLabel = ({ label }: { label: string }) => {
 const ItemCard = ({ icon, iconBg, iconColor, label, colors }: any) => (
     <View style={[styles.itemCard, { backgroundColor: colors.card }]}>
         <View style={[styles.itemIconWrap, { backgroundColor: iconBg }]}>
-            <FontAwesome6 name={icon} size={normalize(18)} color={iconColor} solid />
+            <AppIcon name={icon} size={normalize(18)} color={iconColor} />
         </View>
         <CustomText style={[styles.itemLabel, { color: colors.text }]}>{label}</CustomText>
     </View>

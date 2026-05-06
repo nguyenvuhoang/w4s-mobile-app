@@ -1,4 +1,3 @@
-import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import i18n from "@/core/i18n/i18n";
 import { useAppTheme } from "@/core/theme/ThemeContext";
@@ -302,7 +302,7 @@ const CategorySelectionScreen: React.FC = () => {
 
       {/* SEARCH */}
       <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
-        <Ionicons name="search" size={normalize(20)} color={colors.icon} />
+        <AppIcon name="magnifying-glass" size={normalize(20)} color={colors.icon} />
         <TextInput
           style={[styles.searchInput, { color: colors.text }]}
           placeholder={
@@ -344,7 +344,7 @@ const CategorySelectionScreen: React.FC = () => {
                       { backgroundColor: parent.color },
                     ]}
                   >
-                    <FontAwesome6
+                    <AppIcon
                       name={parent.icon as any}
                       size={normalize(20)}
                       color="#fff"
@@ -377,7 +377,7 @@ const CategorySelectionScreen: React.FC = () => {
                               { backgroundColor: child.color },
                             ]}
                           >
-                            <FontAwesome6
+                            <AppIcon
                               name={child.icon as any}
                               size={normalize(16)}
                               color="#fff"

@@ -372,7 +372,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <CustomText style={[styles.greetingText, { color: colors.tint }]}>
             {t("home.greeting_name", { name: appInfo?.name?.toUpperCase() || 'USER' })}
           </CustomText>
-          <CustomText style={styles.greetingSubText}>
+          <CustomText style={[styles.greetingSubText, { color: colors.text }]}>
             {t("home.good_day")}
           </CustomText>
         </View>

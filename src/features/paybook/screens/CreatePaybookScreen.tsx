@@ -1,4 +1,5 @@
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
@@ -660,7 +661,7 @@ const CreatePaybookScreen = () => {
                     onPress={() => setLoanType(tab.key)}
                     activeOpacity={0.7}
                   >
-                    <FontAwesome6
+                    <AppIcon
                       name={tab.icon as any}
                       size={normalize(14)}
                       color={isActive ? "#fff" : colors.icon}
@@ -705,11 +706,10 @@ const CreatePaybookScreen = () => {
                 }
                 activeOpacity={0.7}
               >
-                <FontAwesome6
+                <AppIcon
                   name="address-book"
                   size={normalize(11)}
                   color={accentColor}
-                  solid
                   style={{ marginRight: wp(1) }}
                 />
                 <CustomText style={[styles.quickFillText, { color: accentColor }]}>
@@ -736,12 +736,12 @@ const CreatePaybookScreen = () => {
                   ) : null}
                 </View>
                 <TouchableOpacity style={[styles.removeBtn, { backgroundColor: colors.background }]} onPress={clearContact} hitSlop={8}>
-                  <FontAwesome6 name="xmark" size={normalize(12)} color={colors.icon} />
+                  <AppIcon name="xmark" size={normalize(12)} color={colors.icon} />
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <FontAwesome6 name="user" size={normalize(16)} color={counterpartyName.trim() ? accentColor : colors.icon} solid style={styles.fieldIcon} />
+                <AppIcon name="user" size={normalize(16)} color={counterpartyName.trim() ? accentColor : colors.icon} style={styles.fieldIcon} />
                 <TextInput
                   style={[styles.fieldInput, { color: colors.text }]}
                   placeholder={
@@ -776,18 +776,17 @@ const CreatePaybookScreen = () => {
               activeOpacity={0.7}
             >
               <View style={styles.fieldLeft}>
-                <FontAwesome6
+                <AppIcon
                   name={(selectedWallet?.icon as any) || "wallet"}
                   size={normalize(16)}
                   color={selectedWallet?.color || colors.icon}
-                  solid
                   style={styles.fieldIcon}
                 />
                 <CustomText style={[styles.fieldText, { color: selectedWallet ? colors.text : colors.icon }]}>
                   {selectedWallet?.name || t("paybook.select_wallet_placeholder")}
                 </CustomText>
               </View>
-              <FontAwesome6 name="chevron-right" size={normalize(12)} color={colors.icon} />
+              <AppIcon name="chevron-right" size={normalize(12)} color={colors.icon} />
             </TouchableOpacity>
           </View>
 
@@ -795,7 +794,7 @@ const CreatePaybookScreen = () => {
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>{t("paybook.loan_description")}</CustomText>
             <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <FontAwesome6 name="file-lines" size={normalize(16)} color={loanDescription.trim() ? accentColor : colors.icon} solid style={styles.fieldIcon} />
+              <AppIcon name="file-lines" size={normalize(16)} color={loanDescription.trim() ? accentColor : colors.icon} style={styles.fieldIcon} />
               <TextInput
                 style={[styles.fieldInput, { color: colors.text }]}
                 placeholder={t("paybook.desc_placeholder")}
@@ -863,11 +862,10 @@ const CreatePaybookScreen = () => {
                     onPress={() => setPaymentType(pt.key)}
                     activeOpacity={0.7}
                   >
-                    <FontAwesome6
+                    <AppIcon
                       name={pt.icon as any}
                       size={normalize(16)}
                       color={isActive ? accentColor : colors.icon}
-                      solid
                     />
                     <CustomText style={[styles.chipText, { color: isActive ? accentColor : colors.text, fontFamily: isActive ? Fonts.semiBold : Fonts.regular, marginTop: hp(0.5) }]}>
                       {pt.label}
@@ -886,7 +884,7 @@ const CreatePaybookScreen = () => {
                 {t("paybook.installments_count")} <CustomText style={{ color: "#EF4444" }}>*</CustomText>
               </CustomText>
               <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <FontAwesome6 name="list-ol" size={normalize(15)} color={totalInstallments ? accentColor : colors.icon} style={styles.fieldIcon} />
+                <AppIcon name="list-ol" size={normalize(15)} color={totalInstallments ? accentColor : colors.icon} style={styles.fieldIcon} />
                 <TextInput
                   style={[styles.fieldInput, { color: colors.text }]}
                   placeholder={t("paybook.installments_placeholder")}
@@ -944,7 +942,7 @@ const CreatePaybookScreen = () => {
                 onPress={() => setShowStartPicker(true)}
                 activeOpacity={0.7}
               >
-                <FontAwesome6 name="calendar" size={normalize(13)} color={accentColor} solid style={{ marginRight: wp(2) }} />
+                <AppIcon name="calendar" size={normalize(13)} color={accentColor} style={{ marginRight: wp(2) }} />
                 <CustomText style={[styles.dateText, { color: colors.text }]}>{formatDate(startDate)}</CustomText>
               </TouchableOpacity>
             </View>
@@ -1034,7 +1032,7 @@ const CreatePaybookScreen = () => {
                         onPress={() => setInterestRateType(rt.key)}
                         activeOpacity={0.7}
                       >
-                        <FontAwesome6 name={rt.icon as any} size={normalize(15)} color={isActive ? accentColor : colors.icon} solid />
+                        <AppIcon name={rt.icon as any} size={normalize(15)} color={isActive ? accentColor : colors.icon} />
                         <CustomText style={[styles.chipText, { color: isActive ? accentColor : colors.text, fontFamily: isActive ? Fonts.semiBold : Fonts.regular, marginTop: hp(0.4) }]}>
                           {rt.label}
                         </CustomText>
@@ -1051,7 +1049,7 @@ const CreatePaybookScreen = () => {
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]}>{t("paybook.interest_rate_annual")}</CustomText>
                 <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <FontAwesome6 name="percent" size={normalize(14)} color={effectiveInterestRate > 0 ? accentColor : colors.icon} style={styles.fieldIcon} />
+                  <AppIcon name="percent" size={normalize(14)} color={effectiveInterestRate > 0 ? accentColor : colors.icon} style={styles.fieldIcon} />
                   <TextInput
                     style={[styles.fieldInput, { color: colors.text }]}
                     placeholder="0"
@@ -1094,7 +1092,7 @@ const CreatePaybookScreen = () => {
                       </View>
                       {floatingRates.length > 1 && (
                         <TouchableOpacity onPress={() => removeFloatingPeriod(idx)} hitSlop={8} style={{ marginLeft: wp(1) }}>
-                          <FontAwesome6 name="circle-xmark" size={normalize(18)} color={colors.icon} solid />
+                          <AppIcon name="circle-xmark" size={normalize(18)} color={colors.icon} />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -1113,7 +1111,7 @@ const CreatePaybookScreen = () => {
                     }}
                     activeOpacity={0.7}
                   >
-                    <FontAwesome6 name="circle-plus" size={normalize(16)} color={accentColor} solid />
+                    <AppIcon name="circle-plus" size={normalize(16)} color={accentColor} />
                     <CustomText style={[styles.addFloatingLabel, { color: accentColor }]}>{t("paybook.add_floating_period")}</CustomText>
                   </TouchableOpacity>
                 ) : (
@@ -1173,7 +1171,7 @@ const CreatePaybookScreen = () => {
             <View style={[styles.section, { marginTop: hp(1) }]}>
               <View style={[styles.bulletSummaryCard, { backgroundColor: `${accentColor}10`, borderColor: accentColor }]}>
                 <View style={styles.summaryHeader}>
-                  <FontAwesome6 name="circle-info" size={normalize(14)} color={accentColor} solid />
+                  <AppIcon name="circle-info" size={normalize(14)} color={accentColor} />
                   <CustomText style={[styles.summaryTitle, { color: accentColor }]}>
                     {t("paybook.payment_summary", "Tóm tắt thanh toán")}
                   </CustomText>
@@ -1283,7 +1281,7 @@ const CreatePaybookScreen = () => {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <FontAwesome6 name="floppy-disk" size={normalize(15)} color="#fff" style={{ marginRight: wp(1.5) }} solid />
+                <AppIcon name="floppy-disk" size={normalize(15)} color="#fff" style={{ marginRight: wp(1.5) }} />
                 <CustomText style={styles.createText}>{t("paybook.save_paybook")}</CustomText>
               </>
             )}

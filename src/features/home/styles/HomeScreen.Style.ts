@@ -44,7 +44,6 @@ export const styles = StyleSheet.create({
   greetingSubText: {
     fontSize: normalize(14),
     fontFamily: Fonts.medium,
-    color: "#666",
     opacity: 0.8,
   },
   userInfo: {

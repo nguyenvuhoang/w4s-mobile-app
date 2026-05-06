@@ -1,4 +1,5 @@
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import StorageKey from "@/constants/StorageKey";
 import { useAppTheme } from "@/core/theme/ThemeContext";
@@ -304,11 +305,10 @@ const PaybookListScreen = () => {
                 { backgroundColor: isLend ? "#E8F5E9" : "#FFEBEE" },
               ]}
             >
-              <FontAwesome6
+              <AppIcon
                 name={loan.counterparty_type === "MERCHANT" ? "building" : "user"}
                 size={normalize(17)}
                 color={amountColor}
-                solid
               />
             </View>
 
@@ -327,7 +327,7 @@ const PaybookListScreen = () => {
                     { backgroundColor: isLend ? "#E8F5E9" : "#FFEBEE" },
                   ]}
                 >
-                  <FontAwesome6
+                  <AppIcon
                     name={isLend ? "arrow-trend-up" : "arrow-trend-down"}
                     size={normalize(9)}
                     color={amountColor}
@@ -411,7 +411,7 @@ const PaybookListScreen = () => {
           <View style={styles.cardFooter}>
             <View style={styles.footerLeft}>
               <View style={styles.footerItem}>
-                <FontAwesome6
+                <AppIcon
                   name="calendar-days"
                   size={normalize(10)}
                   color={
@@ -445,7 +445,7 @@ const PaybookListScreen = () => {
               </View>
 
               <View style={[styles.footerItem, { marginLeft: wp(3) }]}>
-                <FontAwesome6
+                <AppIcon
                   name="percent"
                   size={normalize(9)}
                   color={colors.icon}
@@ -465,7 +465,7 @@ const PaybookListScreen = () => {
                 { backgroundColor: statusConfig.bgColor },
               ]}
             >
-              <FontAwesome6
+              <AppIcon
                 name={statusConfig.icon as any}
                 size={normalize(9)}
                 color={statusConfig.color}
@@ -492,7 +492,7 @@ const PaybookListScreen = () => {
               }}
               activeOpacity={0.75}
             >
-              <FontAwesome6
+              <AppIcon
                 name={isLend ? "hand-holding-dollar" : "money-bill-transfer"}
                 size={normalize(12)}
                 color={amountColor}
@@ -541,7 +541,7 @@ const PaybookListScreen = () => {
               }
             }}
           >
-            <FontAwesome6
+            <AppIcon
               name={isSearchMode ? "xmark" : "magnifying-glass"}
               size={normalize(18)}
               color={colors.text}
@@ -567,7 +567,7 @@ const PaybookListScreen = () => {
           {/* Cho vay */}
           <View style={styles.summaryItem}>
             <View style={[styles.summaryIconWrapper, { backgroundColor: "#E8F5E9" }]}>
-              <FontAwesome6 name="arrow-trend-up" size={normalize(16)} color="#22C55E" />
+              <AppIcon name="arrow-trend-up" size={normalize(16)} color="#22C55E" />
             </View>
             <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>{t("paybook.lend")}</CustomText>
             <CustomText style={[styles.summaryAmount, { color: "#22C55E" }]}>
@@ -580,7 +580,7 @@ const PaybookListScreen = () => {
           {/* Đi vay */}
           <View style={styles.summaryItem}>
             <View style={[styles.summaryIconWrapper, { backgroundColor: "#FFEBEE" }]}>
-              <FontAwesome6 name="arrow-trend-down" size={normalize(16)} color="#EF4444" />
+              <AppIcon name="arrow-trend-down" size={normalize(16)} color="#EF4444" />
             </View>
             <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>{t("paybook.borrow")}</CustomText>
             <CustomText style={[styles.summaryAmount, { color: "#EF4444" }]}>
@@ -601,7 +601,7 @@ const PaybookListScreen = () => {
                 },
               ]}
             >
-              <FontAwesome6
+              <AppIcon
                 name="scale-balanced"
                 size={normalize(15)}
                 color={summary.net_balance >= 0 ? "#6366F1" : "#EF4444"}
@@ -694,7 +694,7 @@ const PaybookListScreen = () => {
           ) : (
             <View style={styles.emptyContainer}>
               <View style={[styles.emptyIconBg, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <FontAwesome6
+                <AppIcon
                   name="book-open"
                   size={normalize(40)}
                   color={colors.tint}
@@ -727,7 +727,7 @@ const PaybookListScreen = () => {
             end={{ x: 1, y: 0 }}
             style={styles.gradientBg}
           >
-            <FontAwesome6
+            <AppIcon
               name="plus"
               size={normalize(15)}
               color="#fff"

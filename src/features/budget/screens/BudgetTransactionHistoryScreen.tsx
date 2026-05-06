@@ -1,4 +1,5 @@
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
@@ -203,7 +204,7 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
                             { backgroundColor: iconColor + "1A" },
                         ]}
                     >
-                        <FontAwesome6 name={iconName} size={normalize(22)} color={iconColor} />
+                        <AppIcon name={iconName} size={normalize(22)} color={iconColor} />
                     </View>
                     <View style={localStyles.transactionInfo}>
                         <CustomText style={[localStyles.transactionTitle, { color: colors.text }]} type="bold" numberOfLines={1}>

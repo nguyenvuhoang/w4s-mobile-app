@@ -1,4 +1,5 @@
 import AppHeader from '@/components/base/AppHeader';
+import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useAppTheme } from '@/core/theme/ThemeContext';
@@ -300,11 +301,10 @@ const EditTransactionScreen: React.FC = () => {
                                     styles.catIcon,
                                     { backgroundColor: (displayTransaction.walletcategory.color || '#6B7280') + '25' },
                                 ]}>
-                                    <FontAwesome6
+                                    <AppIcon
                                         name={displayTransaction.walletcategory.icon || 'tag'}
                                         size={normalize(16)}
                                         color={displayTransaction.walletcategory.color || '#6B7280'}
-                                        solid
                                     />
                                 </View>
                                 <CustomText style={[styles.readonlyText, { color: colors.text }]}>

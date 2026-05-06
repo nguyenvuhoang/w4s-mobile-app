@@ -1,4 +1,5 @@
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { GlobalContext } from "@/contexts/GlobalContext";
@@ -18,7 +19,7 @@ import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useSpendingLimit } from "@/hooks/useSpendingLimit";
 import StorageService from "@/services/StorageService";
 import { hp, normalize } from "@/utils/layout";
-import { FontAwesome6 } from "@expo/vector-icons";
+
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, {
@@ -863,11 +864,10 @@ const AddTransactionScreen = () => {
               onPress={() => router.push("/(protected)/wallet/wallet-list?mode=select")}
             >
               <View style={styles.fieldLeft}>
-                <FontAwesome6
+                <AppIcon
                   name={(selectedWallet?.icon as any) || "wallet"}
                   size={normalize(18)}
                   color={selectedWallet?.color || colors.icon}
-                  solid
                 />
                 <CustomText style={[styles.fieldText, { color: colors.text }]}>
                   {selectedWallet?.name || t("transaction.select_wallet")}
@@ -915,7 +915,7 @@ const AddTransactionScreen = () => {
                         { backgroundColor: selectedCategoryData.color },
                       ]}
                     >
-                      <FontAwesome6
+                      <AppIcon
                         name={selectedCategoryData.icon as any}
                         size={normalize(18)}
                         color="#fff"
@@ -951,11 +951,10 @@ const AddTransactionScreen = () => {
                 onPress={handleOpenLoanPicker}
               >
                 <View style={styles.fieldLeft}>
-                  <FontAwesome6
+                  <AppIcon
                     name="book"
                     size={normalize(18)}
                     color={selectedLoan ? colors.tint : colors.icon}
-                    solid
                   />
                   <CustomText
                     style={[
@@ -973,7 +972,7 @@ const AddTransactionScreen = () => {
                     onPress={() => setSelectedLoan(null)}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <FontAwesome6 name="xmark" size={normalize(14)} color={colors.icon} />
+                    <AppIcon name="xmark" size={normalize(14)} color={colors.icon} />
                   </TouchableOpacity>
                 )}
               </TouchableOpacity>
@@ -1020,7 +1019,7 @@ const AddTransactionScreen = () => {
                     <View
                       style={[styles.categoryIcon, { backgroundColor: selectedEvent.color }]}
                     >
-                      <FontAwesome6
+                      <AppIcon
                         name={selectedEvent.icon as any}
                         size={normalize(18)}
                         color="#fff"
@@ -1060,11 +1059,10 @@ const AddTransactionScreen = () => {
               }
             >
               <View style={styles.fieldLeft}>
-                <FontAwesome6
+                <AppIcon
                   name="user-group"
                   size={normalize(18)}
                   color={participants.length > 0 ? colors.tint : colors.icon}
-                  solid
                 />
                 {renderParticipants()}
               </View>
@@ -1103,11 +1101,10 @@ const AddTransactionScreen = () => {
                   })
                 }
               >
-                <FontAwesome6
+                <AppIcon
                   name="location-dot"
                   size={normalize(20)}
                   color={location ? colors.tint : colors.icon}
-                  solid
                 />
               </TouchableOpacity>
             </View>
@@ -1150,11 +1147,10 @@ const AddTransactionScreen = () => {
               onPress={() => setShowDatePicker(true)}
             >
               <View style={styles.fieldLeft}>
-                <FontAwesome6
+                <AppIcon
                   name="calendar-days"
                   size={normalize(18)}
                   color={colors.tint}
-                  solid
                 />
                 <CustomText style={[styles.fieldText, { color: colors.text }]}>
                   {formatDate(selectedDate)}
@@ -1176,11 +1172,10 @@ const AddTransactionScreen = () => {
               onPress={openReminderPicker}
             >
               <View style={styles.fieldLeft}>
-                <FontAwesome6
+                <AppIcon
                   name="bell"
                   size={normalize(18)}
                   color={reminderDate ? colors.tint : colors.icon}
-                  solid
                 />
                 <CustomText
                   style={[
@@ -1195,7 +1190,7 @@ const AddTransactionScreen = () => {
               </View>
               {reminderDate && (
                 <TouchableOpacity onPress={clearReminder}>
-                  <FontAwesome6 name="xmark" size={normalize(16)} color={colors.icon} />
+                  <AppIcon name="xmark" size={normalize(16)} color={colors.icon} />
                 </TouchableOpacity>
               )}
             </TouchableOpacity>
@@ -1236,7 +1231,7 @@ const AddTransactionScreen = () => {
                     setIsUploadingImage(false);
                   }}
                 >
-                  <FontAwesome6 name="xmark" size={normalize(12)} color={colors.text} />
+                  <AppIcon name="xmark" size={normalize(12)} color={colors.text} />
                 </TouchableOpacity>
               </View>
             ) : (
@@ -1247,7 +1242,7 @@ const AddTransactionScreen = () => {
                 ]}
                 onPress={handlePickImage}
               >
-                <FontAwesome6 name="image" size={normalize(32)} color={colors.icon} />
+                <AppIcon name="image" size={normalize(32)} color={colors.icon} />
                 <CustomText style={[styles.uploadText, { color: colors.icon }]}>
                   {t("transaction.upload", { defaultValue: "Upload" })}
                 </CustomText>
@@ -1414,11 +1409,10 @@ const AddTransactionScreen = () => {
                           justifyContent: "center",
                         }}
                       >
-                        <FontAwesome6
+                        <AppIcon
                           name={item.loan_type === "LEND" ? "hand-holding-dollar" : "money-bill-wave"}
                           size={normalize(18)}
                           color={item.loan_type === "LEND" ? "#4CAF50" : "#F44336"}
-                          solid
                         />
                       </View>
                       <View style={{ flex: 1 }}>
@@ -1442,7 +1436,7 @@ const AddTransactionScreen = () => {
                         </CustomText>
                       </View>
                       {selectedLoan?.loan_id === item.loan_id && (
-                        <FontAwesome6 name="check" size={normalize(16)} color={colors.tint} />
+                        <AppIcon name="check" size={normalize(16)} color={colors.tint} />
                       )}
                     </TouchableOpacity>
                   )}

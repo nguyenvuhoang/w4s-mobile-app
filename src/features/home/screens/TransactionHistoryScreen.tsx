@@ -45,7 +45,17 @@ const TransactionHistoryScreen: React.FC = () => {
     const [selectedWalletId, setSelectedWalletId] = React.useState<number | "all">("all");
     const [isWalletPickerVisible, setIsWalletPickerVisible] = React.useState(false);
     const [searchQuery, setSearchQuery] = React.useState("");
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = React.useState("");
     const [isSearchVisible, setIsSearchVisible] = React.useState(false);
+
+    // Debounce search query
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     const currentWallet = React.useMemo(() =>
         wallets.find(w => w.walletId === selectedWalletId),
@@ -62,7 +72,7 @@ const TransactionHistoryScreen: React.FC = () => {
     } = useInfiniteTransactions(
         10,
         selectedWalletId === "all" ? undefined : selectedWalletId,
-        searchQuery
+        debouncedSearchQuery
     );
 
     const [refreshing, setRefreshing] = React.useState(false);
@@ -358,24 +368,34 @@ const TransactionHistoryScreen: React.FC = () => {
                     <Ionicons name="chevron-down" size={normalize(16)} color={colors.icon} />
                 </TouchableOpacity>
 
-                {/* <TouchableOpacity
+                <TouchableOpacity
                     style={[localStyles.searchButton, { backgroundColor: colors.card }]}
-                    onPress={() => setIsSearchVisible(!isSearchVisible)}
+                    onPress={() => {
+                        if (isSearchVisible) setSearchQuery("");
+                        setIsSearchVisible(!isSearchVisible);
+                    }}
                 >
                     <Ionicons name={isSearchVisible ? "close" : "search"} size={normalize(20)} color={colors.icon} />
-                </TouchableOpacity> */}
+                </TouchableOpacity>
             </View>
 
             {isSearchVisible && (
                 <View style={localStyles.searchContainer}>
                     <TextInput
-                        style={[localStyles.searchInput, { color: colors.text, borderColor: colors.border }]}
+                        style={[localStyles.searchInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.card }]}
                         placeholder={t("common.search")}
                         placeholderTextColor={colors.icon}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         autoFocus
                     />
+                    {searchQuery !== debouncedSearchQuery && (
+                        <ActivityIndicator 
+                            size="small" 
+                            color={colors.tint} 
+                            style={{ position: 'absolute', right: wp(7), top: normalize(10) }} 
+                        />
+                    )}
                 </View>
             )}
 
@@ -486,7 +506,7 @@ const localStyles = StyleSheet.create({
         paddingBottom: normalize(10),
     },
     searchInput: {
-        // backgroundColor: colors.card,
+
         borderRadius: normalize(12),
         paddingHorizontal: normalize(15),
         paddingVertical: normalize(10),

@@ -1,5 +1,6 @@
 // src/features/budget/screens/EditBudgetScreen.tsx
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import BottomDateRangeModal, {
     DateRangeResult,
@@ -17,7 +18,6 @@ import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
-import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -224,7 +224,7 @@ const EditBudgetScreen = () => {
                         <CustomText style={[styles.label, { color: colors.text }]}>{t("budget.source_wallet")} <CustomText style={{ color: "red" }}>*</CustomText></CustomText>
                         <TouchableOpacity style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push("/(protected)/wallet/wallet-list?mode=select&allowAllWallets=true")}>
                             <View style={styles.fieldLeft}>
-                                <FontAwesome6 name={(selectedWallet?.icon as any) || "wallet"} size={normalize(18)} color={selectedWallet?.color || colors.icon} solid />
+                                <AppIcon name={(selectedWallet?.icon as any) || "wallet"} size={normalize(18)} color={selectedWallet?.color || colors.icon} />
                                 <CustomText style={[styles.fieldText, { color: colors.text }]}>{selectedWallet?.name || t("budget.select_wallet")}</CustomText>
                             </View>
                         </TouchableOpacity>
@@ -239,7 +239,7 @@ const EditBudgetScreen = () => {
                                 {selectedCategoryData ? (
                                     <>
                                         <View style={[styles.categoryIcon, { backgroundColor: selectedCategoryData.color }]}>
-                                            <FontAwesome6 name={selectedCategoryData.icon as any} size={normalize(18)} color="#fff" />
+                                            <AppIcon name={selectedCategoryData.icon as any} size={normalize(18)} color="#fff" />
                                         </View>
                                         <CustomText style={[styles.fieldText, { color: colors.text }]}>{parseCategoryName(selectedCategoryData.category_name)}</CustomText>
                                     </>
@@ -257,7 +257,7 @@ const EditBudgetScreen = () => {
                         <CustomText style={[styles.label, { color: colors.text }]}>{t("budget.period")}</CustomText>
                         <TouchableOpacity style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setShowDateModal(true)}>
                             <CustomText style={[styles.fieldText, { color: colors.text }]}>{dateRangeLabel || t("budget.select_period")}</CustomText>
-                            <FontAwesome6 name="chevron-down" size={normalize(14)} color={colors.icon} />
+                            <AppIcon name="chevron-down" size={normalize(14)} color={colors.icon} />
                         </TouchableOpacity>
                     </View>
                     <View style={styles.section}>

@@ -50,12 +50,16 @@ export const useInfiniteTransactions = (
             }
 
             let response;
-            if (walletId || searchQuery) {
-                // If walletId or searchQuery is provided, use advanced search
+            if (searchQuery) {
+                response = await transactionRepository.simpleSearchTransactions({
+                    search_text: searchQuery,
+                    page_index: pageIndex + 1,
+                    page_size: pageSize,
+                });
+            } else if (walletId) {
+                // If walletId is provided, use advanced search
                 response = await transactionRepository.advancedSearchTransactions({
                     wallet_id: walletId,
-                    description: searchQuery,
-                    transaction_description: searchQuery,
                     page_index: pageIndex + 1,
                     page_size: pageSize,
                 });
@@ -71,7 +75,7 @@ export const useInfiniteTransactions = (
                 let transactionList: RecentTransaction[] = [];
                 let total = 0;
 
-                if (walletId) {
+                if (walletId || searchQuery) {
                     // Map advanced search response structure
                     const anyData = response.data as any;
                     if (Array.isArray(anyData)) {

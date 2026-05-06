@@ -9,6 +9,7 @@
  *   title
  */
 
+import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
@@ -82,11 +83,10 @@ const WalletPickerModal: React.FC<WalletPickerModalProps> = ({
             >
                 {/* Icon badge */}
                 <View style={[styles.iconBadge, { backgroundColor: iconColor + '22' }]}>
-                    <FontAwesome6
+                    <AppIcon
                         name={(item.icon as any) || 'wallet'}
                         size={normalize(18)}
                         color={iconColor}
-                        solid
                     />
                 </View>
 
@@ -97,11 +97,10 @@ const WalletPickerModal: React.FC<WalletPickerModalProps> = ({
 
                 {/* Checkmark */}
                 {isSelected && (
-                    <FontAwesome6
+                    <AppIcon
                         name="circle-check"
                         size={normalize(18)}
                         color={colors.tint}
-                        solid
                     />
                 )}
             </TouchableOpacity>

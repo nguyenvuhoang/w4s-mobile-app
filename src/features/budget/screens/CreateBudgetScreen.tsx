@@ -1,5 +1,6 @@
 // src/features/budget/screens/CreateBudgetScreen.tsx
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import BottomDateRangeModal, {
     DateRangeResult,
@@ -17,7 +18,6 @@ import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
-import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -580,11 +580,10 @@ const CreateBudgetScreen = () => {
                             }
                         >
                             <View style={styles.fieldLeft}>
-                                <FontAwesome6
+                                <AppIcon
                                     name={(selectedWallet?.icon as any) || "wallet"}
                                     size={normalize(18)}
                                     color={selectedWallet?.color || colors.icon}
-                                    solid
                                 />
                                 <CustomText style={[styles.fieldText, { color: colors.text }]}>
                                     {selectedWallet?.name || t("budget.select_wallet", { defaultValue: "Chọn ví" })}
@@ -628,7 +627,7 @@ const CreateBudgetScreen = () => {
                                                 { backgroundColor: selectedCategoryData.color },
                                             ]}
                                         >
-                                            <FontAwesome6
+                                            <AppIcon
                                                 name={selectedCategoryData.icon as any}
                                                 size={normalize(18)}
                                                 color="#fff"
@@ -687,7 +686,7 @@ const CreateBudgetScreen = () => {
                             <CustomText style={[styles.fieldText, { color: colors.text }]}>
                                 {dateRangeLabel || t("budget.select_period", { defaultValue: "Chọn khoảng thời gian" })}
                             </CustomText>
-                            <FontAwesome6
+                            <AppIcon
                                 name="chevron-down"
                                 size={normalize(14)}
                                 color={colors.icon}

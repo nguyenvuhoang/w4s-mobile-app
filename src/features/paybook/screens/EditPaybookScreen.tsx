@@ -1,4 +1,5 @@
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
@@ -448,7 +449,7 @@ const EditPaybookScreen = () => {
             <View style={[styles.readonlyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {/* Loan type badge */}
               <View style={[styles.typeBadge, { backgroundColor: `${typeColor}15` }]}>
-                <FontAwesome6
+                <AppIcon
                   name={typeIcon as any}
                   size={normalize(13)}
                   color={typeColor}
@@ -461,11 +462,10 @@ const EditPaybookScreen = () => {
 
               {/* Wallet */}
               <View style={styles.readonlyRow}>
-                <FontAwesome6
+                <AppIcon
                   name={(selectedWallet?.icon as any) || "wallet"}
                   size={normalize(14)}
                   color={selectedWallet?.color || colors.icon}
-                  solid
                   style={{ marginRight: wp(2), width: normalize(20), textAlign: "center" }}
                 />
                 <CustomText style={[styles.readonlyLabel, { color: colors.icon }]}>Ví nguồn:</CustomText>
@@ -477,7 +477,7 @@ const EditPaybookScreen = () => {
               {/* Loan No */}
               {loanNo ? (
                 <View style={styles.readonlyRow}>
-                  <FontAwesome6
+                  <AppIcon
                     name="hashtag"
                     size={normalize(14)}
                     color={colors.icon}
@@ -501,7 +501,7 @@ const EditPaybookScreen = () => {
               Tên đối tác <CustomText style={{ color: "#EF4444" }}>*</CustomText>
             </CustomText>
             <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <FontAwesome6 name="user" size={normalize(16)} color={counterpartyName.trim() ? accentColor : colors.icon} solid style={styles.fieldIcon} />
+              <AppIcon name="user" size={normalize(16)} color={counterpartyName.trim() ? accentColor : colors.icon} style={styles.fieldIcon} />
               <TextInput
                 style={[styles.fieldInput, { color: colors.text }]}
                 placeholder="Tên người/đơn vị giao dịch..."
@@ -522,7 +522,7 @@ const EditPaybookScreen = () => {
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>Mô tả khoản vay</CustomText>
             <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <FontAwesome6 name="file-lines" size={normalize(16)} color={loanDescription.trim() ? accentColor : colors.icon} solid style={styles.fieldIcon} />
+              <AppIcon name="file-lines" size={normalize(16)} color={loanDescription.trim() ? accentColor : colors.icon} style={styles.fieldIcon} />
               <TextInput
                 style={[styles.fieldInput, { color: colors.text }]}
                 placeholder="Mô tả ngắn gọn mục đích..."
@@ -568,11 +568,10 @@ const EditPaybookScreen = () => {
                       },
                     ]}
                   >
-                    <FontAwesome6
+                    <AppIcon
                       name={pt.icon as any}
                       size={normalize(16)}
                       color={isActive ? accentColor : colors.icon}
-                      solid
                     />
                     <CustomText style={[styles.chipText, { color: isActive ? accentColor : colors.text, fontFamily: isActive ? Fonts.semiBold : Fonts.regular, marginTop: hp(0.5) }]}>
                       {pt.label}
@@ -589,7 +588,7 @@ const EditPaybookScreen = () => {
                 Số kỳ trả <CustomText style={{ color: "#EF4444" }}>*</CustomText>
               </CustomText>
               <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <FontAwesome6 name="list-ol" size={normalize(15)} color={totalInstallments ? accentColor : colors.icon} style={styles.fieldIcon} />
+                <AppIcon name="list-ol" size={normalize(15)} color={totalInstallments ? accentColor : colors.icon} style={styles.fieldIcon} />
                 <TextInput
                   style={[styles.fieldInput, { color: colors.text }]}
                   placeholder="Ví dụ: 12"
@@ -619,7 +618,7 @@ const EditPaybookScreen = () => {
             <View style={styles.section}>
               <CustomText style={[styles.label, { color: colors.text }]}>Lãi suất (%/năm)</CustomText>
               <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <FontAwesome6 name="percent" size={normalize(14)} color={effectiveInterestRate > 0 ? accentColor : colors.icon} style={styles.fieldIcon} />
+                <AppIcon name="percent" size={normalize(14)} color={effectiveInterestRate > 0 ? accentColor : colors.icon} style={styles.fieldIcon} />
                 <TextInput
                   style={[styles.fieldInput, { color: colors.text }]}
                   placeholder="0"
@@ -677,7 +676,7 @@ const EditPaybookScreen = () => {
                 onPress={() => setShowStartPicker(true)}
                 activeOpacity={0.7}
               >
-                <FontAwesome6 name="calendar" size={normalize(13)} color={accentColor} solid style={{ marginRight: wp(2) }} />
+                <AppIcon name="calendar" size={normalize(13)} color={accentColor} style={{ marginRight: wp(2) }} />
                 <CustomText style={[styles.dateText, { color: colors.text }]}>{formatDate(startDate)}</CustomText>
               </TouchableOpacity>
             </View>
@@ -698,11 +697,10 @@ const EditPaybookScreen = () => {
                 activeOpacity={0.7}
                 disabled={paymentType === "INSTALLMENT"}
               >
-                <FontAwesome6
+                <AppIcon
                   name="calendar-days"
                   size={normalize(13)}
                   color={maturityDate ? accentColor : colors.icon}
-                  solid
                   style={{ marginRight: wp(2), opacity: paymentType === "INSTALLMENT" ? 0.5 : 1 }}
                 />
                 <CustomText style={[styles.dateText, { color: maturityDate ? colors.text : colors.icon, opacity: paymentType === "INSTALLMENT" ? 0.5 : 1 }]}>
@@ -788,7 +786,7 @@ const EditPaybookScreen = () => {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <FontAwesome6 name="floppy-disk" size={normalize(15)} color="#fff" style={{ marginRight: wp(1.5) }} solid />
+                <AppIcon name="floppy-disk" size={normalize(15)} color="#fff" style={{ marginRight: wp(1.5) }} />
                 <CustomText style={styles.createText}>Lưu thay đổi</CustomText>
               </>
             )}

@@ -1,4 +1,5 @@
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
@@ -225,7 +226,7 @@ const PaybookScheduleScreen = () => {
         <View style={styles.scheduleHeader}>
           <View style={styles.scheduleHeaderLeft}>
             <View style={[styles.scheduleDot, { backgroundColor: statusCfg.color }]}>
-              <FontAwesome6
+              <AppIcon
                 name={statusCfg.icon as any}
                 size={normalize(10)}
                 color="#fff"
@@ -259,7 +260,7 @@ const PaybookScheduleScreen = () => {
             styles.dueIndicator,
             { backgroundColor: isPastDue ? "#FEE2E2" : "#FEF3C7" },
           ]}>
-            <FontAwesome6
+            <AppIcon
               name={isPastDue ? "triangle-exclamation" : "hourglass-half"}
               size={normalize(10)}
               color={isPastDue ? "#DC2626" : "#B45309"}
@@ -366,7 +367,7 @@ const PaybookScheduleScreen = () => {
 
         {/* Expand indicator */}
         <View style={styles.expandIndicator}>
-          <FontAwesome6
+          <AppIcon
             name={isExpanded ? "chevron-up" : "chevron-down"}
             size={normalize(10)}
             color={colors.icon}
@@ -406,7 +407,7 @@ const PaybookScheduleScreen = () => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <FontAwesome6
+            <AppIcon
               name="calendar-xmark"
               size={normalize(48)}
               color={colors.icon}

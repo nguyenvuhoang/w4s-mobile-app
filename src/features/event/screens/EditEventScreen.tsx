@@ -4,6 +4,7 @@
  */
 
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import StorageKey from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
@@ -302,7 +303,7 @@ const EditEventScreen: React.FC = () => {
           {/* Icon Preview */}
           <View style={styles.iconPreview}>
             <View style={[styles.iconCircle, { backgroundColor: color }]}>
-              <FontAwesome6
+              <AppIcon
                 name={icon as any}
                 size={normalize(40)}
                 color="#fff"
@@ -325,12 +326,12 @@ const EditEventScreen: React.FC = () => {
                 Icon
               </CustomText>
               <View style={styles.selectorValue}>
-                <FontAwesome6
+                <AppIcon
                   name={icon as any}
                   size={normalize(20)}
                   color={colors.text}
                 />
-                <FontAwesome6
+                <AppIcon
                   name="chevron-right"
                   size={normalize(14)}
                   color={colors.icon}
@@ -352,7 +353,7 @@ const EditEventScreen: React.FC = () => {
               </CustomText>
               <View style={styles.selectorValue}>
                 <View style={[styles.colorDot, { backgroundColor: color }]} />
-                <FontAwesome6
+                <AppIcon
                   name="chevron-right"
                   size={normalize(14)}
                   color={colors.icon}
@@ -408,7 +409,7 @@ const EditEventScreen: React.FC = () => {
                       { backgroundColor: selectedWallet.color },
                     ]}
                   >
-                    <FontAwesome6
+                    <AppIcon
                       name={selectedWallet.icon as any}
                       size={normalize(20)}
                       color="#fff"
@@ -429,7 +430,7 @@ const EditEventScreen: React.FC = () => {
                       { backgroundColor: colors.tint },
                     ]}
                   >
-                    <FontAwesome6
+                    <AppIcon
                       name="wallet"
                       size={normalize(20)}
                       color="#fff"
@@ -443,7 +444,7 @@ const EditEventScreen: React.FC = () => {
                   </CustomText>
                 </View>
               )}
-              <FontAwesome6
+              <AppIcon
                 name="chevron-right"
                 size={normalize(14)}
                 color={colors.icon}
@@ -473,7 +474,7 @@ const EditEventScreen: React.FC = () => {
               >
                 {formatDate(endDate)}
               </CustomText>
-              <FontAwesome6
+              <AppIcon
                 name="calendar"
                 size={normalize(18)}
                 color={colors.icon}

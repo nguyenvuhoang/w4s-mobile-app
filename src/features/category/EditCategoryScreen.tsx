@@ -1,4 +1,3 @@
-import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
@@ -341,7 +341,7 @@ const EditCategoryScreen: React.FC = () => {
           {/* ICON PREVIEW */}
           <View style={styles.previewContainer}>
             <View style={[styles.iconPreview, { backgroundColor: color }]}>
-              <FontAwesome6
+              <AppIcon
                 name={icon as any}
                 size={normalize(33)}
                 color="#fff"
@@ -364,8 +364,8 @@ const EditCategoryScreen: React.FC = () => {
                 <CustomText style={[styles.infoValue, { color: colors.text }]}>
                   {getCategoryGroupLabel(category.category_group)}
                 </CustomText>
-                <Ionicons
-                  name="lock-closed-outline"
+                <AppIcon
+                  name="lock"
                   size={normalize(14)}
                   color={colors.icon}
                 />
@@ -386,12 +386,12 @@ const EditCategoryScreen: React.FC = () => {
                 Icon
               </CustomText>
               <View style={styles.selectorValue}>
-                <FontAwesome6
+                <AppIcon
                   name={icon as any}
                   size={normalize(20)}
                   color={colors.text}
                 />
-                <FontAwesome6
+                <AppIcon
                   name="chevron-right"
                   size={normalize(14)}
                   color={colors.icon}
@@ -411,7 +411,7 @@ const EditCategoryScreen: React.FC = () => {
               </CustomText>
               <View style={styles.selectorValue}>
                 <View style={[styles.colorDot, { backgroundColor: color }]} />
-                <FontAwesome6
+                <AppIcon
                   name="chevron-right"
                   size={normalize(14)}
                   color={colors.icon}
@@ -441,7 +441,7 @@ const EditCategoryScreen: React.FC = () => {
                         { backgroundColor: parentCategory.color },
                       ]}
                     >
-                      <FontAwesome6
+                      <AppIcon
                         name={parentCategory.icon as any}
                         size={normalize(18)}
                         color="#fff"
@@ -473,7 +473,7 @@ const EditCategoryScreen: React.FC = () => {
                   }}
                   hitSlop={10}
                 >
-                  <Ionicons name="close-circle" size={normalize(20)} color={colors.error} />
+                  <AppIcon name="circle-xmark" size={normalize(20)} color={colors.error} />
                 </TouchableOpacity>
               )}
             </TouchableOpacity>
@@ -529,7 +529,7 @@ const EditCategoryScreen: React.FC = () => {
                   style={styles.autoTranslateTag}
                   onPress={handleRetryTranslation}
                 >
-                  <Ionicons name="language" size={normalize(14)} color={colors.tint} />
+                  <AppIcon name="language" size={normalize(14)} color={colors.tint} />
                   <CustomText style={[styles.autoTranslateText, { color: colors.tint }]}>
                     Tự động dịch
                   </CustomText>
@@ -552,9 +552,9 @@ const EditCategoryScreen: React.FC = () => {
                   style={[styles.input, { color: colors.text }]}
                 />
                 {isEditingTranslation && (
-                  <TouchableOpacity onPress={handleRetryTranslation} style={styles.refreshButton}>
-                    <Ionicons name="refresh" size={normalize(18)} color={colors.tint} />
-                  </TouchableOpacity>
+                    <TouchableOpacity onPress={handleRetryTranslation} style={styles.refreshButton}>
+                      <AppIcon name="rotate-right" size={normalize(18)} color={colors.tint} />
+                    </TouchableOpacity>
                 )}
               </View>
               <CustomText style={[styles.hintText, { color: colors.icon }]}>
@@ -583,8 +583,8 @@ const EditCategoryScreen: React.FC = () => {
             onPress={handleDelete}
             disabled={updating || deleting}
           >
-            <Ionicons
-              name="trash-outline"
+            <AppIcon
+              name="trash-can"
               size={normalize(18)}
               color={colors.error}
             />

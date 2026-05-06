@@ -1,4 +1,5 @@
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
@@ -211,7 +212,7 @@ const PaybookDetailScreen = () => {
     <View style={styles.infoRow}>
       <View style={styles.infoRowLeft}>
         {icon && (
-          <FontAwesome6
+          <AppIcon
             name={icon as any}
             size={normalize(12)}
             color={colors.icon}
@@ -244,7 +245,7 @@ const PaybookDetailScreen = () => {
         ].map((item, i, arr) => (
           <React.Fragment key={item.label}>
             <TouchableOpacity style={styles.menuItem} onPress={() => { onClose(); item.onPress(); }}>
-              <FontAwesome6 name={item.icon} size={normalize(15)} color={item.color} />
+              <AppIcon name={item.icon as any} size={normalize(15)} color={item.color} />
               <CustomText style={[styles.menuItemText, { color: item.color }]}>{item.label}</CustomText>
             </TouchableOpacity>
             {i < arr.length - 1 && <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />}
@@ -261,7 +262,7 @@ const PaybookDetailScreen = () => {
         title={t("paybook.detailTitle")}
         rightComponent={
           <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={{ padding: normalize(8) }}>
-            <FontAwesome6 name="ellipsis-vertical" size={normalize(20)} color={colors.icon} />
+            <AppIcon name="ellipsis-vertical" size={normalize(20)} color={colors.icon} />
           </TouchableOpacity>
         }
       />
@@ -294,11 +295,10 @@ const PaybookDetailScreen = () => {
           <View style={styles.heroHeader}>
             <View style={styles.heroHeaderLeft}>
               <View style={[styles.heroAvatar, { backgroundColor: isLend ? "#E8F5E9" : "#FFEBEE" }]}>
-                <FontAwesome6
+                <AppIcon
                   name={loan.counterparty_type === "MERCHANT" ? "building" : "user"}
                   size={normalize(20)}
                   color={typeColor}
-                  solid
                 />
               </View>
               <View style={styles.heroMeta}>
@@ -307,7 +307,7 @@ const PaybookDetailScreen = () => {
                 </CustomText>
                 <View style={styles.heroSubRow}>
                   <View style={[styles.typeBadge, { backgroundColor: isLend ? "#E8F5E9" : "#FFEBEE" }]}>
-                    <FontAwesome6
+                    <AppIcon
                       name={isLend ? "arrow-trend-up" : "arrow-trend-down"}
                       size={normalize(9)}
                       color={typeColor}
@@ -324,7 +324,7 @@ const PaybookDetailScreen = () => {
               </View>
             </View>
             <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
-              <FontAwesome6
+              <AppIcon
                 name={statusConfig.icon as any}
                 size={normalize(10)}
                 color={statusConfig.color}
@@ -442,7 +442,7 @@ const PaybookDetailScreen = () => {
               {/* Ngày đến hạn */}
               <View style={styles.nextPaymentDateRow}>
                 <View style={styles.nextPaymentDateItem}>
-                  <FontAwesome6
+                  <AppIcon
                     name="calendar-days"
                     size={normalize(13)}
                     color={colors.icon}
@@ -470,7 +470,7 @@ const PaybookDetailScreen = () => {
                             : "#EEF2FF",
                       },
                     ]}>
-                      <FontAwesome6
+                      <AppIcon
                         name={isOverdue ? "triangle-exclamation" : "hourglass-half"}
                         size={normalize(10)}
                         color={isOverdue ? "#DC2626" : isDueSoon ? "#B45309" : "#6366F1"}
@@ -602,7 +602,7 @@ const PaybookDetailScreen = () => {
                 <CustomText style={[styles.viewAllText, { color: accentColor }]}>
                   {t("paybook.view_all")}
                 </CustomText>
-                <FontAwesome6
+                <AppIcon
                   name="chevron-right"
                   size={normalize(10)}
                   color={accentColor}
@@ -623,7 +623,7 @@ const PaybookDetailScreen = () => {
                     {/* Timeline line */}
                     <View style={styles.timelineLineWrapper}>
                       <View style={[styles.timelineDot, { backgroundColor: schedStatusCfg.color }]}>
-                        <FontAwesome6
+                        <AppIcon
                           name={schedStatusCfg.icon as any}
                           size={normalize(8)}
                           color="#fff"
@@ -670,7 +670,7 @@ const PaybookDetailScreen = () => {
                 <CustomText style={[styles.viewAllBottomText, { color: accentColor }]}>
                   {t("paybook.view_all_installments", { count: schedules.length })}
                 </CustomText>
-                <FontAwesome6
+                <AppIcon
                   name="arrow-right"
                   size={normalize(12)}
                   color={accentColor}
@@ -698,7 +698,7 @@ const PaybookDetailScreen = () => {
             {/* Gốc đã trả */}
             <View style={[styles.summaryGridItem, { backgroundColor: `${accentColor}08` }]}>
               <View style={[styles.summaryGridIcon, { backgroundColor: `${accentColor}15` }]}>
-                <FontAwesome6 name="money-bill-1" size={normalize(14)} color={accentColor} />
+                <AppIcon name="money-bill-1" size={normalize(14)} color={accentColor} />
               </View>
               <CustomText style={[styles.summaryGridLabel, { color: colors.icon }]}>
                 {t("paybook.paidPrincipal")}
@@ -712,7 +712,7 @@ const PaybookDetailScreen = () => {
             {hasInterest ? (
               <View style={[styles.summaryGridItem, { backgroundColor: `${accentColor}08` }]}>
                 <View style={[styles.summaryGridIcon, { backgroundColor: `${accentColor}15` }]}>
-                  <FontAwesome6 name="chart-line" size={normalize(14)} color={accentColor} />
+                  <AppIcon name="chart-line" size={normalize(14)} color={accentColor} />
                 </View>
                 <CustomText style={[styles.summaryGridLabel, { color: colors.icon }]}>
                   {t("paybook.totalInterest")}
@@ -724,7 +724,7 @@ const PaybookDetailScreen = () => {
             ) : (
               <View style={[styles.summaryGridItem, { backgroundColor: `${accentColor}08` }]}>
                 <View style={[styles.summaryGridIcon, { backgroundColor: `${accentColor}15` }]}>
-                  <FontAwesome6 name="percent" size={normalize(14)} color={accentColor} />
+                  <AppIcon name="percent" size={normalize(14)} color={accentColor} />
                 </View>
                 <CustomText style={[styles.summaryGridLabel, { color: colors.icon }]}>
                   {t("paybook.interest")}
@@ -738,7 +738,7 @@ const PaybookDetailScreen = () => {
             {/* Tổng phải trả */}
             <View style={[styles.summaryGridItem, { backgroundColor: `${accentColor}08` }]}>
               <View style={[styles.summaryGridIcon, { backgroundColor: `${accentColor}15` }]}>
-                <FontAwesome6 name="coins" size={normalize(14)} color={accentColor} />
+                <AppIcon name="coins" size={normalize(14)} color={accentColor} />
               </View>
               <CustomText style={[styles.summaryGridLabel, { color: colors.icon }]}>
                 {t("paybook.totalPayment")}
@@ -751,7 +751,7 @@ const PaybookDetailScreen = () => {
             {/* Còn lại */}
             <View style={[styles.summaryGridItem, { backgroundColor: `${accentColor}08` }]}>
               <View style={[styles.summaryGridIcon, { backgroundColor: `${accentColor}15` }]}>
-                <FontAwesome6 name="hourglass-half" size={normalize(14)} color={accentColor} />
+                <AppIcon name="hourglass-half" size={normalize(14)} color={accentColor} />
               </View>
               <CustomText style={[styles.summaryGridLabel, { color: colors.icon }]}>
                 {t("paybook.remainingTime")}
