@@ -1,4 +1,5 @@
-import { Fonts, Tokens } from "@/core/theme/theme"; // Import từ file theme của bạn
+import { Fonts } from "@/core/theme/font";
+import { Tokens } from "@/core/theme/theme"; // Import từ file theme của bạn
 import { normalize } from "@/utils/layout"; // Giả sử hàm này bạn đã có
 import { Platform, StyleSheet } from "react-native";
 
@@ -36,8 +37,8 @@ export const createStyles = (colors: ThemeColors) => {
     },
     searchInput: {
       flex: 1,
-      fontFamily: Fonts.family.regular,
-      fontSize: Fonts.size.base, // 16
+      fontFamily: Fonts.regular,
+      fontSize: normalize(16), // 16
       color: colors.text,
       paddingVertical: Platform.OS === 'android' ? 0 : undefined,
     },
@@ -59,8 +60,8 @@ export const createStyles = (colors: ThemeColors) => {
       marginBottom: normalize(16),
     },
     infoText: {
-      fontFamily: Fonts.family.regular,
-      fontSize: Fonts.size.sm, // 14
+      fontFamily: Fonts.regular,
+      fontSize: normalize(14), // 14
       flex: 1,
       marginHorizontal: normalize(8),
       // Dùng màu đậm hơn cho text trong box nhạt
@@ -87,20 +88,20 @@ export const createStyles = (colors: ThemeColors) => {
       marginBottom: normalize(8),
     },
     dateText: {
-      fontSize: Fonts.size.xs, // 12
+      fontSize: normalize(12), // 12
       color: colors.icon, // Dùng màu xám icon cho ngày tháng
-      fontFamily: Fonts.family.regular,
+      fontFamily: Fonts.regular,
     },
     notificationTitle: {
-      fontSize: Fonts.size.base, // 16
-      fontFamily: Fonts.family.bold,
+      fontSize: normalize(16), // 16
+      fontFamily: Fonts.bold,
       marginBottom: normalize(6),
       color: colors.text,
     },
     // HTML Content Styles (thường truyền vào tagsStyles, nhưng nếu dùng Text thường)
     notificationDescription: {
-      fontSize: Fonts.size.sm,
-      fontFamily: Fonts.family.regular,
+      fontSize: normalize(14),
+      fontFamily: Fonts.regular,
       color: colors.text,
       lineHeight: 22,
     },
@@ -143,8 +144,8 @@ export const createStyles = (colors: ThemeColors) => {
       paddingHorizontal: normalize(12),
     },
     tabText: {
-      fontFamily: Fonts.family.medium,
-      fontSize: Fonts.size.sm,
+      fontFamily: Fonts.medium,
+      fontSize: normalize(14),
       color: colors.text, // Mặc định là màu text thường
     },
     badge: {
@@ -158,8 +159,8 @@ export const createStyles = (colors: ThemeColors) => {
     },
     badgeText: {
       color: colors.tint, // Màu primary
-      fontSize: Fonts.size.xs,
-      fontFamily: Fonts.family.bold,
+      fontSize: normalize(12),
+      fontFamily: Fonts.bold,
     },
 
     // --- Balance / Login State ---
@@ -169,8 +170,8 @@ export const createStyles = (colors: ThemeColors) => {
       paddingHorizontal: normalize(24),
     },
     balanceTitle: {
-      fontFamily: Fonts.family.bold,
-      fontSize: Fonts.size.base,
+      fontFamily: Fonts.bold,
+      fontSize: normalize(16),
       marginTop: normalize(12),
       color: colors.text,
     },
@@ -178,18 +179,18 @@ export const createStyles = (colors: ThemeColors) => {
       textAlign: "center",
       color: colors.icon,
       marginTop: normalize(8),
-      fontFamily: Fonts.family.regular,
-      fontSize: Fonts.size.sm,
+      fontFamily: Fonts.regular,
+      fontSize: normalize(14),
     },
     balanceNote: {
       textAlign: "center",
       marginTop: normalize(4),
-      fontFamily: Fonts.family.regular,
-      fontSize: Fonts.size.sm,
+      fontFamily: Fonts.regular,
+      fontSize: normalize(14),
       color: colors.text,
     },
     boldText: {
-      fontFamily: Fonts.family.bold,
+      fontFamily: Fonts.bold,
       color: colors.text,
     },
     loginButton: {
@@ -200,8 +201,8 @@ export const createStyles = (colors: ThemeColors) => {
     // Nút login thường có nền Primary, chữ trắng (bất kể theme)
     loginButtonText: {
       color: Tokens.colors.main.white, 
-      fontFamily: Fonts.family.bold,
-      fontSize: Fonts.size.sm,
+      fontFamily: Fonts.bold,
+      fontSize: normalize(14),
     },
 
     // --- Empty State ---
@@ -218,10 +219,10 @@ export const createStyles = (colors: ThemeColors) => {
       // Có thể chỉnh opacity nếu là dark mode bên logic component
     },
     emptyListText: {
-      fontSize: Fonts.size.base,
+      fontSize: normalize(16),
       marginTop: normalize(16),
       color: colors.icon,
-      fontFamily: Fonts.family.medium,
+      fontFamily: Fonts.medium,
     },
   });
 };

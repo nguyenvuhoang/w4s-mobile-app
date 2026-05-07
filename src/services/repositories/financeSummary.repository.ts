@@ -6,7 +6,7 @@ import { BaseResponseModel } from "@/core/api/models/ClientModel";
  * Types & Interfaces
  * ======================= */
 
-export type PeriodType = "D" | "M" | "Y";
+import { PERIOD_TYPE, PeriodType } from "@/constants/PeriodType";
 
 export interface FinanceSummaryRequest {
   usercode: string;

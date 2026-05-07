@@ -21,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 /* ================= TYPES ================= */
 
-type PeriodType = 'W' | 'M' | 'Q' | 'Y';
+import { PERIOD_TYPE, PeriodType } from '@/constants/PeriodType';
 
 interface PeriodOption {
   label: string;
@@ -47,7 +47,7 @@ const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
   const options: PeriodOption[] = [];
 
   switch (periodType) {
-    case 'W': {
+    case PERIOD_TYPE.WEEK: {
       // Last 6 weeks
       for (let i = 0; i <= 5; i++) {
         const d = new Date(today);
@@ -62,7 +62,7 @@ const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
       }
       break;
     }
-    case 'M': {
+    case PERIOD_TYPE.MONTH: {
       // Last 12 months
       for (let i = 0; i <= 11; i++) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
@@ -75,7 +75,7 @@ const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
       }
       break;
     }
-    case 'Q': {
+    case PERIOD_TYPE.QUARTER: {
       // Last 8 quarters
       const currentQ = Math.floor(today.getMonth() / 3);
       for (let i = 0; i <= 7; i++) {
@@ -90,7 +90,7 @@ const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
       }
       break;
     }
-    case 'Y': {
+    case PERIOD_TYPE.YEAR: {
       // Last 5 years
       for (let i = 0; i <= 4; i++) {
         const y = today.getFullYear() - i;
@@ -113,10 +113,10 @@ const CategoryReportDetailScreen = () => {
   const { wallets, defaultWallet } = useWallet();
 
   const PERIOD_TYPES: { id: PeriodType; label: string }[] = useMemo(() => [
-    { id: 'W', label: t('report.week') },
-    { id: 'M', label: t('report.month') },
-    { id: 'Q', label: t('report.quarter') },
-    { id: 'Y', label: t('report.year') },
+    { id: PERIOD_TYPE.WEEK, label: t('report.week') },
+    { id: PERIOD_TYPE.MONTH, label: t('report.month') },
+    { id: PERIOD_TYPE.QUARTER, label: t('report.quarter') },
+    { id: PERIOD_TYPE.YEAR, label: t('report.year') },
   ], [t]);
 
   const CATEGORY_TABS = useMemo(() => [
@@ -156,7 +156,7 @@ const CategoryReportDetailScreen = () => {
 
   const [selectedWallet, setSelectedWallet] = useState<WalletSummary | null>(initWallet);
   const [periodType, setPeriodType] = useState<PeriodType>(
-    (params.period_type as PeriodType) || 'M'
+    (params.period_type as PeriodType) || PERIOD_TYPE.MONTH
   );
   const periodOptions = useMemo(() => buildPeriodOptions(periodType, t), [periodType, t]);
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodOption>(periodOptions[0]);

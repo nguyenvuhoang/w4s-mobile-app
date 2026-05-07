@@ -12,6 +12,7 @@ import StorageService from '@/services/StorageService';
 import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
 import { useReport } from '../hooks/useReport';
+import { PERIOD_TYPE } from '@/constants/PeriodType';
 
 import { FontAwesome6 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -107,7 +108,7 @@ const ReportScreen = () => {
       console.log('[ReportScreen] Fetching data for wallet:', selectedWallet.walletId, 'period:', selectedPeriod.date);
 
       fetchBalance({
-        period_type: 'M',
+        period_type: PERIOD_TYPE.MONTH,
         anchor_date: selectedPeriod.date,
         type: 'W',
         wallet_id: selectedWallet.walletId
@@ -116,13 +117,13 @@ const ReportScreen = () => {
       fetchWalletSummary({
         wallet_id: selectedWallet.walletId,
         anchor_date: selectedPeriod.date,
-        period_type: 'M',
+        period_type: PERIOD_TYPE.MONTH,
       });
 
       analyzeCategory({
         wallet_id: selectedWallet.walletId,
         anchor_date: selectedPeriod.date,
-        period_type: 'M',
+        period_type: PERIOD_TYPE.MONTH,
       });
 
       fetchMonthlyDebitSummary({
@@ -220,7 +221,7 @@ const ReportScreen = () => {
       params: {
         wallet_id: selectedWallet?.walletId?.toString() ?? '',
         anchor_date: selectedPeriod.date,
-        period_type: 'M',
+        period_type: PERIOD_TYPE.MONTH,
         currency: defaultCurrency.symbol,
         wallet_name: selectedWallet?.name ?? '',
         period_label: selectedPeriod.label,
@@ -236,7 +237,7 @@ const ReportScreen = () => {
       params: {
         wallet_id: selectedWallet?.walletId?.toString() ?? '',
         anchor_date: selectedPeriod.date,
-        period_type: 'M',
+        period_type: PERIOD_TYPE.MONTH,
         currency: defaultCurrency.symbol,
         wallet_name: selectedWallet?.name ?? '',
         period_label: selectedPeriod.label,

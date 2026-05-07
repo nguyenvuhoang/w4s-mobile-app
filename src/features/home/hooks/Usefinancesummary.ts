@@ -3,6 +3,7 @@ import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
 import { financeSummaryRepository } from "@/services/repositories/financeSummary.repository";
 import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
+import { PERIOD_TYPE } from "@/constants/PeriodType";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -56,7 +57,7 @@ export const useFinanceSummary = (): UseFinanceSummaryReturn => {
 
       const [summaryResponse, balanceResponse] = await Promise.all([
         financeSummaryRepository.getIncomeExpenseSummary({
-          period_type: "M",
+          period_type: PERIOD_TYPE.MONTH,
           usercode: userCode,
         }),
         financeSummaryRepository.getTotalBalance(userCode),

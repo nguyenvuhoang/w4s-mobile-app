@@ -39,6 +39,7 @@ interface CategoryTransaction {
 import { useTransaction } from '@/features/transaction/hooks/useTransaction';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
+import { PERIOD_TYPE } from '@/constants/PeriodType';
 import { useEffect, useState } from 'react';
 
 const CategoryDetailScreen: React.FC = () => {
@@ -129,22 +130,22 @@ const CategoryDetailScreen: React.FC = () => {
         let toDate = "";
 
         switch (periodType) {
-            case 'W': {
+            case PERIOD_TYPE.WEEK: {
                 const end = new Date(year, month, day + 7);
                 toDate = end.toISOString().split('T')[0];
                 break;
             }
-            case 'M': {
+            case PERIOD_TYPE.MONTH: {
                 const end = new Date(year, month + 1, 1);
                 toDate = end.toISOString().split('T')[0];
                 break;
             }
-            case 'Q': {
+            case PERIOD_TYPE.QUARTER: {
                 const end = new Date(year, month + 3, 1);
                 toDate = end.toISOString().split('T')[0];
                 break;
             }
-            case 'Y': {
+            case PERIOD_TYPE.YEAR: {
                 const end = new Date(year + 1, 0, 1);
                 toDate = end.toISOString().split('T')[0];
                 break;
@@ -176,7 +177,7 @@ const CategoryDetailScreen: React.FC = () => {
             try {
                 let fromDate = params.anchor_date as string;
                 let toDate = "";
-                const periodType = (params.period_type as string) || 'M';
+                const periodType = (params.period_type as string) || PERIOD_TYPE.MONTH;
 
                 if (fromDate) {
                     const range = getPeriodRange(fromDate, periodType);

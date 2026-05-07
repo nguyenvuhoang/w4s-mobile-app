@@ -10,6 +10,7 @@ import {
 } from '@/services/repositories/category.repository';
 import StorageService from '@/services/StorageService';
 import TransactionEventEmitter from '@/services/TransactionEventEmitter';
+import { PERIOD_TYPE } from '@/constants/PeriodType';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // ─────────────────────────────────────────────
@@ -84,10 +85,10 @@ export const useTopSpendingCategories = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const lastParams = useRef({ period_type: 'M', take: 5 });
+  const lastParams = useRef<{ period_type: string; take: number }>({ period_type: PERIOD_TYPE.MONTH, take: 5 });
 
   const fetchTopCategories = useCallback(async (
-    period_type: string = 'M',
+    period_type: string = PERIOD_TYPE.MONTH,
     take: number = 5
   ) => {
     lastParams.current = { period_type, take };

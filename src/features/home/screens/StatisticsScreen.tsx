@@ -4,6 +4,7 @@ import CustomText from "@/components/base/CustomText";
 import SectionHeader from "@/components/base/SectionHeader";
 import LineChartCard from "@/components/chart/LineChartCard";
 import STORAGE_KEY from "@/constants/StorageKey";
+import { PERIOD_TYPE } from "@/constants/PeriodType";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useFinanceSummary, useMonthlyChartData, useWalletOpeningClosingBalance } from "@/features/home/hooks/Usefinancesummary";
 import { useTopSpendingCategories } from "@/features/home/hooks/useTopSpendingCategories";
@@ -55,7 +56,7 @@ const StatisticsScreen = () => {
     loading: categoriesLoading,
     error: categoriesError,
     refresh: refreshCategories,
-  } = useTopSpendingCategories("M", 100);
+  } = useTopSpendingCategories(PERIOD_TYPE.MONTH, 100);
 
   const { advancedSearchTransactions, loading: searchLoading } = useTransaction();
   const { categories: allCategories } = useCategory();
@@ -162,7 +163,7 @@ const StatisticsScreen = () => {
     const today = new Date().toISOString().split('T')[0];
 
     fetchBalance({
-      period_type: "M",
+      period_type: PERIOD_TYPE.MONTH,
       anchor_date: today,
       type: "C"
     });
@@ -439,7 +440,7 @@ const StatisticsScreen = () => {
             pathname: "/(protected)/report/category-report-detail",
             params: {
               wallet_id: "0",
-              period_type: "M",
+              period_type: PERIOD_TYPE.MONTH,
               anchor_date: new Date().toISOString().split('T')[0]
             }
           })}

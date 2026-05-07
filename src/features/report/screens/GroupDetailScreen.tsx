@@ -11,6 +11,7 @@ import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { PERIOD_TYPE } from '@/constants/PeriodType';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -230,16 +231,16 @@ const GroupDetailScreen = () => {
         chartMonth0Res,
         chartMonth1Res,
       ] = await Promise.all([
-        fetchWalletSummary({ wallet_id: walletId, anchor_date: anchorDate, period_type: 'M' }),
+        fetchWalletSummary({ wallet_id: walletId, anchor_date: anchorDate, period_type: PERIOD_TYPE.MONTH }),
         fetchWalletSummary({
           wallet_id: walletId,
           anchor_date: chartMonths[0].date,
-          period_type: 'M',
+          period_type: PERIOD_TYPE.MONTH,
         }),
         fetchWalletSummary({
           wallet_id: walletId,
           anchor_date: chartMonths[1].date,
-          period_type: 'M',
+          period_type: PERIOD_TYPE.MONTH,
         }),
       ]);
 

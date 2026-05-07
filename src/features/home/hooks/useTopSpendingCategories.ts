@@ -3,6 +3,7 @@ import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
 import { categoryRepository } from "@/services/repositories/category.repository";
 import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
+import { PERIOD_TYPE } from "@/constants/PeriodType";
 import { useCallback, useEffect, useState } from "react";
 
 export interface TopSpendingCategory {
@@ -27,7 +28,7 @@ interface UseTopSpendingCategoriesReturn {
  * Automatically refetches when a transaction is created/updated/deleted
  */
 export const useTopSpendingCategories = (
-    periodType: string = "M",
+    periodType: string = PERIOD_TYPE.MONTH,
     take: number = 5,
 ): UseTopSpendingCategoriesReturn => {
     const [categories, setCategories] = useState<TopSpendingCategory[]>([]);
