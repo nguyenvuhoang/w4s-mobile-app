@@ -464,7 +464,7 @@
   "validation": {
     "invalid_email": "Email không hợp lệ",
     "invalid_phone": "Số điện thoại không hợp lệ",
-    "invalid_fullname": "Họ và tên phải có ít nhất 2 ký tự",
+    "invalid_fullname": "Họ và tên phải gồm ít nhất 2 từ",
     "invalid_address": "Địa chỉ phải có ít nhất 5 ký tự",
     "required_email": "Email không được để trống",
     "required_phone": "Số điện thoại không được để trống",

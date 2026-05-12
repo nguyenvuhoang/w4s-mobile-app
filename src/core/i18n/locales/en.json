@@ -464,7 +464,7 @@
   "validation": {
     "invalid_email": "Invalid Email",
     "invalid_phone": "Invalid Phone Number",
-    "invalid_fullname": "Full name must be at least 2 characters",
+    "invalid_fullname": "Full name must contain at least 2 words",
     "invalid_address": "Address must be at least 5 characters",
     "required_email": "Email is required",
     "required_phone": "Phone number is required",

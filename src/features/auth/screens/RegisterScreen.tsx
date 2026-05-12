@@ -11,17 +11,17 @@ import { Images } from '@/utils/images';
 import { hasNotch, normalize } from '@/utils/layout';
 import { isValidEmail, isValidPhone } from '@/utils/validation';
 import { FontAwesome6, Ionicons } from '@expo/vector-icons';
-import DatePicker from 'react-native-date-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StatusBar } from 'expo-status-bar';
 import {
   ActivityIndicator,
   Animated,
   Dimensions,
   Image,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
@@ -29,6 +29,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DatePicker from 'react-native-date-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
@@ -148,8 +149,10 @@ const RegisterScreen = () => {
   };
 
   const validateFullName = (value: string): string | null => {
-    if (!value.trim()) return t('validation.required_fullname');
-    if (value.trim().length < 2) return t('validation.invalid_fullname');
+    const trimmed = value.trim();
+    if (!trimmed) return t('validation.required_fullname');
+    const words = trimmed.split(/\s+/);
+    if (words.length < 2) return t('validation.invalid_fullname');
     return null;
   };
 
@@ -306,9 +309,20 @@ const RegisterScreen = () => {
     !!errors.birthday;
 
   return (
+    // ✅ FIX 1: Tách SafeAreaView top ra riêng, không wrap KeyboardAvoidingView
     <View style={[styles.container, { backgroundColor: colors.brandBg }]}>
       <StatusBar style="light" />
-      <SafeAreaView edges={['top']} style={[styles.safeArea, { backgroundColor: colors.brandBlue }]}>
+      <SafeAreaView
+        edges={['top']}
+        style={{ backgroundColor: colors.brandBlue }}
+      />
+
+      {/* ✅ FIX 2: KeyboardAvoidingView bao ngoài toàn bộ content, không nằm trong ScrollView */}
+      <KeyboardAvoidingView
+        style={[styles.keyboardAvoidingView, { backgroundColor: colors.brandBg }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
         <View style={[styles.sliderContainer, { backgroundColor: colors.brandBg }]}>
           <Animated.View
             style={[
@@ -325,6 +339,9 @@ const RegisterScreen = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
                 keyboardShouldPersistTaps="handled"
+                // ✅ FIX 3: Thêm keyboardDismissMode để vuốt xuống tắt bàn phím
+                keyboardDismissMode="interactive"
+                bounces={true}
               >
                 <View style={[styles.header, { backgroundColor: colors.brandBlue }]}>
                   <View style={styles.headerCircleLeftLine} />
@@ -342,6 +359,7 @@ const RegisterScreen = () => {
                 </View>
 
                 <View style={styles.body}>
+                  {/* ✅ FIX 4: Bỏ KeyboardAvoidingView bên trong, thay bằng View thuần */}
                   <View style={styles.formContainer}>
                     <View style={styles.inputContainer}>
                       <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
@@ -517,9 +535,9 @@ const RegisterScreen = () => {
                   </TouchableOpacity>
 
                   <View style={styles.footer}>
-                      <ThemedText style={[styles.footerText, { color: colors.brandTextSecondary }]}>
-                        {t('auth.have_account')}{' '}
-                      </ThemedText>
+                    <ThemedText style={[styles.footerText, { color: colors.brandTextSecondary }]}>
+                      {t('auth.have_account')}{' '}
+                    </ThemedText>
                     <TouchableOpacity onPress={handleLogin} disabled={isRegistering}>
                       <ThemedText style={[styles.loginLink, { color: colors.brandBlue }]}>
                         {t('auth.login')}
@@ -536,6 +554,9 @@ const RegisterScreen = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
                 keyboardShouldPersistTaps="handled"
+                // ✅ FIX 3: Thêm keyboardDismissMode để vuốt xuống tắt bàn phím
+                keyboardDismissMode="interactive"
+                bounces={true}
               >
                 <View style={[styles.header, { backgroundColor: colors.brandBlue }]}>
                   <View style={styles.headerCircleLeft} />
@@ -555,6 +576,7 @@ const RegisterScreen = () => {
                 </View>
 
                 <View style={styles.body}>
+                  {/* ✅ FIX 4: Bỏ KeyboardAvoidingView bên trong, thay bằng View thuần */}
                   <View style={styles.formContainer}>
                     <View style={styles.inputContainer}>
                       <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
@@ -625,41 +647,41 @@ const RegisterScreen = () => {
                         {t('wallet.initial_balance_helper')}
                       </ThemedText>
                     </View>
-
-                    <TouchableOpacity
-                      onPress={handleRegister}
-                      activeOpacity={0.9}
-                      disabled={isRegistering || !isFormValid}
-                      style={styles.buttonWrap}
-                    >
-                      <LinearGradient
-                        colors={colors.gradientPrimary as any}
-                        start={{ x: 0, y: 0.5 }}
-                        end={{ x: 1, y: 0.5 }}
-                        style={[
-                          styles.primaryButton,
-                          (isRegistering || !isFormValid) && styles.primaryButtonDisabled,
-                        ]}
-                      >
-                        {isRegistering ? (
-                          <ActivityIndicator
-                            color={Tokens.colors.main.white}
-                            size="small"
-                          />
-                        ) : (
-                          <ThemedText style={styles.primaryButtonText}>
-                            {t('auth.register')}
-                          </ThemedText>
-                        )}
-                      </LinearGradient>
-                    </TouchableOpacity>
                   </View>
+
+                  <TouchableOpacity
+                    onPress={handleRegister}
+                    activeOpacity={0.9}
+                    disabled={isRegistering || !isFormValid}
+                    style={styles.buttonWrap}
+                  >
+                    <LinearGradient
+                      colors={colors.gradientPrimary as any}
+                      start={{ x: 0, y: 0.5 }}
+                      end={{ x: 1, y: 0.5 }}
+                      style={[
+                        styles.primaryButton,
+                        (isRegistering || !isFormValid) && styles.primaryButtonDisabled,
+                      ]}
+                    >
+                      {isRegistering ? (
+                        <ActivityIndicator
+                          color={Tokens.colors.main.white}
+                          size="small"
+                        />
+                      ) : (
+                        <ThemedText style={styles.primaryButtonText}>
+                          {t('auth.register')}
+                        </ThemedText>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
                 </View>
               </ScrollView>
             </View>
           </Animated.View>
         </View>
-      </SafeAreaView>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -669,7 +691,8 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flex: 1,
   },
 
-  safeArea: {
+  // ✅ FIX 5: Style mới cho KeyboardAvoidingView thay thế safeArea
+  keyboardAvoidingView: {
     flex: 1,
   },
 
@@ -683,8 +706,10 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flex: 1,
   },
 
+  // ✅ FIX 6: Thêm flexGrow: 1 và tăng paddingBottom để scroll đủ khi bàn phím mở
   scrollContent: {
-    paddingBottom: hasNotch() ? normalize(10) : normalize(30),
+    flexGrow: 1,
+    paddingBottom: hasNotch() ? normalize(40) : normalize(60),
   },
 
   header: {
