@@ -459,7 +459,15 @@
     "cache_cleared": "Cache cleared successfully!",
     "avatar_updated": "Avatar updated successfully!",
     "avatar_update_failed": "Failed to update avatar!",
-    "photo_permission_denied": "Photo library access required"
+    "photo_permission_denied": "Photo library access permission is required",
+    "reminder_off": "No reminders",
+    "reminder_time": "Every day at {{hour}}H",
+    "reminder_title": "Transaction Entry Reminder",
+    "reminder_subtitle": "Choose a time to receive reminder notifications",
+    "reminder_setup_success": "Reminder set for every day at {{hour}}H",
+    "reminder_cancel_success": "Transaction entry reminder turned off",
+    "reminder_noti_title": "⏳ Forgot to log today’s transaction?",
+    "reminder_noti_body": "Take 1 minute to track your expenses and manage your finances more effectively!"
   },
   "validation": {
     "invalid_email": "Invalid Email",

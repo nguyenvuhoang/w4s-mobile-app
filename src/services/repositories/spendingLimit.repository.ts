@@ -12,6 +12,8 @@ export interface SpendingLimit {
   currency_code: string;
   status?: string;
   is_active?: boolean;
+  category_code?: string;
+  wallet_id?: number;
 }
 
 export interface CreateSpendingLimitPayload {
@@ -19,6 +21,8 @@ export interface CreateSpendingLimitPayload {
   period: string;
   limit_amount: number;
   currency_code: string;
+  category_code?: string | null;
+  wallet_id?: number | null;
 }
 
 export interface UpdateSpendingLimitPayload {
@@ -27,6 +31,9 @@ export interface UpdateSpendingLimitPayload {
   limit_amount: number;
   currency_code: string;
   is_active: boolean;
+  contract_number?: string;
+  category_code?: string | null;
+  wallet_id?: number | null;
 }
 
 export interface AdvancedSearchSpendingLimitPayload {
@@ -69,6 +76,8 @@ export const spendingLimitRepository = {
           period: payload.period,
           limit_amount: payload.limit_amount,
           currency_code: payload.currency_code,
+          category_code: payload.category_code || null,
+          wallet_id: payload.wallet_id === 0 ? null : (payload.wallet_id !== undefined ? payload.wallet_id : null),
         },
         false,
         true
@@ -92,6 +101,9 @@ export const spendingLimitRepository = {
           limit_amount: payload.limit_amount,
           currency_code: payload.currency_code,
           is_active: payload.is_active,
+          contract_number: payload.contract_number,
+          category_code: payload.category_code || null,
+          wallet_id: payload.wallet_id === 0 ? null : (payload.wallet_id !== undefined ? payload.wallet_id : null),
         },
         false,
         true

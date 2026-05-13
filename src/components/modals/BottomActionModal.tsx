@@ -6,7 +6,7 @@ import { normalize, wp } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, {
   BottomSheetBackdrop,
-  BottomSheetView,
+  BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { Modal, StyleSheet, TouchableOpacity, View } from "react-native";
@@ -32,6 +32,7 @@ interface BottomActionModalProps {
   colors: any;
   cancelText?: string;
   hasBottomNav?: boolean;
+  snapPoints?: string[];
 }
 
 const BottomActionModal: React.FC<BottomActionModalProps> = ({
@@ -43,13 +44,14 @@ const BottomActionModal: React.FC<BottomActionModalProps> = ({
   colors,
   cancelText = "Hủy",
   hasBottomNav = false,
+  snapPoints: customSnapPoints,
 }) => {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
   const visibleActions = actions.filter((action) => !action.hide);
 
   // Snap points
-  const snapPoints = useMemo(() => ["50%"], []);
+  const snapPoints = useMemo(() => customSnapPoints || ["50%"], [customSnapPoints]);
 
   // Handle visibility changes
   useEffect(() => {
@@ -109,11 +111,12 @@ const BottomActionModal: React.FC<BottomActionModalProps> = ({
           handleIndicatorStyle={{ backgroundColor: colors.icon }}
           bottomInset={0}
         >
-          <BottomSheetView
-            style={[
+          <BottomSheetScrollView
+            contentContainerStyle={[
               styles.contentContainer,
               { paddingBottom: Math.max(insets.bottom, normalize(34)) }
             ]}
+            showsVerticalScrollIndicator={false}
           >
             {/* Header */}
             {(title || subtitle) && (
@@ -190,7 +193,7 @@ const BottomActionModal: React.FC<BottomActionModalProps> = ({
                 {cancelText}
               </CustomText>
             </TouchableOpacity>
-          </BottomSheetView>
+          </BottomSheetScrollView>
         </BottomSheet>
       </GestureHandlerRootView>
     </Modal>

@@ -24,6 +24,7 @@ import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import * as ImagePicker from "expo-image-picker";
+import * as Notifications from "expo-notifications";
 import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useContext, useState } from "react";
@@ -63,6 +64,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [updatingCurrency, setUpdatingCurrency] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [reminderHour, setReminderHour] = useState<string | null>(null);
+  const [showTransactionReminderModal, setShowTransactionReminderModal] = useState(false);
   useFocusEffect(
     useCallback(() => {
       const loadSelectedCurrency = async () => {
@@ -89,9 +92,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           setUpdatingCurrency(false);
         }
       };
+      const loadReminderSetting = async () => {
+        try {
+          const savedHour = await StorageService.getItem("transaction_reminder_hour");
+          setReminderHour(savedHour || null);
+        } catch (e) {
+          console.error("Failed to load reminder setting:", e);
+        }
+      };
 
       loadSelectedCurrency();
       getUserProfile();
+      loadReminderSetting();
     }, [updateDefaultCurrency, getUserProfile]),
   );
 
@@ -186,6 +198,89 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       onPress: () => handleApplyLanguage("en"),
       color: i18n.language === "en" ? colors.tint : colors.text,
     },
+  ];
+
+  const handleSetupReminder = async (hourStr: string | null) => {
+    try {
+      if (hourStr) {
+        await StorageService.setItem("transaction_reminder_hour", hourStr);
+        setReminderHour(hourStr);
+      } else {
+        await StorageService.removeItem("transaction_reminder_hour");
+        setReminderHour(null);
+      }
+
+      const prevNotiId = await StorageService.getItem("transaction_reminder_noti_id");
+      if (prevNotiId) {
+        await Notifications.cancelScheduledNotificationAsync(prevNotiId);
+        await StorageService.removeItem("transaction_reminder_noti_id");
+      }
+
+      if (hourStr) {
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status !== 'granted') {
+          showNotification(t("settings.photo_permission_denied") || "Vui lòng cấp quyền thông báo để sử dụng tính năng này", "warning");
+        }
+
+        const hourNum = parseInt(hourStr, 10);
+        const identifier = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: t("settings.reminder_noti_title") || "⏳ Quên nhập giao dịch hôm nay?",
+            body: t("settings.reminder_noti_body") || "Dành 1 phút ghi chép chi tiêu để quản lý tài chính hiệu quả hơn nhé!",
+            sound: true,
+            data: { screen: "add-transaction" },
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour: hourNum,
+            minute: 0,
+            repeats: true,
+          } as Notifications.NotificationTriggerInput,
+        });
+
+        await StorageService.setItem("transaction_reminder_noti_id", identifier);
+        showNotification(t("settings.reminder_setup_success", { hour: hourStr }) || `Đã thiết lập nhắc nhở vào ${hourStr}:00 hằng ngày`, "success");
+      } else {
+        showNotification(t("settings.reminder_cancel_success") || "Đã tắt nhắc nhở nhập giao dịch", "success");
+      }
+    } catch (error) {
+      console.error("[SettingsScreen] handleSetupReminder failed:", error);
+      showNotification("Cài đặt nhắc nhở thất bại", "error");
+    } finally {
+      setShowTransactionReminderModal(false);
+    }
+  };
+
+  const handleTransactionReminder = () => {
+    setShowTransactionReminderModal(true);
+  };
+
+  const reminderActions: ActionItem[] = [
+    {
+      id: "OFF",
+      icon: (!reminderHour ? "checkmark-circle" : "notifications-off-outline") as keyof typeof Ionicons.glyphMap,
+      label: t("settings.reminder_off") || "Không nhận thông báo",
+      onPress: () => handleSetupReminder(null),
+      color: !reminderHour ? colors.tint : colors.icon,
+    },
+    ...[17, 18, 19, 20, 21, 22, 23].map((h) => {
+      const isSelected = reminderHour === String(h);
+      // 🌟 Thiết kế sang trọng: Trạng thái chọn hiển thị checkmark nổi bật, trạng thái thường map icon trực quan theo buổi
+      let iconName = isSelected ? "checkmark-circle" : "time-outline";
+      if (!isSelected) {
+        if (h === 17) iconName = "partly-sunny-outline"; // Chiều tà
+        else if (h >= 18 && h <= 19) iconName = "cloudy-night-outline"; // Tối sớm
+        else iconName = "moon-outline"; // Đêm muộn
+      }
+
+      return {
+        id: String(h),
+        icon: iconName as keyof typeof Ionicons.glyphMap,
+        label: t("settings.reminder_time", { hour: h }) || `${h}:00 hằng ngày`,
+        onPress: () => handleSetupReminder(String(h)),
+        color: isSelected ? colors.tint : colors.text,
+      };
+    }),
   ];
 
   // Format currency display text
@@ -337,8 +432,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="setting_screen_transaction_reminder"
               title={t("settings.transaction_reminder")}
-              value="OFF"
-              onPress={() => { }}
+              value={reminderHour ? `${reminderHour}:00` : t("settings.reminder_off") || "OFF"}
+              onPress={handleTransactionReminder}
               colors={colors}
             />
             <SettingItem
@@ -471,6 +566,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         colors={colors}
         cancelText={t("common.cancel")}
         hasBottomNav={true}
+      />
+
+      <BottomActionModal
+        visible={showTransactionReminderModal}
+        onClose={() => setShowTransactionReminderModal(false)}
+        title={t("settings.reminder_title") || "Nhắc nhở nhập giao dịch"}
+        subtitle={t("settings.reminder_subtitle") || "Chọn khung giờ nhận thông báo nhắc nhở"}
+        actions={reminderActions}
+        colors={colors}
+        cancelText={t("common.cancel")}
+        hasBottomNav={true}
+        snapPoints={["65%"]}
       />
     </SafeAreaView>
   );
