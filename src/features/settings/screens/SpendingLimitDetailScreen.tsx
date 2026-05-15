@@ -10,7 +10,12 @@ import { useSpendingLimit } from '@/hooks/useSpendingLimit';
 import { SpendingLimit } from '@/services/repositories/spendingLimit.repository';
 import StorageService from '@/services/StorageService';
 import { normalize } from '@/utils/layout';
-import { Ionicons } from '@expo/vector-icons';
+import { useCategory } from '@/hooks/useCategory';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
+import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
+import { formatConvertedAmount, formatExchangeRate } from '@/utils/formatNumber';
+import { Ionicons, FontAwesome6 } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -33,12 +38,22 @@ const SpendingLimitDetailScreen = () => {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
 
-  const { wallets } = useWallet();
+  const { defaultCurrency } = useDefaultCurrency();
+
+  const { wallets, defaultWalletId } = useWallet();
   const [sourceWalletId, setSourceWalletId] = useState<number>(0);
+  const { categories } = useCategory({ autoFetch: true, walletId: sourceWalletId === 0 ? undefined : sourceWalletId });
   const [amount, setAmount] = useState(0);
   const [period, setPeriod] = useState('');
   const [showPeriodModal, setShowPeriodModal] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState({ id: 'VND', symbol: 'đ' });
+
+  const { needsConversion, exchangeRate, convertedAmount } = useCurrencyConversion({
+    amount,
+    fromCurrencyId: selectedCurrency.id,
+    toCurrencyId: defaultCurrency?.currencyId,
+  });
+
   const [editingLimit, setEditingLimit] = useState<SpendingLimit | null>(null);
   const [contractNumber, setContractNumber] = useState('');
   const [availablePeriods, setAvailablePeriods] = useState<any[]>([]);
@@ -64,17 +79,26 @@ const SpendingLimitDetailScreen = () => {
 
   const selectedWallet = React.useMemo(() => {
     if (sourceWalletId === 0) {
-      return {
-        walletId: 0,
-        name: t('budget.all_wallets', 'Tất cả các ví'),
-        icon: 'layer-group',
-        color: colors.tint,
-      };
+      if (editingLimit) {
+        return {
+          walletId: 0,
+          name: t('budget.all_wallets', 'Tất cả các ví'),
+          icon: 'layer-group',
+          color: colors.tint,
+        };
+      }
+      return null;
     }
     return wallets.find(w => w.walletId === sourceWalletId);
-  }, [wallets, sourceWalletId, colors.tint, t]);
+  }, [wallets, sourceWalletId, colors.tint, t, editingLimit]);
 
   const { item: itemParam, contractNumber: cnParam, initialPeriod, availablePeriods: apParam } = params;
+
+  useEffect(() => {
+    if (!itemParam && sourceWalletId === 0 && defaultWalletId) {
+      setSourceWalletId(defaultWalletId);
+    }
+  }, [defaultWalletId, itemParam, sourceWalletId]);
 
   useEffect(() => {
     if (itemParam) {
@@ -123,6 +147,20 @@ const SpendingLimitDetailScreen = () => {
       }
     }
   }, [itemParam, cnParam, initialPeriod, apParam]);
+
+  useEffect(() => {
+    if (editingLimit?.category_code && categories.length > 0) {
+      const cat = categories.find(c => c.category_code === editingLimit.category_code);
+      if (cat) {
+        setSelectedCategory((prev: any) => {
+          if (prev?.category_code === cat.category_code && prev?.category_name === cat.category_name) {
+            return prev;
+          }
+          return cat;
+        });
+      }
+    }
+  }, [categories, editingLimit?.category_code]);
 
   useFocusEffect(
     useCallback(() => {
@@ -182,6 +220,11 @@ const SpendingLimitDetailScreen = () => {
   const handleSubmit = async () => {
     if (amount <= 0) {
       showNotification(t('validation.amount_required', 'Vui lòng nhập số tiền hợp lệ'), 'error');
+      return;
+    }
+
+    if (sourceWalletId === 0 && !editingLimit) {
+      showNotification(t('budget.select_wallet', 'Vui lòng chọn ví'), 'error');
       return;
     }
 
@@ -254,20 +297,33 @@ const SpendingLimitDetailScreen = () => {
                 },
               ]}
               onPress={() => {
-                router.push('/(protected)/wallet/wallet-list?mode=select&allowAllWallets=true');
+                router.push('/(protected)/wallet/wallet-list?mode=select&allowAllWallets=false');
               }}
               disabled={!!editingLimit}
             >
-              <View style={[styles.categoryIcon, { backgroundColor: selectedWallet?.color || colors.tint }]}>
-                <AppIcon
-                  name={(selectedWallet?.icon as any) || 'wallet'}
-                  size={normalize(16)}
-                  color="#fff"
-                />
-              </View>
-              <CustomText style={{ color: colors.text, flex: 1 }} numberOfLines={1}>
-                {selectedWallet?.name || t('budget.select_wallet', 'Chọn ví')}
-              </CustomText>
+              {selectedWallet ? (
+                <>
+                  <View style={[styles.categoryIcon, { backgroundColor: selectedWallet.color || colors.tint }]}>
+                    <AppIcon
+                      name={(selectedWallet.icon as any) || 'wallet'}
+                      size={normalize(16)}
+                      color="#fff"
+                    />
+                  </View>
+                  <CustomText style={{ color: colors.text, flex: 1 }} numberOfLines={1}>
+                    {selectedWallet.name}
+                  </CustomText>
+                </>
+              ) : (
+                <>
+                  <View style={[styles.categoryIcon, { backgroundColor: colors.border }]}>
+                    <AppIcon name="wallet" size={normalize(16)} color={colors.icon} />
+                  </View>
+                  <CustomText style={{ color: colors.icon, flex: 1 }} numberOfLines={1}>
+                    {t('budget.select_wallet', 'Chọn ví')}
+                  </CustomText>
+                </>
+              )}
               {!editingLimit && (
                 <Ionicons name="chevron-down" size={normalize(20)} color={colors.icon} />
               )}
@@ -367,6 +423,28 @@ const SpendingLimitDetailScreen = () => {
               onCurrencyPress={handleCurrencyPress}
               containerStyle={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
             />
+            {needsConversion && convertedAmount !== null && exchangeRate !== null && defaultCurrency && (
+              <View style={styles.conversionContainer}>
+                <FontAwesome6
+                  name="arrow-right-arrow-left"
+                  size={normalize(12)}
+                  color={colors.icon}
+                />
+                <View style={styles.conversionTextContainer}>
+                  <CustomText style={[styles.conversionText, { color: colors.icon }]}>
+                    ≈ {defaultCurrency.symbol} {formatConvertedAmount(convertedAmount, defaultCurrency.currencyId)}
+                    <CustomText style={{ fontSize: normalize(11), opacity: 0.7 }}>
+                      {" "}
+                      ({defaultCurrency.currencyId})
+                    </CustomText>
+                  </CustomText>
+                  <CustomText style={[styles.exchangeRateText, { color: colors.icon }]}>
+                    1 {selectedCurrency.id} = {formatExchangeRate(exchangeRate, defaultCurrency.currencyId)}{" "}
+                    {defaultCurrency.currencyId}
+                  </CustomText>
+                </View>
+              </View>
+            )}
           </View>
         </ScrollView>
 
@@ -445,6 +523,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: normalize(16),
     fontWeight: '700',
+  },
+  conversionContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: normalize(8),
+    marginTop: normalize(8),
+    paddingHorizontal: normalize(4),
+  },
+  conversionTextContainer: {
+    flex: 1,
+    gap: normalize(2),
+  },
+  conversionText: {
+    fontSize: normalize(13),
+    fontWeight: '500',
+  },
+  exchangeRateText: {
+    fontSize: normalize(11),
+    opacity: 0.7,
   },
 });
 

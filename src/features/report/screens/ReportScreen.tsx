@@ -3,6 +3,7 @@ import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
 import SectionHeader from '@/components/base/SectionHeader';
 import PieChartWithLabels from '@/components/chart/PieChartCard';
+import { PERIOD_TYPE } from '@/constants/PeriodType';
 import STORAGE_KEY from '@/constants/StorageKey';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
@@ -12,7 +13,6 @@ import StorageService from '@/services/StorageService';
 import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
 import { useReport } from '../hooks/useReport';
-import { PERIOD_TYPE } from '@/constants/PeriodType';
 
 import { FontAwesome6 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -308,7 +308,7 @@ const ReportScreen = () => {
 
         <View style={styles.summaryRow}>
           {/* Total Expense */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.summaryCard, { backgroundColor: colors.card }]}
             onPress={() => handleViewGroupDetail('EXPENSE')}
             activeOpacity={0.7}
@@ -335,7 +335,7 @@ const ReportScreen = () => {
           </TouchableOpacity>
 
           {/* Total Income */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.summaryCard, { backgroundColor: colors.card }]}
             onPress={() => handleViewGroupDetail('INCOME')}
             activeOpacity={0.7}
@@ -410,29 +410,14 @@ const ReportScreen = () => {
 
         {/* ===== DEBT SECTION ===== */}
         <View style={[styles.debtCard, { backgroundColor: colors.card }]}>
-          {debitLoading ? (
-            <CustomText size={14} style={{ textAlign: 'center' }}>{t('common.loading')}</CustomText>
-          ) : (
-            debitSummary.length > 0 ? (
-              debitSummary.map((item, index) => {
-                let displayLabel = item.label;
-                if (item.label === 'Borrow') displayLabel = t('report.debit_borrow');
-                else if (item.label === 'Lend') displayLabel = t('report.debit_lend');
-                else if (item.label === 'Other') displayLabel = t('report.debit_other');
-
-                return (
-                  <View key={index} style={styles.debtRow}>
-                    <CustomText size={14}>{displayLabel}</CustomText>
-                    <CustomText type="medium" size={14}>
-                      {formatCurrency(item.amount)}
-                    </CustomText>
-                  </View>
-                );
-              })
-            ) : (
-              <CustomText size={14} style={{ textAlign: 'center', opacity: 0.5 }}>{t('report.no_debt_data')}</CustomText>
-            )
-          )}
+          {(['Borrow', 'Lend', 'Other'] as const).map((label) => (
+            <View key={label} style={styles.debtRow}>
+              <CustomText size={14}>{t(`report.debit_${label.toLowerCase()}`)}</CustomText>
+              <CustomText type="medium" size={14}>
+                {formatCurrency(label === 'Other' ? 0 : (debitSummary.find(d => d.label === label)?.amount || 0))}
+              </CustomText>
+            </View>
+          ))}
         </View>
 
         <SectionHeader

@@ -32,7 +32,7 @@ export const useSpendingLimit = () => {
     // Add listener to update local state when global state changes
     const listener = (newLimits: SpendingLimit[]) => setLimits(newLimits);
     const advListener = (newLimits: SpendingLimit[]) => setAdvancedLimits(newLimits);
-    
+
     listeners.push(listener);
     advancedListeners.push(advListener);
 
@@ -68,7 +68,7 @@ export const useSpendingLimit = () => {
     return () => {
       const index = listeners.indexOf(listener);
       if (index > -1) listeners.splice(index, 1);
-      
+
       const advIndex = advancedListeners.indexOf(advListener);
       if (advIndex > -1) advancedListeners.splice(advIndex, 1);
     };
@@ -212,7 +212,7 @@ export const useSpendingLimit = () => {
 
   /**
    * Helper to check if a transaction of a certain amount exceeds any active limits.
-   * Uses `limits` (React state) instead of `globalLimits` to avoid stale closure.
+   * Uses `advancedLimits` (React state) instead of `globalLimits` to avoid stale closure.
    * Hỗ trợ cross-currency: nếu `convertFn` được truyền vào, sẽ convert amount
    * sang currency của từng limit trước khi so sánh.
    * Returns an array of limits that would be exceeded.
@@ -221,25 +221,34 @@ export const useSpendingLimit = () => {
     (
       amount: number,
       currency: string,
-      convertFn?: (amount: number, from: string, to: string) => number | null
+      convertFn?: (amount: number, from: string, to: string) => number | null,
+      walletId?: number | null,
+      categoryCode?: string | null
     ) => {
-      return limits.filter(l => {
+      return advancedLimits.filter(l => {
         if (l.is_active === false) return false;
+
+        if (l.wallet_id != null && walletId != null && l.wallet_id !== walletId) {
+          return false;
+        }
+
+        if (l.category_code && categoryCode && l.category_code !== categoryCode) {
+          return false;
+        }
 
         let comparableAmount = amount;
 
-        // Nếu currency khác với limit → cần convert
         if (l.currency_code !== currency) {
-          if (!convertFn) return false; // Không có hàm convert thì bỏ qua
+          if (!convertFn) return false;
           const converted = convertFn(amount, currency, l.currency_code);
-          if (converted === null) return false; // Không có tỷ giá thì bỏ qua
+          if (converted === null) return false;
           comparableAmount = converted;
         }
 
         return (comparableAmount + (l.used_amount || 0)) > l.limit_amount;
       });
     },
-    [limits]
+    [advancedLimits]
   );
 
   return {

@@ -1,4 +1,5 @@
 import AppHeader from '@/components/base/AppHeader';
+import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
 import { Tokens } from '@/core/theme/theme';
 import { useAppTheme } from '@/core/theme/ThemeContext';
@@ -19,6 +20,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNotification } from '@/contexts/NotificationContext';
+import { useWallet } from '@/features/wallet/hooks/useWallet';
+import { useCategory } from '@/hooks/useCategory';
 
 const SpendingWarningScreen = () => {
   const { colors } = useAppTheme();
@@ -28,6 +31,9 @@ const SpendingWarningScreen = () => {
   const { appInfo } = useContext(GlobalContext);
   const contractNumber = appInfo?.contract_number || "";
 
+  const { wallets } = useWallet();
+  const { categories } = useCategory({ autoFetch: true });
+
   const ALL_PERIODS = [
     { id: 'Day', labelKey: 'settings.daily' },
     { id: 'Week', labelKey: 'settings.weekly' },
@@ -35,8 +41,6 @@ const SpendingWarningScreen = () => {
     { id: 'Quarter', labelKey: 'settings.quarterly' },
     { id: 'Year', labelKey: 'settings.yearly' },
   ];
-
-
 
   useFocusEffect(
     useCallback(() => {
@@ -46,25 +50,13 @@ const SpendingWarningScreen = () => {
     }, [fetchAdvancedLimits, contractNumber])
   );
 
-  const getAvailablePeriods = () => {
-    const existingPeriods = limits.map(l => l.period);
-    return ALL_PERIODS.filter(p => !existingPeriods.includes(p.id));
-  };
-
   const handleOpenCreate = () => {
-    const available = getAvailablePeriods();
-    if (available.length === 0) {
-      showNotification(
-        t('settings.all_periods_set', 'Tất cả chu kỳ đã được thiết lập hạn mức.'), 'warning'
-      );
-      return;
-    }
     router.push({
       pathname: '/(protected)/spending-limit-detail',
       params: { 
         contractNumber: contractNumber,
-        initialPeriod: available[0].id,
-        availablePeriods: JSON.stringify(available)
+        initialPeriod: 'Month',
+        availablePeriods: JSON.stringify(ALL_PERIODS)
       }
     });
   };
@@ -98,37 +90,143 @@ const SpendingWarningScreen = () => {
     return period ? t(period.labelKey) : p;
   };
 
-  const renderItem = ({ item }: { item: SpendingLimit }) => (
-    <View style={[styles.card, { backgroundColor: colors.card }]}>
-      <View style={styles.cardHeader}>
-        <View style={styles.periodBadge}>
-          <CustomText style={styles.periodBadgeText}>{getPeriodLabel(item.period)}</CustomText>
-        </View>
-        <View style={styles.cardActions}>
-          <TouchableOpacity onPress={() => handleOpenEdit(item)}>
-            <Ionicons name="create-outline" size={normalize(22)} color={colors.tint} style={{ marginRight: normalize(12) }} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleDelete(item)}>
-            <Ionicons name="trash-outline" size={normalize(20)} color="#FF3B30" />
-          </TouchableOpacity>
-        </View>
-      </View>
+  const getWalletInfo = (walletId?: number | null) => {
+    if (!walletId) return { name: t('budget.all_wallets', 'Tất cả các ví'), icon: 'layer-group', color: colors.border };
+    const wallet = wallets.find(w => w.walletId === walletId);
+    return wallet 
+      ? { name: wallet.name, icon: wallet.icon || 'wallet', color: wallet.color || colors.tint } 
+      : { name: t('budget.all_wallets', 'Tất cả các ví'), icon: 'layer-group', color: colors.border };
+  };
 
-      <View style={styles.cardBody}>
-        <View>
-          <CustomText style={[styles.amountLabel, { color: colors.icon }]}>
-            {t('settings.spending_warning_limit')}
-          </CustomText>
-          <CustomText style={[styles.amountValue, { color: colors.text }]}>
-            {new Intl.NumberFormat('vi-VN', {
-              style: 'currency',
-              currency: item.currency_code || 'VND',
-            }).format(item.limit_amount)}
-          </CustomText>
+  const getCategoryInfo = (categoryCode?: string | null) => {
+    if (!categoryCode) return { name: t('settings.all_categories', 'Tất cả danh mục'), icon: 'grid', color: colors.border };
+    const cat = categories.find(c => c.category_code === categoryCode);
+    if (cat) {
+      let displayName = cat.category_name;
+      try {
+         const parsed = JSON.parse(cat.category_name);
+         displayName = parsed.vi || parsed.en || cat.category_name;
+      } catch {}
+      return { name: displayName, icon: cat.icon || 'grid', color: cat.color || colors.tint };
+    }
+    return { name: t('settings.all_categories', 'Tất cả danh mục'), icon: 'grid', color: colors.border };
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const renderItem = ({ item }: { item: SpendingLimit }) => {
+    const isOverLimit = item.used_amount !== undefined && item.used_amount > item.limit_amount;
+    const progressPercent = item.used_amount !== undefined 
+      ? Math.min((item.used_amount / item.limit_amount) * 100, 100) 
+      : 0;
+
+    const walletInfo = getWalletInfo(item.wallet_id);
+    const categoryInfo = getCategoryInfo(item.category_code);
+
+    return (
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={styles.cardHeader}>
+          <View style={styles.badgeContainer}>
+            <View style={styles.periodBadge}>
+              <CustomText style={styles.periodBadgeText}>{getPeriodLabel(item.period)}</CustomText>
+            </View>
+            {item.is_active === false && (
+               <View style={[styles.periodBadge, { backgroundColor: colors.border, marginLeft: normalize(8) }]}>
+                 <CustomText style={[styles.periodBadgeText, { color: colors.icon }]}>{t('common.inactive', 'Ngừng hoạt động')}</CustomText>
+               </View>
+            )}
+          </View>
+          <View style={styles.cardActions}>
+            <TouchableOpacity onPress={() => handleOpenEdit(item)}>
+              <Ionicons name="create-outline" size={normalize(22)} color={colors.tint} style={{ marginRight: normalize(12) }} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleDelete(item)}>
+              <Ionicons name="trash-outline" size={normalize(20)} color="#FF3B30" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.cardBody}>
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailItem}>
+              <View style={[styles.iconContainer, { backgroundColor: walletInfo.color === colors.border ? colors.border : walletInfo.color }]}>
+                 <AppIcon name={walletInfo.icon as any} size={normalize(12)} color={walletInfo.color === colors.border ? colors.icon : '#fff'} />
+              </View>
+              <CustomText style={[styles.detailText, { color: colors.text }]} numberOfLines={1}>
+                {walletInfo.name}
+              </CustomText>
+            </View>
+            <View style={styles.detailItem}>
+              <View style={[styles.iconContainer, { backgroundColor: categoryInfo.color === colors.border ? colors.border : categoryInfo.color }]}>
+                 <AppIcon name={categoryInfo.icon as any} size={normalize(12)} color={categoryInfo.color === colors.border ? colors.icon : '#fff'} />
+              </View>
+              <CustomText style={[styles.detailText, { color: colors.text }]} numberOfLines={1}>
+                {categoryInfo.name}
+              </CustomText>
+            </View>
+            {(item as any).period_start && (item as any).period_end && (
+               <View style={styles.detailItem}>
+                 <View style={[styles.iconContainer, { backgroundColor: 'transparent' }]}>
+                   <Ionicons name="calendar-outline" size={normalize(14)} color={colors.icon} />
+                 </View>
+                 <CustomText style={[styles.detailText, { color: colors.text }]} numberOfLines={1}>
+                   {formatDate((item as any).period_start)} - {formatDate((item as any).period_end)}
+                 </CustomText>
+               </View>
+            )}
+          </View>
+
+          <View style={styles.amountContainer}>
+            <View style={styles.amountHeader}>
+              <CustomText style={[styles.amountLabel, { color: colors.icon }]}>
+                {t('settings.spending_warning_limit')}
+              </CustomText>
+              <CustomText style={[styles.amountValue, { color: colors.text }]}>
+                {new Intl.NumberFormat('vi-VN', {
+                  style: 'currency',
+                  currency: item.currency_code || 'VND',
+                }).format(item.limit_amount)}
+              </CustomText>
+            </View>
+
+            {item.used_amount !== undefined && (
+               <View style={styles.progressContainer}>
+                 <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
+                   <View 
+                     style={[
+                       styles.progressBarFill, 
+                       { 
+                         width: `${progressPercent}%`, 
+                         backgroundColor: isOverLimit ? '#FF3B30' : colors.tint 
+                       }
+                     ]} 
+                   />
+                 </View>
+                 <View style={styles.usedAmountRow}>
+                   <CustomText style={[styles.usedAmountText, { color: colors.icon }]}>
+                     {t('settings.used_amount', 'Đã dùng')}: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: item.currency_code || 'VND' }).format(item.used_amount)}
+                   </CustomText>
+                   <CustomText style={[styles.remainingText, { color: isOverLimit ? '#FF3B30' : colors.text }]}>
+                     {isOverLimit 
+                       ? t('settings.over_limit', 'Vượt hạn mức') 
+                       : `${t('settings.remaining_amount', 'Còn lại')}: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: item.currency_code || 'VND' }).format(item.limit_amount - item.used_amount)}`}
+                   </CustomText>
+                 </View>
+               </View>
+            )}
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -187,7 +285,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: normalize(12),
+    marginBottom: normalize(16),
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   cardActions: { flexDirection: 'row', alignItems: 'center' },
   periodBadge: {
@@ -201,9 +303,66 @@ const styles = StyleSheet.create({
     fontSize: normalize(12),
     fontWeight: '700',
   },
-  cardBody: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  amountLabel: { fontSize: normalize(12), marginBottom: normalize(4) },
-  amountValue: { fontSize: normalize(20), fontWeight: '700' },
+  cardBody: { flexDirection: 'column', gap: normalize(16) },
+  detailsContainer: {
+    flexDirection: 'column',
+    gap: normalize(8),
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: normalize(8),
+  },
+  iconContainer: {
+    width: normalize(20),
+    height: normalize(20),
+    borderRadius: normalize(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailText: {
+    fontSize: normalize(13),
+    fontWeight: '500',
+    flex: 1,
+  },
+  amountContainer: {
+    marginTop: normalize(8),
+    flexDirection: 'column',
+    gap: normalize(12),
+  },
+  amountHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  amountLabel: { fontSize: normalize(12) },
+  amountValue: { fontSize: normalize(18), fontWeight: '700' },
+  progressContainer: {
+    flexDirection: 'column',
+    gap: normalize(6),
+  },
+  progressBarBg: {
+    height: normalize(6),
+    borderRadius: normalize(3),
+    width: '100%',
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: normalize(3),
+  },
+  usedAmountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  usedAmountText: {
+    fontSize: normalize(12),
+  },
+  remainingText: {
+    fontSize: normalize(12),
+    fontWeight: '600',
+  },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: normalize(100) },
   emptyText: { marginTop: normalize(16), fontSize: normalize(16) },
 });
