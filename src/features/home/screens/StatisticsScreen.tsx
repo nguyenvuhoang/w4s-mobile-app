@@ -18,6 +18,7 @@ import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { hp, normalize, wp } from "@/utils/layout";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
+import { useIsFocused } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { t } from "i18next";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -45,6 +46,7 @@ const parseCategoryName = (raw: string | null, lang: string): string => {
 /* ================= SCREEN ================= */
 
 const StatisticsScreen = () => {
+  const isFocused = useIsFocused();
   const { colors } = useAppTheme();
   const { t, i18n } = useTranslation();
   const { defaultCurrency } = useDefaultCurrency();
@@ -286,7 +288,7 @@ const StatisticsScreen = () => {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["bottom"]}
     >
-      <StatusBar style="light" />
+      {isFocused && <StatusBar style="light" />}
       <AppHeader
         title={t("statistics.title") || "Thống kê"}
         variant="gradient"

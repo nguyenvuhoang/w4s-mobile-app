@@ -10,9 +10,9 @@ import { Images } from '@/utils/images';
 import { hasNotch, hp, normalize } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StatusBar } from 'expo-status-bar';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 

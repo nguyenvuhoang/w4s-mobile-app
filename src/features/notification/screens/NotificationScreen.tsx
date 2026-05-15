@@ -12,7 +12,6 @@ import {
   FlatList,
   RefreshControl,
   SafeAreaView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -104,7 +103,7 @@ export default function NotificationScreen() {
         { paddingTop: insets.top, backgroundColor: themeColors.background },
       ]}
     >
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+
 
       {/* ── Header ── */}
       <AppHeader

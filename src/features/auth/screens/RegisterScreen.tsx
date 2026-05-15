@@ -13,7 +13,7 @@ import { isValidEmail, isValidPhone } from '@/utils/validation';
 import { FontAwesome6, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -311,7 +311,7 @@ const RegisterScreen = () => {
   return (
     // ✅ FIX 1: Tách SafeAreaView top ra riêng, không wrap KeyboardAvoidingView
     <View style={[styles.container, { backgroundColor: colors.brandBg }]}>
-      <StatusBar style="light" />
+
       <SafeAreaView
         edges={['top']}
         style={{ backgroundColor: colors.brandBlue }}

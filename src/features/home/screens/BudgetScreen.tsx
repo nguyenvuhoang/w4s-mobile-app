@@ -11,6 +11,7 @@ import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -20,6 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -28,6 +30,7 @@ interface BudgetScreenProps {
 }
 
 const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
+  const isFocused = useIsFocused();
   const { colors } = useAppTheme();
   const { t, i18n } = useTranslation();
   const { wallets, defaultWallet } = useWallet();
@@ -214,6 +217,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["bottom"]}>
+      {isFocused && <StatusBar style="light" />}
       <AppHeader
         title={t("budget.title") || "Ngân sách"}
         variant="gradient"

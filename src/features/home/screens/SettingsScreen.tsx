@@ -22,6 +22,7 @@ import StorageService from "@/services/StorageService";
 import { Images } from "@/utils/images";
 import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
+import { useIsFocused } from "@react-navigation/native";
 import Constants from "expo-constants";
 import * as ImagePicker from "expo-image-picker";
 import * as Notifications from "expo-notifications";
@@ -44,6 +45,7 @@ interface SettingsScreenProps {
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
+  const isFocused = useIsFocused();
   const { t, i18n } = useTranslation();
   const { showNotification } = useNotification();
   const { handleLogout, touchIDClick, isUsingTouchID } = useSettingService();
@@ -296,7 +298,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["bottom"]}
     >
-      <StatusBar style="light" />
+      {isFocused && <StatusBar style="light" />}
       <AppHeader
         title={t("settings.titleheader")}
         variant="gradient"
@@ -577,7 +579,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         colors={colors}
         cancelText={t("common.cancel")}
         hasBottomNav={true}
-        snapPoints={["65%"]}
+        snapPoints={["90%"]}
       />
     </SafeAreaView>
   );

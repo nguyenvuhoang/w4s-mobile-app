@@ -10,9 +10,9 @@ import { hasNotch, normalize } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StatusBar } from 'expo-status-bar';
 import {
   ActivityIndicator,
   Image,
