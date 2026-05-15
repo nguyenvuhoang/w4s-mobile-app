@@ -69,6 +69,7 @@ export interface AdvancedSearchTransactionPayload {
   transaction_id?: string;
   wallet_id?: number;
   category_id?: number;
+  category_code?: string;
   event_id?: number;
   loan_id?: number;
   bill_id?: number;
@@ -272,6 +273,7 @@ export const transactionRepository = {
           transaction_id: data.transaction_id || "",
           wallet_id: data.wallet_id || 0,
           category_id: data.category_id || 0,
+          category_code: data.category_code || "",
           event_id: data.event_id || 0,
           loan_id: data.loan_id || 0,
           bill_id: data.bill_id || 0,

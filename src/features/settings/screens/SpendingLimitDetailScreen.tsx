@@ -13,6 +13,7 @@ import { normalize } from '@/utils/layout';
 import { useCategory } from '@/hooks/useCategory';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
+import { useCurrency } from '@/hooks/useCurrency';
 import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
 import { formatConvertedAmount, formatExchangeRate } from '@/utils/formatNumber';
 import { Ionicons, FontAwesome6 } from '@expo/vector-icons';
@@ -39,6 +40,7 @@ const SpendingLimitDetailScreen = () => {
   const params = useLocalSearchParams();
 
   const { defaultCurrency } = useDefaultCurrency();
+  const { currencies } = useCurrency({ autoFetch: true });
 
   const { wallets, defaultWalletId } = useWallet();
   const [sourceWalletId, setSourceWalletId] = useState<number>(0);
@@ -149,6 +151,23 @@ const SpendingLimitDetailScreen = () => {
   }, [itemParam, cnParam, initialPeriod, apParam]);
 
   useEffect(() => {
+    let targetCode = '';
+    if (selectedWallet && 'currency' in selectedWallet && selectedWallet.currency) {
+      targetCode = selectedWallet.currency;
+    } else if (sourceWalletId === 0 && defaultCurrency) {
+      targetCode = defaultCurrency.currencyId;
+    }
+
+    if (targetCode) {
+      const foundCurrency = currencies.find(c => c.currency_id === targetCode);
+      setSelectedCurrency({
+        id: targetCode,
+        symbol: foundCurrency?.symbol || (targetCode === 'VND' ? 'đ' : targetCode),
+      });
+    }
+  }, [selectedWallet, defaultCurrency, sourceWalletId, currencies]);
+
+  useEffect(() => {
     if (editingLimit?.category_code && categories.length > 0) {
       const cat = categories.find(c => c.category_code === editingLimit.category_code);
       if (cat) {
@@ -166,13 +185,6 @@ const SpendingLimitDetailScreen = () => {
     useCallback(() => {
       const loadTempStorage = async () => {
         try {
-          const storedCurrency = await StorageService.getItem('temp_selected_currency');
-          if (storedCurrency) {
-            const data = JSON.parse(storedCurrency);
-            setSelectedCurrency({ id: data.currencyId, symbol: data.symbol });
-            await StorageService.removeItem('temp_selected_currency');
-          }
-
           const storedCategory = await StorageService.getItem('temp_selected_category');
           if (storedCategory) {
             const catData = JSON.parse(storedCategory);
@@ -193,10 +205,6 @@ const SpendingLimitDetailScreen = () => {
       loadTempStorage();
     }, [])
   );
-
-  const handleCurrencyPress = () => {
-    router.push('/(protected)/select-currency');
-  };
 
   const getPeriodLabel = (p: string) => {
     const periodObj = ALL_PERIODS.find(ap => ap.id.toLowerCase() === p.toLowerCase());
@@ -420,7 +428,6 @@ const SpendingLimitDetailScreen = () => {
               value={amount}
               onChange={setAmount}
               currency={selectedCurrency.symbol}
-              onCurrencyPress={handleCurrencyPress}
               containerStyle={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
             />
             {needsConversion && convertedAmount !== null && exchangeRate !== null && defaultCurrency && (

@@ -3,7 +3,6 @@ import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { hp, normalize, wp } from '@/utils/layout';
-import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Category data passed from HomeScreen
 interface CategoryDetailData {
     category_id: number;
+    category_code?: string;
     name: string;
     icon: string;
     color: string;
@@ -36,10 +36,10 @@ interface CategoryTransaction {
     amount: number;
 }
 
-import { useTransaction } from '@/features/transaction/hooks/useTransaction';
-import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
-import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
 import { PERIOD_TYPE } from '@/constants/PeriodType';
+import { useTransaction } from '@/features/transaction/hooks/useTransaction';
+import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import { useEffect, useState } from 'react';
 
 const CategoryDetailScreen: React.FC = () => {
@@ -80,7 +80,7 @@ const CategoryDetailScreen: React.FC = () => {
     const formatCurrency = (amount: number, currencyCode?: string) => {
         let finalAmount = amount;
         const targetCurrency = defaultCurrency.currencyId;
-        
+
         if (converterReady && currencyCode && currencyCode !== targetCurrency) {
             const converted = convertBetween(amount, currencyCode, targetCurrency);
             if (converted !== null) finalAmount = converted;
@@ -88,7 +88,7 @@ const CategoryDetailScreen: React.FC = () => {
             // Assume VND if no currency code provided for summary totals
             finalAmount = convertFromVND(amount);
         }
-        
+
         return formatAmount(finalAmount);
     };
 
@@ -193,6 +193,7 @@ const CategoryDetailScreen: React.FC = () => {
 
                 const data = await advancedSearchTransactions({
                     category_id: category.category_id,
+                    category_code: category.category_code,
                     wallet_id: params.wallet_id ? Number(params.wallet_id) : undefined,
                     from_transaction_date: fromDate,
                     to_transaction_date: toDate,
@@ -242,8 +243,8 @@ const CategoryDetailScreen: React.FC = () => {
         if (!converterReady || transactions.length === 0) {
             // Fallback to converting the static total if no transactions are loaded yet
             const fallbackTotal = converterReady ? convertFromVND(category?.total_amount || 0) : (category?.total_amount || 0);
-            const fallbackBudget = category?.percentage && category.percentage > 0 
-                ? fallbackTotal / category.percentage 
+            const fallbackBudget = category?.percentage && category.percentage > 0
+                ? fallbackTotal / category.percentage
                 : fallbackTotal;
             return { displayTotal: fallbackTotal, displayBudget: fallbackBudget };
         }
@@ -254,8 +255,8 @@ const CategoryDetailScreen: React.FC = () => {
             sum += (converted !== null ? converted : tx.amount);
         });
 
-        const budget = category?.percentage && category.percentage > 0 
-            ? sum / category.percentage 
+        const budget = category?.percentage && category.percentage > 0
+            ? sum / category.percentage
             : sum;
 
         return { displayTotal: sum, displayBudget: budget };
