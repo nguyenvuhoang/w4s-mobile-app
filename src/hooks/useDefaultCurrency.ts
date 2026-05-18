@@ -6,6 +6,8 @@ import {
   fetchCurrenciesFromApi,
   useCurrency
 } from "@/hooks/useCurrency";
+import StorageService from "@/services/StorageService";
+import StorageKey from "@/constants/StorageKey";
 import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
 import { useCallback, useContext, useEffect, useState } from "react";
 
@@ -20,7 +22,7 @@ export interface DefaultCurrency {
  * Source of truth is appInfo.currency_code from GlobalContext.
  */
 export const useDefaultCurrency = () => {
-  const { appInfo } = useContext(GlobalContext);
+  const { appInfo, setAppInfo } = useContext(GlobalContext);
   const [loading, setLoading] = useState(false);
   
   // Local state as a fallback/buffer for the derived currency info
@@ -82,8 +84,21 @@ export const useDefaultCurrency = () => {
   const updateDefaultCurrency = useCallback(async (currency: DefaultCurrency) => {
     setLocalCurrency(currency);
     CurrencyEventEmitter.emitCurrencyChanged(currency.currencyId);
-    // Note: We expect the caller to also update the server/appInfo
-  }, []);
+    
+    if (appInfo && setAppInfo) {
+      const updatedAppInfo = {
+        ...appInfo,
+        currency_code: currency.currencyId,
+      };
+      setAppInfo(updatedAppInfo);
+      
+      try {
+        await StorageService.setItem(StorageKey.appInfo, JSON.stringify(updatedAppInfo));
+      } catch (err) {
+        console.warn('[useDefaultCurrency] Failed to save updated appInfo:', err);
+      }
+    }
+  }, [appInfo, setAppInfo]);
 
   return {
     defaultCurrency: localCurrency,

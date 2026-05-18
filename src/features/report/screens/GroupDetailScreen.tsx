@@ -8,6 +8,7 @@ import { useTransaction } from '@/features/transaction/hooks/useTransaction';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { useCategory } from '@/hooks/useCategory';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -115,6 +116,7 @@ const GroupDetailScreen = () => {
   const { colors } = useAppTheme();
   const { wallets, defaultWallet } = useWallet();
   const { defaultCurrency } = useDefaultCurrency();
+  const { convert } = useExchangeRate();
   const params = useLocalSearchParams<{
     wallet_id?: string;
     anchor_date?: string;
@@ -282,7 +284,7 @@ const GroupDetailScreen = () => {
         setLoadingSummary(false);
       }
     }
-  }, [selectedWallet, selectedPeriod, activeGroup, fetchWalletSummary, t]);
+  }, [selectedWallet, selectedPeriod, activeGroup, fetchWalletSummary, defaultCurrency?.currencyId, t]);
 
   // Trigger load khi dependency thay đổi
   useEffect(() => {
@@ -298,8 +300,8 @@ const GroupDetailScreen = () => {
   const groupLabel = activeGroup === 'EXPENSE' ? t('report.expense_items') : t('report.income_items');
 
   const formatCurrency = useCallback(
-    (v: number) => v.toLocaleString('vi-VN') + ' ' + (selectedWallet?.currency || defaultCurrency.symbol),
-    [selectedWallet, defaultCurrency.symbol],
+    (v: number) => v.toLocaleString('vi-VN') + ' ' + defaultCurrency.symbol,
+    [defaultCurrency.symbol],
   );
 
   // Group transactions by date (copy logic from TransactionHistoryScreen)
@@ -547,6 +549,8 @@ const GroupDetailScreen = () => {
                 lang={i18n.language}
                 allCategories={allCategories}
                 formatCurrency={formatCurrency}
+                convert={convert}
+                defaultCurrency={defaultCurrency}
               />
             ))}
           </View>
@@ -670,10 +674,21 @@ const BottomSheetModal = ({
   </Modal>
 );
 
-const TransactionItem = ({ item, colors, lang, allCategories, formatCurrency }: any) => {
+const TransactionItem = ({ item, colors, lang, allCategories, formatCurrency, convert, defaultCurrency }: any) => {
   const isExpense = item.type === 'EXPENSE';
   const iconName = item.icon || 'receipt';
   const iconColor = item.color || colors.tint;
+
+  const txnCurrency = item.currency || 'VND';
+  const defaultCurrencyCode = defaultCurrency?.currencyId || 'VND';
+  let displayAmount = Math.abs(item.amount);
+
+  if (txnCurrency !== defaultCurrencyCode && convert) {
+    const converted = convert(Math.abs(item.amount), txnCurrency, defaultCurrencyCode);
+    if (converted !== null) {
+      displayAmount = converted;
+    }
+  }
 
   return (
     <TouchableOpacity
@@ -724,7 +739,7 @@ const TransactionItem = ({ item, colors, lang, allCategories, formatCurrency }: 
       </View>
       <View style={{ alignItems: 'flex-end' }}>
         <CustomText type="bold" size={15} style={{ color: isExpense ? '#F44336' : '#4CAF50' }}>
-          {isExpense ? '-' : '+'}{formatCurrency(Math.abs(item.amount))}
+          {isExpense ? '-' : '+'}{formatCurrency(displayAmount)}
         </CustomText>
         <CustomText size={11} style={{ color: colors.icon }}>
           {new Date(item.occurred_at).toLocaleDateString('vi-VN', {

@@ -4,6 +4,7 @@ import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { CategoryAnalyzeItem, useCategory } from '@/hooks/useCategory';
 import { WalletSummary } from '@/types/wallet';
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -111,6 +112,7 @@ const CategoryReportDetailScreen = () => {
   const { t } = useTranslation();
   const { colors } = useAppTheme();
   const { wallets, defaultWallet } = useWallet();
+  const { defaultCurrency } = useDefaultCurrency();
 
   const PERIOD_TYPES: { id: PeriodType; label: string }[] = useMemo(() => [
     { id: PERIOD_TYPE.WEEK, label: t('report.week') },
@@ -188,7 +190,7 @@ const CategoryReportDetailScreen = () => {
         period_type: periodType,
       });
     }
-  }, [selectedWallet, selectedPeriod, periodType]);
+  }, [selectedWallet, selectedPeriod, periodType, defaultCurrency.currencyId]);
 
   // ---- Modal state ----
   const [showWalletModal, setShowWalletModal] = useState(false);
@@ -197,7 +199,7 @@ const CategoryReportDetailScreen = () => {
   // ---- Tab state ----
   const [activeTab, setActiveTab] = useState<'EXPENSE' | 'INCOME'>(params.active_tab || 'EXPENSE');
 
-  const currency = selectedWallet?.currency || params.currency || 'đ';
+  const currency = defaultCurrency.symbol;
 
   const filteredCategories = categoryAnalysis.filter(c => c.category_group === activeTab);
   const totalAmount = filteredCategories.reduce((s, c) => s + c.total_amount, 0);

@@ -131,7 +131,7 @@ const ReportScreen = () => {
         anchor_date: selectedPeriod.date.slice(0, 7),
       });
     }
-  }, [selectedWallet?.walletId, selectedPeriod?.id, fetchBalance, fetchWalletSummary, analyzeCategory, fetchMonthlyDebitSummary]);
+  }, [selectedWallet?.walletId, selectedPeriod?.id, defaultCurrency.currencyId, fetchBalance, fetchWalletSummary, analyzeCategory, fetchMonthlyDebitSummary]);
 
   useFocusEffect(
     useCallback(() => {
