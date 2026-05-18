@@ -6,8 +6,9 @@ import { normalize } from "@/utils/layout";
 import { router } from "expo-router";
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ScrollView, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { styles } from "../styles/ToolsScreen.styles";
 
 const ToolsScreen = () => {
   const { colors } = useAppTheme();
@@ -26,10 +27,8 @@ const ToolsScreen = () => {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + normalize(20) }}>
-        {/* Header */}
         <AppHeader title={t("tools.title")} onBack={handleBack} />
 
-        {/* Tools List */}
         <View style={[styles.toolsList, { backgroundColor: colors.card }]}>
           <ToolItem
             icon="tool_screen_export_local"
@@ -37,13 +36,6 @@ const ToolsScreen = () => {
             onPress={() => router.push("/(protected)/tools/export-data")}
             colors={colors}
           />
-
-          {/* <ToolItem
-            icon="logo-google"
-            title={t("tools.export_google_sheets")}
-            onPress={() => router.push("/(protected)/tools/export-google-sheets")}
-            colors={colors}
-          /> */}
 
           <ToolItem
             icon="tool_screen_atm_bank"
@@ -112,47 +104,5 @@ const ToolItem = ({ icon, title, onPress, colors }: any) => (
     />
   </TouchableOpacity>
 );
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: normalize(20),
-    paddingVertical: normalize(16),
-  },
-  headerTitle: {
-    fontSize: normalize(24),
-    fontWeight: "bold",
-  },
-  toolsList: {
-    borderRadius: normalize(16),
-    marginHorizontal: normalize(20),
-    marginTop: normalize(16),
-    overflow: "hidden",
-  },
-  toolItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: normalize(16),
-    borderBottomWidth: 1,
-  },
-  left: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: normalize(12),
-  },
-  iconBox: {
-    width: normalize(40),
-    height: normalize(40),
-    borderRadius: normalize(10),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: normalize(16),
-  },
-});
 
 export default ToolsScreen;

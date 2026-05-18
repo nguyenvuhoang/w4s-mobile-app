@@ -11,7 +11,6 @@ import { SpendingLimit } from '@/services/repositories/spendingLimit.repository'
 import StorageService from '@/services/StorageService';
 import { normalize } from '@/utils/layout';
 import { useCategory } from '@/hooks/useCategory';
-import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
@@ -30,6 +29,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { styles } from '../styles/SpendingLimitDetailScreen.styles';
 
 const SpendingLimitDetailScreen = () => {
   const { colors } = useAppTheme();
@@ -289,7 +289,6 @@ const SpendingLimitDetailScreen = () => {
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + normalize(20) }]}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Wallet selection */}
           <View style={styles.section}>
             <CustomText style={[styles.fieldLabel, { color: colors.text }]}>
               {t('budget.source_wallet', 'Nguồn tiền (Ví)')}
@@ -338,7 +337,6 @@ const SpendingLimitDetailScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Category selection */}
           <View style={styles.section}>
             <CustomText style={[styles.fieldLabel, { color: colors.text }]}>
               {t('budget.group', 'Nhóm danh mục')}
@@ -394,7 +392,6 @@ const SpendingLimitDetailScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Period selection */}
           <View style={styles.section}>
             <CustomText style={[styles.fieldLabel, { color: colors.text }]}>
               {t('settings.spending_warning_period')}
@@ -419,7 +416,6 @@ const SpendingLimitDetailScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Limit amount */}
           <View style={styles.section}>
             <CustomText style={[styles.fieldLabel, { color: colors.text }]}>
               {t('settings.spending_warning_limit')}
@@ -482,74 +478,5 @@ const SpendingLimitDetailScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { padding: normalize(20) },
-  section: {
-    marginBottom: normalize(20),
-  },
-  fieldLabel: {
-    fontSize: normalize(14),
-    fontWeight: '600',
-    marginBottom: normalize(8),
-  },
-  selector: {
-    height: normalize(52),
-    borderRadius: normalize(12),
-    borderWidth: 1,
-    paddingHorizontal: normalize(16),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  categoryIcon: {
-    width: normalize(28),
-    height: normalize(28),
-    borderRadius: normalize(8),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inputContainer: {
-    height: normalize(52),
-    borderRadius: normalize(12),
-    borderWidth: 1,
-  },
-  footer: {
-    padding: normalize(20),
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.1)',
-  },
-  submitButton: {
-    height: normalize(52),
-    borderRadius: normalize(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitButtonText: {
-    color: 'white',
-    fontSize: normalize(16),
-    fontWeight: '700',
-  },
-  conversionContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: normalize(8),
-    marginTop: normalize(8),
-    paddingHorizontal: normalize(4),
-  },
-  conversionTextContainer: {
-    flex: 1,
-    gap: normalize(2),
-  },
-  conversionText: {
-    fontSize: normalize(13),
-    fontWeight: '500',
-  },
-  exchangeRateText: {
-    fontSize: normalize(11),
-    opacity: 0.7,
-  },
-});
 
 export default SpendingLimitDetailScreen;

@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import DatePicker from "react-native-date-picker";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { styles } from "../styles/ExportDataScreen.styles";
 
 interface SelectedCategoryData {
   id: number;
@@ -51,7 +52,6 @@ const ExportDataScreen = () => {
   );
 
   const [categoryData, setCategoryData] = useState<SelectedCategoryData | "ALL">("ALL");
-  // const [budget, setBudget] = useState("ALL");
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
@@ -148,7 +148,6 @@ const ExportDataScreen = () => {
       edges={["top", "left", "right"]}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      {/* Header */}
       <AppHeader title={t("export_data.title")} onBack={handleBack} />
 
       <KeyboardAvoidingView
@@ -163,7 +162,6 @@ const ExportDataScreen = () => {
             { paddingBottom: normalize(20) + insets.bottom },
           ]}
         >
-          {/* Wallet */}
           <View style={styles.inputGroup}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <CustomText style={[styles.label, { color: colors.text }]}>
@@ -198,7 +196,6 @@ const ExportDataScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Category */}
           <View style={styles.inputGroup}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <CustomText style={[styles.label, { color: colors.text }]}>
@@ -235,23 +232,6 @@ const ExportDataScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Budget */}
-          {/* <View style={styles.inputGroup}>
-            <CustomText style={[styles.label, { color: colors.text }]}>
-              Chọn Budget
-            </CustomText>
-            <TouchableOpacity
-              style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
-            >
-              <Ionicons name="pie-chart-outline" size={normalize(20)} color={colors.tint} />
-              <CustomText style={[styles.input, { color: colors.text }]}>
-                {budget === "ALL" ? "Tất cả" : budget}
-              </CustomText>
-              <Ionicons name="chevron-down" size={normalize(20)} color={colors.text} />
-            </TouchableOpacity>
-          </View> */}
-
-          {/* Start Date */}
           <View style={styles.inputGroup}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               {t("export_data.start_date")} <CustomText style={{ color: "red" }}>*</CustomText>
@@ -273,7 +253,6 @@ const ExportDataScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* End Date */}
           <View style={styles.inputGroup}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               {t("export_data.end_date")} <CustomText style={{ color: "red" }}>*</CustomText>
@@ -300,7 +279,6 @@ const ExportDataScreen = () => {
             )}
           </View>
 
-          {/* File Type */}
           <View style={styles.inputGroup}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               {t("export_data.file_format")} <CustomText style={{ color: "red" }}>*</CustomText>
@@ -352,7 +330,6 @@ const ExportDataScreen = () => {
             </View>
           </View>
 
-          {/* Email */}
           <View style={styles.inputGroup}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               {t("export_data.email_label")} <CustomText style={{ color: "red" }}>*</CustomText>
@@ -372,7 +349,6 @@ const ExportDataScreen = () => {
             </View>
           </View>
 
-          {/* Export Button */}
           <CustomButton
             title={loading ? t("export_data.processing") : t("export_data.export_button")}
             onPress={handleExport}
@@ -384,7 +360,6 @@ const ExportDataScreen = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Date Pickers */}
       <DatePicker
         modal
         open={showStartPicker}
@@ -441,52 +416,5 @@ const ExportDataScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: normalize(20),
-  },
-  inputGroup: {
-    marginBottom: normalize(20),
-  },
-  label: {
-    fontSize: normalize(14),
-    marginBottom: normalize(8),
-    fontWeight: "500",
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: normalize(12),
-    borderWidth: 1,
-    paddingHorizontal: normalize(16),
-    height: normalize(56),
-    gap: normalize(12),
-  },
-  input: {
-    flex: 1,
-    fontSize: normalize(16),
-  },
-  dateContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderRadius: normalize(12),
-    borderWidth: 1,
-    paddingHorizontal: normalize(16),
-    height: normalize(56),
-  },
-  dateText: {
-    fontSize: normalize(16),
-  },
-  errorText: {
-    color: "#FF3B30",
-    fontSize: normalize(12),
-    marginTop: normalize(4),
-  },
-});
 
 export default ExportDataScreen;

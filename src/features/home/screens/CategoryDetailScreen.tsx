@@ -277,6 +277,7 @@ const CategoryDetailScreen: React.FC = () => {
 
     const categoryName = parseName(category.name) || t('home.uncategorized');
     const percentDisplay = Math.round(category.percentage * 100);
+    const transactionCount = loadingTransactions ? (category.transaction_count || 0) : transactions.length;
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -307,7 +308,7 @@ const CategoryDetailScreen: React.FC = () => {
                                 {categoryName}
                             </CustomText>
                             <CustomText style={[styles.categoryMeta, { color: colors.icon }]}>
-                                {category.transaction_count} {t('home.transactions_count')} - {t('home.occupied')}{' '}
+                                {transactionCount} {t('home.transactions_count')} - {t('home.occupied')}{' '}
                                 <CustomText style={[styles.categoryMetaBold, { color: colors.text }]}>
                                     {percentDisplay}%
                                 </CustomText>

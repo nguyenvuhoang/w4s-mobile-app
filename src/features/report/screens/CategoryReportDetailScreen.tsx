@@ -14,22 +14,17 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-/* ================= TYPES ================= */
-
 import { PERIOD_TYPE, PeriodType } from '@/constants/PeriodType';
+import { styles } from '../styles/CategoryReportDetailScreen.styles';
 
 interface PeriodOption {
   label: string;
   anchor_date: string;
 }
-
-/* ================= HELPERS ================= */
 
 const parseCategoryName = (nameJson: string, lang = 'vi'): string => {
   try {
@@ -40,16 +35,12 @@ const parseCategoryName = (nameJson: string, lang = 'vi'): string => {
   }
 };
 
-// Removed static PERIOD_TYPES and CATEGORY_TABS to generate inside component
-
-/** Build anchor date options for each period type (current + 5 past) */
 const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
   const today = new Date();
   const options: PeriodOption[] = [];
 
   switch (periodType) {
     case PERIOD_TYPE.WEEK: {
-      // Last 6 weeks
       for (let i = 0; i <= 5; i++) {
         const d = new Date(today);
         d.setDate(d.getDate() - i * 7);
@@ -64,7 +55,6 @@ const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
       break;
     }
     case PERIOD_TYPE.MONTH: {
-      // Last 12 months
       for (let i = 0; i <= 11; i++) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         const yy = d.getFullYear();
@@ -77,7 +67,6 @@ const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
       break;
     }
     case PERIOD_TYPE.QUARTER: {
-      // Last 8 quarters
       const currentQ = Math.floor(today.getMonth() / 3);
       for (let i = 0; i <= 7; i++) {
         let q = currentQ - i;
@@ -92,7 +81,6 @@ const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
       break;
     }
     case PERIOD_TYPE.YEAR: {
-      // Last 5 years
       for (let i = 0; i <= 4; i++) {
         const y = today.getFullYear() - i;
         options.push({
@@ -105,8 +93,6 @@ const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
   }
   return options;
 };
-
-/* ================= SCREEN ================= */
 
 const CategoryReportDetailScreen = () => {
   const { t } = useTranslation();
@@ -126,17 +112,7 @@ const CategoryReportDetailScreen = () => {
     { id: 'INCOME' as const, label: t('report.income') },
   ], [t]);
 
-  // Đối tượng "Tất cả ví"
-  const allWalletOption = useMemo(() => ({
-    walletId: 0,
-    name: t('report.all_wallets'),
-    icon: 'layer-group',
-    color: colors.tint,
-    balance: wallets.reduce((acc, w) => acc + (w.balance || 0), 0),
-    currency: '',
-  } as WalletSummary), [wallets, colors.tint, t]);
-
-  const walletOptions = useMemo(() => [allWalletOption, ...wallets], [allWalletOption, wallets]);
+  const walletOptions = wallets;
 
   const params = useLocalSearchParams<{
     wallet_id: string;
@@ -149,12 +125,13 @@ const CategoryReportDetailScreen = () => {
 
   const { analyzeCategory, categoryAnalysis, analyzing } = useCategory({ autoFetch: false });
 
-  // ---- Filter state ----
   const initWallet = useMemo(() => {
-    if (params.wallet_id === '0') return allWalletOption;
-    const found = wallets.find(w => w.walletId === Number(params.wallet_id));
-    return found || defaultWallet || wallets[0] || allWalletOption;
-  }, [params.wallet_id, wallets, defaultWallet, allWalletOption]);
+    if (params.wallet_id && params.wallet_id !== '0') {
+      const found = wallets.find(w => w.walletId === Number(params.wallet_id));
+      if (found) return found;
+    }
+    return defaultWallet || wallets[0] || null;
+  }, [params.wallet_id, wallets, defaultWallet]);
 
   const [selectedWallet, setSelectedWallet] = useState<WalletSummary | null>(initWallet);
   const [periodType, setPeriodType] = useState<PeriodType>(
@@ -163,25 +140,27 @@ const CategoryReportDetailScreen = () => {
   const periodOptions = useMemo(() => buildPeriodOptions(periodType, t), [periodType, t]);
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodOption>(periodOptions[0]);
 
-  // When period type changes, reset to "current" option
   useEffect(() => {
     const opts = buildPeriodOptions(periodType, t);
-    setSelectedPeriod(opts[0]);
+    setSelectedPeriod(prev => {
+      if (prev && prev.anchor_date === opts[0].anchor_date && prev.label === opts[0].label) {
+        return prev;
+      }
+      return opts[0];
+    });
   }, [periodType, t]);
 
-  // When wallets loaded, sync initial wallet from params
   useEffect(() => {
     if (wallets.length > 0 && !selectedWallet) {
-      if (params.wallet_id === '0') {
-        setSelectedWallet(allWalletOption);
-      } else {
+      if (params.wallet_id && params.wallet_id !== '0') {
         const found = wallets.find(w => w.walletId === Number(params.wallet_id));
-        setSelectedWallet(found || defaultWallet || wallets[0] || allWalletOption);
+        setSelectedWallet(found || defaultWallet || wallets[0] || null);
+      } else {
+        setSelectedWallet(defaultWallet || wallets[0] || null);
       }
     }
-  }, [wallets, params.wallet_id, allWalletOption]);
+  }, [wallets, params.wallet_id, defaultWallet]);
 
-  // Fetch data whenever filters change
   useEffect(() => {
     if (selectedWallet && selectedPeriod) {
       analyzeCategory({
@@ -192,27 +171,20 @@ const CategoryReportDetailScreen = () => {
     }
   }, [selectedWallet, selectedPeriod, periodType, defaultCurrency.currencyId]);
 
-  // ---- Modal state ----
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showPeriodModal, setShowPeriodModal] = useState(false);
-
-  // ---- Tab state ----
   const [activeTab, setActiveTab] = useState<'EXPENSE' | 'INCOME'>(params.active_tab || 'EXPENSE');
 
   const currency = defaultCurrency.symbol;
-
   const filteredCategories = categoryAnalysis.filter(c => c.category_group === activeTab);
   const totalAmount = filteredCategories.reduce((s, c) => s + c.total_amount, 0);
-
   const formatCurrency = (v: number) => v.toLocaleString('vi-VN') + ' ' + currency;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <AppHeader title={t('report.category_detail')} showBackButton />
 
-      {/* ===== FILTER ROW ===== */}
       <View style={styles.filterRow}>
-        {/* Wallet selector */}
         <TouchableOpacity
           style={[styles.filterChip, { backgroundColor: colors.card }]}
           onPress={() => setShowWalletModal(true)}
@@ -229,7 +201,6 @@ const CategoryReportDetailScreen = () => {
           <FontAwesome6 name="chevron-down" size={normalize(11)} color={colors.icon} />
         </TouchableOpacity>
 
-        {/* Period selector */}
         <TouchableOpacity
           style={[styles.filterChip, { backgroundColor: colors.card }]}
           onPress={() => setShowPeriodModal(true)}
@@ -243,7 +214,6 @@ const CategoryReportDetailScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* ===== PERIOD TYPE PILLS ===== */}
       <View style={styles.periodTypeRow}>
         {PERIOD_TYPES.map(pt => (
           <TouchableOpacity
@@ -266,7 +236,6 @@ const CategoryReportDetailScreen = () => {
         ))}
       </View>
 
-      {/* ===== TABS: EXPENSE / INCOME ===== */}
       <View style={styles.tabRow}>
         {CATEGORY_TABS.map(tab => (
           <TouchableOpacity
@@ -289,7 +258,6 @@ const CategoryReportDetailScreen = () => {
         ))}
       </View>
 
-      {/* ===== CONTENT ===== */}
       {analyzing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.tint} />
@@ -299,8 +267,6 @@ const CategoryReportDetailScreen = () => {
         </View>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-
-          {/* Summary */}
           <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
             <View style={styles.summaryLeft}>
               <View style={[
@@ -330,7 +296,6 @@ const CategoryReportDetailScreen = () => {
             </View>
           </View>
 
-          {/* Category list */}
           {filteredCategories.length === 0 ? (
             <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
               <FontAwesome6 name="chart-pie" size={normalize(36)} color={colors.icon} />
@@ -342,7 +307,7 @@ const CategoryReportDetailScreen = () => {
             <View style={styles.categoryList}>
               {filteredCategories.map((item, index) => (
                 <CategoryItem
-                  key={item.id}
+                  key={item.category_code}
                   item={item}
                   currency={currency}
                   colors={colors}
@@ -352,7 +317,8 @@ const CategoryReportDetailScreen = () => {
                       pathname: '/(protected)/category-detail',
                       params: {
                         category: JSON.stringify({
-                          category_id: item.id,
+                          category_id: item.id || 0,
+                          category_code: item.category_code,
                           name: item.category_name,
                           icon: item.icon,
                           color: item.color,
@@ -375,7 +341,6 @@ const CategoryReportDetailScreen = () => {
         </ScrollView>
       )}
 
-      {/* ===== WALLET MODAL ===== */}
       <BottomSheetModal
         visible={showWalletModal}
         onClose={() => setShowWalletModal(false)}
@@ -403,9 +368,7 @@ const CategoryReportDetailScreen = () => {
             <View style={{ flex: 1 }}>
               <CustomText type="medium" size={14}>{w.name}</CustomText>
               <CustomText size={12} style={{ color: colors.text }}>
-                {w.walletId === 0
-                  ? t('report.all_wallets_summary')
-                  : `${w.balance?.toLocaleString('vi-VN')} ${w.currency}`}
+                {`${w.balance?.toLocaleString('vi-VN')} ${w.currency}`}
               </CustomText>
             </View>
             {selectedWallet?.walletId === w.walletId && (
@@ -415,7 +378,6 @@ const CategoryReportDetailScreen = () => {
         ))}
       </BottomSheetModal>
 
-      {/* ===== PERIOD MODAL ===== */}
       <BottomSheetModal
         visible={showPeriodModal}
         onClose={() => setShowPeriodModal(false)}
@@ -447,8 +409,6 @@ const CategoryReportDetailScreen = () => {
   );
 };
 
-/* ================= BOTTOM SHEET MODAL ================= */
-
 const BottomSheetModal = ({
   visible,
   onClose,
@@ -474,8 +434,6 @@ const BottomSheetModal = ({
     </View>
   </Modal>
 );
-
-/* ================= CATEGORY ITEM ================= */
 
 const CategoryItem = ({
   item,
@@ -537,173 +495,5 @@ const CategoryItem = ({
     </TouchableOpacity>
   );
 };
-
-/* ================= STYLES ================= */
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-
-  filterRow: {
-    flexDirection: 'row',
-    paddingHorizontal: wp(5),
-    marginTop: hp(1.5),
-    gap: normalize(10),
-  },
-  filterChip: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(6),
-    paddingHorizontal: normalize(12),
-    paddingVertical: normalize(10),
-    borderRadius: normalize(12),
-  },
-  filterChipText: { flex: 1 },
-
-  periodTypeRow: {
-    flexDirection: 'row',
-    paddingHorizontal: wp(5),
-    marginTop: hp(1.5),
-    gap: normalize(8),
-  },
-  periodPill: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: normalize(8),
-    borderRadius: normalize(20),
-  },
-  periodPillActive: {
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-
-  tabRow: {
-    flexDirection: 'row',
-    marginHorizontal: wp(5),
-    marginTop: hp(1.5),
-    marginBottom: hp(1.5),
-    gap: normalize(8),
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: normalize(10),
-    borderRadius: normalize(10),
-    alignItems: 'center',
-  },
-  tabBtnActive: {
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-  },
-
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  scrollContent: { paddingHorizontal: wp(5) },
-
-  summaryCard: {
-    padding: normalize(16),
-    borderRadius: normalize(14),
-    marginBottom: normalize(16),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  summaryLeft: { flexDirection: 'row', alignItems: 'center', gap: normalize(12) },
-  summaryIconBg: {
-    width: normalize(44),
-    height: normalize(44),
-    borderRadius: normalize(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  countBadge: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: normalize(14),
-    paddingVertical: normalize(8),
-    borderRadius: normalize(12),
-  },
-
-  emptyCard: {
-    padding: normalize(40),
-    borderRadius: normalize(14),
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: normalize(8),
-  },
-
-  categoryList: { gap: normalize(12) },
-  categoryCard: { padding: normalize(14), borderRadius: normalize(14) },
-  categoryHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: normalize(10),
-  },
-  categoryLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(10),
-    flex: 1,
-  },
-  categoryIconWrap: {
-    width: normalize(40),
-    height: normalize(40),
-    borderRadius: normalize(10),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryRight: { alignItems: 'flex-end', gap: normalize(4) },
-  percentBadge: {
-    paddingHorizontal: normalize(8),
-    paddingVertical: normalize(2),
-    borderRadius: normalize(20),
-  },
-  progressBg: { height: normalize(6), borderRadius: normalize(3), overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: normalize(3) },
-
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  modalSheet: {
-    borderTopLeftRadius: normalize(20),
-    borderTopRightRadius: normalize(20),
-    paddingTop: normalize(12),
-    paddingHorizontal: wp(5),
-  },
-  modalHandle: {
-    width: normalize(40),
-    height: normalize(4),
-    borderRadius: normalize(2),
-    alignSelf: 'center',
-    marginBottom: normalize(12),
-  },
-  modalTitle: {
-    marginBottom: normalize(16),
-  },
-  modalItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(12),
-    paddingVertical: normalize(12),
-    paddingHorizontal: normalize(4),
-    borderRadius: normalize(10),
-    marginBottom: normalize(4),
-  },
-  modalItemIcon: {
-    width: normalize(40),
-    height: normalize(40),
-    borderRadius: normalize(10),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
 
 export default CategoryReportDetailScreen;

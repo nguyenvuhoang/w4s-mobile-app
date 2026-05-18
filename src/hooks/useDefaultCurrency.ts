@@ -1,14 +1,8 @@
-// src/hooks/useDefaultCurrency.ts
-
-import { GlobalContext } from "@/contexts/GlobalContext";
-import {
-  currencyCache,
-  fetchCurrenciesFromApi,
-  useCurrency
-} from "@/hooks/useCurrency";
-import StorageService from "@/services/StorageService";
 import StorageKey from "@/constants/StorageKey";
+import { GlobalContext } from "@/contexts/GlobalContext";
+import { currencyCache, fetchCurrenciesFromApi, useCurrency } from "@/hooks/useCurrency";
 import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
+import StorageService from "@/services/StorageService";
 import { useCallback, useContext, useEffect, useState } from "react";
 
 export interface DefaultCurrency {
@@ -17,15 +11,10 @@ export interface DefaultCurrency {
   name: string;
 }
 
-/**
- * Hook to manage the application's default currency.
- * Source of truth is appInfo.currency_code from GlobalContext.
- */
 export const useDefaultCurrency = () => {
   const { appInfo, setAppInfo } = useContext(GlobalContext);
   const [loading, setLoading] = useState(false);
-  
-  // Local state as a fallback/buffer for the derived currency info
+
   const [localCurrency, setLocalCurrency] = useState<DefaultCurrency>({
     currencyId: appInfo?.currency_code || "VND",
     symbol: "₫",
@@ -34,41 +23,37 @@ export const useDefaultCurrency = () => {
 
   const { parseCurrencyName } = useCurrency({ autoFetch: false });
 
-  /**
-   * Resolve a currency from cache or API
-   */
   const resolveCurrency = useCallback(async (code: string) => {
-    // 1. Check cache first
-    const cache = currencyCache.data;
-    let currency = cache?.currencies?.find(c => c.currency_id === code) || null;
+    setLoading(true);
+    try {
+      const cache = currencyCache.data;
+      let currency = cache?.currencies?.find(c => c.currency_id === code) || null;
 
-    // 2. Fetch if not in cache
-    if (!currency) {
-      try {
+      if (!currency) {
         const result = await fetchCurrenciesFromApi(code, 0, 10);
-        currency = result.currencies.find(c => c.currency_id === code) || 
-                  (result.currencies.length > 0 ? result.currencies[0] : null);
-      } catch (err) {
-        console.error("[useDefaultCurrency] Fetch failed:", err);
+        currency = result.currencies.find(c => c.currency_id === code) ||
+          (result.currencies.length > 0 ? result.currencies[0] : null);
       }
-    }
 
-    if (currency) {
-      setLocalCurrency({
-        currencyId: currency.currency_id,
-        symbol: currency.symbol || "₫",
-        name: parseCurrencyName(currency),
-      });
+      if (currency) {
+        setLocalCurrency({
+          currencyId: currency.currency_id,
+          symbol: currency.symbol || "₫",
+          name: parseCurrencyName(currency),
+        });
+      }
+    } catch (err) {
+      console.error("[useDefaultCurrency] Fetch failed:", err);
+    } finally {
+      setLoading(false);
     }
   }, [parseCurrencyName]);
 
-  // Sync whenever appInfo.currency_code changes
   useEffect(() => {
     const code = appInfo?.currency_code || "VND";
     resolveCurrency(code);
   }, [appInfo?.currency_code, resolveCurrency]);
 
-  // Also listen for manual events (e.g. from picker before appInfo updates)
   useEffect(() => {
     const handleCurrencyChanged = (currencyId: string) => {
       resolveCurrency(currencyId);
@@ -78,20 +63,17 @@ export const useDefaultCurrency = () => {
     return () => CurrencyEventEmitter.offCurrencyChanged(handleCurrencyChanged);
   }, [resolveCurrency]);
 
-  /**
-   * Update the default currency globally
-   */
   const updateDefaultCurrency = useCallback(async (currency: DefaultCurrency) => {
     setLocalCurrency(currency);
     CurrencyEventEmitter.emitCurrencyChanged(currency.currencyId);
-    
+
     if (appInfo && setAppInfo) {
       const updatedAppInfo = {
         ...appInfo,
         currency_code: currency.currencyId,
       };
       setAppInfo(updatedAppInfo);
-      
+
       try {
         await StorageService.setItem(StorageKey.appInfo, JSON.stringify(updatedAppInfo));
       } catch (err) {

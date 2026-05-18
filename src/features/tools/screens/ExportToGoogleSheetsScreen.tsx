@@ -21,15 +21,13 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { styles } from "../styles/ExportToGoogleSheetsScreen.styles";
 
-// ─── Mock: tạo file giả để test ───────────────────────────────────────────────
-// TODO: thay bằng file thật từ hệ thống export của bạn
-
+// Mock to create a fake file for testing upload (replace with your actual file export mechanism)
 async function getMockFiles() {
   const pdfUri = FileSystem.Paths.document.uri + "mock_report.pdf";
   const xlsxUri = FileSystem.Paths.document.uri + "mock_report.xlsx";
 
-  // Ghi nội dung giả vào file để test upload
   new FileSystem.File(pdfUri).write("Mock PDF content for testing");
   new FileSystem.File(xlsxUri).write("Mock Excel content for testing");
 
@@ -46,8 +44,6 @@ async function getMockFiles() {
     },
   ];
 }
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
 
 const ExportToGoogleSheetsScreen = () => {
   const { colors } = useAppTheme();
@@ -68,8 +64,6 @@ const ExportToGoogleSheetsScreen = () => {
     unlinkGoogleAccount,
     uploadToDrive,
   } = useGoogleDriveExport();
-
-  // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleBack = () => {
     if (router.canGoBack()) router.back();
@@ -97,10 +91,8 @@ const ExportToGoogleSheetsScreen = () => {
     }
 
     try {
-      // TODO: thay getMockFiles() bằng file thật từ hệ thống của bạn
       const files = await getMockFiles();
 
-      // Reset progress
       setProgressMap({});
 
       const onProgress = (p: UploadProgress) => {
@@ -114,7 +106,6 @@ const ExportToGoogleSheetsScreen = () => {
         `${results.length} file đã lên Google Drive của bạn.`,
         [
           { text: "Đóng", style: "cancel" },
-          // Mở file đầu tiên
           {
             text: "Mở Drive",
             onPress: () => Linking.openURL(results[0].webViewLink),
@@ -126,10 +117,6 @@ const ExportToGoogleSheetsScreen = () => {
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
-  const isExporting = isUploading && Object.keys(progressMap).length > 0;
-
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
@@ -139,7 +126,6 @@ const ExportToGoogleSheetsScreen = () => {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={[styles.content, { paddingBottom: normalize(20) + insets.bottom }]}>
 
-          {/* Error banner */}
           {!!error && (
             <View style={[styles.errorBanner, { backgroundColor: colors.card, borderColor: "#FF4444" }]}>
               <Ionicons name="warning-outline" size={normalize(16)} color="#FF4444" />
@@ -147,7 +133,6 @@ const ExportToGoogleSheetsScreen = () => {
             </View>
           )}
 
-          {/* File types badge */}
           <View style={styles.inputGroup}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               Loại file sẽ upload
@@ -164,7 +149,6 @@ const ExportToGoogleSheetsScreen = () => {
             </View>
           </View>
 
-          {/* Start Date */}
           <View style={styles.inputGroup}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               {t("export_data.start_date")}
@@ -178,7 +162,6 @@ const ExportToGoogleSheetsScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* End Date */}
           <View style={styles.inputGroup}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               {t("export_data.end_date")}
@@ -192,7 +175,6 @@ const ExportToGoogleSheetsScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Google Account */}
           <View style={styles.inputGroup}>
             <CustomText style={[styles.label, { color: colors.text }]}>
               {t("export_gsheets.google_account")}
@@ -233,7 +215,6 @@ const ExportToGoogleSheetsScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Toggle */}
           <View style={styles.toggleContainer}>
             <CustomText style={[styles.toggleLabel, { color: colors.text }]}>
               {t("export_gsheets.include_non_report")}
@@ -246,7 +227,6 @@ const ExportToGoogleSheetsScreen = () => {
             />
           </View>
 
-          {/* Progress bars (hiện khi đang upload) */}
           {isUploading && Object.keys(progressMap).length > 0 && (
             <View style={[styles.progressContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {Object.entries(progressMap).map(([fileName, percent]) => (
@@ -280,7 +260,6 @@ const ExportToGoogleSheetsScreen = () => {
             </View>
           )}
 
-          {/* Export Button */}
           <TouchableOpacity
             style={[
               styles.exportButton,
@@ -310,92 +289,5 @@ const ExportToGoogleSheetsScreen = () => {
     </SafeAreaView>
   );
 };
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: normalize(20) },
-  errorBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: normalize(8),
-    borderWidth: 1,
-    borderRadius: normalize(10),
-    padding: normalize(12),
-    marginBottom: normalize(16),
-  },
-  errorText: { fontSize: normalize(13), flex: 1 },
-  inputGroup: { marginBottom: normalize(20) },
-  label: { fontSize: normalize(14), marginBottom: normalize(8), fontWeight: "500" },
-  badgeRow: { flexDirection: "row", gap: normalize(10) },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: normalize(6),
-    paddingHorizontal: normalize(12),
-    paddingVertical: normalize(8),
-    borderRadius: normalize(20),
-    borderWidth: 1,
-  },
-  badgeText: { fontSize: normalize(13), fontWeight: "500" },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: normalize(12),
-    borderWidth: 1,
-    paddingHorizontal: normalize(16),
-    height: normalize(56),
-    gap: normalize(12),
-  },
-  rowText: { fontSize: normalize(15), flex: 1 },
-  accountIcon: {
-    width: normalize(32),
-    height: normalize(32),
-    borderRadius: normalize(16),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  toggleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: normalize(24),
-    marginTop: normalize(4),
-  },
-  toggleLabel: { fontSize: normalize(15), flex: 1, paddingRight: normalize(16) },
-  progressContainer: {
-    borderWidth: 1,
-    borderRadius: normalize(12),
-    padding: normalize(14),
-    gap: normalize(12),
-    marginBottom: normalize(16),
-  },
-  progressItem: { gap: normalize(6) },
-  progressLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: normalize(6),
-  },
-  progressFileName: { fontSize: normalize(13), flex: 1 },
-  progressPct: { fontSize: normalize(12), fontWeight: "500" },
-  progressTrack: {
-    height: normalize(4),
-    borderRadius: normalize(2),
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: normalize(2),
-  },
-  exportButton: {
-    borderRadius: normalize(12),
-    padding: normalize(16),
-    alignItems: "center",
-    marginTop: normalize(8),
-  },
-  exportButtonDisabled: { opacity: 0.45 },
-  exportButtonText: { color: "#fff", fontSize: normalize(16), fontWeight: "600" },
-});
 
 export default ExportToGoogleSheetsScreen;
