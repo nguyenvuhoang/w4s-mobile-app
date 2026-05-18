@@ -37,4 +37,5 @@ export default {
   HeaderBackground: "HeaderBackground",
   FestivalOverlayEnabled: "FestivalOverlayEnabled",
   spendingWarningList: "spendingWarningList",
+  chatHistory: "chatHistory",
 };

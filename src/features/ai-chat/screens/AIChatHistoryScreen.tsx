@@ -7,8 +7,8 @@ import { useAppTheme } from '@/core/theme/ThemeContext';
 import { Fonts } from '@/core/theme/font';
 import { hp, normalize, wp } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -16,46 +16,29 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-interface ChatHistory {
-  id: string;
-  title: string;
-  summary: string;
-  lastMessage: string;
-  timestamp: Date;
-}
+import { useChatHistory, ChatSession } from '../hooks/useChatHistory';
 
 const AIChatHistoryScreen = () => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
   const { showNotification } = useNotification();
+  const { chatList, loadHistory, deleteChat, renameChat } = useChatHistory();
 
-  // Mock data - Replace with real data from API
-  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([
-    {
-      id: '1',
-      title: 'Tiêu đề cuộc trò chuyện ....',
-      summary: 'Tóm tắt nội dung cuộc trò chuyện được hệ thống tự động sinh ra ....',
-      lastMessage: 'Hãy thống kê 3 tháng gần nhất',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    },
-    {
-      id: '2',
-      title: 'Tiêu đề cuộc trò chuyện ....',
-      summary: 'Tóm tắt nội dung cuộc trò chuyện được hệ thống tự động sinh ra ....',
-      lastMessage: 'Chi tiêu tháng này như thế nào?',
-      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    },
-    {
-      id: '3',
-      title: 'Tiêu đề cuộc trò chuyện ....',
-      summary: 'Tóm tắt nội dung cuộc trò chuyện được hệ thống tự động sinh ra ....',
-      lastMessage: 'Phân tích chi tiêu',
-      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    },
-  ]);
+  // Modal rename state
+  const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [newTitle, setNewTitle] = useState('');
+
+  // Fetch history when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      loadHistory();
+    }, [loadHistory])
+  );
 
   const handleNewChat = () => {
     router.push('/(protected)/ai-chat');
@@ -77,58 +60,77 @@ const AIChatHistoryScreen = () => {
         {
           text: t('common.delete'),
           style: 'destructive',
-          onPress: () => {
-            setChatHistory((prev) => prev.filter((chat) => chat.id !== chatId));
-            // TODO: Call API to delete chat
+          onPress: async () => {
+            await deleteChat(chatId);
+            showNotification(t('common.success'), 'success');
           },
         },
       ]
     );
   };
 
-  const handleRenameChat = (chatId: string) => {
-    // TODO: Show rename modal
-    showNotification(t('common.feature_developing'), 'warning');
+  const handleRenameChat = (chatId: string, currentTitle: string) => {
+    setSelectedChatId(chatId);
+    setNewTitle(currentTitle);
+    setIsRenameModalVisible(true);
   };
 
-  const renderChatItem = ({ item }: { item: ChatHistory }) => (
+  const formatTime = (isoString: string) => {
+    try {
+      const date = new Date(isoString);
+      const now = new Date();
+      if (date.toDateString() === now.toDateString()) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      }
+      return date.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
+    } catch {
+      return '';
+    }
+  };
+
+  const renderChatItem = ({ item }: { item: ChatSession }) => (
     <TouchableOpacity
       style={[styles.chatItem, { backgroundColor: colors.card }]}
       onPress={() => handleOpenChat(item.id)}
       activeOpacity={0.7}
     >
       <View style={styles.chatContent}>
-        <CustomText
-          style={[styles.chatTitle, { color: colors.text }]}
-          numberOfLines={1}
-        >
-          {item.title}
-        </CustomText>
+        <View style={styles.titleRow}>
+          <CustomText
+            style={[styles.chatTitle, { color: colors.text }]}
+            numberOfLines={1}
+          >
+            {item.title}
+          </CustomText>
+          <CustomText style={[styles.chatTime, { color: colors.icon }]}>
+            {formatTime(item.timestamp)}
+          </CustomText>
+        </View>
         <CustomText
           style={[styles.chatSummary, { color: colors.icon }]}
           numberOfLines={2}
         >
-          {item.summary}
+          {item.summary || t('ai_chat.no_chats')}
         </CustomText>
       </View>
 
       <TouchableOpacity
         style={styles.menuButton}
-        onPress={() => showMenu(item.id)}
+        onPress={() => showMenu(item.id, item.title)}
       >
         <Ionicons name="ellipsis-vertical" size={normalize(20)} color={colors.icon} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
 
-  const showMenu = (chatId: string) => {
+  const showMenu = (chatId: string, currentTitle: string) => {
     Alert.alert(
       t('ai_chat.options'),
       t('common.select_action'),
       [
         {
           text: t('ai_chat.rename_chat'),
-          onPress: () => handleRenameChat(chatId),
+          onPress: () => handleRenameChat(chatId, currentTitle),
         },
         {
           text: t('common.delete'),
@@ -148,7 +150,7 @@ const AIChatHistoryScreen = () => {
       <AppHeader title={t('ai_chat.chat_history')} showBackButton />
 
       <FlatList
-        data={chatHistory}
+        data={chatList}
         renderItem={renderChatItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
@@ -179,6 +181,54 @@ const AIChatHistoryScreen = () => {
           </CustomText>
         </TouchableOpacity>
       </View>
+
+      {/* Rename Dialog Modal */}
+      <Modal
+        visible={isRenameModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsRenameModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
+            <CustomText style={[styles.modalTitle, { color: colors.text }]}>
+              {t('ai_chat.rename_chat')}
+            </CustomText>
+            <TextInput
+              style={[styles.modalInput, { color: colors.text, borderColor: colors.border }]}
+              value={newTitle}
+              onChangeText={setNewTitle}
+              placeholder="Enter new title..."
+              placeholderTextColor={colors.icon}
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, { borderColor: colors.border, borderWidth: 1 }]}
+                onPress={() => setIsRenameModalVisible(false)}
+              >
+                <CustomText style={{ color: colors.text }}>
+                  {t('common.cancel')}
+                </CustomText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.tint }]}
+                onPress={async () => {
+                  if (selectedChatId && newTitle.trim()) {
+                    await renameChat(selectedChatId, newTitle.trim());
+                    setIsRenameModalVisible(false);
+                    showNotification(t('common.success'), 'success');
+                  }
+                }}
+              >
+                <CustomText style={{ color: '#fff', fontFamily: Fonts.semiBold }}>
+                  {t('common.confirm')}
+                </CustomText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -204,12 +254,23 @@ const styles = StyleSheet.create({
   },
   chatContent: {
     flex: 1,
-    gap: normalize(8),
+    gap: normalize(4),
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: normalize(12),
   },
   chatTitle: {
     fontSize: normalize(16),
     fontFamily: Fonts.semiBold,
     lineHeight: normalize(22),
+    flex: 1,
+  },
+  chatTime: {
+    fontSize: normalize(12),
+    fontFamily: Fonts.regular,
   },
   chatSummary: {
     fontSize: normalize(13),
@@ -257,6 +318,50 @@ const styles = StyleSheet.create({
     fontSize: normalize(16),
     fontFamily: Fonts.semiBold,
     color: '#fff',
+  },
+
+  // Modal rename styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '85%',
+    padding: normalize(20),
+    borderRadius: normalize(16),
+    gap: normalize(16),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: normalize(18),
+    fontFamily: Fonts.semiBold,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: normalize(12),
+    paddingHorizontal: normalize(16),
+    paddingVertical: normalize(12),
+    fontSize: normalize(16),
+    fontFamily: Fonts.regular,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: normalize(12),
+    marginTop: normalize(8),
+  },
+  modalButton: {
+    paddingHorizontal: normalize(20),
+    paddingVertical: normalize(12),
+    borderRadius: normalize(12),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

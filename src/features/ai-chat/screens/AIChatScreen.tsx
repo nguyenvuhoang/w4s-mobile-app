@@ -9,9 +9,10 @@ import { hp, normalize, wp } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Crypto from 'expo-crypto';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useChatHistory } from '../hooks/useChatHistory';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -37,6 +38,9 @@ interface Message {
 const AIChatScreen = () => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
+  const params = useLocalSearchParams<{ chatId?: string }>();
+  const { getChat, saveMessage } = useChatHistory();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -44,13 +48,32 @@ const AIChatScreen = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const stopStreamRef = useRef<(() => void) | null>(null);
 
-  const [conversationId] = useState(() => Crypto.randomUUID());
+  const [conversationId] = useState(() => params?.chatId || Crypto.randomUUID());
 
   useEffect(() => {
     return () => {
       stopStreamRef.current?.();
     };
   }, []);
+
+  // Load existing chat messages if chatId is provided in params
+  useEffect(() => {
+    const chatId = params?.chatId;
+    if (chatId) {
+      (async () => {
+        const session = await getChat(chatId);
+        if (session && session.messages) {
+          const mappedMessages = session.messages.map((m) => ({
+            ...m,
+            timestamp: new Date(m.timestamp),
+          }));
+          setMessages(mappedMessages);
+          // Wait slightly for layout to complete before scrolling
+          setTimeout(scrollToBottom, 100);
+        }
+      })();
+    }
+  }, [params?.chatId, getChat]);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -85,6 +108,14 @@ const AIChatScreen = () => {
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
     scrollToBottom();
+
+    // Save user message to history
+    await saveMessage(conversationId, {
+      id: userMessage.id,
+      text: userMessage.text,
+      isUser: true,
+      timestamp: userMessage.timestamp.toISOString(),
+    });
 
     const aiMessageId = (Date.now() + 1).toString();
     let aiMessageCreated = false;
@@ -135,6 +166,20 @@ const AIChatScreen = () => {
         setIsStreaming(false);
         stopStreamRef.current = null;
         scrollToBottom();
+
+        // Save AI message to history when done
+        setMessages((prev) => {
+          const aiMsg = prev.find((m) => m.id === aiMessageId);
+          if (aiMsg) {
+            saveMessage(conversationId, {
+              id: aiMsg.id,
+              text: aiMsg.text,
+              isUser: false,
+              timestamp: aiMsg.timestamp.toISOString(),
+            });
+          }
+          return prev;
+        });
       },
       onError: (error) => {
         console.error('[AIChatScreen] Stream error:', error);
@@ -146,24 +191,38 @@ const AIChatScreen = () => {
 
         if (!aiMessageCreated) {
           // Create error message if AI message doesn't exist yet
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: aiMessageId,
-              text: errorMessage,
-              isUser: false,
-              timestamp: new Date(),
-            },
-          ]);
+          const newAiMsg = {
+            id: aiMessageId,
+            text: errorMessage,
+            isUser: false,
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, newAiMsg]);
+          saveMessage(conversationId, {
+            id: newAiMsg.id,
+            text: newAiMsg.text,
+            isUser: false,
+            timestamp: newAiMsg.timestamp.toISOString(),
+          });
         } else {
           // Update existing message with error
-          setMessages((prev) =>
-            prev.map((msg) =>
+          setMessages((prev) => {
+            const updated = prev.map((msg) =>
               msg.id === aiMessageId
                 ? { ...msg, text: msg.text || errorMessage }
                 : msg
-            )
-          );
+            );
+            const aiMsg = updated.find((m) => m.id === aiMessageId);
+            if (aiMsg) {
+              saveMessage(conversationId, {
+                id: aiMsg.id,
+                text: aiMsg.text,
+                isUser: false,
+                timestamp: aiMsg.timestamp.toISOString(),
+              });
+            }
+            return updated;
+          });
         }
         scrollToBottom();
       },
