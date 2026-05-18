@@ -1098,5 +1098,10 @@
     "debit_borrow": "Borrow",
     "debit_lend": "Lend",
     "debit_other": "Other"
+  },
+  "login": {
+    "faceIdPrompt": "Scan your face to log in",
+    "fingerprintPrompt": "Scan your fingerprint to log in",
+    "biometricFallback": "Use password"
   }
 }

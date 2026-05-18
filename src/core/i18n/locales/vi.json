@@ -1105,5 +1105,10 @@
     "debit_lend": "Cho vay",
     "debit_other": "Khác",
     "saving": "Tiết kiệm"
+  },
+  "login": {
+    "faceIdPrompt": "Quét khuôn mặt để đăng nhập",
+    "fingerprintPrompt": "Quét vân tay để đăng nhập",
+    "biometricFallback": "Nhập mật khẩu"
   }
 }
