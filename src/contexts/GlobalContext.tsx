@@ -68,6 +68,7 @@ interface GlobalContextType {
   defaultWalletId: number | null;
   setDefaultWalletId: (walletId: number | null) => void;
   setPrimaryWallet: (walletId: number) => Promise<void>;
+  getPrimaryWallet: () => Promise<WalletSummary>;
   defaultWallet?: WalletSummary;
 }
 
@@ -117,6 +118,7 @@ const GlobalContext = createContext<GlobalContextType>({
   defaultWalletId: null,
   setDefaultWalletId: () => { },
   setPrimaryWallet: async () => { },
+  getPrimaryWallet: async () => { throw new Error("getPrimaryWallet not implemented"); },
   defaultWallet: undefined,
 });
 
@@ -208,6 +210,20 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
       throw err;
     } finally {
       hideGlobalLoading();
+    }
+  };
+
+  // 🔹 ADD — Get primary wallet
+  const getPrimaryWallet = async (): Promise<WalletSummary> => {
+    try {
+      const primaryWallet = await walletRepository.getPrimaryWallet();
+      if (primaryWallet) {
+        setDefaultWalletId(primaryWallet.walletId);
+      }
+      return primaryWallet;
+    } catch (err) {
+      console.error("[GlobalContext] getPrimaryWallet error", err);
+      throw err;
     }
   };
 
@@ -334,6 +350,9 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (!appInfo?.user_code) return;
     fetchWallets(true);
+    getPrimaryWallet().catch((err) => {
+      console.warn("[GlobalContext] auto getPrimaryWallet on login/start failed", err);
+    });
   }, [appInfo?.user_code]);
 
   // 🔹 ADD — Listen for transaction changes to refresh wallets
@@ -392,6 +411,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
         defaultWalletId,
         setDefaultWalletId,
         setPrimaryWallet,
+        getPrimaryWallet,
         defaultWallet,
       }}
     >

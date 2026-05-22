@@ -90,6 +90,7 @@ export interface LoanDetail {
   counterparty_name: string;
   counterparty_type: CounterpartyType;
   description: string;
+  currency_code: string;
   principal_amount: number;
   balance: number;
   interest_rate: number;

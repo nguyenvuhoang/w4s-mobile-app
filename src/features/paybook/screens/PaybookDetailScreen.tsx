@@ -9,7 +9,6 @@ import type {
 } from "@/features/paybook/types";
 import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
 import { hp, normalize, wp } from "@/utils/layout";
-import { FontAwesome6 } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -34,7 +33,7 @@ const PaybookDetailScreen = () => {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const { loading, loanDetail, getLoanDetail } = usePaybookDetail();
-  const { convertFromVND, formatAmount, currencyFormatter } = useCurrencyConverter();
+  const { convertBetween, formatAmount, currencyFormatter, isReady, getCurrencyDetails } = useCurrencyConverter();
 
   // ─── Status configs (moved inside component to use 't') ────────────────────
 
@@ -79,31 +78,45 @@ const PaybookDetailScreen = () => {
   // TODO: Replace with actual API call later
   // const loan = MOCK_LOAN_DETAIL;
   const loan = loanDetail;
+  console.log("loanDetail-----", JSON.stringify(loanDetail));
 
   // ── Formatters (must be before any early return — Rules of Hooks) ────────────
   const formatCurrency = useCallback((amount: number) => {
-    return formatAmount(convertFromVND(amount));
-  }, [convertFromVND, formatAmount]);
+    const fromCurrency = loan?.currency_code ?? "VND";
+    const converted = convertBetween(amount, fromCurrency);
+    if (converted !== null) {
+      return formatAmount(converted);
+    }
+    return formatAmount(amount, fromCurrency);
+  }, [loan?.currency_code, convertBetween, formatAmount]);
 
   const formatCurrencyShort = useCallback((amount: number) => {
-    const convertedAmount = convertFromVND(amount);
+    const fromCurrency = loan?.currency_code ?? "VND";
+    const converted = convertBetween(amount, fromCurrency);
+    const displayAmount = converted !== null ? converted : amount;
+
+    const displayCurrencyId = converted !== null ? undefined : fromCurrency;
+    const currencyDetails = getCurrencyDetails(displayCurrencyId ?? "");
+    const symbol = displayCurrencyId
+      ? (currencyDetails?.symbol ?? displayCurrencyId)
+      : currencyFormatter.symbol;
 
     if (i18n.language === "vi") {
-      if (convertedAmount >= 1_000_000_000)
-        return `${(convertedAmount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")} Tỷ ${currencyFormatter.symbol}`;
-      if (convertedAmount >= 1_000_000)
-        return `${(convertedAmount / 1_000_000).toFixed(1).replace(/\.0$/, "")} Tr ${currencyFormatter.symbol}`;
+      if (displayAmount >= 1_000_000_000)
+        return `${(displayAmount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")} Tỷ ${symbol}`;
+      if (displayAmount >= 1_000_000)
+        return `${(displayAmount / 1_000_000).toFixed(1).replace(/\.0$/, "")} Tr ${symbol}`;
     } else {
-      if (convertedAmount >= 1_000_000_000)
-        return `${currencyFormatter.symbol}${(convertedAmount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")}B`;
-      if (convertedAmount >= 1_000_000)
-        return `${currencyFormatter.symbol}${(convertedAmount / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+      if (displayAmount >= 1_000_000_000)
+        return `${symbol}${(displayAmount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")}B`;
+      if (displayAmount >= 1_000_000)
+        return `${symbol}${(displayAmount / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
     }
-    return formatAmount(convertedAmount);
-  }, [i18n.language, convertFromVND, formatAmount, currencyFormatter]);
+    return formatAmount(displayAmount, displayCurrencyId);
+  }, [i18n.language, loan?.currency_code, convertBetween, formatAmount, currencyFormatter, getCurrencyDetails]);
 
-  // ── Early return: loading / no data ─────────────────────────────────────────
-  if (loading || !loan) {
+  // ── Early return: loading / no data / converter not ready ───────────────────
+  if (loading || !loan || !isReady) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
         <AppHeader title={t("paybook.detailTitle")} />

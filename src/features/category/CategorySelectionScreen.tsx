@@ -363,14 +363,49 @@ const CategorySelectionScreen: React.FC = () => {
 
                 {/* CHILDREN */}
                 {!isSelectParent && children.length > 0 && (
-                  <>
+                  <View style={styles.childrenWrapper}>
                     {children.map((child, childIndex) => {
+                      const isLast = childIndex === children.length - 1;
                       return (
                         <TouchableOpacity
                           key={`child-${child?.category_code || child?.id}-${childIndex}`}
                           style={styles.childItem}
                           onPress={() => handlePressCategory(child)}
                         >
+                          {/* Per-item tree connector */}
+                          <View style={styles.treeConnector}>
+                            {/* Top half — always visible */}
+                            <View
+                              style={[
+                                styles.treeLineTop,
+                                { backgroundColor: colors.border },
+                              ]}
+                            />
+                            {/* Bottom half — hidden for last child */}
+                            {!isLast && (
+                              <View
+                                style={[
+                                  styles.treeLineBottom,
+                                  { backgroundColor: colors.border },
+                                ]}
+                              />
+                            )}
+                            {/* Horizontal branch */}
+                            <View
+                              style={[
+                                styles.treeBranchLine,
+                                { backgroundColor: colors.border },
+                              ]}
+                            />
+                            {/* Dot */}
+                            <View
+                              style={[
+                                styles.treeDot,
+                                { backgroundColor: colors.border },
+                              ]}
+                            />
+                          </View>
+
                           <View
                             style={[
                               styles.childIcon,
@@ -395,7 +430,7 @@ const CategorySelectionScreen: React.FC = () => {
                         </TouchableOpacity>
                       );
                     })}
-                  </>
+                  </View>
                 )}
               </View>
             );
@@ -462,12 +497,50 @@ const styles = StyleSheet.create({
     fontSize: normalize(16),
     fontWeight: "600",
   },
+  childrenWrapper: {
+    marginLeft: normalize(22),
+  },
   childItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: normalize(12),
-    paddingLeft: normalize(56),
-    paddingVertical: normalize(8),
+    gap: normalize(10),
+    paddingVertical: normalize(7),
+  },
+  treeConnector: {
+    width: normalize(28),
+    alignSelf: "stretch",
+    position: "relative",
+    marginVertical: -normalize(7),
+  },
+  treeLineTop: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: "50%",
+    width: 1.5,
+  },
+  treeLineBottom: {
+    position: "absolute",
+    left: 0,
+    top: "50%",
+    bottom: 0,
+    width: 1.5,
+  },
+  treeBranchLine: {
+    position: "absolute",
+    left: 0,
+    top: "50%",
+    width: normalize(18),
+    height: 1.5,
+  },
+  treeDot: {
+    width: normalize(5),
+    height: normalize(5),
+    borderRadius: normalize(3),
+    position: "absolute",
+    left: normalize(15),
+    top: "50%",
+    marginTop: -normalize(2.5),
   },
   childIcon: {
     width: normalize(36),

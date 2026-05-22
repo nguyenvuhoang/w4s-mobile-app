@@ -26,7 +26,7 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
     const { colors } = useAppTheme();
     const { t, i18n } = useTranslation();
     const { defaultCurrency } = useDefaultCurrency();
-    const { convertBetween, formatAmount } = useCurrencyConverter();
+    const { convertBetween, formatAmount, isReady } = useCurrencyConverter();
     const params = useLocalSearchParams();
     const loanId = Number(params.loanId);
 
@@ -57,13 +57,12 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
 
     // Format currency
     const formatCurrency = (amount: number) => {
-        let finalAmount = amount;
         const sourceCurrency = "VND"; 
-        if (sourceCurrency !== defaultCurrency.currencyId) {
-            const converted = convertBetween(amount, sourceCurrency, defaultCurrency.currencyId);
-            if (converted !== null) finalAmount = converted;
+        const converted = convertBetween(amount, sourceCurrency, defaultCurrency.currencyId);
+        if (converted !== null) {
+            return formatAmount(converted);
         }
-        return formatAmount(finalAmount);
+        return formatAmount(amount, sourceCurrency);
     };
 
     // Format transaction amount with sign
@@ -72,14 +71,14 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
         const sign = isExpense ? "-" : "+";
         
         const itemCurrency = transaction.currency || "VND";
-        let finalAmount = Math.abs(transaction.amount);
+        const finalAmount = Math.abs(transaction.amount);
         
-        if (itemCurrency !== defaultCurrency.currencyId) {
-            const converted = convertBetween(finalAmount, itemCurrency, defaultCurrency.currencyId);
-            if (converted !== null) finalAmount = converted;
+        const converted = convertBetween(finalAmount, itemCurrency, defaultCurrency.currencyId);
+        if (converted !== null) {
+            return `${sign}${formatAmount(converted)}`;
         }
         
-        return `${sign}${formatAmount(finalAmount)}`;
+        return `${sign}${formatAmount(finalAmount, itemCurrency)}`;
     };
 
     // Format transaction date/time
@@ -250,36 +249,40 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
         <SafeAreaView style={[localStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
             {renderHeader()}
             
-            <FlatList
-                data={transactions}
-                keyExtractor={(item) => item.transaction_id.toString()}
-                renderItem={renderTransactionItem}
-                ListHeaderComponent={renderSummaryCard}
-                contentContainerStyle={localStyles.listContent}
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        tintColor={colors.tint}
-                    />
-                }
-                onEndReached={handleEndReached}
-                onEndReachedThreshold={0.5}
-                ListEmptyComponent={
-                    !loading ? (
+            {loading || !isReady ? (
+                <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                    <ActivityIndicator size="large" color={colors.tint} />
+                </View>
+            ) : (
+                <FlatList
+                    data={transactions}
+                    keyExtractor={(item) => item.transaction_id.toString()}
+                    renderItem={renderTransactionItem}
+                    ListHeaderComponent={renderSummaryCard}
+                    contentContainerStyle={localStyles.listContent}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={colors.tint}
+                        />
+                    }
+                    onEndReached={handleEndReached}
+                    onEndReachedThreshold={0.5}
+                    ListEmptyComponent={
                         <View style={localStyles.emptyContainer}>
                              <AppIcon name="receipt" size={60} color={colors.icon} />
                              <CustomText style={{ color: colors.icon, marginTop: 10 }}>{t('paybook.history.empty')}</CustomText>
                         </View>
-                    ) : null
-                }
-                ListFooterComponent={
-                    loadingMore ? (
-                        <ActivityIndicator style={{ paddingVertical: 20 }} color={colors.tint} />
-                    ) : <View style={{ height: 40 }} />
-                }
-            />
+                    }
+                    ListFooterComponent={
+                        loadingMore ? (
+                            <ActivityIndicator style={{ paddingVertical: 20 }} color={colors.tint} />
+                        ) : <View style={{ height: 40 }} />
+                    }
+                />
+            )}
         </SafeAreaView>
     );
 };

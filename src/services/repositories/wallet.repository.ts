@@ -43,4 +43,24 @@ export const walletRepository = {
       throw error;
     }
   },
+  async getPrimaryWallet(): Promise<WalletSummary> {
+    try {
+      const res = await apiService.executeWorkflow(
+        WORKFLOWCODE.WF_MB_GET_PRIMARY_WALLET_PROFILE,
+        {},
+        false,
+        true
+      );
+
+      if (!res?.isSuccess?.() || !res.data) {
+        throw new Error(res?.message || "Get primary wallet failed");
+      }
+
+      const rawWallet: WalletRaw = res.data;
+      return mapWalletToSummary(rawWallet);
+    } catch (error) {
+      console.error("[walletRepository] getPrimaryWallet error", error);
+      throw error;
+    }
+  },
 };

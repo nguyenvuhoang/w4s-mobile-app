@@ -18,11 +18,11 @@ const mapAccountToSummary = (acc: AccountRaw): WalletAccount => ({
 });
 
 export const mapWalletToSummary = (w: WalletRaw): WalletSummary => ({
-  walletId: w.wallet_id,
+  walletId: w.wallet_id ?? (w as any).id,
   name: w.wallet_name,
   type: w.wallet_type as WalletSummary["type"],
 
-  balance: w.available_balance,
+  balance: w.available_balance ?? 0,
   currency: w.default_currency,
 
   icon: w.icon,

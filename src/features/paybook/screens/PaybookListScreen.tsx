@@ -20,6 +20,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import { t } from "i18next";
 import React, { useCallback, useMemo, useState } from "react";
+import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -75,19 +76,35 @@ const FILTER_TABS: {
 const PaybookListScreen = () => {
   const { colors } = useAppTheme();
   const { getCategoryByCode } = useCategory({ autoFetch: false });
+  const { convertBetween, formatAmount, isReady } = useCurrencyConverter();
   const [activeFilter, setActiveFilter] = useState<LoanFilterType>("ALL");
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [loans, setLoans] = useState<Loan[]>([]);
-  const [summary, setSummary] = useState<LoanSummary>({
-    total_lend: 0,
-    total_borrow: 0,
-    net_balance: 0,
-  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const summary = useMemo<LoanSummary>(() => {
+    let total_lend = 0;
+    let total_borrow = 0;
+
+    loans.forEach((loan) => {
+      const converted = convertBetween(loan.principal_amount, loan.currency_code) ?? loan.principal_amount;
+      if (loan.loan_type === "LEND") {
+        total_lend += converted;
+      } else if (loan.loan_type === "BORROW") {
+        total_borrow += converted;
+      }
+    });
+
+    return {
+      total_lend,
+      total_borrow,
+      net_balance: total_lend - total_borrow,
+    };
+  }, [loans, convertBetween]);
 
   // ── Fetch data ─────────────────────────────────────────────────────────────
   const fetchLoans = useCallback(async (silent = false) => {
@@ -144,18 +161,6 @@ const PaybookListScreen = () => {
             console.warn('[PaybookListScreen] Failed to pre-fetch categories:', catErr);
           }
         }
-
-        const sum: LoanSummary = res.data.summary ?? {
-          total_lend: items
-            .filter((l) => l.loan_type === "LEND")
-            .reduce((acc, l) => acc + l.principal_amount, 0),
-          total_borrow: items
-            .filter((l) => l.loan_type === "BORROW")
-            .reduce((acc, l) => acc + l.principal_amount, 0),
-          net_balance: 0,
-        };
-        sum.net_balance = sum.total_lend - sum.total_borrow;
-        setSummary(sum);
       }
     } catch (error) {
       console.error("[PaybookListScreen] fetchLoans error:", error);
@@ -206,13 +211,6 @@ const PaybookListScreen = () => {
   }), [loans]);
 
   // ── Utils ──────────────────────────────────────────────────────────────────
-  const formatCurrency = useCallback((amount: number) => {
-    if (amount >= 1_000_000_000)
-      return `${(amount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")} Tỷ`;
-    if (amount >= 1_000_000)
-      return `${(amount / 1_000_000).toFixed(1).replace(/\.0$/, "")} Tr`;
-    return new Intl.NumberFormat("vi-VN").format(Math.abs(amount));
-  }, []);
 
   const formatDate = (iso: string) => {
     try {
@@ -289,6 +287,15 @@ const PaybookListScreen = () => {
         loan.principal_amount > 0
           ? Math.min(loan.paid_amount / loan.principal_amount, 1)
           : 0;
+      const convertedRemaining = convertBetween(loan.remaining_amount, loan.currency_code);
+      const convertedPrincipal = convertBetween(loan.principal_amount, loan.currency_code);
+
+      const formattedRemaining = convertedRemaining !== null
+        ? formatAmount(convertedRemaining)
+        : formatAmount(loan.remaining_amount, loan.currency_code);
+      const formattedPrincipal = convertedPrincipal !== null
+        ? formatAmount(convertedPrincipal)
+        : formatAmount(loan.principal_amount, loan.currency_code);
 
       return (
         <TouchableOpacity
@@ -367,7 +374,7 @@ const PaybookListScreen = () => {
                 style={[styles.remainingAmount, { color: amountColor }]}
               >
                 {amountPrefix}
-                {formatCurrency(loan.remaining_amount)} {loan.currency_code}
+                {formattedRemaining}
               </CustomText>
             </View>
 
@@ -378,7 +385,7 @@ const PaybookListScreen = () => {
               <CustomText
                 style={[styles.principalAmount, { color: colors.text }]}
               >
-                {formatCurrency(loan.principal_amount)} {loan.currency_code}
+                {formattedPrincipal}
               </CustomText>
             </View>
           </View>
@@ -506,7 +513,7 @@ const PaybookListScreen = () => {
         </TouchableOpacity>
       );
     },
-    [styles, colors, formatCurrency, handleQuickTransact, t]
+    [styles, colors, convertBetween, formatAmount, handleQuickTransact, t]
   );
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -571,7 +578,7 @@ const PaybookListScreen = () => {
             </View>
             <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>{t("paybook.lend")}</CustomText>
             <CustomText style={[styles.summaryAmount, { color: "#22C55E" }]}>
-              +{formatCurrency(summary.total_lend)} đ
+              +{formatAmount(Math.abs(summary.total_lend))}
             </CustomText>
           </View>
 
@@ -584,7 +591,7 @@ const PaybookListScreen = () => {
             </View>
             <CustomText style={[styles.summaryLabel, { color: colors.icon }]}>{t("paybook.borrow")}</CustomText>
             <CustomText style={[styles.summaryAmount, { color: "#EF4444" }]}>
-              -{formatCurrency(summary.total_borrow)} đ
+              -{formatAmount(Math.abs(summary.total_borrow))}
             </CustomText>
           </View>
 
@@ -614,8 +621,8 @@ const PaybookListScreen = () => {
                 { color: summary.net_balance >= 0 ? "#6366F1" : "#EF4444" },
               ]}
             >
-              {summary.net_balance >= 0 ? "+" : ""}
-              {formatCurrency(summary.net_balance)} đ
+              {summary.net_balance >= 0 ? "+" : "-"}
+              {formatAmount(Math.abs(summary.net_balance))}
             </CustomText>
           </View>
         </View>
@@ -682,7 +689,7 @@ const PaybookListScreen = () => {
 
         {/* ── List ─────────────────────────────────────────────────────── */}
         <View style={styles.listContainer}>
-          {loading ? (
+          {loading || !isReady ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.tint} />
               <CustomText style={[styles.loadingText, { color: colors.icon }]}>
