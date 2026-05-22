@@ -186,7 +186,16 @@
     "action_collect": "Thu nợ",
     "action_repay": "Trả nợ",
     "collect_from": "Thu nợ từ",
-    "repay_to": "Trả nợ cho"
+    "repay_to": "Trả nợ cho",
+    "not_found": "Không tìm thấy sổ nợ",
+    "source_wallet": "Ví liên kết",
+    "loan_no_label": "Mã khoản vay",
+    "principal_amount_label": "Số tiền gốc",
+    "payment_type": "Phương thức thanh toán",
+    "interest_rate": "Lãi suất",
+    "term": "Thời hạn",
+    "select_date": "Chọn ngày",
+    "total_payment": "Tổng thanh toán"
   },
   "paybookSchedule": {
     "title": "Lịch thanh toán",

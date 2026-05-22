@@ -3,8 +3,8 @@ import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
-import { Fonts } from "@/core/theme/font";
 import { useAppTheme } from "@/core/theme/ThemeContext";
+import { Fonts } from "@/core/theme/font";
 import { FloatingSchedulePreview } from "@/features/paybook/components/FloatingSchedulePreview";
 import { usePaybookDetail } from "@/features/paybook/hooks/usePaybook";
 import TransactionAmountInput from "@/features/transaction/components/TransactionAmountInput";
@@ -40,12 +40,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Switch,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { createStyles, collapsibleStyles } from "../styles/CreatePaybookScreen.styles";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface SelectedCurrency {
@@ -54,8 +54,7 @@ interface SelectedCurrency {
   name: string;
 }
 
-// ─── Local types ─────────────────────────────────────────────────────────────
-
+// Local types
 interface SelectedContact {
   id: string;
   name: string;
@@ -66,17 +65,15 @@ interface SelectedContact {
   isFromServer?: boolean;
 }
 
-// ─── Option configs ───────────────────────────────────────────────────────────
-
+// Option configs
 const AVATAR_COLORS = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F"];
 
-// ─── Default values khi toggle off ───────────────────────────────────────────
+// Default values khi toggle off
 const DEFAULT_INTEREST_RATE = "0";
 const DEFAULT_INTEREST_RATE_TYPE: InterestRateType = "FIXED";
 const DEFAULT_INTEREST_CALC_METHOD: InterestCalcMethod = "REDUCING";
 const DEFAULT_PAYMENT_TYPE: PaymentType = "BULLET";
-// ─── Schedule generation helpers ─────────────────────────────────────────────
-
+// Schedule generation helpers
 const PERIOD_MONTHS_MAP: Record<PeriodUnit, number> = {
   DAY: 1 / 30,
   WEEK: 7 / 30,
@@ -151,8 +148,7 @@ function generateSchedules(
 }
 
 
-// ─── CollapsibleSection ───────────────────────────────────────────────────────
-
+// CollapsibleSection
 interface CollapsibleSectionProps {
   title: string;
   subtitle?: string;
@@ -247,43 +243,6 @@ const CollapsibleSection = ({
   );
 };
 
-const collapsibleStyles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginHorizontal: wp(4),
-    marginTop: hp(2),
-    marginBottom: hp(0),
-    paddingHorizontal: wp(3.5),
-    paddingVertical: hp(1.4),
-    borderRadius: normalize(14),
-    borderWidth: 1.5,
-    borderLeftWidth: 4,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: wp(2.5),
-    flex: 1,
-  },
-  dot: {
-    width: normalize(8),
-    height: normalize(8),
-    borderRadius: normalize(4),
-  },
-  title: {
-    fontSize: normalize(13),
-    fontFamily: Fonts.semiBold,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  subtitle: {
-    fontSize: normalize(11),
-    fontFamily: Fonts.regular,
-    marginTop: hp(0.2),
-  },
-});
 
 const CreatePaybookScreen = () => {
   const { colors } = useAppTheme();
@@ -294,8 +253,7 @@ const CreatePaybookScreen = () => {
   const sessionIdRef = useRef<string>(Date.now().toString());
 
 
-  // ─── Localized option configs ────────────────────────────────────────────────
-
+  // Localized option configs
   const LOAN_TYPE_TABS: { key: LoanType; label: string; icon: string; color: string }[] = useMemo(() => [
     { key: "LEND", label: t("paybook.lend"), icon: "arrow-trend-up", color: "#22C55E" },
     { key: "BORROW", label: t("paybook.borrow"), icon: "arrow-trend-down", color: "#EF4444" },
@@ -326,7 +284,7 @@ const CreatePaybookScreen = () => {
 
   const [interestEnabled, setInterestEnabled] = useState(false);
   
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // Helpers
   const parseNumber = useCallback((val: string) => {
     const raw = val.replace(/\./g, "").replace(/,/g, "");
     const n = parseFloat(raw);
@@ -383,7 +341,7 @@ const CreatePaybookScreen = () => {
   const [note, setNote] = useState("");
   const { createLoan, loading } = usePaybookDetail();
 
-  // ── Currency picker (shared hook) ─────────────────────────────────────────
+  // Currency picker (shared hook)
   // baseCurrency = defaultCurrency: khi user chọn currency khác, hiển thị
   // số tiền tương đương theo đơn vị mặc định bên dưới input.
   const {
@@ -433,7 +391,7 @@ const CreatePaybookScreen = () => {
     }
   }, [startDate, paymentType, totalInstallments, periodValue, periodUnit]);
 
-  // ── Bullet interest calculation ───────────────────────────────────────────
+  // Bullet interest calculation
   const bulletSummary = useMemo(() => {
     if (paymentType !== "BULLET" || !interestEnabled || !maturityDate || !startDate) return null;
     const principal = parseNumber(principalAmount);
@@ -452,14 +410,14 @@ const CreatePaybookScreen = () => {
     };
   }, [paymentType, interestEnabled, principalAmount, interestRate, startDate, maturityDate]);
 
-  // ── Default wallet ──────────────────────────────────────────────────────
+  // Default wallet
   useEffect(() => {
     if (!walletId && defaultWallet) {
       setWalletId(defaultWallet.walletId);
     }
   }, [defaultWallet, walletId]);
 
-  // ── Load contact từ SelectParticipants ────────────────────────────────────
+  // Load contact từ SelectParticipants
   useFocusEffect(
     useCallback(() => {
       const loadContact = async () => {
@@ -484,7 +442,7 @@ const CreatePaybookScreen = () => {
     }, [])
   );
 
-  // ── Load selected wallet ──────────────────────────────────────────────────
+  // Load selected wallet
   useFocusEffect(
     useCallback(() => {
       const loadSelectedWallet = async () => {
@@ -519,7 +477,7 @@ const CreatePaybookScreen = () => {
     [wallets, walletId]
   );
 
-  // ── Validation ────────────────────────────────────────────────────────────
+  // Validation
   const parsedPrincipal = parseNumber(principalAmount);
   const parsedLimit = parseNumber(loanLimit);
 
@@ -531,7 +489,7 @@ const CreatePaybookScreen = () => {
     (paymentType === "BULLET" || (paymentType === "INSTALLMENT" && parseInt(totalInstallments || "0") > 0));
 
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
+  // Handlers
   const clearContact = () => {
     setSelectedContact(null);
     setCounterpartyName("");
@@ -547,7 +505,7 @@ const CreatePaybookScreen = () => {
     }
   };
 
-  // ── Floating rate helpers ─────────────────────────────────────────────────
+  // Floating rate helpers
   const updateFloatingRate = (idx: number, val: string) => {
     const r = parseFloat(val) || 0;
     setFloatingRates((prev) => prev.map((p, i) => (i === idx ? { ...p, rate: r } : p)));
@@ -621,7 +579,7 @@ const CreatePaybookScreen = () => {
     }
   };
 
-  // ── Section renderer ──────────────────────────────────────────────────────
+  // Section renderer
   const SectionHeader = ({ title }: { title: string }) => (
     <View style={[styles.sectionHeader, { borderLeftColor: accentColor }]}>
       <CustomText style={[styles.sectionHeaderText, { color: colors.text }]}>
@@ -630,7 +588,7 @@ const CreatePaybookScreen = () => {
     </View>
   );
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // Render
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
@@ -644,9 +602,7 @@ const CreatePaybookScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* ════════════════════════════════════════════════════════════════
-              1. LOẠI KHOẢN VAY
-          ════════════════════════════════════════════════════════════════ */}
+          {/* 1. LOẠI KHOẢN VAY */}
           <View style={styles.section}>
             <View style={styles.typeContainer}>
               {LOAN_TYPE_TABS.map((tab) => {
@@ -676,9 +632,7 @@ const CreatePaybookScreen = () => {
             </View>
           </View>
 
-          {/* ════════════════════════════════════════════════════════════════
-              2. THÔNG TIN ĐỐI TÁC
-          ════════════════════════════════════════════════════════════════ */}
+          {/* 2. THÔNG TIN ĐỐI TÁC */}
           <SectionHeader title={t("paybook.partner_info")} />
 
           {/* Loại đối tác */}
@@ -760,9 +714,7 @@ const CreatePaybookScreen = () => {
             )}
           </View>
 
-          {/* ════════════════════════════════════════════════════════════════
-              3. THÔNG TIN KHOẢN VAY
-          ════════════════════════════════════════════════════════════════ */}
+          {/* 3. THÔNG TIN KHOẢN VAY */}
           <SectionHeader title={t("paybook.loan_info")} />
 
           {/* Ví liên kết */}
@@ -977,9 +929,7 @@ const CreatePaybookScreen = () => {
             </View>
           </View>
 
-          {/* ════════════════════════════════════════════════════════════════
-              5. LÃI SUẤT — Toggle section
-          ════════════════════════════════════════════════════════════════ */}
+          {/* 5. LÃI SUẤT — Toggle section */}
           <CollapsibleSection
             title={t("paybook.interest")}
             subtitle={interestEnabled ? t("paybook.custom_interest_hint", "Tuỳ chỉnh lãi suất & phương thức") : t("paybook.default_interest_hint", "Mặc định: không lãi suất (0%)")}
@@ -1205,9 +1155,7 @@ const CreatePaybookScreen = () => {
           </CollapsibleSection>
 
 
-          {/* ════════════════════════════════════════════════════════════════
-              6. GHI CHÚ
-          ════════════════════════════════════════════════════════════════ */}
+          {/* 6. GHI CHÚ */}
           <SectionHeader title={t("paybook.note")} />
           <View style={styles.section}>
             <TextInput
@@ -1225,7 +1173,7 @@ const CreatePaybookScreen = () => {
           <View style={{ height: hp(14) }} />
         </ScrollView>
 
-        {/* ── Date Pickers ──────────────────────────────────────────────── */}
+        {/* Date Pickers */}
         {showStartPicker && (
           <DateTimePicker
             value={startDate}
@@ -1257,7 +1205,7 @@ const CreatePaybookScreen = () => {
           </View>
         )}
 
-        {/* ── Bottom Bar ───────────────────────────────────────────────── */}
+        {/* Bottom Bar */}
         <View style={[styles.bottomBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
           <TouchableOpacity
             style={[styles.cancelBtn, { borderColor: colors.tint }]}
@@ -1291,191 +1239,6 @@ const CreatePaybookScreen = () => {
     </SafeAreaView>
   );
 };
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
-
-const createStyles = (colors: any) =>
-  StyleSheet.create({
-    flex: { flex: 1 },
-    container: { flex: 1, backgroundColor: colors.background },
-
-    // Section header
-    sectionHeader: {
-      marginHorizontal: wp(4),
-      marginTop: hp(2.5),
-      marginBottom: hp(0.5),
-      paddingLeft: wp(2.5),
-      borderLeftWidth: 3,
-    },
-    sectionHeaderText: { fontSize: normalize(13), fontFamily: Fonts.semiBold, textTransform: "uppercase", letterSpacing: 0.5 },
-
-    section: { paddingHorizontal: wp(4), paddingTop: hp(1.5) },
-
-    // Type tabs
-    typeContainer: { flexDirection: "row", gap: wp(3) },
-    typeButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: hp(1.4), borderRadius: normalize(14), borderWidth: 1.5 },
-    typeText: { fontSize: normalize(14), fontFamily: Fonts.semiBold },
-
-    // Label
-    label: { fontSize: normalize(13), fontFamily: Fonts.medium, marginBottom: hp(0.8) },
-    labelRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: hp(0.8) },
-    quickFillBtn: { flexDirection: "row", alignItems: "center", paddingHorizontal: wp(2.5), paddingVertical: hp(0.5), borderRadius: normalize(20), borderWidth: 1 },
-    quickFillText: { fontSize: normalize(11), fontFamily: Fonts.semiBold },
-
-    // Contact card
-    contactCard: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderRadius: normalize(14), paddingHorizontal: wp(3), paddingVertical: hp(1.2), gap: wp(2.5) },
-    contactAvatar: { width: normalize(40), height: normalize(40), borderRadius: normalize(20), alignItems: "center", justifyContent: "center" },
-    contactAvatarText: { fontSize: normalize(14), fontFamily: Fonts.semiBold, color: "#fff" },
-    contactInfo: { flex: 1 },
-    contactName: { fontSize: normalize(15), fontFamily: Fonts.semiBold, marginBottom: hp(0.2) },
-    contactPhone: { fontSize: normalize(12), fontFamily: Fonts.regular },
-    removeBtn: { width: normalize(26), height: normalize(26), borderRadius: normalize(13), alignItems: "center", justifyContent: "center" },
-
-    // Fields
-    field: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: normalize(14), paddingHorizontal: wp(4), paddingVertical: hp(1.6) },
-    fieldLeft: { flex: 1, flexDirection: "row", alignItems: "center" },
-    fieldIcon: { marginRight: wp(2.5), width: normalize(20), textAlign: "center" },
-    fieldText: { fontSize: normalize(14), fontFamily: Fonts.regular },
-    fieldInput: { flex: 1, fontSize: normalize(14), fontFamily: Fonts.regular, padding: 0, margin: 0 },
-    unitTag: { fontSize: normalize(13), fontFamily: Fonts.medium, marginLeft: wp(1) },
-
-    // Chip selectors
-    chipRow: { flexDirection: "row", gap: wp(2) },
-    chip: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: hp(1.2), paddingHorizontal: wp(3), borderRadius: normalize(12), borderWidth: 1 },
-    chipText: { fontSize: normalize(13) },
-    chipDesc: { fontSize: normalize(11), fontFamily: Fonts.regular, textAlign: "center" },
-
-    // Payment type chips (vertical)
-    paymentChip: { alignItems: "center", justifyContent: "center", paddingVertical: hp(1.5), paddingHorizontal: wp(2), borderRadius: normalize(14), borderWidth: 1, gap: hp(0.3) },
-
-    // Option rows (radio)
-    optionRow: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: normalize(14), paddingHorizontal: wp(4), paddingVertical: hp(1.4), marginBottom: hp(1), gap: wp(3) },
-    radioCircle: { width: normalize(20), height: normalize(20), borderRadius: normalize(10), borderWidth: 2, alignItems: "center", justifyContent: "center" },
-    radioFill: { width: normalize(10), height: normalize(10), borderRadius: normalize(5) },
-    optionLabel: { fontSize: normalize(14), fontFamily: Fonts.semiBold, marginBottom: hp(0.2) },
-    optionDesc: { fontSize: normalize(12), fontFamily: Fonts.regular },
-
-    // Amount wrapper
-    amountWrapper: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderRadius: normalize(14), paddingHorizontal: wp(3), paddingVertical: hp(1.4) },
-    amountInputSm: { flex: 1, fontSize: normalize(16), padding: 0, margin: 0 },
-    currencyTag: { fontSize: normalize(15), fontFamily: Fonts.bold, marginLeft: wp(1) },
-
-    // Date field
-    dateField: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: normalize(14), paddingHorizontal: wp(3), paddingVertical: hp(1.4) },
-    dateText: { fontSize: normalize(13), fontFamily: Fonts.medium },
-
-    // Warning
-    warningText: { fontSize: normalize(12), fontFamily: Fonts.medium },
-
-    // Note
-    noteInput: { borderWidth: 1, borderRadius: normalize(14), padding: normalize(12), fontSize: normalize(14), fontFamily: Fonts.regular, minHeight: hp(10) },
-
-    // iOS date picker toolbar
-    pickerToolbar: { flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: wp(4), paddingVertical: hp(1), borderTopWidth: 1 },
-    pickerButton: { padding: normalize(8) },
-    pickerButtonText: { fontSize: normalize(16), fontFamily: Fonts.semiBold },
-
-    // Bottom bar
-    bottomBar: { flexDirection: "row", paddingHorizontal: wp(4), paddingVertical: hp(2), paddingBottom: hp(3), borderTopWidth: 1, gap: wp(3) },
-    cancelBtn: { flex: 1, paddingVertical: hp(1.8), borderRadius: normalize(14), borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
-    cancelText: { fontSize: normalize(15), fontFamily: Fonts.semiBold },
-    createBtn: { flex: 2, flexDirection: "row", paddingVertical: hp(1.8), borderRadius: normalize(14), alignItems: "center", justifyContent: "center", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
-    createText: { fontSize: normalize(15), color: "#fff", fontFamily: Fonts.semiBold },
-
-    // Period unit selector
-    periodUnitBtn: {
-      paddingHorizontal: wp(3),
-      paddingVertical: hp(0.9),
-      borderRadius: normalize(10),
-      borderWidth: 1,
-    },
-
-    // Floating rate
-    floatingRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      borderWidth: 1,
-      borderRadius: normalize(12),
-      paddingHorizontal: wp(3),
-      paddingVertical: hp(1.2),
-      marginBottom: hp(1),
-      gap: wp(2),
-    },
-    floatingRateInput: {
-      flexDirection: "row",
-      alignItems: "center",
-      borderWidth: 1,
-      borderRadius: normalize(10),
-      paddingHorizontal: wp(2.5),
-      paddingVertical: hp(0.9),
-      width: normalize(100),
-    },
-    addFloatingBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: wp(1.5),
-      borderWidth: 1.5,
-      borderStyle: "dashed",
-      borderRadius: normalize(12),
-      paddingHorizontal: wp(3),
-      paddingVertical: hp(1.2),
-      justifyContent: "center",
-      marginTop: hp(0.5),
-    },
-    addFloatingLabel: { fontSize: normalize(13), fontFamily: Fonts.semiBold },
-    addFloatingPanel: {
-      borderWidth: 1.5,
-      borderRadius: normalize(14),
-      padding: wp(3.5),
-      marginTop: hp(0.5),
-    },
-    addFloatingConfirm: {
-      flex: 1,
-      paddingVertical: hp(1.4),
-      borderRadius: normalize(12),
-      alignItems: "center",
-      justifyContent: "center",
-    },
-
-    // Bullet Summary Card
-    bulletSummaryCard: {
-      padding: wp(4),
-      borderRadius: normalize(16),
-      borderWidth: 1.5,
-      borderStyle: "dashed",
-    },
-    summaryHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: wp(2),
-      marginBottom: hp(1.5),
-    },
-    summaryTitle: {
-      fontSize: normalize(13),
-      fontFamily: Fonts.bold,
-      textTransform: "uppercase",
-    },
-    summaryRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: hp(0.8),
-    },
-    summaryLabel: {
-      fontSize: normalize(13),
-      fontFamily: Fonts.regular,
-    },
-    summaryValue: {
-      fontSize: normalize(14),
-      fontFamily: Fonts.semiBold,
-    },
-    summaryDivider: {
-      height: 1,
-      marginVertical: hp(1),
-      opacity: 0.5,
-    },
-  });
-
 
 export default CreatePaybookScreen;
 

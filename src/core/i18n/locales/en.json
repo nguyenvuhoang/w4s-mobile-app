@@ -186,7 +186,16 @@
     "action_collect": "Collect Debt",
     "action_repay": "Repay Debt",
     "collect_from": "Collect debt from",
-    "repay_to": "Repay debt to"
+    "repay_to": "Repay debt to",
+    "not_found": "Paybook not found",
+    "source_wallet": "Linked Wallet",
+    "loan_no_label": "Loan Number",
+    "principal_amount_label": "Principal Amount",
+    "payment_type": "Payment Type",
+    "interest_rate": "Interest Rate",
+    "term": "Term",
+    "select_date": "Select Date",
+    "total_payment": "Total Payment"
   },
   "paybookSchedule": {
     "title": "Payment Schedule",

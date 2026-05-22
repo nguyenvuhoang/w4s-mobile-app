@@ -6,7 +6,7 @@ import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
 import { getValidIconName } from "@/utils/iconMapper";
-import { normalize, wp, hp } from "@/utils/layout";
+import { normalize } from "@/utils/layout";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo } from "react";
@@ -15,12 +15,12 @@ import {
     ActivityIndicator,
     FlatList,
     RefreshControl,
-    StyleSheet,
     TouchableOpacity,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { usePaybookTransactions } from "../hooks/usePaybookTransactions";
+import { styles } from "../styles/PaybookTransactionHistoryScreen.styles";
 
 const PaybookTransactionHistoryScreen: React.FC = () => {
     const { colors } = useAppTheme();
@@ -159,48 +159,48 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
 
         return (
             <TouchableOpacity
-                style={[localStyles.transactionCard, { backgroundColor: colors.card }]}
+                style={[styles.transactionCard, { backgroundColor: colors.card }]}
                 onPress={() => navigateToDetail(item)}
                 activeOpacity={0.7}
             >
-                <View style={localStyles.cardLeft}>
+                <View style={styles.cardLeft}>
                     <View
                         style={[
-                            localStyles.iconContainer,
+                            styles.iconContainer,
                             { backgroundColor: iconColor + "1A" },
                         ]}
                     >
                         <AppIcon name={iconName as any} size={normalize(22)} color={iconColor} />
                     </View>
-                    <View style={localStyles.transactionInfo}>
-                        <CustomText style={[localStyles.transactionTitle, { color: colors.text }]} type="bold" numberOfLines={1}>
+                    <View style={styles.transactionInfo}>
+                        <CustomText style={[styles.transactionTitle, { color: colors.text }]} type="bold" numberOfLines={1}>
                             {parseName(item.category_name) || t('paybook.history.other')}
                         </CustomText>
                         {item.description ? (
-                            <CustomText style={[localStyles.transactionCategory, { color: colors.icon }]} numberOfLines={1}>
+                            <CustomText style={[styles.transactionCategory, { color: colors.icon }]} numberOfLines={1}>
                                 {parseName(item.description)}
                             </CustomText>
                         ) : (item.title && parseName(item.title) !== parseName(item.category_name)) ? (
-                            <CustomText style={[localStyles.transactionCategory, { color: colors.icon }]} numberOfLines={1}>
+                            <CustomText style={[styles.transactionCategory, { color: colors.icon }]} numberOfLines={1}>
                                 {parseName(item.title)}
                             </CustomText>
                         ) : null}
                     </View>
                 </View>
-                <View style={localStyles.cardRight}>
+                <View style={styles.cardRight}>
                     <CustomText
                         style={[
-                            localStyles.amountText,
+                            styles.amountText,
                             { color: isExpense ? "#FF3B30" : "#4CAF50" }
                         ]}
                         type="bold"
                     >
                         {formatTransactionAmount(item)}
                     </CustomText>
-                    <CustomText style={[localStyles.dateText, { color: colors.icon }]}>
+                    <CustomText style={[styles.dateText, { color: colors.icon }]}>
                         {day}
                     </CustomText>
-                    <CustomText style={[localStyles.timeText, { color: colors.icon }]}>
+                    <CustomText style={[styles.timeText, { color: colors.icon }]}>
                         {time}
                     </CustomText>
                 </View>
@@ -211,23 +211,23 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
     const renderSummaryCard = () => {
         const total = totalIncome - totalExpense;
         return (
-            <View style={[localStyles.summaryCard, { backgroundColor: colors.card }]}>
-                <View style={localStyles.summaryRow}>
-                    <CustomText style={[localStyles.summaryLabel, { color: colors.text }]}>{t('paybook.history.income')}</CustomText>
-                    <CustomText style={[localStyles.summaryValue, { color: "#4CAF50" }]} type="semiBold">
+            <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
+                <View style={styles.summaryRow}>
+                    <CustomText style={[styles.summaryLabel, { color: colors.text }]}>{t('paybook.history.income')}</CustomText>
+                    <CustomText style={[styles.summaryValue, { color: "#4CAF50" }]} type="semiBold">
                         +{formatCurrency(totalIncome)}
                     </CustomText>
                 </View>
-                <View style={localStyles.summaryRow}>
-                    <CustomText style={[localStyles.summaryLabel, { color: colors.text }]}>{t('paybook.history.expense')}</CustomText>
-                    <CustomText style={[localStyles.summaryValue, { color: "#FF3B30" }]} type="semiBold">
+                <View style={styles.summaryRow}>
+                    <CustomText style={[styles.summaryLabel, { color: colors.text }]}>{t('paybook.history.expense')}</CustomText>
+                    <CustomText style={[styles.summaryValue, { color: "#FF3B30" }]} type="semiBold">
                         -{formatCurrency(totalExpense)}
                     </CustomText>
                 </View>
-                <View style={localStyles.summaryDivider} />
-                <View style={localStyles.summaryRow}>
-                    <CustomText style={[localStyles.summaryLabel, { color: colors.text }]} type="bold">{t('paybook.history.summary')}</CustomText>
-                    <CustomText style={[localStyles.summaryValue, { color: total >= 0 ? "#4CAF50" : "#FF3B30" }]} type="bold">
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryRow}>
+                    <CustomText style={[styles.summaryLabel, { color: colors.text }]} type="bold">{t('paybook.history.summary')}</CustomText>
+                    <CustomText style={[styles.summaryValue, { color: total >= 0 ? "#4CAF50" : "#FF3B30" }]} type="bold">
                         {total >= 0 ? "+" : ""}{formatCurrency(total)}
                     </CustomText>
                 </View>
@@ -236,17 +236,17 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
     };
 
     const renderHeader = () => (
-        <View style={localStyles.headerContainer}>
+        <View style={styles.headerContainer}>
              <AppHeader 
                 title={t('paybook.history.title')} 
                 showBackButton
-                titleStyle={localStyles.headerTitle as any}
+                titleStyle={styles.headerTitle as any}
             />
         </View>
     );
 
     return (
-        <SafeAreaView style={[localStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
             {renderHeader()}
             
             {loading || !isReady ? (
@@ -259,7 +259,7 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
                     keyExtractor={(item) => item.transaction_id.toString()}
                     renderItem={renderTransactionItem}
                     ListHeaderComponent={renderSummaryCard}
-                    contentContainerStyle={localStyles.listContent}
+                    contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl
@@ -271,7 +271,7 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
                     onEndReached={handleEndReached}
                     onEndReachedThreshold={0.5}
                     ListEmptyComponent={
-                        <View style={localStyles.emptyContainer}>
+                        <View style={styles.emptyContainer}>
                              <AppIcon name="receipt" size={60} color={colors.icon} />
                              <CustomText style={{ color: colors.icon, marginTop: 10 }}>{t('paybook.history.empty')}</CustomText>
                         </View>
@@ -286,109 +286,5 @@ const PaybookTransactionHistoryScreen: React.FC = () => {
         </SafeAreaView>
     );
 };
-
-const localStyles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    headerContainer: {
-        paddingBottom: normalize(10),
-    },
-    headerTitle: {
-        fontSize: normalize(18),
-        textAlign: 'center',
-        lineHeight: normalize(24),
-    },
-    listContent: {
-        paddingHorizontal: wp(5),
-    },
-    summaryCard: {
-        borderRadius: normalize(20),
-        padding: normalize(20),
-        marginBottom: normalize(20),
-        marginTop: normalize(10),
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 2,
-    },
-    summaryRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginVertical: normalize(6),
-    },
-    summaryLabel: {
-        fontSize: normalize(15),
-    },
-    summaryValue: {
-        fontSize: normalize(15),
-    },
-    summaryDivider: {
-        height: 1,
-        backgroundColor: '#f0f0f0',
-        marginVertical: normalize(10),
-    },
-    transactionCard: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        padding: normalize(16),
-        borderRadius: normalize(20),
-        marginBottom: normalize(12),
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 2,
-    },
-    cardLeft: {
-        flexDirection: 'row',
-        flex: 1,
-    },
-    iconContainer: {
-        width: normalize(48),
-        height: normalize(48),
-        borderRadius: normalize(14),
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: normalize(12),
-    },
-    transactionInfo: {
-        flex: 1,
-        justifyContent: 'center',
-    },
-    transactionTitle: {
-        fontSize: normalize(16),
-        marginBottom: normalize(2),
-    },
-    transactionCategory: {
-        fontSize: normalize(13),
-        marginBottom: normalize(2),
-    },
-    transactionNote: {
-        fontSize: normalize(12),
-        opacity: 0.7,
-    },
-    cardRight: {
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-    },
-    amountText: {
-        fontSize: normalize(16),
-        marginBottom: normalize(4),
-    },
-    dateText: {
-        fontSize: normalize(12),
-    },
-    timeText: {
-        fontSize: normalize(12),
-    },
-    emptyContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingTop: hp(10),
-    },
-});
 
 export default PaybookTransactionHistoryScreen;
