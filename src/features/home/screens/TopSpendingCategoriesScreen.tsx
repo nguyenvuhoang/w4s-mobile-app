@@ -14,11 +14,11 @@ import {
     ActivityIndicator,
     FlatList,
     RefreshControl,
-    StyleSheet,
     TouchableOpacity,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { styles as localStyles } from "../styles/TopSpendingCategoriesScreen.styles";
 
 const TopSpendingCategoriesScreen: React.FC = () => {
     const { colors } = useAppTheme();
@@ -198,25 +198,6 @@ const TopSpendingCategoriesScreen: React.FC = () => {
     );
 };
 
-const localStyles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    centerContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        paddingTop: normalize(100),
-    },
-    emptyText: {
-        marginTop: normalize(12),
-        fontSize: normalize(16),
-    },
-    listContent: {
-        paddingHorizontal: wp(5),
-        paddingBottom: normalize(20),
-        paddingTop: normalize(16),
-    },
-});
+
 
 export default TopSpendingCategoriesScreen;
