@@ -422,6 +422,7 @@ const StatisticsScreen = () => {
               color="#F44336"
               data={monthlyExpenses}
               formatYLabel={formatYLabel}
+              formatTooltipValue={formatCurrency}
             />
 
             <LineChartCard
@@ -429,6 +430,7 @@ const StatisticsScreen = () => {
               color="#2196F3"
               data={monthlyIncomes}
               formatYLabel={formatYLabel}
+              formatTooltipValue={formatCurrency}
             />
           </>
         )}

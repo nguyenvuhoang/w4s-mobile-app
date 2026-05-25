@@ -278,4 +278,13 @@ export const authRepository = {
       false
     );
   },
+  
+  async deleteAccount(userCode: string): Promise<BaseResponseModel> {
+    return await apiService.executeWorkflow(
+      WORKFLOWCODE.WF_MB_DELETE_USER_ACCOUNT,
+      { user_code: userCode },
+      true,
+      true
+    );
+  },
 };

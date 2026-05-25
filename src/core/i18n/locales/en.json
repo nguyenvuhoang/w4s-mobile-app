@@ -476,7 +476,15 @@
     "reminder_setup_success": "Reminder set for every day at {{hour}}H",
     "reminder_cancel_success": "Transaction entry reminder turned off",
     "reminder_noti_title": "⏳ Forgot to log today’s transaction?",
-    "reminder_noti_body": "Take 1 minute to track your expenses and manage your finances more effectively!"
+    "reminder_noti_body": "Take 1 minute to track your expenses and manage your finances more effectively!",
+    "delete_account": "Delete Account",
+    "delete_account_confirm_title": "Confirm Account Deletion",
+    "delete_account_confirm_message": "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.",
+    "delete_account_success": "Account deletion requested successfully!",
+    "delete_account_failed": "Failed to delete account!",
+    "faceIdEnabled": "Face ID enabled successfully!",
+    "touchIdEnabled": "Fingerprint login enabled successfully!",
+    "biometricDisabled": "Biometric login disabled successfully!"
   },
   "validation": {
     "invalid_email": "Invalid Email",
@@ -1108,9 +1116,32 @@
     "debit_lend": "Lend",
     "debit_other": "Other"
   },
+  "errors": {
+    "networkError": "Network error. Please check your internet connection.",
+    "networkTimeout": "Request timed out. Please try again.",
+    "generalClientError": "Invalid request. Please try again.",
+    "generalServerError": "Server error. Please try again later.",
+    "unknownError": "Unknown error",
+    "SYS_BANK_INACTIVE": "Bank system is currently inactive.",
+    "biometric": {
+      "noBiometric": "Biometric authentication is not supported or set up on this device.",
+      "noSession": "Session expired. Please log in again.",
+      "toggleFailed": "Failed to update biometric settings. Please try again.",
+      "noSavedCredentials": "No saved credentials found for biometric login.",
+      "failed": "Biometric authentication failed."
+    },
+    "login": {
+      "verifyFailed": "Verification failed. Please try again.",
+      "loginFailed": "Login failed. Please check your credentials."
+    },
+    "logout": {
+      "logoutFailed": "Logout failed. Please try again."
+    }
+  },
   "login": {
     "faceIdPrompt": "Scan your face to log in",
     "fingerprintPrompt": "Scan your fingerprint to log in",
+    "touchIdPrompt": "Scan your fingerprint to authenticate",
     "biometricFallback": "Use password"
   }
 }

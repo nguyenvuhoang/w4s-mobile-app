@@ -48,7 +48,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const isFocused = useIsFocused();
   const { t, i18n } = useTranslation();
   const { showNotification } = useNotification();
-  const { handleLogout, touchIDClick, isUsingTouchID } = useSettingService();
+  const { handleLogout, touchIDClick, isUsingTouchID, handleDeleteAccount } = useSettingService();
   const { appInfo } = useContext(GlobalContext);
   const { mode, setMode, colors, isDark } = useAppTheme();
   const { defaultCurrency, loading, updateDefaultCurrency } =
@@ -528,6 +528,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               }}
               colors={colors}
             />
+            <SettingItem
+              icon="users_user_cross"
+              title={t("settings.delete_account") || "Xóa tài khoản"}
+              onPress={handleDeleteAccount}
+              colors={colors}
+              textColor="#FF3B30"
+            />
             {/* <SettingItem
               icon="trash-outline"
               title={t("settings.clear_cache") || "Xóa dữ liệu bộ đệm"}
@@ -594,6 +601,7 @@ const SettingItem = ({
   badge,
   onPress,
   colors,
+  textColor,
 }: any) => (
   <TouchableOpacity
     style={[styles.settingItem, { borderBottomColor: colors.border }]}
@@ -601,10 +609,10 @@ const SettingItem = ({
   >
     <View style={styles.settingLeft}>
       <View style={styles.settingIconContainer}>
-        <AppIcon name={icon} size={normalize(26)} color={colors.tint} type="Ionicons" />
+        <AppIcon name={icon} size={normalize(26)} color={textColor || colors.tint} type="Ionicons" />
       </View>
       <View style={styles.settingInfo}>
-        <CustomText style={[styles.settingTitle, { color: colors.text }]}>
+        <CustomText style={[styles.settingTitle, { color: textColor || colors.text }]}>
           {title}
         </CustomText>
         {subtitle && (
