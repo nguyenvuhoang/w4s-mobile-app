@@ -61,16 +61,16 @@ export default () => {
             "W4S Mobile needs access to your contacts to select transaction participants.",
           ...(isDevSimulator
             ? {
-              NSAppTransportSecurity: {
-                NSAllowsArbitraryLoads: true,
-              },
-            }
+                NSAppTransportSecurity: {
+                  NSAllowsArbitraryLoads: true,
+                },
+              }
             : {}),
         },
         runtimeVersion: {
           policy: "nativeVersion",
         },
-        bundleIdentifier: "com.jits.mbanking.emi.production",
+        bundleIdentifier: "com.w4s.wealth4s.production",
         buildNumber: versionCode.toString(),
         entitlements: {
           "aps-environment": "development",
@@ -101,7 +101,7 @@ export default () => {
           "android.permission.READ_MEDIA_VIDEO",
           "android.permission.READ_MEDIA_AUDIO",
         ],
-        package: "com.o24.mbanking.w4s.development",
+        package: "com.w4s.wealth4s.production",
         googleServicesFile: "./config/google-services.json",
         config: {
           googleMaps: {
@@ -214,9 +214,13 @@ export default () => {
         [
           "expo-speech-recognition",
           {
-            microphonePermission: "W4S Mobile cần quyền microphone để nhận lệnh tạo giao dịch bằng giọng nói.",
-            speechRecognitionPermission: "W4S Mobile cần quyền nhận dạng giọng nói để tạo giao dịch nhanh.",
-            androidSpeechServicePackages: ["com.google.android.googlequicksearchbox"],
+            microphonePermission:
+              "W4S Mobile cần quyền microphone để nhận lệnh tạo giao dịch bằng giọng nói.",
+            speechRecognitionPermission:
+              "W4S Mobile cần quyền nhận dạng giọng nói để tạo giao dịch nhanh.",
+            androidSpeechServicePackages: [
+              "com.google.android.googlequicksearchbox",
+            ],
           },
         ],
         "expo-web-browser",
@@ -227,9 +231,9 @@ export default () => {
         },
         updateDate: buildDate,
         storeLinks: {
-          ios: "https://apps.apple.com/us/app/emi-smart/id1673334414",
+          ios: "https://apps.apple.com/us/app/wealth4s/id1673334414",
           android:
-            "https://play.google.com/store/apps/details?id=com.jits.mbanking.emi.production&pcampaignid=web_share",
+            "https://play.google.com/store/apps/details?id=com.w4s.wealth4s.production&pcampaignid=web_share",
           huawei: "https://appgallery.huawei.com/#/app/C107689543",
         },
         hiddenLoginHeader: true,
