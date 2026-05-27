@@ -3,8 +3,8 @@ import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import STORAGE_KEY from "@/constants/StorageKey";
 import { useNotification } from "@/contexts/NotificationContext";
-import { Fonts } from "@/core/theme/font";
 import { useAppTheme } from "@/core/theme/ThemeContext";
+import { Fonts } from "@/core/theme/font";
 import { usePaybookDetail } from "@/features/paybook/hooks/usePaybook";
 import type { LoanStatus } from "@/features/paybook/types";
 import TransactionAmountInput from "@/features/transaction/components/TransactionAmountInput";
@@ -33,12 +33,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Switch,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { createStyles, collapsibleStyles } from "../styles/EditPaybookScreen.styles";
 import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -48,10 +48,8 @@ interface SelectedCurrency {
   name: string;
 }
 
-// ─── Option configs ───────────────────────────────────────────────────────────
-
-// ─── CollapsibleSection ───────────────────────────────────────────────────────
-
+// Option configs
+// CollapsibleSection
 interface CollapsibleSectionProps {
   title: string;
   subtitle?: string;
@@ -144,46 +142,8 @@ const CollapsibleSection = ({
   );
 };
 
-const collapsibleStyles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginHorizontal: wp(4),
-    marginTop: hp(2),
-    marginBottom: hp(0),
-    paddingHorizontal: wp(3.5),
-    paddingVertical: hp(1.4),
-    borderRadius: normalize(14),
-    borderWidth: 1.5,
-    borderLeftWidth: 4,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: wp(2.5),
-    flex: 1,
-  },
-  dot: {
-    width: normalize(8),
-    height: normalize(8),
-    borderRadius: normalize(4),
-  },
-  title: {
-    fontSize: normalize(13),
-    fontFamily: Fonts.semiBold,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  subtitle: {
-    fontSize: normalize(11),
-    fontFamily: Fonts.regular,
-    marginTop: hp(0.2),
-  },
-});
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
+// Component
 const EditPaybookScreen = () => {
   const { colors } = useAppTheme();
   const { t, i18n } = useTranslation();
@@ -194,8 +154,7 @@ const EditPaybookScreen = () => {
   const { defaultCurrency } = useDefaultCurrency();
   const hasManuallySelectedCurrencyRef = useRef(false);
 
-  // ─── Localized option configs ────────────────────────────────────────────────
-
+  // Localized option configs
   const INTEREST_CALC_METHODS: { key: InterestCalcMethod; label: string; desc: string }[] = useMemo(() => [
     { key: "REDUCING", label: t("paybook.reducing"), desc: t("paybook.reducing_desc") },
     { key: "FLAT", label: t("paybook.flat"), desc: t("paybook.flat_desc") },
@@ -255,7 +214,7 @@ const EditPaybookScreen = () => {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const accentColor = colors.tint;
 
-  // ── Fetch loan detail on mount ──────────────────────────────────────────
+  // Fetch loan detail on mount
   useEffect(() => {
     if (!loanId) return;
     const fetchDetail = async () => {
@@ -290,7 +249,7 @@ const EditPaybookScreen = () => {
     fetchDetail();
   }, [loanId]);
 
-  // ── Auto-calculate maturity date for INSTALLMENT ────────────────────────
+  // Auto-calculate maturity date for INSTALLMENT
   useEffect(() => {
     if (!dataLoaded) return;
     if (paymentType === "INSTALLMENT") {
@@ -303,7 +262,7 @@ const EditPaybookScreen = () => {
     }
   }, [startDate, paymentType, totalInstallments, dataLoaded]);
 
-  // ── Load selected currency từ select-currency screen ─────────────────────
+  // Load selected currency từ select-currency screen
   useFocusEffect(
     useCallback(() => {
       const loadCurrency = async () => {
@@ -322,7 +281,7 @@ const EditPaybookScreen = () => {
     }, [])
   );
 
-  // ── Helpers ─────────────────────────────────────────────────────────────
+  // Helpers
   const parseNumber = (val: string) => {
     const raw = val.replace(/\./g, "").replace(/,/g, "");
     const n = parseFloat(raw);
@@ -347,11 +306,11 @@ const EditPaybookScreen = () => {
     [wallets, walletId]
   );
 
-  // ── Effective values ───────────────────────────────────────────────────
+  // Effective values
   const effectiveInterestRate = interestEnabled ? parseFloat(interestRate) || 0 : 0;
   const effectiveInterestCalcMethod = interestEnabled ? interestCalcMethod : "REDUCING";
 
-  // ── Validation ─────────────────────────────────────────────────────────
+  // Validation
   const parsedPrincipal = parseNumber(principalAmount);
 
   const isValid =
@@ -360,7 +319,7 @@ const EditPaybookScreen = () => {
     !!maturityDate &&
     (paymentType === "BULLET" || (paymentType === "INSTALLMENT" && parseInt(totalInstallments || "0") > 0));
 
-  // ── Handlers ───────────────────────────────────────────────────────────
+  // Handlers
   const handleToggleInterest = (val: boolean) => {
     setInterestEnabled(val);
     if (!val) {
@@ -409,7 +368,7 @@ const EditPaybookScreen = () => {
     }
   };
 
-  // ── Section renderer ──────────────────────────────────────────────────
+  // Section renderer
   const SectionHeader = ({ title }: { title: string }) => (
     <View style={[styles.sectionHeader, { borderLeftColor: accentColor }]}>
       <CustomText style={[styles.sectionHeaderText, { color: colors.text }]}>
@@ -418,7 +377,7 @@ const EditPaybookScreen = () => {
     </View>
   );
 
-  // ── Loading state ──────────────────────────────────────────────────────
+  // Loading state
   if (!dataLoaded) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
@@ -433,7 +392,7 @@ const EditPaybookScreen = () => {
     );
   }
 
-  // ── Render ────────────────────────────────────────────────────────────
+  // Render
   const typeColor = loanType === "LEND" ? "#22C55E" : "#EF4444";
   const typeLabel = loanType === "LEND" ? LOAN_TYPE_LABELS.LEND : LOAN_TYPE_LABELS.BORROW;
   const typeIcon = loanType === "LEND" ? "arrow-trend-up" : "arrow-trend-down";
@@ -451,9 +410,7 @@ const EditPaybookScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* ══════════════════════════════════════════════════════════════
-              1. THÔNG TIN CỐ ĐỊNH (Read-only)
-          ══════════════════════════════════════════════════════════════ */}
+          {/* 1. THÔNG TIN CỐ ĐỊNH (Read-only) */}
           <View style={styles.section}>
             <View style={[styles.readonlyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {/* Loan type badge */}
@@ -501,9 +458,7 @@ const EditPaybookScreen = () => {
             </View>
           </View>
 
-          {/* ══════════════════════════════════════════════════════════════
-              3. THÔNG TIN ĐỐI TÁC
-          ══════════════════════════════════════════════════════════════ */}
+          {/* 3. THÔNG TIN ĐỐI TÁC */}
           <SectionHeader title={t("paybook.partner_info")} />
           <View style={styles.section}>
             <CustomText style={[styles.label, { color: colors.text }]}>
@@ -526,9 +481,7 @@ const EditPaybookScreen = () => {
             </View>
           </View>
 
-          {/* ══════════════════════════════════════════════════════════════
-              4. THÔNG TIN KHOẢN VAY
-          ══════════════════════════════════════════════════════════════ */}
+          {/* 4. THÔNG TIN KHOẢN VAY */}
           <SectionHeader title={t("paybook.loan_info")} />
 
           {/* Mô tả */}
@@ -560,9 +513,7 @@ const EditPaybookScreen = () => {
             label={t("paybook.principal_amount_label")}
           />
 
-          {/* ══════════════════════════════════════════════════════════════
-              5. HÌNH THỨC THANH TOÁN (Disabled in Edit)
-          ══════════════════════════════════════════════════════════════ */}
+          {/* 5. HÌNH THỨC THANH TOÁN (Disabled in Edit) */}
           <SectionHeader title={t("paybook.payment_type")} />
           <View style={styles.section}>
             <View style={styles.chipRow}>
@@ -616,9 +567,7 @@ const EditPaybookScreen = () => {
             </View>
           )}
 
-          {/* ══════════════════════════════════════════════════════════════
-              6. LÃI SUẤT — Toggle section
-          ══════════════════════════════════════════════════════════════ */}
+          {/* 6. LÃI SUẤT — Toggle section */}
           <CollapsibleSection
             title={t("paybook.interest_rate")}
             subtitle={interestEnabled ? t("paybook.custom_interest_hint") : t("paybook.default_interest_hint")}
@@ -675,9 +624,7 @@ const EditPaybookScreen = () => {
             </View>
           </CollapsibleSection>
 
-          {/* ══════════════════════════════════════════════════════════════
-              7. THỜI HẠN
-          ══════════════════════════════════════════════════════════════ */}
+          {/* 7. THỜI HẠN */}
           <SectionHeader title={t("paybook.term")} />
           <View style={[styles.section, { flexDirection: "row", gap: wp(3) }]}>
             <View style={{ flex: 1 }}>
@@ -723,9 +670,7 @@ const EditPaybookScreen = () => {
             </View>
           </View>
 
-          {/* ══════════════════════════════════════════════════════════════
-              8. GHI CHÚ
-          ══════════════════════════════════════════════════════════════ */}
+          {/* 8. GHI CHÚ */}
           <SectionHeader title={t("paybook.note")} />
           <View style={styles.section}>
             <TextInput
@@ -743,7 +688,7 @@ const EditPaybookScreen = () => {
           <View style={{ height: hp(14) }} />
         </ScrollView>
 
-        {/* ── Date Pickers ──────────────────────────────────────────────── */}
+        {/* Date Pickers */}
         {showStartPicker && (
           <DateTimePicker
             value={startDate}
@@ -775,7 +720,7 @@ const EditPaybookScreen = () => {
           </View>
         )}
 
-        {/* ── Bottom Bar ───────────────────────────────────────────────── */}
+        {/* Bottom Bar */}
         <View style={[styles.bottomBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
           <TouchableOpacity
             style={[styles.cancelBtn, { borderColor: colors.tint }]}
@@ -809,123 +754,5 @@ const EditPaybookScreen = () => {
     </SafeAreaView>
   );
 };
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
-
-const createStyles = (colors: any) =>
-  StyleSheet.create({
-    flex: { flex: 1 },
-    container: { flex: 1, backgroundColor: colors.background },
-
-    // Loading
-    loadingText: { fontSize: normalize(14), fontFamily: Fonts.medium, marginTop: hp(2) },
-
-    // Section header
-    sectionHeader: {
-      marginHorizontal: wp(4),
-      marginTop: hp(2.5),
-      marginBottom: hp(0.5),
-      paddingLeft: wp(2.5),
-      borderLeftWidth: 3,
-    },
-    sectionHeaderText: { fontSize: normalize(13), fontFamily: Fonts.semiBold, textTransform: "uppercase", letterSpacing: 0.5 },
-
-    section: { paddingHorizontal: wp(4), paddingTop: hp(1.5) },
-
-    // Readonly card
-    readonlyCard: {
-      borderWidth: 1,
-      borderRadius: normalize(14),
-      padding: normalize(14),
-      gap: hp(1.2),
-    },
-    readonlyRow: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    readonlyLabel: {
-      fontSize: normalize(13),
-      fontFamily: Fonts.regular,
-      marginRight: wp(1.5),
-    },
-    readonlyValue: {
-      fontSize: normalize(13),
-      fontFamily: Fonts.semiBold,
-      flex: 1,
-    },
-
-    // Type badge
-    typeBadge: {
-      flexDirection: "row",
-      alignItems: "center",
-      alignSelf: "flex-start",
-      paddingHorizontal: wp(3),
-      paddingVertical: hp(0.6),
-      borderRadius: normalize(20),
-    },
-    typeBadgeText: {
-      fontSize: normalize(12),
-      fontFamily: Fonts.semiBold,
-    },
-
-    // Status dot
-    statusDot: {
-      width: normalize(8),
-      height: normalize(8),
-      borderRadius: normalize(4),
-      marginRight: wp(1.5),
-    },
-
-    // Label
-    label: { fontSize: normalize(13), fontFamily: Fonts.medium, marginBottom: hp(0.8) },
-
-    // Fields
-    field: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: normalize(14), paddingHorizontal: wp(4), paddingVertical: hp(1.6) },
-    fieldLeft: { flex: 1, flexDirection: "row", alignItems: "center" },
-    fieldIcon: { marginRight: wp(2.5), width: normalize(20), textAlign: "center" },
-    fieldText: { fontSize: normalize(14), fontFamily: Fonts.regular },
-    fieldInput: { flex: 1, fontSize: normalize(14), fontFamily: Fonts.regular, padding: 0, margin: 0 },
-    unitTag: { fontSize: normalize(13), fontFamily: Fonts.medium, marginLeft: wp(1) },
-
-    // Chip selectors
-    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: wp(2) },
-    chip: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: hp(1.2), paddingHorizontal: wp(3), borderRadius: normalize(12), borderWidth: 1 },
-    chipText: { fontSize: normalize(13) },
-    chipDesc: { fontSize: normalize(11), fontFamily: Fonts.regular, textAlign: "center" },
-
-    // Payment type chips
-    paymentChip: { alignItems: "center", justifyContent: "center", paddingVertical: hp(1.5), paddingHorizontal: wp(2), borderRadius: normalize(14), borderWidth: 1, gap: hp(0.3) },
-
-    // Option rows (radio)
-    optionRow: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: normalize(14), paddingHorizontal: wp(4), paddingVertical: hp(1.4), marginBottom: hp(1), gap: wp(3) },
-    radioCircle: { width: normalize(20), height: normalize(20), borderRadius: normalize(10), borderWidth: 2, alignItems: "center", justifyContent: "center" },
-    radioFill: { width: normalize(10), height: normalize(10), borderRadius: normalize(5) },
-    optionLabel: { fontSize: normalize(14), fontFamily: Fonts.semiBold, marginBottom: hp(0.2) },
-    optionDesc: { fontSize: normalize(12), fontFamily: Fonts.regular },
-
-    // Amount wrapper
-    amountWrapper: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderRadius: normalize(14), paddingHorizontal: wp(3), paddingVertical: hp(1.4) },
-    amountInputSm: { flex: 1, fontSize: normalize(16), padding: 0, margin: 0 },
-    currencyTag: { fontSize: normalize(15), fontFamily: Fonts.bold, marginLeft: wp(1) },
-
-    // Date field
-    dateField: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: normalize(14), paddingHorizontal: wp(3), paddingVertical: hp(1.4) },
-    dateText: { fontSize: normalize(13), fontFamily: Fonts.medium },
-
-    // Note
-    noteInput: { borderWidth: 1, borderRadius: normalize(14), padding: normalize(12), fontSize: normalize(14), fontFamily: Fonts.regular, minHeight: hp(10) },
-
-    // iOS date picker toolbar
-    pickerToolbar: { flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: wp(4), paddingVertical: hp(1), borderTopWidth: 1 },
-    pickerButton: { padding: normalize(8) },
-    pickerButtonText: { fontSize: normalize(16), fontFamily: Fonts.semiBold },
-
-    // Bottom bar
-    bottomBar: { flexDirection: "row", paddingHorizontal: wp(4), paddingVertical: hp(2), paddingBottom: hp(3), borderTopWidth: 1, gap: wp(3) },
-    cancelBtn: { flex: 1, paddingVertical: hp(1.8), borderRadius: normalize(14), borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
-    cancelText: { fontSize: normalize(15), fontFamily: Fonts.semiBold },
-    createBtn: { flex: 2, flexDirection: "row", paddingVertical: hp(1.8), borderRadius: normalize(14), alignItems: "center", justifyContent: "center", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
-    createText: { fontSize: normalize(15), color: "#fff", fontFamily: Fonts.semiBold },
-  });
 
 export default EditPaybookScreen;

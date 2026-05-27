@@ -25,10 +25,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-
-/* ─────────────────────────────────────────
-   TYPES
-───────────────────────────────────────── */
+import { styles } from "../styles/InterestCalculatorScreen.styles";
 
 type RateMode = "fixed" | "floating";
 type CalcType = "simple" | "compound";
@@ -56,10 +53,6 @@ interface ScheduleRow {
   fees: number;
 }
 
-/* ─────────────────────────────────────────
-   CONSTANTS
-───────────────────────────────────────── */
-
 const PERIOD_OPTIONS: BottomSelectOption<number>[] = [
   { label: "1 Tháng", value: 1 },
   { label: "3 Tháng", value: 3 },
@@ -83,12 +76,6 @@ const DEFAULT_FEES: Fee[] = [
   { id: "f4", label: "interest_calculator.fee_prepayment", amount: 0, type: "prepayment" },
 ];
 
-const FEE_TYPE_LABEL: Record<Fee["type"], string> = {
-  onetime: "Một lần",
-  monthly: "Hàng tháng",
-  prepayment: "Trả trước hạn",
-};
-
 const FEE_TYPE_OPTIONS: BottomSelectOption<Fee["type"]>[] = [
   { label: "interest_calculator.fee_type_onetime", value: "onetime" },
   { label: "interest_calculator.fee_type_monthly", value: "monthly" },
@@ -99,10 +86,6 @@ const { width: SCREEN_W } = Dimensions.get("window");
 const CHART_W = SCREEN_W - wp(10) - normalize(40);
 const CHART_H = normalize(160);
 
-/* ─────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────── */
-
 const uid = () => Math.random().toString(36).slice(2, 8);
 
 const fmt = (v: number) =>
@@ -110,10 +93,6 @@ const fmt = (v: number) =>
 
 const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v));
-
-/* ─────────────────────────────────────────
-   LINE CHART
-───────────────────────────────────────── */
 
 interface MiniChartProps {
   data: { label: string; interest: number; balance: number }[];
@@ -187,7 +166,6 @@ const LineChart: React.FC<MiniChartProps> = ({ data, colors, t }) => {
         marginLeft: normalize(12),
       }}
     >
-      {/* Grid lines */}
       {[0, 0.25, 0.5, 0.75, 1].map((r) => (
         <View
           key={r}
@@ -203,18 +181,13 @@ const LineChart: React.FC<MiniChartProps> = ({ data, colors, t }) => {
         />
       ))}
 
-      {/* Y Axis Min/Max Labels */}
       <ThemedText style={{ position: "absolute", top: -normalize(18), left: 0, fontSize: normalize(9), color: colors.icon }}>
         Max: {fmt(maxBalance)} đ
       </ThemedText>
 
-      {/* Balance line (mờ) */}
       {renderLine(balancePts, colors.tint, 0.2, 2)}
-
-      {/* Interest line (đậm) */}
       {renderLine(interestPts, colors.tint, 1, 3)}
 
-      {/* Dots - interest */}
       {interestPts.map((p, i) => (
         <View
           key={i}
@@ -232,7 +205,6 @@ const LineChart: React.FC<MiniChartProps> = ({ data, colors, t }) => {
         />
       ))}
 
-      {/* X labels */}
       {data.map((d, i) => {
         if (
           i === 0 ||
@@ -259,7 +231,6 @@ const LineChart: React.FC<MiniChartProps> = ({ data, colors, t }) => {
         return null;
       })}
 
-      {/* Touch Tooltip overlay */}
       <View style={{ ...StyleSheet.absoluteFillObject, flexDirection: "row", bottom: normalize(24) }}>
         {data.map((d, i) => (
           <TouchableOpacity
@@ -271,7 +242,6 @@ const LineChart: React.FC<MiniChartProps> = ({ data, colors, t }) => {
         ))}
       </View>
 
-      {/* Tooltip Content */}
       {selectedIdx !== null && (
         <>
           <View
@@ -316,10 +286,6 @@ const LineChart: React.FC<MiniChartProps> = ({ data, colors, t }) => {
   );
 };
 
-/* ─────────────────────────────────────────
-   MAIN SCREEN
-───────────────────────────────────────── */
-
 const InterestCalculatorScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
@@ -349,12 +315,10 @@ const InterestCalculatorScreen: React.FC = () => {
     [t]
   );
 
-  /* ── Basic inputs ── */
   const [principal, setPrincipal] = useState<number>(0);
   const [period, setPeriod] = useState(PERIOD_OPTIONS[2]); // 6 tháng
   const [calcType, setCalcType] = useState(CALC_OPTIONS[0]);
 
-  /* ── Rate mode ── */
   const [rateMode, setRateMode] = useState<RateMode>("fixed");
   const [fixedRate, setFixedRate] = useState("0");
 
@@ -366,7 +330,6 @@ const InterestCalculatorScreen: React.FC = () => {
   const [newRateStart, setNewRateStart] = useState("1");
   const [newRateValue, setNewRateValue] = useState("0");
 
-  /* ── Fees ── */
   const [fees, setFees] = useState<Fee[]>(DEFAULT_FEES);
   const [addFeeModal, setAddFeeModal] = useState(false);
   const [newFeeLabel, setNewFeeLabel] = useState("");
@@ -374,12 +337,9 @@ const InterestCalculatorScreen: React.FC = () => {
   const [newFeeType, setNewFeeType] = useState<Fee["type"]>("monthly");
   const [feeTypeModal, setFeeTypeModal] = useState(false);
 
-  /* ── UI ── */
   const [periodModal, setPeriodModal] = useState(false);
   const [calcModal, setCalcModal] = useState(false);
   const [scheduleTab, setScheduleTab] = useState<"table" | "chart">("table");
-
-  /* ─────────────── helpers ─────────────── */
 
   const handlePeriodChange = (opt: BottomSelectOption<number>) => {
     setPeriod(opt);
@@ -467,8 +427,6 @@ const InterestCalculatorScreen: React.FC = () => {
     setAddFeeModal(false);
   };
 
-  /* ─────────────── CALCULATION ─────────────── */
-
   const schedule = useMemo<ScheduleRow[]>(() => {
     const P = principal;
     const months = period.value;
@@ -528,8 +486,6 @@ const InterestCalculatorScreen: React.FC = () => {
     return { totalInterest, totalFees, prepayFee, finalBalance };
   }, [schedule, fees, principal]);
 
-  /* ─────────────── RENDER ─────────────── */
-
   const borderColor = { borderColor: colors.border };
   const textColor = { color: colors.text };
   const iconColor = { color: colors.icon };
@@ -557,7 +513,6 @@ const InterestCalculatorScreen: React.FC = () => {
             {t("interest_calculator.subtitle")}
           </ThemedText>
 
-          {/* ══════════ CARD 1: Thông tin cơ bản ══════════ */}
           <SectionCard title={t("interest_calculator.card_basic_info")} colors={colors}>
             <View style={styles.fieldGroup}>
               <ThemedText style={[styles.label, textColor]}>{t("interest_calculator.principal")}</ThemedText>
@@ -591,9 +546,7 @@ const InterestCalculatorScreen: React.FC = () => {
             </View>
           </SectionCard>
 
-          {/* ══════════ CARD 2: Lãi suất ══════════ */}
           <SectionCard title={t("interest_calculator.rate")} colors={colors}>
-            {/* Toggle fixed / floating */}
             <View style={[styles.segmentRow, { backgroundColor: colors.background }]}>
               {(["fixed", "floating"] as RateMode[]).map((mode) => (
                 <TouchableOpacity
@@ -642,7 +595,6 @@ const InterestCalculatorScreen: React.FC = () => {
                 <ThemedText style={[styles.rateSuffix, iconColor]}>{t("interest_calculator.annual_rate")}</ThemedText>
               </View>
             ) : (
-              /* Floating: rate periods */
               <View style={styles.floatingGrid}>
                 <ThemedText style={[styles.hintText, iconColor]}>
                   {t("interest_calculator.floating_hint")}
@@ -698,7 +650,6 @@ const InterestCalculatorScreen: React.FC = () => {
                   );
                 })}
 
-                {/* Add rate period button */}
                 <TouchableOpacity
                   style={[styles.addFeeBtn, { borderColor: colors.tint }]}
                   onPress={() => {
@@ -729,7 +680,6 @@ const InterestCalculatorScreen: React.FC = () => {
             )}
           </SectionCard>
 
-          {/* ══════════ CARD 3: Phí ══════════ */}
           <SectionCard title={t("interest_calculator.fees")} colors={colors}>
             {fees.map((fee, idx) => (
               <View key={fee.id}>
@@ -789,7 +739,6 @@ const InterestCalculatorScreen: React.FC = () => {
             </TouchableOpacity>
           </SectionCard>
 
-          {/* ══════════ CARD 4: Kết quả ══════════ */}
           <SectionCard title={t("interest_calculator.results")} colors={colors}>
             {principal <= 0 ? (
               <ThemedText style={[styles.emptyHint, iconColor]}>
@@ -832,7 +781,6 @@ const InterestCalculatorScreen: React.FC = () => {
             )}
           </SectionCard>
 
-          {/* ══════════ CARD 5: Lịch lãi suất ══════════ */}
           {schedule.length > 0 && (
             <SectionCard title={t("interest_calculator.schedule")} colors={colors}>
               <View
@@ -963,7 +911,6 @@ const InterestCalculatorScreen: React.FC = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ════════ MODALS ════════ */}
       <BottomSelectModal
         visible={periodModal}
         title={t("interest_calculator.period")}
@@ -989,7 +936,6 @@ const InterestCalculatorScreen: React.FC = () => {
         onSelect={(opt) => setNewFeeType(opt.value)}
       />
 
-      {/* Add Rate Period Modal */}
       <Modal
         visible={addRateModal}
         transparent
@@ -1072,7 +1018,6 @@ const InterestCalculatorScreen: React.FC = () => {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Add Fee Modal */}
       <Modal
         visible={addFeeModal}
         transparent
@@ -1163,10 +1108,6 @@ const InterestCalculatorScreen: React.FC = () => {
   );
 };
 
-/* ─────────────────────────────────────────
-   SUB-COMPONENTS
-───────────────────────────────────────── */
-
 interface SectionCardProps {
   title: string;
   children: React.ReactNode;
@@ -1248,280 +1189,3 @@ const ResultRow: React.FC<ResultRowProps> = ({
 );
 
 export default InterestCalculatorScreen;
-
-/* ─────────────────────────────────────────
-   STYLES
-───────────────────────────────────────── */
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: {
-    paddingHorizontal: wp(5),
-    paddingVertical: hp(2),
-    gap: normalize(16),
-  },
-  subtitle: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.regular,
-    opacity: 0.7,
-  },
-
-  /* Card */
-  card: {
-    borderRadius: normalize(16),
-    padding: normalize(20),
-    gap: normalize(16),
-  },
-  cardTitle: {
-    fontSize: normalize(15),
-    fontFamily: Fonts.bold,
-  },
-
-  /* Field */
-  fieldGroup: { gap: normalize(10) },
-  label: { fontSize: normalize(14), fontFamily: Fonts.medium },
-  divider: { height: 1, opacity: 0.1 },
-
-  /* Row */
-  row: { flexDirection: "row", gap: normalize(12) },
-  half: { flex: 1, gap: normalize(10) },
-
-  /* Segment toggle */
-  segmentRow: {
-    flexDirection: "row",
-    borderRadius: normalize(12),
-    padding: normalize(4),
-    gap: normalize(4),
-  },
-  segmentBtn: {
-    flex: 1,
-    paddingVertical: normalize(8),
-    borderRadius: normalize(10),
-    alignItems: "center",
-  },
-  segmentLabel: { fontSize: normalize(13), fontFamily: Fonts.medium },
-
-  /* Fixed rate input */
-  rateWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 2,
-    paddingBottom: normalize(10),
-  },
-  rateInput: {
-    flex: 1,
-    fontSize: normalize(28),
-    fontFamily: Fonts.bold,
-    padding: 0,
-  },
-  rateSuffix: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.medium,
-    marginLeft: normalize(6),
-  },
-
-  /* Floating rate grid */
-  floatingGrid: { gap: normalize(10) },
-  hintText: {
-    fontSize: normalize(12),
-    fontFamily: Fonts.regular,
-    opacity: 0.7,
-  },
-  monthRateInput: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 1.5,
-    paddingBottom: normalize(6),
-  },
-  monthRateText: {
-    flex: 1,
-    fontSize: normalize(16),
-    fontFamily: Fonts.bold,
-    padding: 0,
-  },
-
-  /* Fees */
-  feeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: normalize(12),
-  },
-  feeInfo: { flex: 1 },
-  feeLabel: { fontSize: normalize(14), fontFamily: Fonts.medium },
-  feeType: {
-    fontSize: normalize(11),
-    fontFamily: Fonts.regular,
-    marginTop: normalize(2),
-  },
-  feeRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: normalize(6),
-    flex: 0.6,
-  },
-  removeBtn: {},
-  addFeeBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: normalize(8),
-    paddingVertical: normalize(10),
-    paddingHorizontal: normalize(14),
-    borderRadius: normalize(12),
-    borderWidth: 1.5,
-    borderStyle: "dashed",
-    alignSelf: "flex-start",
-  },
-  addFeeLabel: { fontSize: normalize(13), fontFamily: Fonts.medium },
-
-  /* Result */
-  emptyHint: {
-    fontSize: normalize(13),
-    fontFamily: Fonts.regular,
-    opacity: 0.6,
-    textAlign: "center",
-  },
-  resultItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: normalize(12),
-  },
-  resultLabel: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.regular,
-    flexShrink: 0,
-  },
-  resultValue: {
-    fontSize: normalize(15),
-    fontFamily: Fonts.bold,
-    textAlign: "right",
-    flex: 1,
-  },
-  highlightValue: {
-    fontSize: normalize(22),
-    fontFamily: Fonts.bold,
-    textAlign: "right",
-    flex: 1,
-  },
-  disclaimer: {
-    fontSize: normalize(11),
-    fontFamily: Fonts.regular,
-    textAlign: "center",
-    opacity: 0.6,
-    marginTop: normalize(4),
-  },
-
-  /* Schedule tabs */
-  tabRow: {
-    flexDirection: "row",
-    borderRadius: normalize(12),
-    padding: normalize(4),
-    gap: normalize(4),
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: normalize(8),
-    borderRadius: normalize(10),
-    alignItems: "center",
-  },
-  tabLabel: { fontSize: normalize(13), fontFamily: Fonts.medium },
-
-  /* Table */
-  tableHeader: {
-    flexDirection: "row",
-    paddingVertical: normalize(8),
-    paddingHorizontal: normalize(4),
-    borderRadius: normalize(8),
-    marginBottom: normalize(4),
-  },
-  thCell: {
-    flex: 1,
-    fontSize: normalize(11),
-    fontFamily: Fonts.medium,
-    textAlign: "center",
-    opacity: 0.7,
-  },
-  tableRow: {
-    flexDirection: "row",
-    paddingVertical: normalize(9),
-    paddingHorizontal: normalize(4),
-    borderRadius: normalize(6),
-  },
-  tdCell: {
-    flex: 1,
-    fontSize: normalize(12),
-    fontFamily: Fonts.regular,
-    textAlign: "center",
-  },
-
-  /* Chart */
-  legendRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: normalize(6),
-    marginBottom: normalize(8),
-  },
-  legendDot: {
-    width: normalize(10),
-    height: normalize(10),
-    borderRadius: 5,
-  },
-  legendLabel: {
-    fontSize: normalize(11),
-    fontFamily: Fonts.regular,
-    marginRight: normalize(8),
-  },
-  chartHint: {
-    fontSize: normalize(11),
-    fontFamily: Fonts.regular,
-    textAlign: "center",
-    marginTop: normalize(8),
-    opacity: 0.6,
-  },
-
-  /* Select button */
-  selectButton: {
-    height: normalize(48),
-    borderRadius: normalize(12),
-    borderWidth: 1,
-    paddingHorizontal: normalize(12),
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  selectText: { fontSize: normalize(14), fontFamily: Fonts.medium },
-
-  /* Modals */
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  modalSheet: {
-    borderTopLeftRadius: normalize(24),
-    borderTopRightRadius: normalize(24),
-    padding: normalize(24),
-    gap: normalize(14),
-  },
-  modalTitle: { fontSize: normalize(17), fontFamily: Fonts.bold },
-  textField: {
-    borderWidth: 1,
-    borderRadius: normalize(12),
-    paddingHorizontal: normalize(14),
-    paddingVertical: normalize(12),
-    fontSize: normalize(15),
-    fontFamily: Fonts.regular,
-  },
-  modalActions: {
-    flexDirection: "row",
-    gap: normalize(12),
-    marginTop: normalize(4),
-  },
-  modalBtn: {
-    flex: 1,
-    paddingVertical: normalize(14),
-    borderRadius: normalize(14),
-    alignItems: "center",
-  },
-  modalBtnLabel: { fontSize: normalize(15), fontFamily: Fonts.bold },
-});

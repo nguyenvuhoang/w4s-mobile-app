@@ -2,7 +2,6 @@ import AppHeader from "@/components/base/AppHeader";
 import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
-import { Fonts } from "@/core/theme/font";
 import type {
   LoanSchedule,
   ScheduleStatus
@@ -15,12 +14,13 @@ import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
-  StyleSheet,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { usePaybookDetail } from "../hooks/usePaybook";
+import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
+import { createStyles } from "../styles/PaybookScheduleScreen.styles";
 
 type FilterStatus = "ALL" | ScheduleStatus;
 
@@ -33,11 +33,11 @@ const getScheduleStatusConfig = (
   PARTIAL: { label: t("paybookSchedule.status.PARTIAL"), color: "#7C3AED", bgColor: "#EDE9FE", icon: "circle-half-stroke" },
 });
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
+// Component
 const PaybookScheduleScreen = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { colors } = useAppTheme();
+  const { convertBetween, formatAmount, currencyFormatter, isReady, getCurrencyDetails } = useCurrencyConverter();
   const params = useLocalSearchParams<{ loanId: string }>();
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("ALL");
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -63,7 +63,7 @@ const PaybookScheduleScreen = () => {
 
   const schedules = loanDetail?.schedules ?? [];
 
-  // ── Derived ─────────────────────────────────────────────────────────────────
+  // Derived
   const filteredSchedules = useMemo(() => {
     if (activeFilter === "ALL") return schedules;
     return schedules.filter((s) => s.status === activeFilter);
@@ -82,22 +82,44 @@ const PaybookScheduleScreen = () => {
   const totalPaidPrincipal = schedules.reduce((a, s) => a + s.paid_principal_amount, 0);
   const totalPaidInterest = schedules.reduce((a, s) => a + s.paid_interest_amount, 0);
 
-  // ── Formatters ──────────────────────────────────────────────────────────────
+  // Formatters
   const formatCurrency = useCallback((amount: number) => {
-    return new Intl.NumberFormat("vi-VN").format(Math.round(amount));
-  }, []);
+    const fromCurrency = loanDetail?.currency_code ?? "VND";
+    const converted = convertBetween(amount, fromCurrency);
+    if (converted !== null) {
+      return formatAmount(converted);
+    }
+    return formatAmount(amount, fromCurrency);
+  }, [loanDetail?.currency_code, convertBetween, formatAmount]);
 
   const formatCurrencyShort = useCallback((amount: number) => {
-    if (amount >= 1_000_000_000)
-      return `${(amount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")} Tỷ`;
-    if (amount >= 1_000_000)
-      return `${(amount / 1_000_000).toFixed(1).replace(/\.0$/, "")} Tr`;
-    return new Intl.NumberFormat("vi-VN").format(Math.round(amount));
-  }, []);
+    const fromCurrency = loanDetail?.currency_code ?? "VND";
+    const converted = convertBetween(amount, fromCurrency);
+    const displayAmount = converted !== null ? converted : amount;
+
+    const displayCurrencyId = converted !== null ? undefined : fromCurrency;
+    const currencyDetails = getCurrencyDetails(displayCurrencyId ?? "");
+    const symbol = displayCurrencyId
+      ? (currencyDetails?.symbol ?? displayCurrencyId)
+      : currencyFormatter.symbol;
+
+    if (i18n.language === "vi") {
+      if (displayAmount >= 1_000_000_000)
+        return `${(displayAmount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")} Tỷ ${symbol}`;
+      if (displayAmount >= 1_000_000)
+        return `${(displayAmount / 1_000_000).toFixed(1).replace(/\.0$/, "")} Tr ${symbol}`;
+    } else {
+      if (displayAmount >= 1_000_000_000)
+        return `${symbol}${(displayAmount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")}B`;
+      if (displayAmount >= 1_000_000)
+        return `${symbol}${(displayAmount / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+    }
+    return formatAmount(displayAmount, displayCurrencyId);
+  }, [i18n.language, loanDetail?.currency_code, convertBetween, formatAmount, currencyFormatter, getCurrencyDetails]);
 
   const formatDate = (iso: string) => {
     try {
-      return new Date(iso).toLocaleDateString("vi-VN", {
+      return new Date(iso).toLocaleDateString(i18n.language === "vi" ? "vi-VN" : "en-US", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -113,12 +135,12 @@ const PaybookScheduleScreen = () => {
     );
   };
 
-  // ── Toggle expand ───────────────────────────────────────────────────────────
+  // Toggle expand
   const toggleExpand = (id: number) => {
     setExpandedId(expandedId === id ? null : id);
   };
 
-  // ── Render Summary ──────────────────────────────────────────────────────────
+  // Render Summary
   const renderSummary = () => (
     <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.summaryRow}>
@@ -127,7 +149,7 @@ const PaybookScheduleScreen = () => {
             {t("paybookSchedule.summary.totalPrincipal")}
           </CustomText>
           <CustomText style={[styles.summaryValue, { color: colors.text }]}>
-            {formatCurrencyShort(totalPrincipal)} {t("paybookSchedule.currency")}
+            {formatCurrencyShort(totalPrincipal)}
           </CustomText>
         </View>
         <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
@@ -136,7 +158,7 @@ const PaybookScheduleScreen = () => {
             {t("paybookSchedule.summary.totalInterest")}
           </CustomText>
           <CustomText style={[styles.summaryValue, { color: colors.text }]}>
-            {formatCurrencyShort(totalInterest)} {t("paybookSchedule.currency")}
+            {formatCurrencyShort(totalInterest)}
           </CustomText>
         </View>
         <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
@@ -145,14 +167,14 @@ const PaybookScheduleScreen = () => {
             {t("paybookSchedule.summary.totalDue")}
           </CustomText>
           <CustomText style={[styles.summaryValue, { color: colors.text }]}>
-            {formatCurrencyShort(totalPrincipal + totalInterest)} {t("paybookSchedule.currency")}
+            {formatCurrencyShort(totalPrincipal + totalInterest)}
           </CustomText>
         </View>
       </View>
     </View>
   );
 
-  // ── Render Filter Tabs ──────────────────────────────────────────────────────
+  // Render Filter Tabs
   const renderFilterTabs = () => (
     <View style={styles.filterContainer}>
       {FILTER_TABS.map((tab) => {
@@ -206,7 +228,7 @@ const PaybookScheduleScreen = () => {
     </View>
   );
 
-  // ── Render Schedule Item ────────────────────────────────────────────────────
+  // Render Schedule Item
   const renderScheduleItem = ({ item }: { item: LoanSchedule }) => {
     const statusCfg = SCHEDULE_STATUS_CONFIG[item.status];
     const totalDue = item.principal_due_amount + item.interest_due_amount;
@@ -244,7 +266,7 @@ const PaybookScheduleScreen = () => {
 
           <View style={styles.scheduleHeaderRight}>
             <CustomText style={[styles.scheduleTotal, { color: colors.text }]}>
-              {formatCurrency(totalDue)} {t("paybookSchedule.currency")}
+              {formatCurrency(totalDue)}
             </CustomText>
             <View style={[styles.scheduleStatusBadge, { backgroundColor: statusCfg.bgColor }]}>
               <CustomText style={[styles.scheduleStatusText, { color: statusCfg.color }]}>
@@ -285,7 +307,7 @@ const PaybookScheduleScreen = () => {
                 {t("paybookSchedule.card.openingBalance")}
               </CustomText>
               <CustomText style={[styles.detailValue, { color: colors.text }]}>
-                {formatCurrency(item.opening_balance)} {t("paybookSchedule.currency")}
+                {formatCurrency(item.opening_balance)}
               </CustomText>
             </View>
             <View style={styles.detailRow}>
@@ -293,7 +315,7 @@ const PaybookScheduleScreen = () => {
                 {t("paybookSchedule.card.principalDue")}
               </CustomText>
               <CustomText style={[styles.detailValue, { color: colors.text }]}>
-                {formatCurrency(item.principal_due_amount)} {t("paybookSchedule.currency")}
+                {formatCurrency(item.principal_due_amount)}
               </CustomText>
             </View>
             <View style={styles.detailRow}>
@@ -301,7 +323,7 @@ const PaybookScheduleScreen = () => {
                 {t("paybookSchedule.card.interestDue")}
               </CustomText>
               <CustomText style={[styles.detailValue, { color: colors.text }]}>
-                {formatCurrency(item.interest_due_amount)} {t("paybookSchedule.currency")}
+                {formatCurrency(item.interest_due_amount)}
               </CustomText>
             </View>
 
@@ -312,7 +334,7 @@ const PaybookScheduleScreen = () => {
                 {t("paybookSchedule.card.paidPrincipal")}
               </CustomText>
               <CustomText style={[styles.detailValue, { color: colors.text }]}>
-                {formatCurrency(item.paid_principal_amount)} {t("paybookSchedule.currency")}
+                {formatCurrency(item.paid_principal_amount)}
               </CustomText>
             </View>
             <View style={styles.detailRow}>
@@ -320,7 +342,7 @@ const PaybookScheduleScreen = () => {
                 {t("paybookSchedule.card.paidInterest")}
               </CustomText>
               <CustomText style={[styles.detailValue, { color: colors.text }]}>
-                {formatCurrency(item.paid_interest_amount)} {t("paybookSchedule.currency")}
+                {formatCurrency(item.paid_interest_amount)}
               </CustomText>
             </View>
 
@@ -331,7 +353,7 @@ const PaybookScheduleScreen = () => {
                 {t("paybookSchedule.card.closingBalance")}
               </CustomText>
               <CustomText style={[styles.detailValue, { color: colors.text }]}>
-                {formatCurrency(item.closing_balance)} {t("paybookSchedule.currency")}
+                {formatCurrency(item.closing_balance)}
               </CustomText>
             </View>
             <View style={styles.detailRow}>
@@ -377,8 +399,8 @@ const PaybookScheduleScreen = () => {
     );
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
-  if (loading) {
+  // Render
+  if (loading || !isReady) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <AppHeader title={t("paybookSchedule.title")} />
@@ -423,190 +445,5 @@ const PaybookScheduleScreen = () => {
     </SafeAreaView>
   );
 };
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
-
-const createStyles = (colors: any) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    listContent: {
-      paddingHorizontal: wp(4),
-      paddingTop: hp(1.5),
-    },
-
-    // ── Summary ──
-    summaryCard: {
-      borderRadius: normalize(16),
-      padding: normalize(14),
-      borderWidth: 1,
-      marginBottom: hp(1.5),
-    },
-    summaryRow: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    summaryItem: {
-      flex: 1,
-      alignItems: "center",
-    },
-    summaryDivider: {
-      width: 1,
-      height: normalize(30),
-      marginHorizontal: wp(1),
-    },
-    summaryLabel: {
-      fontSize: normalize(10),
-      fontFamily: Fonts.regular,
-      marginBottom: hp(0.3),
-      textAlign: "center",
-    },
-    summaryValue: {
-      fontSize: normalize(13),
-      fontFamily: Fonts.bold,
-      textAlign: "center",
-    },
-
-    // ── Filter ──
-    filterContainer: {
-      flexDirection: "row",
-      gap: wp(2),
-      marginBottom: hp(1.5),
-    },
-    filterTab: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      paddingVertical: hp(1),
-      borderRadius: normalize(10),
-      borderWidth: 1,
-      gap: wp(1),
-    },
-    filterTabText: {
-      fontSize: normalize(12),
-      fontFamily: Fonts.medium,
-    },
-    filterBadge: {
-      paddingHorizontal: wp(1.5),
-      paddingVertical: hp(0.1),
-      borderRadius: normalize(20),
-    },
-    filterBadgeText: {
-      fontSize: normalize(10),
-      fontFamily: Fonts.semiBold,
-    },
-
-    // ── Schedule Card ──
-    scheduleCard: {
-      borderRadius: normalize(16),
-      padding: normalize(14),
-      borderWidth: 1,
-      marginBottom: hp(1),
-    },
-    scheduleHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "flex-start",
-    },
-    scheduleHeaderLeft: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      flex: 1,
-    },
-    scheduleDot: {
-      width: normalize(28),
-      height: normalize(28),
-      borderRadius: normalize(8),
-      alignItems: "center",
-      justifyContent: "center",
-      marginRight: wp(2.5),
-    },
-    scheduleHeaderMeta: {
-      flex: 1,
-    },
-    scheduleKy: {
-      fontSize: normalize(15),
-      fontFamily: Fonts.semiBold,
-    },
-    scheduleDate: {
-      fontSize: normalize(12),
-      fontFamily: Fonts.regular,
-      marginTop: hp(0.15),
-    },
-    scheduleHeaderRight: {
-      alignItems: "flex-end",
-    },
-    scheduleTotal: {
-      fontSize: normalize(15),
-      fontFamily: Fonts.bold,
-      marginBottom: hp(0.3),
-    },
-    scheduleStatusBadge: {
-      paddingHorizontal: wp(2),
-      paddingVertical: hp(0.2),
-      borderRadius: normalize(6),
-    },
-    scheduleStatusText: {
-      fontSize: normalize(10),
-      fontFamily: Fonts.semiBold,
-    },
-
-    // ── Due indicator ──
-    dueIndicator: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: wp(3),
-      paddingVertical: hp(0.6),
-      borderRadius: normalize(8),
-      marginTop: hp(0.8),
-    },
-    dueIndicatorText: {
-      fontSize: normalize(11),
-      fontFamily: Fonts.semiBold,
-    },
-
-    // ── Expanded ──
-    expandedSection: {
-      marginTop: hp(1),
-      paddingTop: hp(1),
-      borderTopWidth: 1,
-    },
-    detailRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingVertical: hp(0.6),
-    },
-    detailLabel: {
-      fontSize: normalize(12),
-      fontFamily: Fonts.regular,
-    },
-    detailValue: {
-      fontSize: normalize(13),
-      fontFamily: Fonts.medium,
-    },
-    detailSeparator: {
-      height: StyleSheet.hairlineWidth,
-      marginVertical: hp(0.4),
-    },
-
-    // ── Expand indicator ──
-    expandIndicator: {
-      alignItems: "center",
-      paddingTop: hp(0.6),
-    },
-
-    // ── Empty ──
-    emptyContainer: {
-      alignItems: "center",
-      justifyContent: "center",
-      paddingVertical: hp(8),
-    },
-    emptyText: {
-      fontSize: normalize(14),
-      fontFamily: Fonts.regular,
-      marginTop: hp(1.5),
-    },
-  });
 
 export default PaybookScheduleScreen;

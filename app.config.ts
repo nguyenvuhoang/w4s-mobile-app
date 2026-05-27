@@ -89,6 +89,7 @@ export default () => {
           "VIBRATE",
           "WAKE_LOCK",
           "POST_NOTIFICATIONS",
+          "SCHEDULE_EXACT_ALARM",
           "CAMERA",
           "ACCESS_COARSE_LOCATION",
           "ACCESS_FINE_LOCATION",

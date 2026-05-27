@@ -14,6 +14,7 @@ import { useTransaction } from "@/features/transaction/hooks/useTransaction";
 import { styles } from "@/features/transaction/style/AddTransactionScreen.Styles";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCurrency } from "@/hooks/useCurrency";
+import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useSpendingLimit } from "@/hooks/useSpendingLimit";
@@ -131,7 +132,7 @@ const AddTransactionScreen = () => {
   const { showNotification } = useNotification();
   const { t, i18n } = useTranslation();
   const { appInfo } = useContext(GlobalContext);
-  const { fetchLimits, checkTransactionLimit } = useSpendingLimit();
+  const { fetchAdvancedLimits, checkTransactionLimit } = useSpendingLimit();
   const { getLoans } = usePaybookDetail();
 
   const [selectedType, setSelectedType] = useState<TransactionType>("expense");
@@ -151,36 +152,24 @@ const AddTransactionScreen = () => {
   const [borrowToPayExpense, setBorrowToPayExpense] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [location, setLocation] = useState("");
-
-  // Loan picker state
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [showLoanPicker, setShowLoanPicker] = useState(false);
   const [loanList, setLoanList] = useState<Loan[]>([]);
   const [loadingLoans, setLoadingLoans] = useState(false);
-
-  // Spending limit warning state
   const [exceededLimits, setExceededLimits] = useState<any[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Reminder state
   const [reminderDate, setReminderDate] = useState<Date | null>(null);
   const [showReminderPicker, setShowReminderPicker] = useState(false);
-
-  // Date picker state
   const [showDatePicker, setShowDatePicker] = useState(false);
-
-  // Session ID để track transaction creation session
-  const sessionIdRef = useRef<string>(Date.now().toString());
-
   const [inputCurrency, setInputCurrency] = useState<SelectedCurrency>({
     currencyId: "VND",
     symbol: "đ",
     name: "Việt Nam Đồng",
   });
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionIdRef = useRef<string>(Date.now().toString());
   const hasManuallySelectedCurrencyRef = useRef(false);
 
-  // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -220,21 +209,11 @@ const AddTransactionScreen = () => {
     };
   }, [selectedWallet, currencies, parseCurrencyName]);
 
-  // ── Submission conversion: so với walletCurrency (API cần số tiền theo đơn vị của ví) ─
-  const walletConversionNeeded = useMemo(
-    () => inputCurrency.currencyId !== walletCurrency.currencyId,
-    [inputCurrency.currencyId, walletCurrency.currencyId],
-  );
-
-  const walletConvertedAmount = useMemo(() => {
-    if (!walletConversionNeeded || !amount || amount === "0") return null;
-    const numAmount = parseFloat(amount.replace(/,/g, ""));
-    if (isNaN(numAmount)) return null;
-    const result = convert(numAmount, inputCurrency.currencyId, walletCurrency.currencyId);
-    if (result === null) return null;
-    const isVND = walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ";
-    return isVND ? Math.round(result) : Math.round(result * 100) / 100;
-  }, [amount, walletConversionNeeded, inputCurrency.currencyId, walletCurrency.currencyId, convert]);
+  const { needsConversion: walletConversionNeeded, convertedAmount: walletConvertedAmount } = useCurrencyConversion({
+    amount,
+    fromCurrencyId: inputCurrency.currencyId,
+    toCurrencyId: walletCurrency.currencyId,
+  });
 
   const isLoanCategory = useMemo(
     () =>
@@ -286,8 +265,6 @@ const AddTransactionScreen = () => {
           typeof params.autofillData === "string"
             ? JSON.parse(params.autofillData as string)
             : (params.autofillData as unknown as AutofillData);
-
-        console.log("[AddTransaction] Autofill data:", autofillData);
 
         if (autofillData.type) setSelectedType(autofillData.type);
         if (autofillData.walletId !== undefined) {
@@ -368,20 +345,19 @@ const AddTransactionScreen = () => {
   useFocusEffect(
     useCallback(() => {
       if (contractNumberRef.current) {
-        fetchLimits(contractNumberRef.current);
+        fetchAdvancedLimits(contractNumberRef.current);
       }
     }, [])
   );
 
   const runLimitCheck = useCallback(
-    (numAmount: number, currencyId: string) => {
-      const exceeded = checkTransactionLimit(numAmount, currencyId, convert);
+    (numAmount: number, currencyId: string, walletId?: number | null, categoryCode?: string | null) => {
+      const exceeded = checkTransactionLimit(numAmount, currencyId, convert, walletId, categoryCode);
       setExceededLimits(exceeded);
     },
     [checkTransactionLimit, convert]
   );
 
-  // Handle amount change with debounced limit check (600ms)
   const handleAmountChange = useCallback(
     (text: string) => {
       setAmount(text);
@@ -393,7 +369,6 @@ const AddTransactionScreen = () => {
         return;
       }
 
-      // Debounce 600ms để tránh check mỗi keystroke
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         const numAmount = parseFloat(text.replace(/,/g, ""));
@@ -401,7 +376,7 @@ const AddTransactionScreen = () => {
           setExceededLimits([]);
           return;
         }
-        runLimitCheck(numAmount, inputCurrency.currencyId);
+        runLimitCheck(numAmount, inputCurrency.currencyId, sourceWalletId, selectedCategoryData?.category_code);
       }, 600);
     },
     [runLimitCheck, inputCurrency.currencyId]
@@ -412,8 +387,8 @@ const AddTransactionScreen = () => {
     if (!amount || amount === "0") return;
     const numAmount = parseFloat(amount.replace(/,/g, ""));
     if (isNaN(numAmount)) return;
-    runLimitCheck(numAmount, inputCurrency.currencyId);
-  }, [inputCurrency.currencyId]);
+    runLimitCheck(numAmount, inputCurrency.currencyId, sourceWalletId, selectedCategoryData?.category_code);
+  }, [inputCurrency.currencyId, sourceWalletId, selectedCategoryData?.category_code]);
 
   useEffect(() => {
     if (prevWalletIdRef.current !== null && sourceWalletId !== prevWalletIdRef.current) {
@@ -667,9 +642,6 @@ const AddTransactionScreen = () => {
         isLoanForFund: borrowToPayExpense,
         categoryGroup: selectedCategoryData?.category_group,
       });
-
-      console.log("[AddTransaction] Transaction created successfully!");
-
       await refresh();
       await clearTempData();
       router.back();

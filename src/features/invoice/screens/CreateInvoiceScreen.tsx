@@ -9,14 +9,13 @@ import STORAGE_KEY from "@/constants/StorageKey";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
-import { Fonts } from "@/core/theme/font";
 import TransactionAmountInput from "@/features/transaction/components/TransactionAmountInput";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import StorageService from "@/services/StorageService";
 import { invoiceRepository } from "@/services/repositories/invoice.repository";
-import { hp, normalize, wp } from "@/utils/layout";
+import { normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -34,6 +33,7 @@ import {
 import DatePicker from "react-native-date-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useInvoice } from "../hooks/useInvoice";
+import { createStyles } from "../styles/CreateInvoiceScreen.styles";
 
 interface SelectedCategoryData {
   id: number;
@@ -350,7 +350,7 @@ const CreateRecurringInvoiceScreen = () => {
       wallet_id: selectedWallet.walletId,
       account_number: accountNumber,
       category_id: selectedCategoryData.id,
-      payment_transaction_type: selectedCategoryData.category_type === "INCOME" ? "01" : "02",
+      payment_transaction_type: selectedCategoryData.category_type === "EXPENSE" ? "02" : "03",
       bill_name: parseCategoryName(selectedCategoryData.category_name),
       business_type: null,
       recurring: {
@@ -689,188 +689,5 @@ const CreateRecurringInvoiceScreen = () => {
     </View>
   );
 };
-
-const createStyles = (colors: any) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    flex: {
-      flex: 1,
-    },
-    scrollContent: {
-      flexGrow: 1,
-      paddingBottom: hp(15),
-    },
-    section: {
-      paddingHorizontal: wp(4),
-      marginTop: hp(2),
-    },
-    label: {
-      fontSize: normalize(14),
-      color: colors.text,
-      marginBottom: hp(1),
-      fontFamily: Fonts.medium,
-    },
-    field: {
-      backgroundColor: colors.card,
-      borderRadius: normalize(12),
-      padding: normalize(16),
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    fieldLeft: {
-      flexDirection: "row",
-      alignItems: "center",
-      flex: 1,
-    },
-    fieldText: {
-      fontSize: normalize(15),
-      color: colors.text,
-      marginLeft: wp(3),
-      fontFamily: Fonts.regular,
-    },
-    categoryIcon: {
-      width: normalize(40),
-      height: normalize(40),
-      borderRadius: normalize(10),
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    amountContainer: {
-      backgroundColor: colors.card,
-      borderRadius: normalize(12),
-      padding: normalize(16),
-      flexDirection: "row",
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    currency: {
-      fontSize: normalize(16),
-      color: colors.tint,
-      fontFamily: Fonts.semiBold,
-      marginRight: wp(2),
-    },
-    amountInput: {
-      flex: 1,
-      fontSize: normalize(18),
-      color: colors.text,
-      fontFamily: Fonts.regular,
-    },
-    datePicker: {
-      backgroundColor: colors.card,
-      borderRadius: normalize(12),
-      padding: normalize(16),
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    dateText: {
-      fontSize: normalize(15),
-      color: colors.text,
-      fontFamily: Fonts.medium,
-    },
-    noteInput: {
-      backgroundColor: colors.card,
-      borderRadius: normalize(12),
-      padding: normalize(16),
-      borderWidth: 1,
-      borderColor: colors.border,
-      color: colors.text,
-      fontSize: normalize(15),
-      fontFamily: Fonts.regular,
-      minHeight: hp(10),
-    },
-    infoBox: {
-      marginHorizontal: wp(4),
-      marginTop: hp(2),
-      backgroundColor: colors.tint + "15",
-      borderRadius: normalize(12),
-      padding: normalize(16),
-      flexDirection: "row",
-      gap: normalize(12),
-      borderWidth: 1,
-      borderColor: colors.tint + "30",
-    },
-    infoTextContainer: {
-      flex: 1,
-    },
-    infoText: {
-      fontSize: normalize(13),
-      color: colors.text,
-      fontFamily: Fonts.regular,
-      lineHeight: normalize(18),
-    },
-    bottomBar: {
-      backgroundColor: colors.background,
-      paddingHorizontal: wp(5),
-      paddingTop: hp(1.5),
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-      flexDirection: "row",
-      gap: normalize(12),
-    },
-    cancelBtn: {
-      flex: 1,
-      paddingVertical: normalize(14),
-      borderRadius: normalize(25),
-      borderWidth: 1.5,
-      borderColor: colors.border,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    cancelText: {
-      fontSize: normalize(16),
-      color: colors.tint,
-      fontFamily: Fonts.semiBold,
-    },
-    createBtn: {
-      flex: 1,
-      paddingVertical: normalize(14),
-      borderRadius: normalize(25),
-      alignItems: "center",
-      justifyContent: "center",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      elevation: 4,
-      overflow: "hidden",
-    },
-    createText: {
-      fontSize: normalize(16),
-      color: "#fff",
-      fontFamily: Fonts.semiBold,
-    },
-    deleteBtn: {
-      flex: 1,
-      paddingVertical: normalize(14),
-      borderRadius: normalize(25),
-      borderWidth: 1.5,
-      borderColor: "#EF4444",
-      alignItems: "center",
-      justifyContent: "center",
-      flexDirection: "row",
-      gap: wp(2),
-    },
-    deleteText: {
-      fontSize: normalize(16),
-      color: "#EF4444",
-      fontFamily: Fonts.semiBold,
-    },
-    scanBtn: {
-      width: normalize(40),
-      height: normalize(40),
-      alignItems: "center",
-      justifyContent: "center",
-    },
-  });
 
 export default CreateRecurringInvoiceScreen;

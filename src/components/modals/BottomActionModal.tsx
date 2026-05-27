@@ -1,15 +1,17 @@
 // BottomActionModal.tsx
-// Using @gorhom/bottom-sheet
+// Using @gorhom/bottom-sheet inside standard Modal to guarantee full screen overlay
 
 import CustomText from "@/components/base/CustomText";
 import { normalize, wp } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, {
   BottomSheetBackdrop,
-  BottomSheetView,
+  BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { Modal, StyleSheet, TouchableOpacity, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export interface ActionItem {
   id: string;
@@ -30,6 +32,7 @@ interface BottomActionModalProps {
   colors: any;
   cancelText?: string;
   hasBottomNav?: boolean;
+  snapPoints?: string[];
 }
 
 const BottomActionModal: React.FC<BottomActionModalProps> = ({
@@ -41,12 +44,14 @@ const BottomActionModal: React.FC<BottomActionModalProps> = ({
   colors,
   cancelText = "Hủy",
   hasBottomNav = false,
+  snapPoints: customSnapPoints,
 }) => {
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const insets = useSafeAreaInsets();
   const visibleActions = actions.filter((action) => !action.hide);
 
   // Snap points
-  const snapPoints = useMemo(() => ["50%"], []);
+  const snapPoints = useMemo(() => customSnapPoints || ["50%"], [customSnapPoints]);
 
   // Handle visibility changes
   useEffect(() => {
@@ -81,112 +86,123 @@ const BottomActionModal: React.FC<BottomActionModalProps> = ({
     [onClose]
   );
 
-  // ✅ CRITICAL FIX: Không render BottomSheet khi không visible
+  // Không render khi không visible
   if (!visible) {
     return null;
   }
 
   return (
-    <BottomSheet
-      ref={bottomSheetRef}
-      index={0}
-      snapPoints={snapPoints}
-      enablePanDownToClose
-      backdropComponent={renderBackdrop}
-      onChange={handleSheetChange}
-      backgroundStyle={{ backgroundColor: colors.card }}
-      handleIndicatorStyle={{ backgroundColor: colors.icon }}
-      bottomInset={hasBottomNav ? normalize(80) : 0}
+    <Modal
+      transparent
+      visible={visible}
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
     >
-      <BottomSheetView
-        style={[
-          styles.contentContainer,
-        ]}
-      >
-        {/* Header */}
-        {(title || subtitle) && (
-          <View style={styles.modalHeader}>
-            {title && (
-              <CustomText
-                style={[styles.modalTitle, { color: colors.text }]}
-                type="bold"
-              >
-                {title}
-              </CustomText>
-            )}
-            {subtitle && (
-              <CustomText
-                style={[styles.modalSubtitle, { color: colors.icon }]}
-                type="regular"
-              >
-                {subtitle}
-              </CustomText>
-            )}
-          </View>
-        )}
-
-        {/* Actions */}
-        <View style={styles.modalActions}>
-          {visibleActions.map((action, index) => {
-            const isLast = index === visibleActions.length - 1;
-            const textColor = action.destructive
-              ? "#FF3B30"
-              : action.color || colors.text;
-
-            return (
-              <TouchableOpacity
-                key={action.id}
-                style={[
-                  styles.modalActionItem,
-                  {
-                    borderBottomWidth: isLast ? 0 : 1,
-                    borderBottomColor: colors.border,
-                  },
-                ]}
-                onPress={action.onPress}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name={action.icon}
-                  size={normalize(22)}
-                  color={textColor}
-                />
-                <CustomText
-                  style={[styles.modalActionText, { color: textColor }]}
-                  type="medium"
-                >
-                  {action.label}
-                </CustomText>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Cancel Button */}
-        <TouchableOpacity
-          style={[
-            styles.modalCancelButton,
-            { backgroundColor: colors.background },
-          ]}
-          onPress={onClose}
-          activeOpacity={0.7}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <BottomSheet
+          ref={bottomSheetRef}
+          index={0}
+          snapPoints={snapPoints}
+          enablePanDownToClose
+          backdropComponent={renderBackdrop}
+          onChange={handleSheetChange}
+          backgroundStyle={{ backgroundColor: colors.card }}
+          handleIndicatorStyle={{ backgroundColor: colors.icon }}
+          bottomInset={0}
         >
-          <CustomText
-            style={[styles.modalCancelText, { color: colors.text }]}
-            type="semiBold"
+          <BottomSheetScrollView
+            contentContainerStyle={[
+              styles.contentContainer,
+              { paddingBottom: Math.max(insets.bottom, normalize(34)) }
+            ]}
+            showsVerticalScrollIndicator={false}
           >
-            {cancelText}
-          </CustomText>
-        </TouchableOpacity>
-      </BottomSheetView>
-    </BottomSheet>
+            {/* Header */}
+            {(title || subtitle) && (
+              <View style={styles.modalHeader}>
+                {title && (
+                  <CustomText
+                    style={[styles.modalTitle, { color: colors.text }]}
+                    type="bold"
+                  >
+                    {title}
+                  </CustomText>
+                )}
+                {subtitle && (
+                  <CustomText
+                    style={[styles.modalSubtitle, { color: colors.icon }]}
+                    type="regular"
+                  >
+                    {subtitle}
+                  </CustomText>
+                )}
+              </View>
+            )}
+
+            {/* Actions */}
+            <View style={styles.modalActions}>
+              {visibleActions.map((action, index) => {
+                const isLast = index === visibleActions.length - 1;
+                const textColor = action.destructive
+                  ? "#FF3B30"
+                  : action.color || colors.text;
+
+                return (
+                  <TouchableOpacity
+                    key={action.id}
+                    style={[
+                      styles.modalActionItem,
+                      {
+                        borderBottomWidth: isLast ? 0 : 1,
+                        borderBottomColor: colors.border,
+                      },
+                    ]}
+                    onPress={action.onPress}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={action.icon}
+                      size={normalize(22)}
+                      color={textColor}
+                    />
+                    <CustomText
+                      style={[styles.modalActionText, { color: textColor }]}
+                      type="medium"
+                    >
+                      {action.label}
+                    </CustomText>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Cancel Button */}
+            <TouchableOpacity
+              style={[
+                styles.modalCancelButton,
+                { backgroundColor: colors.background },
+              ]}
+              onPress={onClose}
+              activeOpacity={0.7}
+            >
+              <CustomText
+                style={[styles.modalCancelText, { color: colors.text }]}
+                type="semiBold"
+              >
+                {cancelText}
+              </CustomText>
+            </TouchableOpacity>
+          </BottomSheetScrollView>
+        </BottomSheet>
+      </GestureHandlerRootView>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: wp(5),
-    paddingBottom: normalize(34),
   },
   modalHeader: {
     alignItems: "center",

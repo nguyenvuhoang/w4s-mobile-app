@@ -2,7 +2,6 @@ import AppHeader from "@/components/base/AppHeader";
 import CustomText from "@/components/base/CustomText";
 import MoneyInput from "@/components/base/MoneyInput";
 import { useAppTheme } from "@/core/theme/ThemeContext";
-import { Fonts } from "@/core/theme/font";
 import { Tokens } from "@/core/theme/theme";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import StorageService from "@/services/StorageService";
@@ -20,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { styles } from "../styles/CurrencyConverterScreen.styles";
 
 interface SelectedCurrency {
   currencyId: string;
@@ -37,7 +37,6 @@ const CurrencyConverterScreen = () => {
     loading: ratesLoading,
     rateDate,
     convert,
-    getRate,
     refetch: refetchRates,
   } = useExchangeRate();
 
@@ -58,9 +57,6 @@ const CurrencyConverterScreen = () => {
 
   const selectingTypeRef = useRef<"from" | "to" | null>(null);
 
-  // =========================
-  // Load selected currency
-  // =========================
   useFocusEffect(
     useCallback(() => {
       const loadSelectedCurrency = async () => {
@@ -88,9 +84,6 @@ const CurrencyConverterScreen = () => {
     }, [])
   );
 
-  // =========================
-  // Calculate conversion
-  // =========================
   useEffect(() => {
     if (rates.length === 0) return;
     if (fromAmount < 0) return;
@@ -113,9 +106,6 @@ const CurrencyConverterScreen = () => {
     }
   }, [fromAmount, fromCurrency, toCurrency, rates]);
 
-  // =========================
-  // Smart exchange rate display
-  // =========================
   const getSmartExchangeRate = () => {
     if (!fromCurrency || !toCurrency) return t("currency_converter.not_available");
 
@@ -126,7 +116,6 @@ const CurrencyConverterScreen = () => {
     const isToVND =
       toCurrency.currencyId === "VND" || toCurrency.currencyId === "VNĐ";
 
-    // 👉 Ưu tiên hiển thị VND ở bên phải
     if (isToVND) {
       const rate = convert(1, fromCurrency.currencyId, toCurrency.currencyId);
       if (rate === null) return t("currency_converter.not_available");
@@ -136,7 +125,6 @@ const CurrencyConverterScreen = () => {
       )} ${toCurrency.currencyId}`;
     }
 
-    // 👉 Nếu FROM là VND → đảo chiều
     if (isFromVND) {
       const rate = convert(1, toCurrency.currencyId, fromCurrency.currencyId);
       if (rate === null || rate === 0) return t("currency_converter.not_available");
@@ -146,7 +134,6 @@ const CurrencyConverterScreen = () => {
       )} ${fromCurrency.currencyId} = 1 ${toCurrency.currencyId}`;
     }
 
-    // 👉 Các currency khác
     const rate = convert(1, fromCurrency.currencyId, toCurrency.currencyId);
     if (rate === null) return t("currency_converter.not_available");
 
@@ -195,9 +182,7 @@ const CurrencyConverterScreen = () => {
           )}
         </View>
 
-        {/* Main Card */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
-          {/* FROM */}
           <View style={styles.section}>
             <View style={styles.labelRow}>
               <CustomText style={[styles.label, { color: colors.text }]}>{t("currency_converter.from")}</CustomText>
@@ -223,7 +208,6 @@ const CurrencyConverterScreen = () => {
             <CustomText style={[styles.currencyName, { color: colors.icon }]}>{fromCurrency.name}</CustomText>
           </View>
 
-          {/* Swap */}
           <View style={styles.swapContainer}>
             <TouchableOpacity
               style={[styles.swapButton, { backgroundColor: "transparent", overflow: "hidden" }]}
@@ -243,7 +227,6 @@ const CurrencyConverterScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* TO */}
           <View style={styles.section}>
             <View style={styles.labelRow}>
               <CustomText style={[styles.label, { color: colors.text }]}>{t("currency_converter.to")}</CustomText>
@@ -272,7 +255,6 @@ const CurrencyConverterScreen = () => {
           </View>
         </View>
 
-        {/* Rate Card */}
         <View style={[styles.rateCard, { backgroundColor: colors.card }]}>
           <Ionicons name="analytics-outline" size={24} color={colors.tint} />
           <View style={{ flex: 1 }}>
@@ -293,159 +275,5 @@ const CurrencyConverterScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: wp(5),
-    paddingVertical: hp(2),
-    gap: normalize(16),
-  },
-
-  // Loading
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: normalize(12),
-  },
-  loadingText: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.regular,
-  },
-
-  // Subtitle
-  subtitleRow: {
-    gap: normalize(4),
-  },
-  subtitle: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.regular,
-    opacity: 0.7,
-    lineHeight: normalize(20),
-  },
-  updateTime: {
-    fontSize: normalize(12),
-    fontFamily: Fonts.regular,
-    opacity: 0.6,
-  },
-
-  // Card
-  card: {
-    borderRadius: normalize(16),
-    padding: normalize(20),
-    gap: normalize(24),
-  },
-
-  // Section
-  section: {
-    gap: normalize(12),
-  },
-  labelRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  label: {
-    fontSize: normalize(15),
-    fontFamily: Fonts.medium,
-    lineHeight: normalize(20),
-  },
-
-  // Currency Badge
-  currencyBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: normalize(6),
-    paddingHorizontal: normalize(12),
-    paddingVertical: normalize(6),
-    borderRadius: normalize(100),
-  },
-  currencyBadgeText: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.bold,
-  },
-
-  // Currency Name
-  currencyName: {
-    fontSize: normalize(13),
-    fontFamily: Fonts.regular,
-  },
-
-  // Large Input Styles
-  largeInputContainer: {
-    height: normalize(60),
-    backgroundColor: "transparent",
-    paddingHorizontal: 0,
-    borderBottomWidth: 2,
-    borderRadius: 0,
-  },
-  largeCurrency: {
-    fontSize: normalize(24),
-    marginRight: normalize(8),
-  },
-  largeInput: {
-    fontSize: normalize(32),
-  },
-
-  // Swap
-  swapContainer: {
-    alignItems: "center",
-    marginVertical: normalize(-8),
-  },
-  swapButton: {
-    width: normalize(48),
-    height: normalize(48),
-    borderRadius: normalize(24),
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-
-  // Rate Card
-  rateCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: normalize(16),
-    borderRadius: normalize(16),
-    gap: normalize(12),
-  },
-  rateIconWrapper: {
-    width: normalize(48),
-    height: normalize(48),
-    borderRadius: normalize(12),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rateInfo: {
-    flex: 1,
-    gap: normalize(4),
-  },
-  rateLabel: {
-    fontSize: normalize(13),
-    fontFamily: Fonts.regular,
-  },
-  rateValue: {
-    fontSize: normalize(15),
-    fontFamily: Fonts.bold,
-  },
-  refreshButton: {
-    padding: normalize(8),
-  },
-
-  // Disclaimer
-  disclaimer: {
-    fontSize: normalize(12),
-    fontFamily: Fonts.regular,
-    textAlign: "center",
-    opacity: 0.6,
-  },
-});
 
 export default CurrencyConverterScreen;

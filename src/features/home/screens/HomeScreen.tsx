@@ -174,6 +174,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       params: {
         category: JSON.stringify({
           category_id: category.category_id,
+          category_code: category.category_code,
           name: category.name,
           icon: getValidIconName(category.icon || 'pricetag-outline'),
           color: category.color || '#9E9E9E',

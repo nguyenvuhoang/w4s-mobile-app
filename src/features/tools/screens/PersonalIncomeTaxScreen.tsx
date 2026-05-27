@@ -15,7 +15,6 @@ import {
 } from "@/config/TaxConfig";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Tokens } from "@/core/theme/theme";
-import { Fonts } from "@/core/theme/font";
 import { hp, normalize, wp } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -32,6 +31,7 @@ import {
 } from "react-native";
 import CustomText from "@/components/base/CustomText";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { styles } from "../styles/PersonalIncomeTaxScreen.styles";
 
 type IncomeType = "gross" | "net";
 
@@ -160,408 +160,393 @@ const PersonalIncomeTaxScreen = () => {
             { paddingBottom: hp(2) + insets.bottom },
           ]}
         >
-        {/* Subtitle */}
-        <ThemedText style={[styles.subtitle, { color: colors.text, opacity: 0.7 }]}>
-          {t("pit.subtitle")}
-        </ThemedText>
-
-        {/* Income Type Toggle */}
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <ThemedText style={[styles.cardLabel, { color: colors.text }]}>
-            {t("pit.income_type_question")}
-          </ThemedText>
-          <View style={[styles.toggleContainer, { backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)" }]}>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                { backgroundColor: incomeType === "gross" ? "transparent" : colors.background, overflow: "hidden" },
-              ]}
-              onPress={() => setIncomeType("gross")}
-              activeOpacity={0.7}
-            >
-              {incomeType === "gross" && (
-                <LinearGradient
-                  colors={Tokens.gradients.base}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={StyleSheet.absoluteFill}
-                />
-              )}
-              <ThemedText
-                style={[styles.toggleText, { color: incomeType === "gross" ? "#fff" : colors.text }]}
-              >
-                {t("pit.gross_salary")}
-              </ThemedText>
-              <ThemedText
-                style={[styles.toggleSubText, { color: incomeType === "gross" ? "rgba(255,255,255,0.75)" : colors.text, opacity: incomeType === "gross" ? 1 : 0.6 }]}
-              >
-                {t("pit.gross_desc")}
-              </ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                { backgroundColor: incomeType === "net" ? "transparent" : colors.background, overflow: "hidden" },
-              ]}
-              onPress={() => setIncomeType("net")}
-              activeOpacity={0.7}
-            >
-              {incomeType === "net" && (
-                <LinearGradient
-                  colors={Tokens.gradients.base}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={StyleSheet.absoluteFill}
-                />
-              )}
-              <ThemedText
-                style={[styles.toggleText, { color: incomeType === "net" ? "#fff" : colors.text }]}
-              >
-                {t("pit.net_salary")}
-              </ThemedText>
-              <ThemedText
-                style={[styles.toggleSubText, { color: incomeType === "net" ? "rgba(255,255,255,0.75)" : colors.text, opacity: incomeType === "net" ? 1 : 0.6 }]}
-              >
-                {t("pit.net_desc")}
-              </ThemedText>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Input Card */}
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <ThemedText style={[styles.cardTitle, { color: colors.text }]}>
-            {incomeType === "gross" ? t("pit.input_gross_label") : t("pit.input_net_label")}
+          <ThemedText style={[styles.subtitle, { color: colors.text, opacity: 0.7 }]}>
+            {t("pit.subtitle")}
           </ThemedText>
 
-          <View style={styles.section}>
-            <MoneyInput
-              value={monthlyIncome}
-              onChange={setMonthlyIncome}
-              currency={t("pit.currency_symbol")}
-              placeholder="0"
-              containerStyle={styles.largeInputContainer}
-              currencyStyle={styles.largeCurrency}
-              inputStyle={styles.largeInput}
-            />
+          <View style={[styles.card, { backgroundColor: colors.card }]}>
+            <ThemedText style={[styles.cardLabel, { color: colors.text }]}>
+              {t("pit.income_type_question")}
+            </ThemedText>
+            <View style={[styles.toggleContainer, { backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)" }]}>
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  { backgroundColor: incomeType === "gross" ? "transparent" : colors.background, overflow: "hidden" },
+                ]}
+                onPress={() => setIncomeType("gross")}
+                activeOpacity={0.7}
+              >
+                {incomeType === "gross" && (
+                  <LinearGradient
+                    colors={Tokens.gradients.base}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                )}
+                <ThemedText
+                  style={[styles.toggleText, { color: incomeType === "gross" ? "#fff" : colors.text }]}
+                >
+                  {t("pit.gross_salary")}
+                </ThemedText>
+                <ThemedText
+                  style={[styles.toggleSubText, { color: incomeType === "gross" ? "rgba(255,255,255,0.75)" : colors.text, opacity: incomeType === "gross" ? 1 : 0.6 }]}
+                >
+                  {t("pit.gross_desc")}
+                </ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  { backgroundColor: incomeType === "net" ? "transparent" : colors.background, overflow: "hidden" },
+                ]}
+                onPress={() => setIncomeType("net")}
+                activeOpacity={0.7}
+              >
+                {incomeType === "net" && (
+                  <LinearGradient
+                    colors={Tokens.gradients.base}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                )}
+                <ThemedText
+                  style={[styles.toggleText, { color: incomeType === "net" ? "#fff" : colors.text }]}
+                >
+                  {t("pit.net_salary")}
+                </ThemedText>
+                <ThemedText
+                  style={[styles.toggleSubText, { color: incomeType === "net" ? "rgba(255,255,255,0.75)" : colors.text, opacity: incomeType === "net" ? 1 : 0.6 }]}
+                >
+                  {t("pit.net_desc")}
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <View style={[styles.card, { backgroundColor: colors.card }]}>
+            <ThemedText style={[styles.cardTitle, { color: colors.text }]}>
+              {incomeType === "gross" ? t("pit.input_gross_label") : t("pit.input_net_label")}
+            </ThemedText>
 
-          {/* Bảo hiểm bắt buộc */}
-          <View style={styles.section}>
-            <View style={styles.labelWithToggle}>
-              <ThemedText style={[styles.label, { color: colors.text }]}>
-                {t("pit.insurance_label")}
-              </ThemedText>
-              <View style={[styles.miniToggle, { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)" }]}>
-                <TouchableOpacity
-                  style={[
-                    styles.miniToggleButton,
-                    insuranceMode === "auto" && { backgroundColor: "transparent", overflow: "hidden" },
-                  ]}
-                  onPress={() => { setInsuranceMode("auto"); setCompulsoryInsurance(""); }}
-                  activeOpacity={0.7}
-                >
-                  {insuranceMode === "auto" && (
-                    <LinearGradient
-                      colors={Tokens.gradients.base}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={StyleSheet.absoluteFill}
-                    />
-                  )}
-                  <ThemedText
+            <View style={styles.section}>
+              <MoneyInput
+                value={monthlyIncome}
+                onChange={setMonthlyIncome}
+                currency={t("pit.currency_symbol")}
+                placeholder="0"
+                containerStyle={styles.largeInputContainer}
+                currencyStyle={styles.largeCurrency}
+                inputStyle={styles.largeInput}
+              />
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <View style={styles.section}>
+              <View style={styles.labelWithToggle}>
+                <ThemedText style={[styles.label, { color: colors.text }]}>
+                  {t("pit.insurance_label")}
+                </ThemedText>
+                <View style={[styles.miniToggle, { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)" }]}>
+                  <TouchableOpacity
                     style={[
-                      styles.miniToggleText,
-                      { color: insuranceMode === "auto" ? "#fff" : colors.text, opacity: insuranceMode === "auto" ? 1 : 0.6 },
+                      styles.miniToggleButton,
+                      insuranceMode === "auto" && { backgroundColor: "transparent", overflow: "hidden" },
                     ]}
+                    onPress={() => { setInsuranceMode("auto"); setCompulsoryInsurance(""); }}
+                    activeOpacity={0.7}
                   >
-                    {t("pit.auto")}
-                  </ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.miniToggleButton,
-                    insuranceMode === "manual" && { backgroundColor: "transparent", overflow: "hidden" },
-                  ]}
-                  onPress={() => { setInsuranceMode("manual"); setCompulsoryInsurance("0"); }}
-                  activeOpacity={0.7}
-                >
-                  {insuranceMode === "manual" && (
-                    <LinearGradient
-                      colors={Tokens.gradients.base}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={StyleSheet.absoluteFill}
-                    />
-                  )}
-                  <ThemedText
+                    {insuranceMode === "auto" && (
+                      <LinearGradient
+                        colors={Tokens.gradients.base}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    )}
+                    <ThemedText
+                      style={[
+                        styles.miniToggleText,
+                        { color: insuranceMode === "auto" ? "#fff" : colors.text, opacity: insuranceMode === "auto" ? 1 : 0.6 },
+                      ]}
+                    >
+                      {t("pit.auto")}
+                    </ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity
                     style={[
-                      styles.miniToggleText,
-                      { color: insuranceMode === "manual" ? "#fff" : colors.text, opacity: insuranceMode === "manual" ? 1 : 0.6 },
+                      styles.miniToggleButton,
+                      insuranceMode === "manual" && { backgroundColor: "transparent", overflow: "hidden" },
                     ]}
+                    onPress={() => { setInsuranceMode("manual"); setCompulsoryInsurance("0"); }}
+                    activeOpacity={0.7}
                   >
-                    {t("pit.manual")}
-                  </ThemedText>
-                </TouchableOpacity>
+                    {insuranceMode === "manual" && (
+                      <LinearGradient
+                        colors={Tokens.gradients.base}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    )}
+                    <ThemedText
+                      style={[
+                        styles.miniToggleText,
+                        { color: insuranceMode === "manual" ? "#fff" : colors.text, opacity: insuranceMode === "manual" ? 1 : 0.6 },
+                      ]}
+                    >
+                      {t("pit.manual")}
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    opacity: insuranceMode === "auto" ? 0.6 : 1,
+                  },
+                ]}
+              >
+                <ThemedText style={[styles.inputCurrency, { color: colors.tint }]}>
+                  {t("pit.currency_symbol")}
+                </ThemedText>
+                <TextInput
+                  value={
+                    insuranceMode === "auto"
+                      ? formatMoney(calculation.insurance)
+                      : compulsoryInsurance
+                        ? formatMoney(parseFloat(compulsoryInsurance))
+                        : ""
+                  }
+                  onChangeText={handleInsuranceChange}
+                  keyboardType="numeric"
+                  placeholder={insuranceMode === "manual" ? t("pit.manual_insurance_placeholder") : ""}
+                  placeholderTextColor={isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)"}
+                  editable={insuranceMode === "manual"}
+                  style={[styles.textInput, { color: colors.text }]}
+                />
               </View>
             </View>
-            <View
-              style={[
-                styles.inputContainer,
-                {
-                  backgroundColor: colors.background,
-                  borderColor: colors.border,
-                  opacity: insuranceMode === "auto" ? 0.6 : 1,
-                },
-              ]}
-            >
-              <ThemedText style={[styles.inputCurrency, { color: colors.tint }]}>
-                {t("pit.currency_symbol")}
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <View style={styles.section}>
+              <ThemedText style={[styles.label, { color: colors.text }]}>
+                {t("pit.dependents_label")}
               </ThemedText>
-              <TextInput
-                value={
-                  insuranceMode === "auto"
-                    ? formatMoney(calculation.insurance)
-                    : compulsoryInsurance
-                      ? formatMoney(parseFloat(compulsoryInsurance))
-                      : ""
-                }
-                onChangeText={handleInsuranceChange}
-                keyboardType="numeric"
-                placeholder={insuranceMode === "manual" ? t("pit.manual_insurance_placeholder") : ""}
-                placeholderTextColor={isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)"}
-                editable={insuranceMode === "manual"}
-                style={[styles.textInput, { color: colors.text }]}
+              <TouchableOpacity
+                style={[
+                  styles.selectButton,
+                  { backgroundColor: colors.background, borderColor: colors.border },
+                ]}
+                onPress={() => setDependentModalVisible(true)}
+                activeOpacity={0.7}
+              >
+                <ThemedText style={[styles.selectText, { color: colors.text }]}>
+                  {t("pit.people_count", { count: dependents.value })}
+                </ThemedText>
+                <Ionicons name="chevron-down" size={normalize(18)} color={isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.4)"} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <View style={styles.section}>
+              <ThemedText style={[styles.label, { color: colors.text }]}>
+                {t("pit.other_deductions_label")}
+              </ThemedText>
+              <MoneyInput
+                value={otherDeduction}
+                onChange={setOtherDeduction}
+                currency={t("pit.currency_symbol")}
+                placeholder="0"
+                containerStyle={styles.largeInputContainer}
+                currencyStyle={styles.largeCurrency}
+                inputStyle={styles.largeInput}
               />
             </View>
           </View>
 
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-          {/* Số người phụ thuộc */}
-          <View style={styles.section}>
-            <ThemedText style={[styles.label, { color: colors.text }]}>
-              {t("pit.dependents_label")}
+          <View style={[styles.card, styles.resultCard, { backgroundColor: colors.card }]}>
+            <ThemedText style={[styles.cardTitle, { color: colors.text }]}>
+              {t("pit.result_title")}
             </ThemedText>
-            <TouchableOpacity
-              style={[
-                styles.selectButton,
-                { backgroundColor: colors.background, borderColor: colors.border },
-              ]}
-              onPress={() => setDependentModalVisible(true)}
-              activeOpacity={0.7}
-            >
-              <ThemedText style={[styles.selectText, { color: colors.text }]}>
-                {t("pit.people_count", { count: dependents.value })}
+
+            {/* 
+              ── THUẬT NGỮ ĐÚNG ──────────────────────────────────────────
+              Thu nhập tính thuế  = Gross − Bảo hiểm
+                                    (chưa trừ giảm trừ gia cảnh)
+              Thu nhập chịu thuế  = Thu nhập tính thuế − Giảm trừ gia cảnh
+                                    (con số thực sự đưa vào biểu thuế)
+              ─────────────────────────────────────────────────────────── 
+            */}
+
+            <View style={styles.resultItem}>
+              <View style={styles.resultLabelGroup}>
+                <ThemedText style={[styles.resultLabel, { color: colors.text }]}>
+                  {t("pit.taxable_income")}
+                </ThemedText>
+                <ThemedText style={[styles.resultLabelSub, { color: colors.text }]}>
+                  {t("pit.gross_minus_insurance")}
+                </ThemedText>
+              </View>
+              <ThemedText
+                style={[styles.resultValue, { color: colors.text }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                {formatMoney(calculation.taxableIncome)} {t("pit.currency_symbol")}
               </ThemedText>
-              <Ionicons name="chevron-down" size={normalize(18)} color={isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.4)"} />
-            </TouchableOpacity>
+            </View>
+
+            <View style={styles.resultItem}>
+              <View style={styles.resultLabelGroup}>
+                <ThemedText style={[styles.resultLabel, { color: colors.text }]}>
+                  {t("pit.tax_assessed_income")}
+                </ThemedText>
+                <ThemedText style={[styles.resultLabelSub, { color: colors.text }]}>
+                  {t("pit.after_deductions")}
+                </ThemedText>
+              </View>
+              <ThemedText
+                style={[styles.resultValue, { color: colors.text }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                {formatMoney(calculation.taxableAmount)} {t("pit.currency_symbol")}
+              </ThemedText>
+            </View>
+
+            <View style={styles.resultItem}>
+              <View style={styles.resultLabelGroup}>
+                <ThemedText style={[styles.resultLabel, { color: colors.text }]}>
+                  {t("pit.pit_amount")}
+                </ThemedText>
+                <ThemedText style={[styles.resultLabelSub, { color: colors.text }]}>
+                  {t("pit.on_tax_assessed_income")}
+                </ThemedText>
+              </View>
+              <ThemedText
+                style={[styles.resultValue, { color: colors.text }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                {formatMoney(calculation.tax)} {t("pit.currency_symbol")}
+              </ThemedText>
+            </View>
+
+            <View style={styles.resultItem}>
+              <View style={styles.resultLabelGroup}>
+                <ThemedText style={[styles.resultLabel, { color: colors.text }]}>
+                  {t("pit.net_income")}
+                </ThemedText>
+                <ThemedText style={[styles.resultLabelSub, { color: colors.text }]}>
+                  {t("pit.net_income_calc")}
+                </ThemedText>
+              </View>
+              <ThemedText
+                style={[styles.resultValue, { color: colors.text }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                {formatMoney(calculation.netIncome)} {t("pit.currency_symbol")}
+              </ThemedText>
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <View style={[styles.taxRateContainer, { backgroundColor: isDark ? colors.tint + "20" : colors.tint + "10" }]}>
+              <View style={styles.taxRateRow}>
+                <ThemedText style={[styles.taxRateLabel, { color: colors.tint }]}>
+                  {t("pit.tax_to_gross_ratio")}
+                </ThemedText>
+                <ThemedText style={[styles.taxRateValue, { color: colors.tint }]}>
+                  {calculation.taxRate.toFixed(1)}%
+                </ThemedText>
+              </View>
+            </View>
           </View>
 
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-          {/* Giảm trừ khác */}
-          <View style={styles.section}>
-            <ThemedText style={[styles.label, { color: colors.text }]}>
-              {t("pit.other_deductions_label")}
-            </ThemedText>
-            <MoneyInput
-              value={otherDeduction}
-              onChange={setOtherDeduction}
-              currency={t("pit.currency_symbol")}
-              placeholder="0"
-              containerStyle={styles.largeInputContainer}
-              currencyStyle={styles.largeCurrency}
-              inputStyle={styles.largeInput}
-            />
-          </View>
-        </View>
-
-        {/* Result Card */}
-        <View style={[styles.card, styles.resultCard, { backgroundColor: colors.card }]}>
-          <ThemedText style={[styles.cardTitle, { color: colors.text }]}>
-            {t("pit.result_title")}
+          <ThemedText style={[styles.disclaimer, { color: colors.text, opacity: 0.5 }]}>
+            {t("pit.disclaimer")}
           </ThemedText>
 
-          {/* 
-            ── THUẬT NGỮ ĐÚNG ──────────────────────────────────────────
-            Thu nhập tính thuế  = Gross − Bảo hiểm
-                                  (chưa trừ giảm trừ gia cảnh)
-            Thu nhập chịu thuế  = Thu nhập tính thuế − Giảm trừ gia cảnh
-                                  (con số thực sự đưa vào biểu thuế)
-            ─────────────────────────────────────────────────────────── 
-          */}
-
-          {/* Dòng 1: Thu nhập tính thuế (Gross − BH) */}
-          <View style={styles.resultItem}>
-            <View style={styles.resultLabelGroup}>
-              <ThemedText style={[styles.resultLabel, { color: colors.text }]}>
-                {t("pit.taxable_income")}
-              </ThemedText>
-              <ThemedText style={[styles.resultLabelSub, { color: colors.text }]}>
-                {t("pit.gross_minus_insurance")}
+          <View style={[styles.noteCard, { backgroundColor: colors.card }]}>
+            <View style={styles.noteHeader}>
+              <Ionicons name="information-circle" size={normalize(20)} color={colors.tint} />
+              <ThemedText style={[styles.noteTitle, { color: colors.text }]}>
+                {t("pit.how_it_works_title")}
               </ThemedText>
             </View>
-            <ThemedText
-              style={[styles.resultValue, { color: colors.text }]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-            >
-              {formatMoney(calculation.taxableIncome)} {t("pit.currency_symbol")}
-            </ThemedText>
-          </View>
 
-          {/* Dòng 2: Thu nhập chịu thuế (sau khi trừ giảm trừ) */}
-          <View style={styles.resultItem}>
-            <View style={styles.resultLabelGroup}>
-              <ThemedText style={[styles.resultLabel, { color: colors.text }]}>
-                {t("pit.tax_assessed_income")}
+            <View style={styles.noteContent}>
+              <ThemedText style={[styles.noteText, { color: colors.text }]}>
+                <CustomText type="bold" style={{ color: colors.text }}>{t("pit.step_1")}</CustomText>{" "}
+                Gross − {t("pit.insurance_label")} ({(INSURANCE_RATE * 100).toFixed(1)}%) ={" "}
+                <CustomText type="bold" style={{ color: colors.text }}>{t("pit.taxable_income")}</CustomText>
               </ThemedText>
-              <ThemedText style={[styles.resultLabelSub, { color: colors.text }]}>
-                {t("pit.after_deductions")}
+
+              <ThemedText style={[styles.noteText, { color: colors.text }]}>
+                <CustomText type="bold" style={{ color: colors.text }}>{t("pit.step_2")}</CustomText>{" "}
+                {t("pit.taxable_income")} − Giảm trừ ({(PERSONAL_DEDUCTION / 1_000_000).toFixed(1)}{t("pit.million_unit")} {t("pit.self")} + {(DEPENDENT_DEDUCTION / 1_000_000).toFixed(1)}{t("pit.million_unit")}/{t("pit.dependent")}) ={" "}
+                <CustomText type="bold" style={{ color: colors.text }}>{t("pit.tax_assessed_income")}</CustomText>
               </ThemedText>
-            </View>
-            <ThemedText
-              style={[styles.resultValue, { color: colors.text }]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-            >
-              {formatMoney(calculation.taxableAmount)} {t("pit.currency_symbol")}
-            </ThemedText>
-          </View>
 
-          {/* Dòng 3: Thuế TNCN */}
-          <View style={styles.resultItem}>
-            <View style={styles.resultLabelGroup}>
-              <ThemedText style={[styles.resultLabel, { color: colors.text }]}>
-                {t("pit.pit_amount")}
+              <ThemedText style={[styles.noteText, { color: colors.text }]}>
+                <CustomText type="bold" style={{ color: colors.text }}>{t("pit.step_3")}</CustomText>{" "}
+                {t("pit.apply_progressive_tax")} <CustomText type="bold" style={{ color: colors.text }}>{t("pit.tax_assessed_income")}</CustomText>:
               </ThemedText>
-              <ThemedText style={[styles.resultLabelSub, { color: colors.text }]}>
-                {t("pit.on_tax_assessed_income")}
-              </ThemedText>
-            </View>
-            <ThemedText
-              style={[styles.resultValue, { color: colors.text }]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-            >
-              {formatMoney(calculation.tax)} {t("pit.currency_symbol")}
-            </ThemedText>
-          </View>
 
-          {/* Dòng 4: Thu nhập thực nhận */}
-          <View style={styles.resultItem}>
-            <View style={styles.resultLabelGroup}>
-              <ThemedText style={[styles.resultLabel, { color: colors.text }]}>
-                {t("pit.net_income")}
-              </ThemedText>
-              <ThemedText style={[styles.resultLabelSub, { color: colors.text }]}>
-                {t("pit.net_income_calc")}
-              </ThemedText>
-            </View>
-            <ThemedText
-              style={[styles.resultValue, { color: colors.text }]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-            >
-              {formatMoney(calculation.netIncome)} {t("pit.currency_symbol")}
-            </ThemedText>
-          </View>
-
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-          {/* Tax Rate */}
-          <View style={[styles.taxRateContainer, { backgroundColor: isDark ? colors.tint + "20" : colors.tint + "10" }]}>
-            <View style={styles.taxRateRow}>
-              <ThemedText style={[styles.taxRateLabel, { color: colors.tint }]}>
-                {t("pit.tax_to_gross_ratio")}
-              </ThemedText>
-              <ThemedText style={[styles.taxRateValue, { color: colors.tint }]}>
-                {calculation.taxRate.toFixed(1)}%
-              </ThemedText>
-            </View>
-          </View>
-        </View>
-
-        <ThemedText style={[styles.disclaimer, { color: colors.text, opacity: 0.5 }]}>
-          {t("pit.disclaimer")}
-        </ThemedText>
-
-        {/* How it works - Note */}
-        <View style={[styles.noteCard, { backgroundColor: colors.card }]}>
-          <View style={styles.noteHeader}>
-            <Ionicons name="information-circle" size={normalize(20)} color={colors.tint} />
-            <ThemedText style={[styles.noteTitle, { color: colors.text }]}>
-              {t("pit.how_it_works_title")}
-            </ThemedText>
-          </View>
-
-          <View style={styles.noteContent}>
-            <ThemedText style={[styles.noteText, { color: colors.text }]}>
-              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.step_1")}</CustomText>{" "}
-              Gross − {t("pit.insurance_label")} ({(INSURANCE_RATE * 100).toFixed(1)}%) ={" "}
-              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.taxable_income")}</CustomText>
-            </ThemedText>
-
-            <ThemedText style={[styles.noteText, { color: colors.text }]}>
-              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.step_2")}</CustomText>{" "}
-              {t("pit.taxable_income")} − Giảm trừ ({(PERSONAL_DEDUCTION / 1_000_000).toFixed(1)}{t("pit.million_unit")} {t("pit.self")} + {(DEPENDENT_DEDUCTION / 1_000_000).toFixed(1)}{t("pit.million_unit")}/{t("pit.dependent")}) ={" "}
-              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.tax_assessed_income")}</CustomText>
-            </ThemedText>
-
-            <ThemedText style={[styles.noteText, { color: colors.text }]}>
-              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.step_3")}</CustomText>{" "}
-              {t("pit.apply_progressive_tax")} <CustomText type="bold" style={{ color: colors.text }}>{t("pit.tax_assessed_income")}</CustomText>:
-            </ThemedText>
-
-            {/* Biểu thuế 5 bậc — 2 cột x 2 dòng + 1 dòng cuối */}
-            <View style={styles.taxBrackets}>
-              <View style={styles.bracketRow}>
+              <View style={styles.taxBrackets}>
+                <View style={styles.bracketRow}>
+                  <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
+                    • {t(TAX_BRACKETS_DISPLAY[0].i18nKey)}: {TAX_BRACKETS_DISPLAY[0].rate}
+                  </ThemedText>
+                  <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
+                    • {t(TAX_BRACKETS_DISPLAY[1].i18nKey)}: {TAX_BRACKETS_DISPLAY[1].rate}
+                  </ThemedText>
+                </View>
+                <View style={styles.bracketRow}>
+                  <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
+                    • {t(TAX_BRACKETS_DISPLAY[2].i18nKey)}: {TAX_BRACKETS_DISPLAY[2].rate}
+                  </ThemedText>
+                  <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
+                    • {t(TAX_BRACKETS_DISPLAY[3].i18nKey)}: {TAX_BRACKETS_DISPLAY[3].rate}
+                  </ThemedText>
+                </View>
                 <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
-                  • {t(TAX_BRACKETS_DISPLAY[0].i18nKey)}: {TAX_BRACKETS_DISPLAY[0].rate}
-                </ThemedText>
-                <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
-                  • {t(TAX_BRACKETS_DISPLAY[1].i18nKey)}: {TAX_BRACKETS_DISPLAY[1].rate}
+                  • {t(TAX_BRACKETS_DISPLAY[4].i18nKey)}: {TAX_BRACKETS_DISPLAY[4].rate}
                 </ThemedText>
               </View>
-              <View style={styles.bracketRow}>
-                <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
-                  • {t(TAX_BRACKETS_DISPLAY[2].i18nKey)}: {TAX_BRACKETS_DISPLAY[2].rate}
+
+              <View style={[styles.noteExample, { backgroundColor: isDark ? colors.tint + "15" : colors.tint + "08" }]}>
+                <ThemedText style={[styles.exampleTitle, { color: colors.tint }]}>
+                  {t("pit.example")}
                 </ThemedText>
-                <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
-                  • {t(TAX_BRACKETS_DISPLAY[3].i18nKey)}: {TAX_BRACKETS_DISPLAY[3].rate}
+                <ThemedText style={[styles.exampleText, { color: colors.text }]}>
+                  {t("pit.tax_assessed_25m")}{"\n"}
+                  {t("pit.example_calc_1")}{"\n"}
+                  {t("pit.example_calc_2")}
                 </ThemedText>
               </View>
-              <ThemedText style={[styles.bracketText, { color: colors.text, opacity: 0.8 }]}>
-                • {t(TAX_BRACKETS_DISPLAY[4].i18nKey)}: {TAX_BRACKETS_DISPLAY[4].rate}
+
+              <ThemedText style={[styles.noteText, { color: colors.text }]}>
+                <CustomText type="bold" style={{ color: colors.text }}>{t("pit.step_4")}</CustomText>{" "}
+                Gross − {t("pit.insurance_label")} − {t("pit.tax")} ={" "}
+                <CustomText type="bold" style={{ color: colors.text }}>{t("pit.net_income")}</CustomText>
               </ThemedText>
             </View>
-
-            {/* Ví dụ cập nhật theo biểu thuế mới */}
-            <View style={[styles.noteExample, { backgroundColor: isDark ? colors.tint + "15" : colors.tint + "08" }]}>
-              <ThemedText style={[styles.exampleTitle, { color: colors.tint }]}>
-                {t("pit.example")}
-              </ThemedText>
-              <ThemedText style={[styles.exampleText, { color: colors.text }]}>
-                {t("pit.tax_assessed_25m")}{"\n"}
-                {t("pit.example_calc_1")}{"\n"}
-                {t("pit.example_calc_2")}
-              </ThemedText>
-            </View>
-
-            <ThemedText style={[styles.noteText, { color: colors.text }]}>
-              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.step_4")}</CustomText>{" "}
-              Gross − {t("pit.insurance_label")} − {t("pit.tax")} ={" "}
-              <CustomText type="bold" style={{ color: colors.text }}>{t("pit.net_income")}</CustomText>
-            </ThemedText>
           </View>
-        </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -578,226 +563,3 @@ const PersonalIncomeTaxScreen = () => {
 };
 
 export default PersonalIncomeTaxScreen;
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: {
-    paddingHorizontal: wp(5),
-    paddingVertical: hp(2),
-    gap: normalize(16),
-  },
-  subtitle: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.regular,
-    lineHeight: normalize(20),
-  },
-  card: {
-    borderRadius: normalize(16),
-    padding: normalize(20),
-    gap: normalize(20),
-  },
-  cardLabel: {
-    fontSize: normalize(15),
-    fontFamily: Fonts.medium,
-    marginBottom: normalize(-8),
-  },
-  cardTitle: {
-    fontSize: normalize(16),
-    fontFamily: Fonts.bold,
-    lineHeight: normalize(22),
-  },
-  toggleContainer: {
-    flexDirection: "row",
-    gap: normalize(8),
-    padding: normalize(4),
-    // backgroundColor: "rgba(0,0,0,0.03)", // Chuyển sang inline để support Dark Mode
-    borderRadius: normalize(100),
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: normalize(10),
-    borderRadius: normalize(100),
-    alignItems: "center",
-    gap: normalize(2),
-  },
-  toggleText: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.medium,
-  },
-  toggleSubText: {
-    fontSize: normalize(11),
-    fontFamily: Fonts.regular,
-  },
-  section: { gap: normalize(12) },
-  label: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.medium,
-    lineHeight: normalize(20),
-  },
-  labelWithToggle: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  miniToggle: {
-    flexDirection: "row",
-    // backgroundColor: "rgba(0,0,0,0.04)", // Chuyển sang inline để support Dark Mode
-    borderRadius: normalize(8),
-    padding: normalize(3),
-    gap: normalize(4),
-  },
-  miniToggleButton: {
-    paddingHorizontal: normalize(12),
-    paddingVertical: normalize(6),
-    borderRadius: normalize(6),
-  },
-  miniToggleText: {
-    fontSize: normalize(12),
-    fontFamily: Fonts.medium,
-  },
-  divider: { height: 1, opacity: 0.2 },
-  largeInputContainer: {
-    height: normalize(56),
-    backgroundColor: "transparent",
-    paddingHorizontal: 0,
-    borderBottomWidth: 2,
-    borderRadius: 0,
-  },
-  largeCurrency: {
-    fontSize: normalize(20),
-    marginRight: normalize(8),
-  },
-  largeInput: { fontSize: normalize(28) },
-  inputContainer: {
-    height: normalize(48),
-    borderRadius: normalize(12),
-    borderWidth: 1,
-    paddingHorizontal: normalize(12),
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  inputCurrency: {
-    fontSize: normalize(16),
-    fontFamily: Fonts.bold,
-    marginRight: normalize(6),
-  },
-  textInput: {
-    flex: 1,
-    fontSize: normalize(15),
-    fontFamily: Fonts.medium,
-    textAlign: "right",
-  },
-  selectButton: {
-    height: normalize(48),
-    borderRadius: normalize(12),
-    borderWidth: 1,
-    paddingHorizontal: normalize(12),
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  selectText: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.medium,
-  },
-
-  // Result
-  resultCard: { gap: normalize(16) },
-  resultItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: normalize(12),
-  },
-  resultLabelGroup: {
-    flexShrink: 0,
-    gap: normalize(2),
-  },
-  resultLabel: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.regular,
-  },
-  resultLabelSub: {
-    fontSize: normalize(11),
-    fontFamily: Fonts.regular,
-    opacity: 0.6,
-  },
-  resultValue: {
-    fontSize: normalize(15),
-    fontFamily: Fonts.bold,
-    textAlign: "right",
-    flex: 1,
-  },
-  taxRateContainer: {
-    borderRadius: normalize(12),
-    padding: normalize(16),
-  },
-  taxRateRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: normalize(12),
-  },
-  taxRateLabel: {
-    fontSize: normalize(13),
-    fontFamily: Fonts.regular,
-    flex: 1,
-  },
-  taxRateValue: {
-    fontSize: normalize(20),
-    fontFamily: Fonts.bold,
-  },
-  disclaimer: {
-    fontSize: normalize(12),
-    fontFamily: Fonts.regular,
-    textAlign: "center",
-    opacity: 0.6,
-  },
-  noteCard: {
-    borderRadius: normalize(16),
-    padding: normalize(20),
-    gap: normalize(16),
-  },
-  noteHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: normalize(8),
-  },
-  noteTitle: {
-    fontSize: normalize(16),
-    fontFamily: Fonts.bold,
-  },
-  noteContent: { gap: normalize(12) },
-  noteText: {
-    fontSize: normalize(14),
-    fontFamily: Fonts.regular,
-    lineHeight: normalize(20),
-  },
-  taxBrackets: {
-    gap: normalize(6),
-    paddingLeft: normalize(12),
-  },
-  bracketRow: {
-    flexDirection: "row",
-    gap: normalize(12),
-  },
-  bracketText: {
-    fontSize: normalize(13),
-    fontFamily: Fonts.regular,
-    flex: 1,
-  },
-  noteExample: {
-    padding: normalize(12),
-    borderRadius: normalize(8),
-    gap: normalize(4),
-  },
-  exampleTitle: {
-    fontSize: normalize(13),
-    fontFamily: Fonts.bold,
-  },
-  exampleText: {
-    fontSize: normalize(13),
-    fontFamily: Fonts.regular,
-    lineHeight: normalize(18),
-  },
-});

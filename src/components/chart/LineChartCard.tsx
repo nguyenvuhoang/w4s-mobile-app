@@ -18,6 +18,7 @@ interface LineChartCardProps {
   color: string;
   data: Array<{ value: number; label: string }>;
   formatYLabel?: (label: string) => string;
+  formatTooltipValue?: (value: number) => string;
   scrollable?: boolean;
   minLabelPx?: number;
   startFromZero?: boolean;
@@ -28,6 +29,7 @@ const LineChartCard: React.FC<LineChartCardProps> = ({
   color,
   data,
   formatYLabel,
+  formatTooltipValue,
   scrollable = false,
   minLabelPx = normalize(15),
   startFromZero = true,
@@ -141,7 +143,7 @@ const LineChartCard: React.FC<LineChartCardProps> = ({
                 Ngày {showLabel}
               </CustomText>
               <CustomText type="bold" size={13} style={{ color, marginTop: 4 }}>
-                {formatCurrency(item.value)}
+                {formatTooltipValue ? formatTooltipValue(item.value) : formatCurrency(item.value)}
               </CustomText>
             </View>
           );

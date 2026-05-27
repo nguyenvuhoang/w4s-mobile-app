@@ -1,7 +1,8 @@
 import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
-import { useExchangeRate } from "@/hooks/useExchangeRate";
+import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
+import { formatConvertedAmount, formatExchangeRate } from "@/utils/formatNumber";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import React, { useMemo } from "react";
@@ -48,53 +49,15 @@ const TransactionAmountInput: React.FC<TransactionAmountInputProps> = ({
 }) => {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
-  const { convert } = useExchangeRate();
+  const { needsConversion: hookNeedsConversion, exchangeRate: hookExchangeRate, convertedAmount: hookConvertedAmount } = useCurrencyConversion({
+    amount,
+    fromCurrencyId: inputCurrency.currencyId,
+    toCurrencyId: walletCurrency.currencyId,
+  });
 
-  // Internal conversion logic
-  const effectiveNeedsConversion = useMemo(() => {
-    if (propsNeedsConversion !== undefined) return propsNeedsConversion;
-    return inputCurrency.currencyId !== walletCurrency.currencyId;
-  }, [propsNeedsConversion, inputCurrency.currencyId, walletCurrency.currencyId]);
-
-  const effectiveExchangeRate = useMemo(() => {
-    if (propsExchangeRate !== null) return propsExchangeRate;
-    if (!effectiveNeedsConversion) return null;
-    const rate = convert(1, inputCurrency.currencyId, walletCurrency.currencyId);
-    if (rate === null) return null;
-    const isVND = walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ";
-    return isVND ? Math.round(rate) : Math.round(rate * 10000) / 10000;
-  }, [propsExchangeRate, effectiveNeedsConversion, inputCurrency.currencyId, walletCurrency.currencyId, convert]);
-
-  const effectiveConvertedAmount = useMemo(() => {
-    if (propsConvertedAmount !== null) return propsConvertedAmount;
-    if (!effectiveNeedsConversion || !amount || amount === "0") return null;
-    const numAmount = parseFloat(amount.replace(/,/g, ""));
-    if (isNaN(numAmount)) return null;
-    const result = convert(numAmount, inputCurrency.currencyId, walletCurrency.currencyId);
-    if (result === null) return null;
-    const isVND = walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ";
-    return isVND ? Math.round(result) : Math.round(result * 100) / 100;
-  }, [propsConvertedAmount, amount, effectiveNeedsConversion, inputCurrency.currencyId, walletCurrency.currencyId, convert]);
-
-  const formatConvertedAmount = (val: number) => {
-    if (walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ") {
-      return Math.round(val).toLocaleString("vi-VN");
-    }
-    return val.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  };
-
-  const formatExchangeRate = (rate: number) => {
-    if (walletCurrency.currencyId === "VND" || walletCurrency.currencyId === "VNĐ") {
-      return Math.round(rate).toLocaleString("vi-VN");
-    }
-    return rate.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4,
-    });
-  };
+  const effectiveNeedsConversion = propsNeedsConversion !== undefined ? propsNeedsConversion : hookNeedsConversion;
+  const effectiveExchangeRate = propsExchangeRate !== null ? propsExchangeRate : hookExchangeRate;
+  const effectiveConvertedAmount = propsConvertedAmount !== null ? propsConvertedAmount : hookConvertedAmount;
 
   const isWarningLimit = hasExceededLimit && selectedType === "expense";
 
@@ -224,14 +187,14 @@ const TransactionAmountInput: React.FC<TransactionAmountInputProps> = ({
           />
           <View style={styles.conversionTextContainer}>
             <CustomText style={[styles.conversionText, { color: colors.icon }]}>
-              ≈ {walletCurrency.symbol} {formatConvertedAmount(effectiveConvertedAmount)}
+              ≈ {walletCurrency.symbol} {formatConvertedAmount(effectiveConvertedAmount, walletCurrency.currencyId)}
               <CustomText style={{ fontSize: normalize(11), opacity: 0.7 }}>
                 {" "}
                 ({walletCurrency.currencyId})
               </CustomText>
             </CustomText>
             <CustomText style={[styles.exchangeRateText, { color: colors.icon }]}>
-              1 {inputCurrency.currencyId} = {formatExchangeRate(effectiveExchangeRate)}{" "}
+              1 {inputCurrency.currencyId} = {formatExchangeRate(effectiveExchangeRate, walletCurrency.currencyId)}{" "}
               {walletCurrency.currencyId}
             </CustomText>
           </View>

@@ -10,10 +10,15 @@ import { COMMAND_NAME } from "@/constants/CommandName";
 import { WORKFLOWCODE } from "@/constants/WorkflowCode";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
+import { useOTP } from "@/contexts/OTPContext";
+import { OTPChannel } from "@/constants/Common";
+import StorageKey from "@/constants/StorageKey";
+import { AppConfig } from "@/config/AppConfig";
 import { changeLanguage as i18nChangeLanguage } from "@/core/i18n/i18n";
 import { useLoginService } from "@/features/auth/hooks/useLoginService";
 import StorageService from "@/services/StorageService";
 import { useApiService } from "@/services/useApiService";
+import { otpRepository } from "@/services/repositories/otp.repository";
 import { DeviceInformation } from "@/types/DataType";
 import { normalize } from "@/utils/layout";
 
@@ -31,6 +36,7 @@ export const useSettingService = () => {
   const [deviceInformation, setDeviceInformation] = useState<
     DeviceInformation[]
   >([]);
+  const [deleteOTPTransactionId, setDeleteOTPTransactionId] = useState<string>("");
 
   // --- HOOKS ---
   const { t, i18n } = useTranslation();
@@ -39,7 +45,8 @@ export const useSettingService = () => {
   // Custom Hooks
   //   const { reloadCache } = CacheService();
   const { showNotification } = useNotification();
-  const { appInfo } = useContext(GlobalContext);
+  const { showOTP } = useOTP();
+  const { appInfo, globalPhone } = useContext(GlobalContext);
   const { handleGetAppInfo } = useLoginService();
   //   const { getSearchData, logout, updateData } = useApiService();
   const { auth } = useApiService();
@@ -194,6 +201,175 @@ export const useSettingService = () => {
     }
   };
 
+  const handleGenerateOTPForDelete = async (phoneNumber: string, type: string = OTPChannel.ZALO) => {
+    try {
+      const response = await otpRepository.generateOTP({
+        phonenumber: phoneNumber,
+        purpose: "DELETEACCOUNT",
+        withoutsession: false,
+        type,
+      });
+
+      if (response.isSuccess()) {
+        const transaction_id = response.getValue("transaction_id") as string;
+        if (transaction_id) {
+          setDeleteOTPTransactionId(transaction_id);
+          return transaction_id;
+        } else {
+          showNotification(t("otpNote.notransactionid"), "error");
+          return null;
+        }
+      } else {
+        showNotification(response.getError(), "error");
+        return null;
+      }
+    } catch (error: any) {
+      showNotification(error.message || t("errors.login.verifyFailed"), "error");
+      return null;
+    }
+  };
+
+  const handleVerifyOTPForDelete = async (phoneNumber: string, otpCode: string, type: string = OTPChannel.ZALO) => {
+    try {
+      const userCode = appInfo?.user_code || await StorageService.getItem(StorageKey.userCode);
+      const response = await otpRepository.verifySMSOTP({
+        phonenumber: phoneNumber,
+        purpose: "DELETEACCOUNT",
+        otpcode: otpCode,
+        verifyotpcode: deleteOTPTransactionId,
+        usercode: userCode,
+        type,
+      });
+
+      if (response.isSuccess()) {
+        const isValid = response.getValue("data");
+        return !!isValid;
+      } else {
+        showNotification(response.getError(), "error");
+        return false;
+      }
+    } catch (error: any) {
+      showNotification(error.message || t("errors.networkError"), "error");
+      return false;
+    }
+  };
+
+  const executeDeleteAccount = async () => {
+    try {
+      const userCode = appInfo?.user_code || await StorageService.getItem(StorageKey.userCode);
+      if (!userCode) {
+        showNotification(t("settings.delete_account_failed") || "Xóa tài khoản thất bại", "error");
+        return false;
+      }
+
+      const response = await auth.deleteAccount(userCode);
+
+      if (response.isSuccess()) {
+        showNotification(
+          t("settings.delete_account_success") || "Yêu cầu xóa tài khoản thành công!",
+          "success",
+          undefined,
+          undefined,
+          undefined,
+          async () => {
+            await StorageService.removeItem(StorageKey.appInfo);
+            await StorageService.removeItem(StorageKey.user);
+            await StorageService.removeItem(StorageKey.isVerifyFirstLogin);
+            await StorageService.removeSecureItem(StorageKey.token);
+            await StorageService.clearSession();
+            router.replace("/(auth)/login");
+          }
+        );
+        return true;
+      } else {
+        showNotification(
+          response.getError() || t("settings.delete_account_failed") || "Xóa tài khoản thất bại",
+          "error"
+        );
+        return false;
+      }
+    } catch (error) {
+      console.error("[useSettingService] executeDeleteAccount error:", error);
+      showNotification(t("settings.delete_account_failed") || "Xóa tài khoản thất bại", "error");
+      return false;
+    }
+  };
+
+  const showDeleteOTPModal = async (phoneNumber: string) => {
+    showOTP({
+      title: t("otpModal.title") || "Xác thực OTP",
+      description: t("otpModal.loginDescription", { phone: phoneNumber }) || `Nhập mã OTP đã được gửi đến số điện thoại ${phoneNumber}`,
+      isresend: true,
+      blockSeconds: 120,
+      showOtpCode: true,
+      handleVerifyOTP: async (otpCode: string) => {
+        const isValid = await handleVerifyOTPForDelete(phoneNumber, otpCode);
+        if (isValid) {
+          return { success: true };
+        }
+        return {
+          success: false,
+          error: t("otpNote.invalidOTP") || "Mã OTP không hợp lệ",
+        };
+      },
+      handleResent: async () => {
+        const newTxId = await handleGenerateOTPForDelete(phoneNumber);
+        if (newTxId) {
+          return { success: true };
+        }
+        return { success: false, error: "Gửi lại OTP thất bại" };
+      },
+      onSuccess: async () => {
+        await executeDeleteAccount();
+      },
+      onError: (error: string) => {
+        showNotification(error, "error");
+      },
+    });
+  };
+
+  const handleDeleteAccount = async () => {
+    showNotification(
+      t("settings.delete_account_confirm_message") ||
+        "Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác và toàn bộ dữ liệu của bạn sẽ bị xóa vĩnh viễn.",
+      "warning",
+      undefined,
+      undefined,
+      async () => {
+        if (AppConfig.FEATURES.REQUIRE_OTP_FOR_DELETE_ACCOUNT) {
+          const userCode = appInfo?.user_code || await StorageService.getItem(StorageKey.userCode);
+          if (!userCode) {
+            showNotification(t("settings.delete_account_failed") || "Xóa tài khoản thất bại", "error");
+            return;
+          }
+
+          let phoneNumber = globalPhone;
+          if (!phoneNumber) {
+            const phoneRes = await auth.getPhoneByUserCode(userCode, "MB");
+            if (phoneRes.isSuccess()) {
+              const items = phoneRes.getValue("items") as Array<{ phone?: string }>;
+              if (items && items.length > 0 && items[0].phone) {
+                phoneNumber = items[0].phone;
+              }
+            }
+          }
+
+          if (!phoneNumber) {
+            showNotification(t("auth.otp_fetch_phone_error") || "Không thể lấy số điện thoại", "error");
+            return;
+          }
+
+          const txId = await handleGenerateOTPForDelete(phoneNumber);
+          if (txId) {
+            await showDeleteOTPModal(phoneNumber);
+          }
+        } else {
+          await executeDeleteAccount();
+        }
+      }
+    );
+  };
+
     // const handleReloadCache = async () => {
     //   const [ok, message] = await reloadCache();
     //   if (ok) {
@@ -283,6 +459,7 @@ export const useSettingService = () => {
     // handleReloadCache,
     handleShareApp,
     handleLoadCached,
+    handleDeleteAccount,
 
     // Device Info
     loginDeviceInformation,

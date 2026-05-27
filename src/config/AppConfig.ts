@@ -4,6 +4,7 @@ export const AppConfig = {
 
   FEATURES: {
     ENABLE_FIAT: false,
+    REQUIRE_OTP_FOR_DELETE_ACCOUNT: false,
   },
 
   SESSION: {

@@ -234,6 +234,7 @@ export const useTransaction = () => {
     category_id?: number;
     event_id?: number;
     wallet_budget_id?: number;
+    category_code?: string;
     from_transaction_date?: string;
     to_transaction_date?: string;
     page_index: number;

@@ -73,7 +73,7 @@ class ApiClient {
       }
 
       const token = userSession?.token ?? "";
-      // console.log(`========Request token==============: ${token}`);
+      console.log(`========Request token==============: ${token}`);
       // console.log(JSON.stringify(deviceInfo));
       return {
         App: "MB",
@@ -259,7 +259,7 @@ class ApiClient {
     let data: any;
     try {
       data = await res.json();
-      console.log("=== Scan Invoice response data:", data);
+      console.log("=== Scan Invoice response data:", JSON.stringify(data));
     } catch {
       data = null;
     }

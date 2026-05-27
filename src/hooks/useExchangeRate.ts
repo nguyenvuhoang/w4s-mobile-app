@@ -15,6 +15,15 @@ let sessionCache: {
   rateDate: string;
 } | null = null;
 
+const normalizeCurrencyCode = (code: string): string => {
+  if (!code) return '';
+  let clean = code.trim().toUpperCase();
+  if (clean === 'VNĐ') {
+    clean = 'VND';
+  }
+  return clean;
+};
+
 export const useExchangeRate = (options: UseExchangeRateOptions = {}) => {
   const { 
     autoFetch = true, 
@@ -79,7 +88,9 @@ export const useExchangeRate = (options: UseExchangeRateOptions = {}) => {
   const buildRateMap = (rateList: ExchangeRate[]): Map<string, ExchangeRate> => {
     const map = new Map<string, ExchangeRate>();
     rateList.forEach(rate => {
-      map.set(rate.currency_code, rate);
+      if (rate.currency_code) {
+        map.set(normalizeCurrencyCode(rate.currency_code), rate);
+      }
     });
     return map;
   };
@@ -88,7 +99,7 @@ export const useExchangeRate = (options: UseExchangeRateOptions = {}) => {
    * Tìm tỉ giá theo currency code
    */
   const getRate = (currencyCode: string): ExchangeRate | null => {
-    return rateMapRef.current.get(currencyCode) || null;
+    return rateMapRef.current.get(normalizeCurrencyCode(currencyCode)) || null;
   };
 
   /**
@@ -101,9 +112,10 @@ export const useExchangeRate = (options: UseExchangeRateOptions = {}) => {
     amountVND: number,
     targetCurrency: string
   ): number | null => {
-    if (targetCurrency === 'VND' || targetCurrency === 'VNĐ') return amountVND;
+    const normTarget = normalizeCurrencyCode(targetCurrency);
+    if (normTarget === 'VND') return amountVND;
 
-    const rate = getRate(targetCurrency);
+    const rate = getRate(normTarget);
     if (!rate || !rate.transfer) {
       console.warn(`[useExchangeRate] Rate not found for VND -> ${targetCurrency}`);
       return null;
@@ -124,9 +136,10 @@ export const useExchangeRate = (options: UseExchangeRateOptions = {}) => {
     amount: number,
     fromCurrency: string
   ): number | null => {
-    if (fromCurrency === 'VND' || fromCurrency === 'VNĐ') return amount;
+    const normFrom = normalizeCurrencyCode(fromCurrency);
+    if (normFrom === 'VND') return amount;
 
-    const rate = getRate(fromCurrency);
+    const rate = getRate(normFrom);
     if (!rate || !rate.transfer) {
       console.warn(`[useExchangeRate] Rate not found for ${fromCurrency} -> VND`);
       return null;
@@ -149,14 +162,16 @@ export const useExchangeRate = (options: UseExchangeRateOptions = {}) => {
     fromCurrency: string,
     toCurrency: string
   ): number | null => {
-    if (fromCurrency === toCurrency) return amount;
+    const normFrom = normalizeCurrencyCode(fromCurrency);
+    const normTo = normalizeCurrencyCode(toCurrency);
+    if (normFrom === normTo) return amount;
 
     // Chuyển sang VNĐ trước
-    const amountVND = convertToVND(amount, fromCurrency);
+    const amountVND = convertToVND(amount, normFrom);
     if (amountVND === null) return null;
 
     // Sau đó chuyển từ VNĐ sang tiền tệ đích
-    return convertFromVND(amountVND, toCurrency);
+    return convertFromVND(amountVND, normTo);
   };
 
   /**

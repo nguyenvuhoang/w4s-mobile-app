@@ -3,6 +3,7 @@ import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
 import SectionHeader from '@/components/base/SectionHeader';
 import PieChartWithLabels from '@/components/chart/PieChartCard';
+import { PERIOD_TYPE } from '@/constants/PeriodType';
 import STORAGE_KEY from '@/constants/StorageKey';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
@@ -12,7 +13,6 @@ import StorageService from '@/services/StorageService';
 import { WalletSummary } from '@/types/wallet';
 import { hp, normalize, wp } from '@/utils/layout';
 import { useReport } from '../hooks/useReport';
-import { PERIOD_TYPE } from '@/constants/PeriodType';
 
 import { FontAwesome6 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,11 +23,11 @@ import {
   Dimensions,
   Pressable,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { styles } from '../styles/ReportScreen.styles';
 
 const { width } = Dimensions.get('window');
 
@@ -62,9 +62,6 @@ const generateTimePeriods = (t: any) => {
   return periods;
 };
 
-// Removed static TIME_PERIODS to generate it inside component with 't'
-
-// Helper: parse category_name JSON {"vi":"...","en":"..."}
 const parseCategoryName = (nameJson: string, lang: string = 'vi'): string => {
   try {
     const parsed = JSON.parse(nameJson);
@@ -73,10 +70,6 @@ const parseCategoryName = (nameJson: string, lang: string = 'vi'): string => {
     return nameJson;
   }
 };
-
-
-/* ================= SCREEN ================= */
-
 
 import { useWalletIncomeExpenseSummary, useWalletOpeningClosingBalance } from '@/features/home/hooks/Usefinancesummary';
 
@@ -131,7 +124,7 @@ const ReportScreen = () => {
         anchor_date: selectedPeriod.date.slice(0, 7),
       });
     }
-  }, [selectedWallet?.walletId, selectedPeriod?.id, fetchBalance, fetchWalletSummary, analyzeCategory, fetchMonthlyDebitSummary]);
+  }, [selectedWallet?.walletId, selectedPeriod?.id, defaultCurrency.currencyId, fetchBalance, fetchWalletSummary, analyzeCategory, fetchMonthlyDebitSummary]);
 
   useFocusEffect(
     useCallback(() => {
@@ -160,15 +153,13 @@ const ReportScreen = () => {
 
   const scrollRef = useRef<ScrollView>(null);
 
-  // Tự động cuộn đến phần tử đang chọn
+  // Automatically scroll to the selected time period tab
   useEffect(() => {
     if (selectedPeriod && scrollRef.current) {
       const index = timePeriods.findIndex(p => p.id === selectedPeriod.id);
       if (index !== -1) {
-        // Một cách đơn giản để cuộn đến vị trí gần đúng (với 4-5 phần tử)
-        // Nếu cần chính xác hơn có thể dùng onLayout của từng item
         scrollRef.current.scrollTo({
-          x: index * normalize(100), // xấp xỉ chiều rộng mỗi tab
+          x: index * normalize(100),
           animated: true
         });
       }
@@ -197,7 +188,6 @@ const ReportScreen = () => {
 
   const formatCurrency = (v: number) => v.toLocaleString('vi-VN') + ' ' + defaultCurrency.symbol;
 
-  // Tách EXPENSE / INCOME từ real data
   const expensePieData = categoryAnalysis
     .filter(c => c.category_group === 'EXPENSE')
     .map(c => ({
@@ -214,7 +204,6 @@ const ReportScreen = () => {
       color: c.color,
     }));
 
-  // Navigate sang màn chi tiết tổng hợp (Trend + Transactions)
   const handleViewGroupDetail = (type: 'EXPENSE' | 'INCOME') => {
     router.push({
       pathname: '/(protected)/report/group-detail',
@@ -230,7 +219,6 @@ const ReportScreen = () => {
     } as any);
   };
 
-  // Navigate sang màn chi tiết theo Category (Màn hình cũ)
   const handleViewCategoryDetail = (type: 'EXPENSE' | 'INCOME') => {
     router.push({
       pathname: '/(protected)/report/category-report-detail',
@@ -250,7 +238,6 @@ const ReportScreen = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <AppHeader title={t('report.title')} showBackButton />
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* ===== HEADER: WALLET SELECTOR ===== */}
         <TouchableOpacity
           style={[styles.headerCard, { backgroundColor: colors.card }]}
           onPress={() => router.push('/(protected)/wallet/wallet-list?mode=select')}
@@ -269,7 +256,6 @@ const ReportScreen = () => {
           </View>
         </TouchableOpacity>
 
-        {/* ===== TIME PERIOD TABS ===== */}
         <ScrollView
           ref={scrollRef}
           horizontal
@@ -303,12 +289,10 @@ const ReportScreen = () => {
           ))}
         </ScrollView>
 
-        {/* ===== INCOME/EXPENSE SUMMARY ===== */}
         <SectionHeader title={t('report.net_income_title')} />
 
         <View style={styles.summaryRow}>
-          {/* Total Expense */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.summaryCard, { backgroundColor: colors.card }]}
             onPress={() => handleViewGroupDetail('EXPENSE')}
             activeOpacity={0.7}
@@ -334,8 +318,7 @@ const ReportScreen = () => {
             </View>
           </TouchableOpacity>
 
-          {/* Total Income */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.summaryCard, { backgroundColor: colors.card }]}
             onPress={() => handleViewGroupDetail('INCOME')}
             activeOpacity={0.7}
@@ -362,7 +345,6 @@ const ReportScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* ===== NET BALANCE ===== */}
         <LinearGradient
           colors={['#0091FF', '#00C2FF']}
           start={{ x: 0, y: 0 }}
@@ -391,7 +373,6 @@ const ReportScreen = () => {
           </View>
         </LinearGradient>
 
-        {/* ===== BALANCE DETAILS CARD ===== */}
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
           <View style={styles.infoRow}>
             <CustomText size={14} style={{ color: colors.text }}>{t('report.opening_balance')}</CustomText>
@@ -408,31 +389,15 @@ const ReportScreen = () => {
           </View>
         </View>
 
-        {/* ===== DEBT SECTION ===== */}
         <View style={[styles.debtCard, { backgroundColor: colors.card }]}>
-          {debitLoading ? (
-            <CustomText size={14} style={{ textAlign: 'center' }}>{t('common.loading')}</CustomText>
-          ) : (
-            debitSummary.length > 0 ? (
-              debitSummary.map((item, index) => {
-                let displayLabel = item.label;
-                if (item.label === 'Borrow') displayLabel = t('report.debit_borrow');
-                else if (item.label === 'Lend') displayLabel = t('report.debit_lend');
-                else if (item.label === 'Other') displayLabel = t('report.debit_other');
-
-                return (
-                  <View key={index} style={styles.debtRow}>
-                    <CustomText size={14}>{displayLabel}</CustomText>
-                    <CustomText type="medium" size={14}>
-                      {formatCurrency(item.amount)}
-                    </CustomText>
-                  </View>
-                );
-              })
-            ) : (
-              <CustomText size={14} style={{ textAlign: 'center', opacity: 0.5 }}>{t('report.no_debt_data')}</CustomText>
-            )
-          )}
+          {(['Borrow', 'Lend', 'Other'] as const).map((label) => (
+            <View key={label} style={styles.debtRow}>
+              <CustomText size={14}>{t(`report.debit_${label.toLowerCase()}`)}</CustomText>
+              <CustomText type="medium" size={14}>
+                {formatCurrency(label === 'Other' ? 0 : (debitSummary.find(d => d.label === label)?.amount || 0))}
+              </CustomText>
+            </View>
+          ))}
         </View>
 
         <SectionHeader
@@ -442,7 +407,6 @@ const ReportScreen = () => {
           onPressAction={() => handleViewCategoryDetail('EXPENSE')}
         />
 
-        {/* ===== PIE CHARTS ===== */}
         <View style={{ marginHorizontal: wp(5) }}>
           {analyzing ? (
             <View style={[styles.loadingCard, { backgroundColor: colors.card }]}>
@@ -489,153 +453,5 @@ const ReportScreen = () => {
     </SafeAreaView>
   );
 };
-
-/* ================= STYLES ================= */
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-
-  headerCard: {
-    marginHorizontal: wp(5),
-    marginTop: hp(2),
-    padding: normalize(12),
-    borderRadius: normalize(12),
-  },
-  walletSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(8),
-  },
-
-  periodTabsScroll: {
-    marginVertical: hp(2),
-  },
-  periodTabsContainer: {
-    paddingHorizontal: wp(5),
-    gap: normalize(8),
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  periodTab: {
-    paddingHorizontal: normalize(16),
-    paddingVertical: normalize(8),
-    borderRadius: normalize(20),
-  },
-  periodTabActive: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-
-  sectionTitle: {
-    paddingHorizontal: wp(5),
-    marginBottom: normalize(12),
-  },
-
-  summaryRow: {
-    flexDirection: 'row',
-    paddingHorizontal: wp(5),
-    gap: normalize(12),
-    marginBottom: normalize(16),
-  },
-  summaryCard: {
-    flex: 1,
-    padding: normalize(16),
-    borderRadius: normalize(12),
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(8),
-  },
-  summaryIcon: {
-    width: normalize(32),
-    height: normalize(32),
-    borderRadius: normalize(8),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  changeIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(4),
-    marginTop: normalize(6),
-  },
-
-  netBalanceGradient: {
-    marginHorizontal: wp(5),
-    padding: normalize(18),
-    borderRadius: normalize(20),
-    marginBottom: normalize(12),
-    minHeight: normalize(120),
-  },
-  netBalanceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(10),
-  },
-  netBalanceIconContainer: {
-    width: normalize(32),
-    height: normalize(32),
-    borderRadius: normalize(16),
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  netBalanceValueContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-    marginTop: normalize(10),
-  },
-
-  infoCard: {
-    marginHorizontal: wp(5),
-    paddingHorizontal: normalize(16),
-    paddingVertical: normalize(4),
-    borderRadius: normalize(16),
-    marginBottom: normalize(16),
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: normalize(12),
-  },
-  divider: {
-    height: 1,
-    width: '100%',
-    opacity: 0.5,
-  },
-
-  debtCard: {
-    marginHorizontal: wp(5),
-    padding: normalize(16),
-    borderRadius: normalize(12),
-    marginBottom: normalize(16),
-    gap: normalize(12),
-  },
-  debtRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  loadingCard: {
-    padding: normalize(32),
-    borderRadius: normalize(12),
-    marginBottom: normalize(16),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyCard: {
-    padding: normalize(32),
-    borderRadius: normalize(12),
-    marginBottom: normalize(16),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
 
 export default ReportScreen;

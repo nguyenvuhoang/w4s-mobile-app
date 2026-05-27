@@ -22,8 +22,10 @@ import StorageService from "@/services/StorageService";
 import { Images } from "@/utils/images";
 import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
+import { useIsFocused } from "@react-navigation/native";
 import Constants from "expo-constants";
 import * as ImagePicker from "expo-image-picker";
+import * as Notifications from "expo-notifications";
 import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useContext, useState } from "react";
@@ -31,21 +33,22 @@ import { useTranslation } from "react-i18next";
 import {
   Image,
   ScrollView,
-  StyleSheet,
   Switch,
   TouchableOpacity,
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { styles } from "../styles/SettingsScreen.styles";
 
 interface SettingsScreenProps {
   navigation: any;
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
+  const isFocused = useIsFocused();
   const { t, i18n } = useTranslation();
   const { showNotification } = useNotification();
-  const { handleLogout, touchIDClick, isUsingTouchID } = useSettingService();
+  const { handleLogout, touchIDClick, isUsingTouchID, handleDeleteAccount } = useSettingService();
   const { appInfo } = useContext(GlobalContext);
   const { mode, setMode, colors, isDark } = useAppTheme();
   const { defaultCurrency, loading, updateDefaultCurrency } =
@@ -63,6 +66,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [updatingCurrency, setUpdatingCurrency] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [reminderHour, setReminderHour] = useState<string | null>(null);
+  const [showTransactionReminderModal, setShowTransactionReminderModal] = useState(false);
   useFocusEffect(
     useCallback(() => {
       const loadSelectedCurrency = async () => {
@@ -89,9 +94,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           setUpdatingCurrency(false);
         }
       };
+      const loadReminderSetting = async () => {
+        try {
+          const savedHour = await StorageService.getItem("transaction_reminder_hour");
+          setReminderHour(savedHour || null);
+        } catch (e) {
+          console.error("Failed to load reminder setting:", e);
+        }
+      };
 
       loadSelectedCurrency();
       getUserProfile();
+      loadReminderSetting();
     }, [updateDefaultCurrency, getUserProfile]),
   );
 
@@ -188,6 +202,89 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     },
   ];
 
+  const handleSetupReminder = async (hourStr: string | null) => {
+    try {
+      if (hourStr) {
+        await StorageService.setItem("transaction_reminder_hour", hourStr);
+        setReminderHour(hourStr);
+      } else {
+        await StorageService.removeItem("transaction_reminder_hour");
+        setReminderHour(null);
+      }
+
+      const prevNotiId = await StorageService.getItem("transaction_reminder_noti_id");
+      if (prevNotiId) {
+        await Notifications.cancelScheduledNotificationAsync(prevNotiId);
+        await StorageService.removeItem("transaction_reminder_noti_id");
+      }
+
+      if (hourStr) {
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status !== 'granted') {
+          showNotification(t("settings.photo_permission_denied") || "Vui lòng cấp quyền thông báo để sử dụng tính năng này", "warning");
+        }
+
+        const hourNum = parseInt(hourStr, 10);
+        const identifier = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: t("settings.reminder_noti_title") || "⏳ Quên nhập giao dịch hôm nay?",
+            body: t("settings.reminder_noti_body") || "Dành 1 phút ghi chép chi tiêu để quản lý tài chính hiệu quả hơn nhé!",
+            sound: true,
+            data: { screen: "add-transaction" },
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour: hourNum,
+            minute: 0,
+            repeats: true,
+          } as Notifications.NotificationTriggerInput,
+        });
+
+        await StorageService.setItem("transaction_reminder_noti_id", identifier);
+        showNotification(t("settings.reminder_setup_success", { hour: hourStr }) || `Đã thiết lập nhắc nhở vào ${hourStr}:00 hằng ngày`, "success");
+      } else {
+        showNotification(t("settings.reminder_cancel_success") || "Đã tắt nhắc nhở nhập giao dịch", "success");
+      }
+    } catch (error) {
+      console.error("[SettingsScreen] handleSetupReminder failed:", error);
+      showNotification("Cài đặt nhắc nhở thất bại", "error");
+    } finally {
+      setShowTransactionReminderModal(false);
+    }
+  };
+
+  const handleTransactionReminder = () => {
+    setShowTransactionReminderModal(true);
+  };
+
+  const reminderActions: ActionItem[] = [
+    {
+      id: "OFF",
+      icon: (!reminderHour ? "checkmark-circle" : "notifications-off-outline") as keyof typeof Ionicons.glyphMap,
+      label: t("settings.reminder_off") || "Không nhận thông báo",
+      onPress: () => handleSetupReminder(null),
+      color: !reminderHour ? colors.tint : colors.icon,
+    },
+    ...[17, 18, 19, 20, 21, 22, 23].map((h) => {
+      const isSelected = reminderHour === String(h);
+      // 🌟 Thiết kế sang trọng: Trạng thái chọn hiển thị checkmark nổi bật, trạng thái thường map icon trực quan theo buổi
+      let iconName = isSelected ? "checkmark-circle" : "time-outline";
+      if (!isSelected) {
+        if (h === 17) iconName = "partly-sunny-outline"; // Chiều tà
+        else if (h >= 18 && h <= 19) iconName = "cloudy-night-outline"; // Tối sớm
+        else iconName = "moon-outline"; // Đêm muộn
+      }
+
+      return {
+        id: String(h),
+        icon: iconName as keyof typeof Ionicons.glyphMap,
+        label: t("settings.reminder_time", { hour: h }) || `${h}:00 hằng ngày`,
+        onPress: () => handleSetupReminder(String(h)),
+        color: isSelected ? colors.tint : colors.text,
+      };
+    }),
+  ];
+
   // Format currency display text
   const getCurrencyDisplayText = () => {
     if (loading) {
@@ -201,7 +298,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["bottom"]}
     >
-      <StatusBar style="light" />
+      {isFocused && <StatusBar style="light" />}
       <AppHeader
         title={t("settings.titleheader")}
         variant="gradient"
@@ -337,8 +434,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <SettingItem
               icon="setting_screen_transaction_reminder"
               title={t("settings.transaction_reminder")}
-              value="OFF"
-              onPress={() => { }}
+              value={reminderHour ? `${reminderHour}:00` : t("settings.reminder_off") || "OFF"}
+              onPress={handleTransactionReminder}
               colors={colors}
             />
             <SettingItem
@@ -431,6 +528,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               }}
               colors={colors}
             />
+            <SettingItem
+              icon="users_user_cross"
+              title={t("settings.delete_account") || "Xóa tài khoản"}
+              onPress={handleDeleteAccount}
+              colors={colors}
+              textColor="#FF3B30"
+            />
             {/* <SettingItem
               icon="trash-outline"
               title={t("settings.clear_cache") || "Xóa dữ liệu bộ đệm"}
@@ -472,6 +576,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         cancelText={t("common.cancel")}
         hasBottomNav={true}
       />
+
+      <BottomActionModal
+        visible={showTransactionReminderModal}
+        onClose={() => setShowTransactionReminderModal(false)}
+        title={t("settings.reminder_title") || "Nhắc nhở nhập giao dịch"}
+        subtitle={t("settings.reminder_subtitle") || "Chọn khung giờ nhận thông báo nhắc nhở"}
+        actions={reminderActions}
+        colors={colors}
+        cancelText={t("common.cancel")}
+        hasBottomNav={true}
+        snapPoints={["90%"]}
+      />
     </SafeAreaView>
   );
 };
@@ -485,6 +601,7 @@ const SettingItem = ({
   badge,
   onPress,
   colors,
+  textColor,
 }: any) => (
   <TouchableOpacity
     style={[styles.settingItem, { borderBottomColor: colors.border }]}
@@ -492,10 +609,10 @@ const SettingItem = ({
   >
     <View style={styles.settingLeft}>
       <View style={styles.settingIconContainer}>
-        <AppIcon name={icon} size={normalize(26)} color={colors.tint} type="Ionicons" />
+        <AppIcon name={icon} size={normalize(26)} color={textColor || colors.tint} type="Ionicons" />
       </View>
       <View style={styles.settingInfo}>
-        <CustomText style={[styles.settingTitle, { color: colors.text }]}>
+        <CustomText style={[styles.settingTitle, { color: textColor || colors.text }]}>
           {title}
         </CustomText>
         {subtitle && (
@@ -565,154 +682,6 @@ const SettingItemWithSwitch = ({
   </View>
 );
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    marginBottom: normalize(60),
-  },
-  header: {
-    paddingHorizontal: normalize(20),
-    paddingVertical: normalize(16),
-  },
-  headerTitle: {
-    fontSize: normalize(24),
-    fontWeight: "bold",
-  },
-  profileSection: {
-    borderRadius: normalize(20),
-    padding: normalize(12),
-    marginHorizontal: normalize(20),
-    marginBottom: normalize(24),
-    alignItems: "center",
-  },
-  profileImage: {
-    width: normalize(80),
-    height: normalize(80),
-    borderRadius: normalize(40),
-    marginBottom: normalize(12),
-  },
-  profileName: {
-    fontSize: normalize(20),
-    fontWeight: "600",
-    marginBottom: normalize(4),
-  },
-  profileEmail: {
-    fontSize: normalize(14),
-    marginBottom: normalize(16),
-  },
-  editButton: {
-    paddingHorizontal: normalize(24),
-    paddingVertical: normalize(10),
-    borderRadius: normalize(20),
-  },
-  editButtonText: {
-    fontSize: normalize(14),
-    fontWeight: "600",
-  },
-  section: {
-    marginBottom: normalize(24),
-  },
-  sectionTitle: {
-    fontSize: normalize(16),
-    fontWeight: "600",
-    paddingHorizontal: normalize(20),
-    marginBottom: normalize(12),
-  },
-  settingsList: {
-    borderRadius: normalize(16),
-    marginHorizontal: normalize(20),
-    overflow: "hidden",
-  },
-  settingItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: normalize(16),
-    paddingVertical: normalize(14),
-  },
-  settingLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    gap: normalize(12),
-  },
-  settingIconContainer: {
-    width: normalize(40),
-    height: normalize(40),
-    borderRadius: normalize(10),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  settingInfo: {
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: normalize(16),
-  },
-  settingSubtitle: {
-    fontSize: normalize(12),
-    marginTop: normalize(2),
-  },
-  settingRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: normalize(8),
-  },
-  settingValue: {
-    fontSize: normalize(14),
-  },
-  badge: {
-    borderRadius: normalize(10),
-    minWidth: normalize(20),
-    height: normalize(20),
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: normalize(6),
-  },
-  badgeText: {
-    fontSize: normalize(12),
-    fontWeight: "600",
-  },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: normalize(8),
-    borderRadius: normalize(16),
-    padding: normalize(16),
-    marginHorizontal: normalize(20),
-    marginBottom: normalize(24),
-  },
-  logoutText: {
-    fontSize: normalize(16),
-    fontWeight: "600",
-    color: "#FF3B30",
-  },
-  footer: {
-    paddingHorizontal: normalize(20),
-    paddingBottom: normalize(24),
-    alignItems: "center",
-  },
-  footerText: {
-    fontSize: normalize(12),
-    marginBottom: normalize(70),
-  },
-  avatarWrapper: {
-    position: "relative",
-    marginBottom: normalize(12),
-  },
-  cameraOverlay: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: normalize(26),
-    height: normalize(26),
-    borderRadius: normalize(13),
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-});
+
 
 export default SettingsScreen;

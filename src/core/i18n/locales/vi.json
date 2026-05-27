@@ -186,7 +186,16 @@
     "action_collect": "Thu nợ",
     "action_repay": "Trả nợ",
     "collect_from": "Thu nợ từ",
-    "repay_to": "Trả nợ cho"
+    "repay_to": "Trả nợ cho",
+    "not_found": "Không tìm thấy sổ nợ",
+    "source_wallet": "Ví liên kết",
+    "loan_no_label": "Mã khoản vay",
+    "principal_amount_label": "Số tiền gốc",
+    "payment_type": "Phương thức thanh toán",
+    "interest_rate": "Lãi suất",
+    "term": "Thời hạn",
+    "select_date": "Chọn ngày",
+    "total_payment": "Tổng thanh toán"
   },
   "paybookSchedule": {
     "title": "Lịch thanh toán",
@@ -459,12 +468,28 @@
     "cache_cleared": "Xóa dữ liệu bộ đệm thành công!",
     "avatar_updated": "Cập nhật ảnh đại diện thành công!",
     "avatar_update_failed": "Cập nhật ảnh đại diện thất bại!",
-    "photo_permission_denied": "Cần quyền truy cập thư viện ảnh"
+    "photo_permission_denied": "Cần quyền truy cập thư viện ảnh",
+    "reminder_off": "Không nhận thông báo",
+    "reminder_time": "{{hour}}H hằng ngày",
+    "reminder_title": "Nhắc nhở nhập giao dịch",
+    "reminder_subtitle": "Chọn khung giờ nhận thông báo nhắc nhở",
+    "reminder_setup_success": "Đã thiết lập nhắc nhở vào {{hour}}H hằng ngày",
+    "reminder_cancel_success": "Đã tắt nhắc nhở nhập giao dịch",
+    "reminder_noti_title": "⏳ Quên nhập giao dịch hôm nay?",
+    "reminder_noti_body": "Dành 1 phút ghi chép chi tiêu để quản lý tài chính hiệu quả hơn nhé!",
+    "delete_account": "Xóa tài khoản",
+    "delete_account_confirm_title": "Xác nhận xóa tài khoản",
+    "delete_account_confirm_message": "Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác và toàn bộ dữ liệu của bạn sẽ bị xóa vĩnh viễn.",
+    "delete_account_success": "Yêu cầu xóa tài khoản thành công!",
+    "delete_account_failed": "Xóa tài khoản thất bại!",
+    "faceIdEnabled": "Đã kích hoạt đăng nhập bằng Face ID thành công!",
+    "touchIdEnabled": "Đã kích hoạt đăng nhập bằng vân tay thành công!",
+    "biometricDisabled": "Đã tắt đăng nhập bằng sinh trắc học thành công!"
   },
   "validation": {
     "invalid_email": "Email không hợp lệ",
     "invalid_phone": "Số điện thoại không hợp lệ",
-    "invalid_fullname": "Họ và tên phải có ít nhất 2 ký tự",
+    "invalid_fullname": "Họ và tên phải gồm ít nhất 2 từ",
     "invalid_address": "Địa chỉ phải có ít nhất 5 ký tự",
     "required_email": "Email không được để trống",
     "required_phone": "Số điện thoại không được để trống",
@@ -1097,5 +1122,33 @@
     "debit_lend": "Cho vay",
     "debit_other": "Khác",
     "saving": "Tiết kiệm"
+  },
+  "errors": {
+    "networkError": "Lỗi kết nối mạng. Vui lòng kiểm tra lại đường truyền.",
+    "networkTimeout": "Kết nối quá hạn. Vui lòng thử lại.",
+    "generalClientError": "Yêu cầu không hợp lệ. Vui lòng thử lại.",
+    "generalServerError": "Hệ thống đang gặp sự cố. Vui lòng thử lại sau.",
+    "unknownError": "Lỗi không xác định",
+    "SYS_BANK_INACTIVE": "Hệ thống ngân hàng tạm thời không hoạt động.",
+    "biometric": {
+      "noBiometric": "Thiết bị không hỗ trợ sinh trắc học hoặc chưa thiết lập.",
+      "noSession": "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.",
+      "toggleFailed": "Cài đặt sinh trắc học thất bại. Vui lòng thử lại.",
+      "noSavedCredentials": "Không tìm thấy thông tin đăng nhập đã lưu cho sinh trắc học.",
+      "failed": "Xác thực sinh trắc học thất bại."
+    },
+    "login": {
+      "verifyFailed": "Xác thực thất bại. Vui lòng thử lại.",
+      "loginFailed": "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin."
+    },
+    "logout": {
+      "logoutFailed": "Đăng xuất thất bại. Vui lòng thử lại."
+    }
+  },
+  "login": {
+    "faceIdPrompt": "Quét khuôn mặt để đăng nhập",
+    "fingerprintPrompt": "Quét vân tay để đăng nhập",
+    "touchIdPrompt": "Quét vân tay để xác thực",
+    "biometricFallback": "Nhập mật khẩu"
   }
 }

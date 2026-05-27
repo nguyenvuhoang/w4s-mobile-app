@@ -14,6 +14,15 @@ import {
 } from "@/utils/currencyLocaleDetector";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+const normalizeCurrencyCode = (code: string): string => {
+  if (!code) return '';
+  let clean = code.trim().toUpperCase();
+  if (clean === 'VNĐ') {
+    clean = 'VND';
+  }
+  return clean;
+};
+
 /**
  * Hook để chuyển đổi tiền tệ từ VND (server response) sang đơn vị mặc định của user
  * Tự động update khi user thay đổi default currency
@@ -145,36 +154,63 @@ export const useCurrencyConverter = () => {
     return found;
   }, [currencyMap, defaultCurrency.currencyId]);
 
+  // Lấy chi tiết format cho từng đồng tiền
+  const getCurrencyDetails = useCallback(
+    (currencyId: string) => {
+      const cleanId = normalizeCurrencyCode(currencyId);
+      let found = currencyMap.get(cleanId);
+      if (!found && cleanId === "VND") {
+        found = currencyMap.get("VNĐ");
+      }
+      if (!found && cleanId === "VNĐ") {
+        found = currencyMap.get("VND");
+      }
+
+      if (found) {
+        return {
+          symbol: found.symbol,
+          symbolPosition: detectSymbolPosition(found.currency_id),
+          decimalPlaces: getDecimalPlaces(found.currency_id),
+          locale: detectLocale(found),
+        };
+      }
+
+      // Fallback cho VND và USD
+      if (cleanId === "VND") {
+        return {
+          symbol: "₫",
+          symbolPosition: "after" as const,
+          decimalPlaces: 0,
+          locale: "vi-VN",
+        };
+      }
+      if (cleanId === "USD") {
+        return {
+          symbol: "$",
+          symbolPosition: "before" as const,
+          decimalPlaces: 2,
+          locale: "en-US",
+        };
+      }
+
+      return {
+        symbol: currencyId,
+        symbolPosition: "before" as const,
+        decimalPlaces: 2,
+        locale: "en-US",
+      };
+    },
+    [currencyMap],
+  );
+
   // Tạo formatter info cho default currency
   const currencyFormatter = useMemo(() => {
-    if (!targetCurrencyObject) {
-      return {
-        locale:
-          defaultCurrency.currencyId === "VND" ||
-          defaultCurrency.currencyId === "VNĐ"
-            ? "vi-VN"
-            : "en-US",
-        symbolPosition: "after" as const,
-        decimalPlaces:
-          defaultCurrency.currencyId === "VND" ||
-          defaultCurrency.currencyId === "VNĐ"
-            ? 0
-            : 2,
-        symbol: defaultCurrency.symbol || "đ",
-        currencyId: defaultCurrency.currencyId || "VND",
-      };
-    }
-
-    const formatter = {
-      locale: detectLocale(targetCurrencyObject),
-      symbolPosition: detectSymbolPosition(targetCurrencyObject.currency_id),
-      decimalPlaces: getDecimalPlaces(targetCurrencyObject.currency_id),
-      symbol: targetCurrencyObject.symbol,
-      currencyId: targetCurrencyObject.currency_id,
+    const details = getCurrencyDetails(defaultCurrency.currencyId);
+    return {
+      ...details,
+      currencyId: defaultCurrency.currencyId || "VND",
     };
-
-    return formatter;
-  }, [targetCurrencyObject, defaultCurrency]);
+  }, [getCurrencyDetails, defaultCurrency.currencyId]);
 
   // Check if ready
   const isReady = useMemo(() => {
@@ -243,17 +279,18 @@ export const useCurrencyConverter = () => {
   );
 
   /**
-   * Format số tiền
+   * Format số tiền (hỗ trợ custom currencyId khi fallback hoặc hiển thị ngoại tệ gốc)
    */
   const formatAmount = useCallback(
-    (amount: number): string => {
-      const { locale, symbolPosition, decimalPlaces, symbol } =
-        currencyFormatter;
+    (amount: number, customCurrencyId?: string): string => {
+      const activeCurrencyId = customCurrencyId || defaultCurrency.currencyId;
+      const { locale, symbolPosition, decimalPlaces, symbol } = getCurrencyDetails(activeCurrencyId);
+      const cleanCurrencyId = normalizeCurrencyCode(activeCurrencyId);
 
       try {
         const formatter = new Intl.NumberFormat(locale, {
           style: "currency",
-          currency: defaultCurrency.currencyId,
+          currency: cleanCurrencyId,
           minimumFractionDigits: decimalPlaces,
           maximumFractionDigits: Math.max(decimalPlaces, amount > 0 && amount < 1 ? 4 : decimalPlaces),
         });
@@ -276,7 +313,7 @@ export const useCurrencyConverter = () => {
         return result;
       }
     },
-    [defaultCurrency, currencyFormatter],
+    [defaultCurrency, getCurrencyDetails],
   );
 
   /**
@@ -328,8 +365,10 @@ export const useCurrencyConverter = () => {
       toCurrencyId?: string,
     ): number | null => {
       const targetCurrency = toCurrencyId || defaultCurrency.currencyId;
+      const normFrom = normalizeCurrencyCode(fromCurrencyId);
+      const normTo = normalizeCurrencyCode(targetCurrency);
 
-      if (fromCurrencyId === targetCurrency) {
+      if (normFrom === normTo) {
         return amount;
       }
 
@@ -337,7 +376,7 @@ export const useCurrencyConverter = () => {
         return null;
       }
 
-      return convert(amount, fromCurrencyId, targetCurrency);
+      return convert(amount, normFrom, normTo);
     },
     [defaultCurrency, convert, isReady],
   );
@@ -355,5 +394,6 @@ export const useCurrencyConverter = () => {
     formatPercent,
     getExchangeRate,
     convertBetween,
+    getCurrencyDetails,
   };
 };

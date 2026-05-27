@@ -2,7 +2,7 @@ import AppHeader from '@/components/base/AppHeader';
 import CustomText from '@/components/base/CustomText';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useAppTheme } from '@/core/theme/ThemeContext';
-import { hp, normalize, wp } from '@/utils/layout';
+import { hp, normalize } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -10,11 +10,11 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { styles } from '../styles/SelectTrackerWalletTypeScreen.styles';
 
 interface TrackerWalletType {
   id: 'basic' | 'debt' | 'saving';
@@ -165,68 +165,6 @@ const SelectTrackerWalletTypeScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { flex: 1, paddingHorizontal: wp(5) },
-  subtitle: {
-    fontSize: normalize(14),
-    marginTop: hp(1),
-    marginBottom: hp(2),
-    lineHeight: normalize(20),
-    textAlign: 'center',
-    maxWidth: wp(70),
-  },
-  typeList: { gap: normalize(16) },
-  typeCard: {
-    flexDirection: 'row',
-    padding: normalize(16),
-    borderRadius: normalize(16),
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  leftContent: {
-    width: '30%',
-    alignItems: 'center',
-    gap: normalize(8),
-  },
-  rightContent: {
-    width: '70%',
-    justifyContent: 'center',
-    paddingLeft: normalize(8),
-  },
-  iconContainer: {
-    width: normalize(52),
-    height: normalize(52),
-    borderRadius: normalize(26),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  typeName: {
-    fontSize: normalize(14),
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  typeDescription: {
-    fontSize: normalize(13),
-    lineHeight: normalize(18),
-    textAlign: 'center',
-  },
-  bottomButton: {
-    paddingHorizontal: wp(5),
-    paddingVertical: hp(2),
-    borderTopWidth: 1,
-  },
-  continueButton: { borderRadius: normalize(16) },
-  continueButtonGradient: {
-    paddingVertical: normalize(16),
-    borderRadius: normalize(16),
-    alignItems: 'center',
-  },
-  continueButtonText: {
-    fontSize: normalize(16),
-    fontWeight: '600',
-    color: '#fff',
-  },
-});
+
 
 export default SelectTrackerWalletTypeScreen;

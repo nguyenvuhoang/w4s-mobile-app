@@ -8,6 +8,7 @@ import { useTransaction } from '@/features/transaction/hooks/useTransaction';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { useCategory } from '@/hooks/useCategory';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { hp, normalize, wp } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -20,14 +21,12 @@ import {
   Modal,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { styles } from '../styles/GroupDetailScreen.styles';
 import { BarChart } from 'react-native-gifted-charts';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-/* ================= TYPES ================= */
 
 type GroupType = 'EXPENSE' | 'INCOME';
 
@@ -46,8 +45,6 @@ interface ScreenData {
   transactions: any[];
   chartBars: { label: string; amount: number }[];
 }
-
-/* ================= HELPERS ================= */
 
 const parseCategoryName = (nameJson: string, lang = 'vi'): string => {
   try {
@@ -80,8 +77,8 @@ const generateTimePeriods = (t: any): TimePeriod[] => {
 };
 
 /**
- * Tạo thông tin 3 tháng cần fetch cho biểu đồ:
- * [T-2, T-1, T_selected] — tháng cuối chính là tháng đang xem.
+ * Prepares the 3 months required for the trend chart:
+ * [T-2, T-1, T_selected] — where the last element is the selected month.
  */
 const buildChartMonths = (
   anchorDate: string,
@@ -108,13 +105,12 @@ const buildChartMonths = (
   return result;
 };
 
-/* ================= SCREEN ================= */
-
 const GroupDetailScreen = () => {
   const { t, i18n } = useTranslation();
   const { colors } = useAppTheme();
   const { wallets, defaultWallet } = useWallet();
   const { defaultCurrency } = useDefaultCurrency();
+  const { convert } = useExchangeRate();
   const params = useLocalSearchParams<{
     wallet_id?: string;
     anchor_date?: string;
@@ -138,12 +134,10 @@ const GroupDetailScreen = () => {
     return timePeriods[timePeriods.length - 1];
   });
 
-  // ─── Hooks chỉ dùng để lấy hàm fetch, không dùng state của hook ───
   const { advancedSearchTransactions } = useTransaction();
   const { fetchWalletSummary } = useWalletIncomeExpenseSummary();
   const { categories: allCategories } = useCategory();
 
-  // ─── Toàn bộ data màn hình nằm trong 1 state ───
   const [screenData, setScreenData] = useState<Omit<ScreenData, 'transactions'>>({
     summary: { total: 0, changePercent: 0, savingAmount: 0 },
     chartBars: [],
@@ -180,11 +174,8 @@ const GroupDetailScreen = () => {
   );
 
   const scrollRef = useRef<ScrollView>(null);
-
-  // Tránh stale closure trong cleanup
   const abortRef = useRef<boolean>(false);
 
-  // ─── Sync wallet từ params (chỉ chạy khi wallets loaded lần đầu) ───
   useEffect(() => {
     if (wallets.length > 0 && !selectedWallet) {
       setSelectedWallet(
@@ -193,13 +184,13 @@ const GroupDetailScreen = () => {
     }
   }, [wallets]);
 
-  // Tự động cuộn đến phần tử đang chọn
+  // Automatically scroll to the selected time period tab
   useEffect(() => {
     if (selectedPeriod && scrollRef.current) {
       const index = timePeriods.findIndex(p => p.id === selectedPeriod.id);
       if (index !== -1) {
         scrollRef.current.scrollTo({
-          x: index * normalize(90), // Xấp xỉ chiều rộng mỗi tab + gap
+          x: index * normalize(90),
           animated: true
         });
       }
@@ -207,13 +198,10 @@ const GroupDetailScreen = () => {
   }, [selectedPeriod?.id, timePeriods]);
 
   /**
-   * Load toàn bộ data 1 lần duy nhất theo wallet + period + group.
-   *
-   * Chiến lược:
-   * - Promise.all 4 task song song: summary tháng hiện tại, transactions,
-   *   summary T-2, summary T-1 (2 tháng còn lại của biểu đồ).
-   * - Tháng hiện tại đã có từ Call 1 nên biểu đồ chỉ cần thêm 2 call nữa.
-   * - Sau khi tất cả resolve → 1 lần setState duy nhất → không nhấp nháy.
+   * Loads all required data in parallel using Promise.all:
+   * - Monthly summary for selected month
+   * - Monthly summaries for selected month - 1 and month - 2 (for trend chart)
+   * All updates are batched into a single state update to prevent UI flickering.
    */
   const loadData = useCallback(async () => {
     if (!selectedWallet || !selectedPeriod) return;
@@ -246,7 +234,6 @@ const GroupDetailScreen = () => {
 
       if (abortRef.current) return;
 
-      // ── Xử lý summary ──
       const isExpense = activeGroup === 'EXPENSE';
       const currentTotal: number = isExpense
         ? (currentSummaryRes?.expense?.total ?? 0)
@@ -258,17 +245,15 @@ const GroupDetailScreen = () => {
       const expenseTotal: number = currentSummaryRes?.expense?.total ?? 0;
       const savingAmount: number = incomeTotal > expenseTotal ? incomeTotal - expenseTotal : 0;
 
-      // ── Xử lý chart bars ──
       const extractAmount = (res: any) =>
         isExpense ? (res?.expense?.total ?? 0) : (res?.income?.total ?? 0);
 
       const chartBars = [
         { label: chartMonths[0].label, amount: extractAmount(chartMonth0Res) },
         { label: chartMonths[1].label, amount: extractAmount(chartMonth1Res) },
-        { label: chartMonths[2].label, amount: currentTotal }, // dùng lại Call 1
+        { label: chartMonths[2].label, amount: currentTotal },
       ];
 
-      // ── 1 lần setState duy nhất ──
       setScreenData({
         summary: { total: currentTotal, changePercent, savingAmount },
         chartBars,
@@ -282,27 +267,23 @@ const GroupDetailScreen = () => {
         setLoadingSummary(false);
       }
     }
-  }, [selectedWallet, selectedPeriod, activeGroup, fetchWalletSummary, t]);
+  }, [selectedWallet, selectedPeriod, activeGroup, fetchWalletSummary, defaultCurrency?.currencyId, t]);
 
-  // Trigger load khi dependency thay đổi
   useEffect(() => {
     loadData();
     return () => {
-      // Đánh dấu abort để tránh setState sau khi unmount / params đổi
       abortRef.current = true;
     };
   }, [loadData]);
 
-  /* ─── Derived values ─── */
   const { summary, chartBars } = screenData;
   const groupLabel = activeGroup === 'EXPENSE' ? t('report.expense_items') : t('report.income_items');
 
   const formatCurrency = useCallback(
-    (v: number) => v.toLocaleString('vi-VN') + ' ' + (selectedWallet?.currency || defaultCurrency.symbol),
-    [selectedWallet, defaultCurrency.symbol],
+    (v: number) => v.toLocaleString('vi-VN') + ' ' + defaultCurrency.symbol,
+    [defaultCurrency.symbol],
   );
 
-  // Group transactions by date (copy logic from TransactionHistoryScreen)
   const formatDateLabel = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -368,7 +349,6 @@ const GroupDetailScreen = () => {
 
   const renderHeader = () => (
     <View>
-      {/* ===== FILTERS ===== */}
       <View style={styles.filterRow}>
         <TouchableOpacity
           style={[styles.filterChip, { backgroundColor: colors.card }]}
@@ -394,7 +374,6 @@ const GroupDetailScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* ===== PERIOD TABS ===== */}
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -423,14 +402,12 @@ const GroupDetailScreen = () => {
         ))}
       </ScrollView>
 
-      {/* ===== LOADING OVERLAY ===== */}
       {(loadingSummary || (loadingTransactions && transactions.length === 0)) && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator color={colors.tint} />
         </View>
       )}
 
-      {/* ===== SUMMARY SECTION ===== */}
       <View style={styles.sectionTitleContainer}>
         <CustomText type="bold" size={18}>
           {activeGroup === 'EXPENSE' ? t('budget.detail.spending_trend') : t('report.income_items')}
@@ -477,7 +454,6 @@ const GroupDetailScreen = () => {
         </View>
       </View>
 
-      {/* ===== CHART SECTION ===== */}
       <View style={[styles.chartContainer, { backgroundColor: colors.card }]}>
         {barData.length > 0 && (
           <BarChart
@@ -506,7 +482,6 @@ const GroupDetailScreen = () => {
         )}
       </View>
 
-      {/* ===== TRANSACTION HISTORY TITLE ===== */}
       <View style={styles.sectionTitleContainer}>
         <CustomText type="bold" size={18}>{t('paybook.transaction_history')}</CustomText>
       </View>
@@ -522,7 +497,6 @@ const GroupDetailScreen = () => {
     );
   };
 
-  /* ─── Render ─── */
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <AppHeader title={t('home.category_detail_title')} showBackButton />
@@ -547,6 +521,8 @@ const GroupDetailScreen = () => {
                 lang={i18n.language}
                 allCategories={allCategories}
                 formatCurrency={formatCurrency}
+                convert={convert}
+                defaultCurrency={defaultCurrency}
               />
             ))}
           </View>
@@ -570,7 +546,6 @@ const GroupDetailScreen = () => {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* ===== GROUP MODAL ===== */}
       <BottomSheetModal
         visible={showGroupModal}
         onClose={() => setShowGroupModal(false)}
@@ -603,7 +578,6 @@ const GroupDetailScreen = () => {
         ))}
       </BottomSheetModal>
 
-      {/* ===== WALLET MODAL ===== */}
       <BottomSheetModal
         visible={showWalletModal}
         onClose={() => setShowWalletModal(false)}
@@ -642,8 +616,6 @@ const GroupDetailScreen = () => {
   );
 };
 
-/* ================= COMPONENTS ================= */
-
 const BottomSheetModal = ({
   visible,
   onClose,
@@ -670,10 +642,21 @@ const BottomSheetModal = ({
   </Modal>
 );
 
-const TransactionItem = ({ item, colors, lang, allCategories, formatCurrency }: any) => {
+const TransactionItem = ({ item, colors, lang, allCategories, formatCurrency, convert, defaultCurrency }: any) => {
   const isExpense = item.type === 'EXPENSE';
   const iconName = item.icon || 'receipt';
   const iconColor = item.color || colors.tint;
+
+  const txnCurrency = item.currency || 'VND';
+  const defaultCurrencyCode = defaultCurrency?.currencyId || 'VND';
+  let displayAmount = Math.abs(item.amount);
+
+  if (txnCurrency !== defaultCurrencyCode && convert) {
+    const converted = convert(Math.abs(item.amount), txnCurrency, defaultCurrencyCode);
+    if (converted !== null) {
+      displayAmount = converted;
+    }
+  }
 
   return (
     <TouchableOpacity
@@ -724,7 +707,7 @@ const TransactionItem = ({ item, colors, lang, allCategories, formatCurrency }: 
       </View>
       <View style={{ alignItems: 'flex-end' }}>
         <CustomText type="bold" size={15} style={{ color: isExpense ? '#F44336' : '#4CAF50' }}>
-          {isExpense ? '-' : '+'}{formatCurrency(Math.abs(item.amount))}
+          {isExpense ? '-' : '+'}{formatCurrency(displayAmount)}
         </CustomText>
         <CustomText size={11} style={{ color: colors.icon }}>
           {new Date(item.occurred_at).toLocaleDateString('vi-VN', {
@@ -743,190 +726,5 @@ const TransactionItem = ({ item, colors, lang, allCategories, formatCurrency }: 
     </TouchableOpacity>
   );
 };
-
-/* ================= STYLES ================= */
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { paddingBottom: hp(2) },
-
-  loadingOverlay: {
-    alignItems: 'center',
-    paddingVertical: normalize(24),
-  },
-
-  filterRow: {
-    flexDirection: 'row',
-    paddingHorizontal: wp(5),
-    marginTop: normalize(12),
-    gap: normalize(10),
-  },
-  filterChip: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: normalize(12),
-    paddingVertical: normalize(10),
-    borderRadius: normalize(15),
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
-  },
-
-  periodScroll: {
-    marginTop: normalize(16),
-  },
-  periodRow: {
-    paddingHorizontal: wp(5),
-    gap: normalize(8),
-    flexDirection: 'row',
-  },
-  periodTab: {
-    paddingHorizontal: normalize(16),
-    paddingVertical: normalize(8),
-    borderRadius: normalize(20),
-    backgroundColor: 'transparent',
-    minWidth: normalize(80),
-    alignItems: 'center',
-  },
-  periodTabActive: {
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-
-  sectionTitleContainer: {
-    paddingHorizontal: wp(5),
-    marginTop: normalize(20),
-    marginBottom: normalize(12),
-  },
-
-  summaryCard: {
-    marginHorizontal: wp(5),
-    padding: normalize(16),
-    borderRadius: normalize(20),
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(10),
-    marginBottom: normalize(12),
-  },
-  summaryIcon: {
-    width: normalize(36),
-    height: normalize(36),
-    borderRadius: normalize(10),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  summaryContent: { gap: normalize(4) },
-  trendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: normalize(4),
-  },
-
-  chartContainer: {
-    marginHorizontal: wp(5),
-    marginTop: normalize(16),
-    padding: normalize(16),
-    paddingBottom: normalize(32), // Tăng padding bottom để nhãn không bị khuyết
-    borderRadius: normalize(20),
-    alignItems: 'center',
-  },
-
-  transactionList: {
-    paddingHorizontal: wp(5),
-    gap: normalize(12),
-  },
-  transactionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: normalize(12),
-    borderRadius: normalize(15),
-    gap: normalize(12),
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.03)',
-  },
-  iconBox: {
-    width: normalize(44),
-    height: normalize(44),
-    borderRadius: normalize(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: normalize(40),
-  },
-  sectionHeader: {
-    paddingVertical: normalize(12),
-    marginTop: normalize(4),
-  },
-  sectionTitle: {
-    fontSize: normalize(15),
-    fontWeight: "600",
-    opacity: 0.7,
-  },
-  footerLoader: {
-    paddingVertical: normalize(20),
-    alignItems: "center",
-  },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  modalSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopLeftRadius: normalize(20),
-    borderTopRightRadius: normalize(20),
-    paddingTop: normalize(12),
-    paddingHorizontal: wp(5),
-    paddingBottom: hp(2),
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  modalHandle: {
-    width: normalize(40),
-    height: normalize(4),
-    borderRadius: normalize(2),
-    alignSelf: 'center',
-    marginBottom: normalize(12),
-  },
-  modalTitle: {
-    marginBottom: normalize(16),
-    textAlign: 'center',
-  },
-  modalItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(12),
-    paddingVertical: normalize(12),
-    paddingHorizontal: normalize(12),
-    borderRadius: normalize(12),
-    marginBottom: normalize(4),
-  },
-  modalItemIcon: {
-    width: normalize(40),
-    height: normalize(40),
-    borderRadius: normalize(10),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
 
 export default GroupDetailScreen;
