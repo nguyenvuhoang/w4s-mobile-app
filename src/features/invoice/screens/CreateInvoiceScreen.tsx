@@ -350,7 +350,7 @@ const CreateRecurringInvoiceScreen = () => {
       wallet_id: selectedWallet.walletId,
       account_number: accountNumber,
       category_id: selectedCategoryData.id,
-      payment_transaction_type: selectedCategoryData.category_type === "INCOME" ? "01" : "02",
+      payment_transaction_type: selectedCategoryData.category_type === "EXPENSE" ? "02" : "03",
       bill_name: parseCategoryName(selectedCategoryData.category_name),
       business_type: null,
       recurring: {
