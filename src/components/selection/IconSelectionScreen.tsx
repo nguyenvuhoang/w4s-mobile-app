@@ -12,9 +12,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Dimensions,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  ScrollView,
+  FlatList,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -22,8 +20,53 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const INITIAL_LOAD = 50;
-const LOAD_MORE_BATCH = 30;
+// ================= ICON ITEM =================
+interface IconItemProps {
+  icon: string;
+  isSelected: boolean;
+  size: number;
+  tintColor: string;
+  textColor: string;
+  onPress: (icon: string) => void;
+}
+
+const IconItem = React.memo<IconItemProps>(
+  ({ icon, isSelected, size, tintColor, textColor, onPress }) => {
+    return (
+      <TouchableOpacity
+        style={[
+          styles.iconItem,
+          {
+            width: size,
+            height: size,
+            backgroundColor: 'transparent',
+            borderColor: 'transparent',
+          },
+          isSelected && {
+            borderColor: tintColor,
+            backgroundColor: tintColor + '10',
+          },
+        ]}
+        onPress={() => onPress(icon)}
+      >
+        <AppIcon
+          name={icon as any}
+          size={normalize(28)}
+          color={isSelected ? tintColor : textColor}
+        />
+      </TouchableOpacity>
+    );
+  },
+  (prevProps, nextProps) => {
+    return (
+      prevProps.icon === nextProps.icon &&
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.size === nextProps.size &&
+      prevProps.tintColor === nextProps.tintColor &&
+      prevProps.textColor === nextProps.textColor
+    );
+  }
+);
 
 // ================= SCREEN =================
 const SelectWalletIconScreen: React.FC = () => {
@@ -33,10 +76,18 @@ const SelectWalletIconScreen: React.FC = () => {
   const categoryParam = params.category as string;
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedIcon, setSelectedIcon] = useState((params.icon as string) || 'wallet');
-  const [displayCount, setDisplayCount] = useState(INITIAL_LOAD);
 
   const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const baseIcons = useMemo(() => {
     if (categoryParam === 'WALLET') {
@@ -74,71 +125,37 @@ const SelectWalletIconScreen: React.FC = () => {
 
   // ===== Filter icons =====
   const filteredIcons = useMemo(() => {
-    return baseIcons.filter(icon =>
-      icon.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery, baseIcons]);
-
-  // Reset display count when search changes
-  useEffect(() => {
-    // When searching, show all results immediately (or at least more)
-    if (searchQuery.trim()) {
-      // Show all search results or limit to reasonable number
-      setDisplayCount(filteredIcons.length);
-    } else {
-      // When not searching, start with initial load
-      setDisplayCount(INITIAL_LOAD);
+    if (!debouncedSearchQuery.trim()) {
+      return baseIcons;
     }
-  }, [searchQuery, filteredIcons.length]);
+    const query = debouncedSearchQuery.toLowerCase();
+    return baseIcons.filter(icon =>
+      icon.toLowerCase().includes(query)
+    );
+  }, [debouncedSearchQuery, baseIcons]);
 
-  // Icons to display (limited by displayCount)
-  const displayedIcons = useMemo(() => {
-    const icons = filteredIcons.slice(0, displayCount);
-    // Ensure unique icons (remove duplicates if any)
-    return Array.from(new Set(icons));
-  }, [filteredIcons, displayCount]);
+  const handleSelectIcon = useCallback((iconName: string) => {
+    setSelectedIcon(iconName);
+  }, []);
 
-  const hasMore = displayCount < filteredIcons.length;
-
-  // Handle scroll to load more
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (!hasMore || isLoading) return;
-
-      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-      const paddingToBottom = 200;
-      const isCloseToBottom =
-        layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
-
-      if (isCloseToBottom) {
-        setIsLoading(true);
-        setDisplayCount(prev => {
-          const newCount = Math.min(prev + LOAD_MORE_BATCH, filteredIcons.length);
-          setTimeout(() => setIsLoading(false), 100); // Debounce
-          return newCount;
-        });
-      }
-    },
-    [hasMore, filteredIcons.length, isLoading]
-  );
-
-  // Alternative handler for when scroll ends at bottom
-  const handleScrollEnd = useCallback(() => {
-    if (!hasMore || isLoading) return;
-    setIsLoading(true);
-    setDisplayCount(prev => {
-      const newCount = Math.min(prev + LOAD_MORE_BATCH, filteredIcons.length);
-      setTimeout(() => setIsLoading(false), 100); // Debounce
-      return newCount;
-    });
-  }, [hasMore, filteredIcons.length, isLoading]);
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    setDebouncedSearchQuery('');
+  }, []);
 
   const handleContinue = async () => {
     await StorageService.setItem('temp_selected_icon', selectedIcon);
     router.back();
   };
+
+  const renderEmptyComponent = useCallback(() => (
+    <View style={styles.emptyContainer}>
+      <AppIcon name="magnifying-glass" size={normalize(48)} color={colors.icon} />
+      <CustomText style={[styles.emptyText, { color: colors.icon }]}>
+        {t('selection.no_results')}
+      </CustomText>
+    </View>
+  ), [colors.icon, t]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -161,7 +178,7 @@ const SelectWalletIconScreen: React.FC = () => {
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <TouchableOpacity onPress={handleClearSearch}>
               <AppIcon name="xmark" size={normalize(16)} color={colors.icon} />
             </TouchableOpacity>
           )}
@@ -170,56 +187,36 @@ const SelectWalletIconScreen: React.FC = () => {
         {/* ===== ICON COUNT ===== */}
         <View style={styles.iconCountContainer}>
           <CustomText style={[styles.iconCountText, { color: colors.icon }]}>
-            {t('selection.showing')} {displayedIcons.length} / {filteredIcons.length} icons
+            {t('selection.showing')} {filteredIcons.length} / {baseIcons.length} icons
           </CustomText>
         </View>
 
-        {/* ===== ICON GRID WITH PROGRESSIVE LOADING ===== */}
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.iconGridContainer}
-          onScroll={handleScroll}
-          onMomentumScrollEnd={handleScrollEnd}
-          scrollEventThrottle={400}
-        >
-          <View style={styles.iconGrid}>
-            {displayedIcons.map(icon => (
-              <TouchableOpacity
-                key={icon}
-                style={[
-                  styles.iconItem,
-                  {
-                    width: ITEM_SIZE,
-                    height: ITEM_SIZE,
-                    backgroundColor: 'transparent',
-                    borderColor: 'transparent',
-                  },
-                  selectedIcon === icon && {
-                    borderColor: colors.tint,
-                    backgroundColor: colors.tint + '10',
-                  },
-                ]}
-                onPress={() => setSelectedIcon(icon)}
-              >
-                <AppIcon
-                  name={icon as any}
-                  size={normalize(28)}
-                  color={selectedIcon === icon ? colors.tint : colors.text}
-                />
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Loading more indicator */}
-          {hasMore && (
-            <View style={styles.loadingMore}>
-              <CustomText style={[styles.loadingMoreText, { color: colors.icon }]}>
-                {t('selection.scroll_for_more')}
-              </CustomText>
-            </View>
+        {/* ===== ICON GRID ===== */}
+        <FlatList
+          key={numColumns}
+          data={filteredIcons}
+          numColumns={numColumns}
+          keyExtractor={item => item}
+          renderItem={({ item }) => (
+            <IconItem
+              icon={item}
+              isSelected={selectedIcon === item}
+              size={ITEM_SIZE}
+              tintColor={colors.tint}
+              textColor={colors.text}
+              onPress={handleSelectIcon}
+            />
           )}
-        </ScrollView>
+          columnWrapperStyle={styles.columnWrapper}
+          ItemSeparatorComponent={() => <View style={styles.rowSeparator} />}
+          contentContainerStyle={styles.iconGridContainer}
+          showsVerticalScrollIndicator={false}
+          initialNumToRender={48}
+          maxToRenderPerBatch={24}
+          windowSize={5}
+          removeClippedSubviews={true}
+          ListEmptyComponent={renderEmptyComponent}
+        />
       </View>
 
       {/* ===== BOTTOM BUTTONS ===== */}
@@ -288,29 +285,20 @@ const styles = StyleSheet.create({
     fontSize: normalize(13),
     textAlign: 'center',
   },
-  scrollView: {
-    flex: 1,
-  },
   iconGridContainer: {
     paddingBottom: hp(2),
   },
-  iconGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  columnWrapper: {
     gap: normalize(8),
+  },
+  rowSeparator: {
+    height: normalize(8),
   },
   iconItem: {
     borderRadius: normalize(12),
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-  },
-  loadingMore: {
-    paddingVertical: normalize(20),
-    alignItems: 'center',
-  },
-  loadingMoreText: {
-    fontSize: normalize(13),
   },
   emptyContainer: {
     alignItems: 'center',

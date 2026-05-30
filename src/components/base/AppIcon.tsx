@@ -25,6 +25,9 @@ const AppIcon: React.FC<AppIconProps> = ({
   type = 'FontAwesome6',
   forceVector = false 
 }) => {
+  // Sanitize size to prevent NaN or Infinity from crashing react-native-svg XML parser
+  const safeSize = (typeof size === 'number' && !isNaN(size) && isFinite(size)) ? size : 24;
+
   // 1. Kiểm tra Icon Local
   if (!forceVector && LOCAL_ICONS[name]) {
     const iconData = LOCAL_ICONS[name];
@@ -34,8 +37,8 @@ const AppIcon: React.FC<AppIconProps> = ({
       return (
         <SvgXml
           xml={iconData}
-          width={size}
-          height={size}
+          width={safeSize}
+          height={safeSize}
           color={color}
           style={style}
         />
@@ -48,8 +51,8 @@ const AppIcon: React.FC<AppIconProps> = ({
         source={iconData}
         style={[
           {
-            width: size,
-            height: size,
+            width: safeSize,
+            height: safeSize,
           },
           style,
         ]}
@@ -79,7 +82,7 @@ const AppIcon: React.FC<AppIconProps> = ({
   const iconElement = (
     <IconComponent
       name={validName as any}
-      size={size}
+      size={safeSize}
       color={color}
     />
   );

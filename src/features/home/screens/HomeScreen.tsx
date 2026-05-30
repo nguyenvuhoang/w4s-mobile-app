@@ -17,7 +17,6 @@ import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { getValidIconName } from "@/utils/iconMapper";
 import { Images } from "@/utils/images";
 import { hp, normalize } from "@/utils/layout";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useCallback, useContext, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -487,7 +486,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           </View>
         )}
         {/* Quick Actions */}
-        <View style={styles.quickActions}>
+        {/* <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.actionButton}
             onPress={handleFeatureDeveloping}
@@ -554,6 +553,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </CustomText>
           </TouchableOpacity>
         </View>
+        */}
 
         {/* Spending Categories */}
         <View style={styles.section}>
