@@ -6,8 +6,8 @@ import BottomSelectModal, {
 import { ThemedText } from "@/components/themed-text";
 import { useNotification } from "@/contexts/NotificationContext";
 import { Fonts } from "@/core/theme/font";
-import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Tokens } from "@/core/theme/theme";
+import { useAppTheme } from "@/core/theme/ThemeContext";
 import { hp, normalize, wp } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -704,6 +704,7 @@ const InterestCalculatorScreen: React.FC = () => {
                       onChange={(v) => updateFeeAmount(fee.id, v)}
                       currency="đ"
                       placeholder="0"
+                      showSuggestions={false}
                     />
                     {fee.editable && (
                       <TouchableOpacity
@@ -1051,6 +1052,7 @@ const InterestCalculatorScreen: React.FC = () => {
               onChange={setNewFeeAmount}
               currency="đ"
               placeholder="0"
+              showSuggestions={false}
             />
 
             <ThemedText style={[styles.label, textColor]}>{t("interest_calculator.fee_type")}</ThemedText>
