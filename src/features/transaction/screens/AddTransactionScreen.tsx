@@ -530,8 +530,10 @@ const AddTransactionScreen = () => {
   }, [getLoans, loanList.length]);
 
   const handlePickImage = async () => {
-    const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!granted) return alert(t("transaction.camera_permission_error"));
+    if (Platform.OS !== "android") {
+      const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!granted) return showNotification(t("transaction.camera_permission_error"), "warning");
+    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,

@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 
 /**
  * Requests permission to access the device's media library.
@@ -13,6 +13,10 @@ export const requestMediaLibraryPermission = async (
   title: string = "Thất bại",
   message: string = "Vui lòng cấp quyền truy cập thư viện ảnh!"
 ): Promise<boolean> => {
+  if (Platform.OS === 'android') {
+    return true;
+  }
+  
   const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
   if (permissionResult.granted === false) {

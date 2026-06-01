@@ -32,6 +32,7 @@ import React, { useCallback, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Image,
+  Platform,
   ScrollView,
   Switch,
   TouchableOpacity,
@@ -112,10 +113,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const handlePickAvatar = async () => {
     try {
       // Xin quyền truy cập thư viện ảnh
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        showNotification(t("settings.photo_permission_denied") || "Cần quyền truy cập thư viện ảnh", "error");
-        return;
+      if (Platform.OS !== "android") {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          showNotification(t("settings.photo_permission_denied") || "Cần quyền truy cập thư viện ảnh", "error");
+          return;
+        }
       }
 
       // Mở thư viện ảnh
