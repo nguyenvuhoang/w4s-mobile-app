@@ -1,7 +1,6 @@
 import CryptoJS from "crypto-js";
 import * as Clipboard from "expo-clipboard";
 import { t } from "i18next";
-import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 
 const CONSTKEY = "abhf@311";
@@ -81,7 +80,6 @@ export const addUniqueMessage = (
 };
 
 export const getErrorMessage = (errorCode: string): string => {
-  const { t } = useTranslation();
   return t(`errors.${errorCode}`);
 };
 
