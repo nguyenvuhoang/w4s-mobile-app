@@ -5,6 +5,7 @@ import SectionHeader from '@/components/base/SectionHeader';
 import PieChartWithLabels from '@/components/chart/PieChartCard';
 import { PERIOD_TYPE } from '@/constants/PeriodType';
 import STORAGE_KEY from '@/constants/StorageKey';
+import HomeBanners from '@/components/banner/banner';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { useCategory } from '@/hooks/useCategory';
@@ -399,6 +400,8 @@ const ReportScreen = () => {
             </View>
           ))}
         </View>
+
+        <HomeBanners storageKey={STORAGE_KEY.ReportBanners} />
 
         <SectionHeader
           title={t('report.group_report')}

@@ -1,12 +1,13 @@
 import StorageKey from "@/constants/StorageKey";
 import { useOTA } from "@/hooks/useOTA";
+import { useImageService } from "@/services/ImageService";
 import { logError, logMessage } from "@/services/LoggerService";
 import { walletRepository } from "@/services/repositories/wallet.repository"; // 🔹 ADD
 import StorageService from "@/services/StorageService";
+import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { AppInfo } from "@/types/UserCommand";
 import { WalletSummary } from "@/types/wallet"; // 🔹 ADD
 import { t } from "i18next";
-import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import {
   createContext,
   useCallback,
@@ -125,8 +126,39 @@ const GlobalContext = createContext<GlobalContextType>({
 const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const imageService = useImageService();
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [isReady, setIsReady] = useState(false);
+
+  const loadImages = async () => {
+    try {
+      type BannerImage = { typeusing: string;[key: string]: any };
+      const res = (await imageService.searchBannerImage(
+        "Popup,Home,Statistic,Report",
+        "",
+        0,
+        99999
+      )) as BannerImage[];
+
+      const popupBanners = res.filter((item) => item.typeusing === "Popup");
+      const homeBanners = res.filter((item) => item.typeusing === "Home" || item.typeusing === "Home Screen");
+      const statisticBanners = res.filter((item) => item.typeusing === "Statistic");
+      const reportBanners = res.filter((item) => item.typeusing === "Report");
+
+      await Promise.all([
+        StorageService.setItem(StorageKey.PopupBanners, JSON.stringify(popupBanners)),
+        StorageService.setItem(StorageKey.HomeBanners, JSON.stringify(homeBanners)),
+        StorageService.setItem(StorageKey.StatisticBanners, JSON.stringify(statisticBanners)),
+        StorageService.setItem(StorageKey.ReportBanners, JSON.stringify(reportBanners)),
+      ]);
+
+      console.log("Banners loaded and cached successfully.");
+      return true;
+    } catch (error) {
+      console.warn("Banner image loading failed:", error);
+      return false;
+    }
+  };
   const isLogoutConfirmedRef = useRef(false);
   const isIdleLogoutRef = useRef(false);
   const [unreadTotalCount, setUnreadTotalCount] = useState<number>(0);
@@ -353,6 +385,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
     getPrimaryWallet().catch((err) => {
       console.warn("[GlobalContext] auto getPrimaryWallet on login/start failed", err);
     });
+    loadImages();
   }, [appInfo?.user_code]);
 
   // 🔹 ADD — Listen for transaction changes to refresh wallets

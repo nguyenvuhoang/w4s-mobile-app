@@ -38,4 +38,7 @@ export default {
   FestivalOverlayEnabled: "FestivalOverlayEnabled",
   spendingWarningList: "spendingWarningList",
   chatHistory: "chatHistory",
+  HomeBanners: "HomeBanners",
+  StatisticBanners: "StatisticBanners",
+  ReportBanners: "ReportBanners",
 };
