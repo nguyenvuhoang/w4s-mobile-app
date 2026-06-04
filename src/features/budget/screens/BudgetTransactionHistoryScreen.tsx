@@ -2,12 +2,12 @@ import AppHeader from "@/components/base/AppHeader";
 import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import { useAppTheme } from "@/core/theme/ThemeContext";
-import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
-import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
+import { useCategory } from "@/hooks/useCategory";
 import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
+import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { getValidIconName } from "@/utils/iconMapper";
-import { normalize, wp, hp } from "@/utils/layout";
-import { FontAwesome6, Ionicons } from "@expo/vector-icons";
+import { hp, normalize, wp } from "@/utils/layout";
+import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -21,7 +21,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useBudgetTransactions } from "../hooks/useBudgetTransactions";
-import { useCategory } from "@/hooks/useCategory";
 
 const BudgetTransactionHistoryScreen: React.FC = () => {
     const { colors } = useAppTheme();
@@ -30,7 +29,7 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
     const { convertBetween, formatAmount } = useCurrencyConverter();
     const { categories } = useCategory();
     const params = useLocalSearchParams();
-    
+
     const budgetId = Number(params.budgetId);
     const walletId = params.walletId ? Number(params.walletId) : undefined;
     const categoryName = params.categoryName as string;
@@ -39,8 +38,6 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
 
     const {
         transactions,
-        totalIncome,
-        totalExpense,
         loading,
         loadingMore,
         hasMore,
@@ -57,6 +54,32 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
         return map;
     }, [categories]);
 
+    // Calculate totalExpense from transactions by converting them to the default currency if needed
+    const totalExpense = React.useMemo(() => {
+        let expense = 0;
+
+        transactions.forEach((transaction) => {
+            const amount = Number(transaction.amount || 0);
+            const isExpense = amount < 0 || transaction.type === "02" || transaction.name === "Expense" || transaction.transaction_type === "EXPENSE";
+            
+            if (isExpense) {
+                const itemCurrency = transaction.currency || "VND";
+                let finalAmount = Math.abs(amount);
+                
+                if (itemCurrency !== defaultCurrency.currencyId) {
+                    const converted = convertBetween(finalAmount, itemCurrency, defaultCurrency.currencyId);
+                    if (converted !== null) {
+                        finalAmount = converted;
+                    }
+                }
+                
+                expense += finalAmount;
+            }
+        });
+
+        return expense;
+    }, [transactions, defaultCurrency.currencyId, convertBetween]);
+
     const [refreshing, setRefreshing] = React.useState(false);
 
     const onRefresh = React.useCallback(async () => {
@@ -72,30 +95,22 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
     }, [hasMore, loadingMore, loading, loadMore]);
 
     const formatCurrency = (amount: number) => {
-        let finalAmount = amount;
-        // Budget totals from server are typically in the base currency (VND) or budget currency.
-        // Assuming VND for totals unless specified otherwise by the hook.
-        const sourceCurrency = "VND"; 
-        if (sourceCurrency !== defaultCurrency.currencyId) {
-            const converted = convertBetween(amount, sourceCurrency, defaultCurrency.currencyId);
-            if (converted !== null) finalAmount = converted;
-        }
-        return formatAmount(finalAmount);
+        return formatAmount(amount);
     };
 
     const formatTransactionAmount = (transaction: any) => {
         const amount = Number(transaction.amount || 0);
         const isExpense = amount < 0 || transaction.type === "02" || transaction.name === "Expense" || transaction.transaction_type === "EXPENSE";
         const sign = isExpense ? "-" : "+";
-        
+
         const itemCurrency = transaction.currency || "VND";
         let finalAmount = Math.abs(amount);
-        
+
         if (itemCurrency !== defaultCurrency.currencyId) {
             const converted = convertBetween(finalAmount, itemCurrency, defaultCurrency.currencyId);
             if (converted !== null) finalAmount = converted;
         }
-        
+
         return `${sign}${formatAmount(finalAmount)}`;
     };
 
@@ -117,7 +132,7 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
     const getCategoryIcon = (transaction: any): string => {
         const category = categoryMap[transaction.category_id];
         let iconName = transaction.icon || transaction.category_icon || category?.icon;
-        
+
         if (!iconName) {
             const amount = Number(transaction.amount || 0);
             const isExpense = amount < 0 || transaction.type === "02" || transaction.name === "Expense" || transaction.transaction_type === "EXPENSE";
@@ -142,7 +157,7 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
         const category = categoryMap[transaction.category_id];
         const rawName = transaction.category_name || category?.category_name || transaction.title || transaction.name;
         const parsed = parseName(rawName);
-        
+
         // Nếu tên lấy ra trùng với "Expense" hoặc "Income" hoặc rỗng, dùng fallback "Chi tiêu"/"Thu nhập"
         const upperName = String(parsed || '').toUpperCase();
         if (!parsed || upperName === 'EXPENSE' || upperName === 'INCOME') {
@@ -164,7 +179,7 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
     const navigateToDetail = (transaction: any) => {
         const amount = Number(transaction.amount || 0);
         const isExpense = amount < 0 || transaction.type === "02" || transaction.name === "Expense" || transaction.transaction_type === "EXPENSE";
-        
+
         const detailData = {
             transactionid: transaction.transaction_id,
             transactiondate: transaction.transaction_date || transaction.recorded_at,
@@ -257,11 +272,11 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={[localStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
-            <AppHeader 
-                title={t('budget.history.title', { category: categoryName || t('budget.detail.default_budget_name') })} 
+            <AppHeader
+                title={t('budget.history.title', { category: categoryName || t('budget.detail.default_budget_name') })}
                 showBackButton
             />
-            
+
             <FlatList
                 data={transactions}
                 keyExtractor={(item, index) => (item.transaction_id || index).toString()}
@@ -281,8 +296,8 @@ const BudgetTransactionHistoryScreen: React.FC = () => {
                 ListEmptyComponent={
                     !loading ? (
                         <View style={localStyles.emptyContainer}>
-                             <Ionicons name="receipt-outline" size={60} color={colors.icon} />
-                             <CustomText style={{ color: colors.icon, marginTop: 10 }}>{t('budget.history.empty')}</CustomText>
+                            <Ionicons name="receipt-outline" size={60} color={colors.icon} />
+                            <CustomText style={{ color: colors.icon, marginTop: 10 }}>{t('budget.history.empty')}</CustomText>
                         </View>
                     ) : null
                 }

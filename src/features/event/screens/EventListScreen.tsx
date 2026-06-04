@@ -1,4 +1,5 @@
 import AppHeader from "@/components/base/AppHeader";
+import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import BottomActionModal, {
   ActionItem,
@@ -596,7 +597,7 @@ const EventCard: React.FC<EventCardProps> = ({
     >
       <View style={styles.eventCardLeft}>
         <View style={[styles.eventIcon, { backgroundColor: event.color }]}>
-          <FontAwesome6
+          <AppIcon
             name={event.icon as any}
             size={normalize(24)}
             color="#fff"

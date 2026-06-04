@@ -76,6 +76,7 @@ export interface TransactionDetailData {
     walletevent?: WalletEvent;
     imageurl?: string;
     fee?: number;
+    with_users?: any[];
 }
 
 export const useTransactionDetail = (transactionId: string) => {
