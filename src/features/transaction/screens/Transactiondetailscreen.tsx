@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
     Image,
+    Modal,
     Pressable,
     ScrollView,
     Share,
@@ -133,6 +134,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
     const params = useLocalSearchParams();
     const router = useRouter();
     const [showMenu, setShowMenu] = useState(false);
+    const [showParticipantsModal, setShowParticipantsModal] = useState(false);
     const { defaultCurrency } = useDefaultCurrency();
     const { showNotification } = useNotification();
 
@@ -150,6 +152,34 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
 
     const { transaction, loading, error, refetch } = useTransactionDetail(transactionId);
     const { deleteTransaction, refundTransaction } = useTransaction();
+
+    const participants = useMemo(() => {
+        if (!transaction?.with_users) return [];
+        return transaction.with_users.map((user, index) => ({
+            id: user.id ? `${user.id}-${index}` : `user-${index}`,
+            name: user.display_name || String(user.id),
+            phone: user.phone,
+            email: user.email,
+        }));
+    }, [transaction?.with_users]);
+
+    const getInitials = (name: string) => {
+        const words = name.trim().split(" ");
+        if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+        return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    };
+
+    const getAvatarColor = (index: number) => {
+        const avatarColors = [
+            "#FF6B6B",
+            "#4ECDC4",
+            "#45B7D1",
+            "#FFA07A",
+            "#98D8C8",
+            "#F7DC6F",
+        ];
+        return avatarColors[index % avatarColors.length];
+    };
 
     useFocusEffect(
         useCallback(() => {
@@ -419,6 +449,72 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                     </>
                 )}
 
+                {/* === Người tham gia === */}
+                {participants.length > 0 && (
+                    <>
+                        <SectionLabel label={t('transaction.participants')} />
+                        <TouchableOpacity
+                            style={[styles.participantsCard, { backgroundColor: colors.card }]}
+                            onPress={() => setShowParticipantsModal(true)}
+                        >
+                            <View style={styles.participantsContainer}>
+                                <View style={styles.participantAvatars}>
+                                    {participants.slice(0, 3).map((participant, index) => (
+                                        <View
+                                            key={participant.id}
+                                            style={[
+                                                styles.participantAvatar,
+                                                {
+                                                    backgroundColor: getAvatarColor(index),
+                                                    borderColor: colors.card,
+                                                    zIndex: Math.min(participants.length, 3) - index,
+                                                },
+                                            ]}
+                                        >
+                                            <CustomText style={styles.participantInitials}>
+                                                {getInitials(participant.name)}
+                                            </CustomText>
+                                        </View>
+                                    ))}
+                                    {participants.length > 3 && (
+                                        <View
+                                            style={[
+                                                styles.participantAvatar,
+                                                {
+                                                    backgroundColor: colors.border,
+                                                    borderColor: colors.card,
+                                                    zIndex: 0,
+                                                },
+                                            ]}
+                                        >
+                                            <CustomText style={[styles.participantInitials, { color: colors.text }]}>
+                                                +{participants.length - 3}
+                                            </CustomText>
+                                        </View>
+                                    )}
+                                </View>
+                                <CustomText style={[styles.participantCount, { color: colors.text }]}>
+                                    {participants.length} {t('transaction.participants_count')}
+                                </CustomText>
+                            </View>
+                        </TouchableOpacity>
+                    </>
+                )}
+
+                {/* === Vị trí === */}
+                {transaction.accounttype && transaction.accounttype.trim() !== '' && (
+                    <>
+                        <SectionLabel label={t('transaction.location')} />
+                        <ItemCard
+                            icon="location-dot"
+                            iconBg="#FF6B6B20"
+                            iconColor="#FF6B6B"
+                            label={transaction.accounttype}
+                            colors={colors}
+                        />
+                    </>
+                )}
+
                 {/* === Ghi chú === */}
                 <SectionLabel label={t('transaction.note')} />
                 <View style={[styles.noteCard, { backgroundColor: colors.card }]}>
@@ -476,6 +572,60 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ trans
                 colors={colors}
                 t={t}
             />
+
+            <Modal
+                visible={showParticipantsModal}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setShowParticipantsModal(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowParticipantsModal(false)}
+                />
+                <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
+                    <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+                    <CustomText style={[styles.modalTitle, { color: colors.text }]}>
+                        {t('transaction.participants')}
+                    </CustomText>
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        style={{ maxHeight: hp(50), marginBottom: hp(3) }}
+                    >
+                        {participants.map((participant, index) => (
+                            <View style={[styles.participantRow, { borderColor: colors.border }]} key={participant.id}>
+                                <View style={[styles.modalAvatar, { backgroundColor: getAvatarColor(index) }]}>
+                                    <CustomText style={styles.modalAvatarText}>
+                                        {getInitials(participant.name)}
+                                    </CustomText>
+                                </View>
+                                <View style={styles.participantInfo}>
+                                    <CustomText style={[styles.participantName, { color: colors.text }]}>
+                                        {participant.name}
+                                    </CustomText>
+                                    {participant.phone && (
+                                        <View style={styles.detailRow}>
+                                            <FontAwesome6 name="phone" size={normalize(12)} color={colors.icon} />
+                                            <CustomText style={[styles.detailText, { color: colors.icon }]}>
+                                                {participant.phone}
+                                            </CustomText>
+                                        </View>
+                                    )}
+                                    {participant.email && (
+                                        <View style={styles.detailRow}>
+                                            <FontAwesome6 name="envelope" size={normalize(12)} color={colors.icon} />
+                                            <CustomText style={[styles.detailText, { color: colors.icon }]}>
+                                                {participant.email}
+                                            </CustomText>
+                                        </View>
+                                    )}
+                                </View>
+                            </View>
+                        ))}
+                    </ScrollView>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -620,6 +770,7 @@ const styles = StyleSheet.create({
     itemLabel: {
         fontSize: normalize(15),
         fontFamily: Fonts.medium,
+        flex: 1,
     },
 
     // Note
@@ -672,6 +823,102 @@ const styles = StyleSheet.create({
         fontSize: normalize(13),
         fontFamily: Fonts.regular,
         color: '#9CA3AF',
+    },
+    participantsCard: {
+        borderRadius: normalize(14),
+        paddingVertical: normalize(13),
+        paddingHorizontal: normalize(14),
+        marginBottom: normalize(6),
+        justifyContent: 'center',
+    },
+    participantsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: normalize(8),
+    },
+    participantAvatars: {
+        flexDirection: 'row',
+        marginLeft: normalize(-4),
+    },
+    participantAvatar: {
+        width: normalize(28),
+        height: normalize(28),
+        borderRadius: normalize(14),
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        marginLeft: normalize(-8),
+    },
+    participantInitials: {
+        fontSize: normalize(11),
+        fontFamily: Fonts.semiBold,
+        color: '#fff',
+    },
+    participantCount: {
+        fontSize: normalize(13),
+        fontFamily: Fonts.medium,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.45)',
+        justifyContent: 'flex-end',
+    },
+    modalSheet: {
+        borderTopLeftRadius: normalize(20),
+        borderTopRightRadius: normalize(20),
+        paddingTop: normalize(12),
+        paddingHorizontal: wp(5),
+    },
+    modalHandle: {
+        width: normalize(40),
+        height: normalize(4),
+        borderRadius: normalize(2),
+        backgroundColor: '#E5E7EB',
+        alignSelf: 'center',
+        marginBottom: normalize(12),
+    },
+    modalTitle: {
+        fontSize: normalize(16),
+        fontFamily: Fonts.semiBold,
+        textAlign: 'center',
+        marginBottom: normalize(16),
+    },
+    participantRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: normalize(12),
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderColor: '#E5E7EB',
+        gap: normalize(12),
+    },
+    modalAvatar: {
+        width: normalize(40),
+        height: normalize(40),
+        borderRadius: normalize(20),
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalAvatarText: {
+        fontSize: normalize(14),
+        fontFamily: Fonts.semiBold,
+        color: '#fff',
+    },
+    participantInfo: {
+        flex: 1,
+        gap: normalize(4),
+    },
+    participantName: {
+        fontSize: normalize(15),
+        fontFamily: Fonts.semiBold,
+    },
+    detailRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: normalize(6),
+    },
+    detailText: {
+        fontSize: normalize(12),
+        fontFamily: Fonts.regular,
     },
 });
 

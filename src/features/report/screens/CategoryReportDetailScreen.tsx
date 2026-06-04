@@ -1,11 +1,13 @@
 import AppHeader from '@/components/base/AppHeader';
+import AppIcon from '@/components/base/AppIcon';
 import CustomText from '@/components/base/CustomText';
+import { PERIOD_TYPE, PeriodType } from '@/constants/PeriodType';
 import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { CategoryAnalyzeItem, useCategory } from '@/hooks/useCategory';
-import { WalletSummary } from '@/types/wallet';
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency';
-import { hp, normalize, wp } from '@/utils/layout';
+import { WalletSummary } from '@/types/wallet';
+import { hp, normalize } from '@/utils/layout';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -18,7 +20,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PERIOD_TYPE, PeriodType } from '@/constants/PeriodType';
 import { styles } from '../styles/CategoryReportDetailScreen.styles';
 
 interface PeriodOption {
@@ -190,7 +191,7 @@ const CategoryReportDetailScreen = () => {
           onPress={() => setShowWalletModal(true)}
           activeOpacity={0.75}
         >
-          <FontAwesome6
+          <AppIcon
             name={(selectedWallet?.icon as any) || 'wallet'}
             size={normalize(13)}
             color={selectedWallet?.color || colors.tint}
@@ -359,7 +360,7 @@ const CategoryReportDetailScreen = () => {
             onPress={() => { setSelectedWallet(w); setShowWalletModal(false); }}
           >
             <View style={[styles.modalItemIcon, { backgroundColor: (w.color || colors.tint) + '22' }]}>
-              <FontAwesome6
+              <AppIcon
                 name={(w.icon as any) || 'wallet'}
                 size={normalize(16)}
                 color={w.color || colors.tint}

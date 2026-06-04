@@ -658,6 +658,16 @@ const TransactionItem = ({ item, colors, lang, allCategories, formatCurrency, co
     }
   }
 
+  const parseText = (text: string | null | undefined): string => {
+    if (!text) return '';
+    try {
+      const parsed = JSON.parse(text);
+      return parsed[lang] || parsed.vi || parsed.en || text;
+    } catch {
+      return text;
+    }
+  };
+
   return (
     <TouchableOpacity
       style={[styles.transactionCard, { backgroundColor: colors.card }]}
@@ -665,7 +675,7 @@ const TransactionItem = ({ item, colors, lang, allCategories, formatCurrency, co
         const detailData = {
           transactionid: item.transaction_id,
           transactiondate: item.occurred_at,
-          transactionname: item.title,
+          transactionname: parseText(item.title),
           transactioncode: item.type === "INCOME" ? "01" : "02",
           nu_m01: item.amount,
           nu_m02: 0,
@@ -674,7 +684,7 @@ const TransactionItem = ({ item, colors, lang, allCategories, formatCurrency, co
           cha_r02: "",
           sourcetranref: "",
           sourceid: "",
-          trandesc: item.title,
+          trandesc: parseText(item.description || item.title),
           status: "Completed",
           icon: iconName,
           color: iconColor,
@@ -694,14 +704,14 @@ const TransactionItem = ({ item, colors, lang, allCategories, formatCurrency, co
       </View>
       <View style={{ flex: 1 }}>
         <CustomText type="bold" size={15} numberOfLines={1}>
-          {item.title}
+          {parseText(item.title)}
         </CustomText>
         <CustomText size={12} style={{ color: colors.icon }}>
-          {item.category_name}
+          {parseText(item.category_name) || 'Khác'}
         </CustomText>
         {item.description && (
           <CustomText size={11} style={{ color: colors.icon, marginTop: 2 }}>
-            {item.description}
+            {parseText(item.description)}
           </CustomText>
         )}
       </View>

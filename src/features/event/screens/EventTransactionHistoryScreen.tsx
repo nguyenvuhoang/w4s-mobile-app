@@ -26,20 +26,45 @@ const EventTransactionHistoryScreen: React.FC = () => {
     const { colors } = useAppTheme();
     const { t, i18n } = useTranslation();
     const { defaultCurrency } = useDefaultCurrency();
-    const { convertBetween, formatAmount } = useCurrencyConverter();
+    const { convertBetween, formatAmount, isReady } = useCurrencyConverter();
     const params = useLocalSearchParams();
     const eventId = Number(params.id);
 
     const {
         transactions,
-        totalIncome,
-        totalExpense,
         loading,
         loadingMore,
         hasMore,
         refresh,
         loadMore,
     } = useEventTransactions(eventId);
+
+    // Calculate totalIncome and totalExpense from transactions by converting them to the default currency if needed
+    const { totalIncome, totalExpense } = useMemo(() => {
+        let income = 0;
+        let expense = 0;
+
+        transactions.forEach((transaction) => {
+            const itemCurrency = transaction.currency || "VND";
+            const amount = transaction.amount;
+            
+            let finalAmount = amount;
+            if (itemCurrency !== defaultCurrency.currencyId) {
+                const converted = convertBetween(amount, itemCurrency, defaultCurrency.currencyId);
+                if (converted !== null) {
+                    finalAmount = converted;
+                }
+            }
+
+            if (transaction.type === "EXPENSE") {
+                expense += finalAmount;
+            } else {
+                income += finalAmount;
+            }
+        });
+
+        return { totalIncome: income, totalExpense: expense };
+    }, [transactions, defaultCurrency.currencyId, convertBetween]);
 
     const [refreshing, setRefreshing] = React.useState(false);
 
@@ -55,15 +80,9 @@ const EventTransactionHistoryScreen: React.FC = () => {
         }
     }, [hasMore, loadingMore, loading, loadMore]);
 
-    // Format currency
+    // Format currency (already in default currency)
     const formatCurrency = (amount: number) => {
-        let finalAmount = amount;
-        const sourceCurrency = "VND"; 
-        if (sourceCurrency !== defaultCurrency.currencyId) {
-            const converted = convertBetween(amount, sourceCurrency, defaultCurrency.currencyId);
-            if (converted !== null) finalAmount = converted;
-        }
-        return formatAmount(finalAmount);
+        return formatAmount(amount);
     };
 
     // Format transaction amount with sign
@@ -250,36 +269,40 @@ const EventTransactionHistoryScreen: React.FC = () => {
         <SafeAreaView style={[localStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
             {renderHeader()}
             
-            <FlatList
-                data={transactions}
-                keyExtractor={(item) => item.transaction_id.toString()}
-                renderItem={renderTransactionItem}
-                ListHeaderComponent={renderSummaryCard}
-                contentContainerStyle={localStyles.listContent}
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        tintColor={colors.tint}
-                    />
-                }
-                onEndReached={handleEndReached}
-                onEndReachedThreshold={0.5}
-                ListEmptyComponent={
-                    !loading ? (
+            {loading || !isReady ? (
+                <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                    <ActivityIndicator size="large" color={colors.tint} />
+                </View>
+            ) : (
+                <FlatList
+                    data={transactions}
+                    keyExtractor={(item) => item.transaction_id.toString()}
+                    renderItem={renderTransactionItem}
+                    ListHeaderComponent={renderSummaryCard}
+                    contentContainerStyle={localStyles.listContent}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={colors.tint}
+                        />
+                    }
+                    onEndReached={handleEndReached}
+                    onEndReachedThreshold={0.5}
+                    ListEmptyComponent={
                         <View style={localStyles.emptyContainer}>
                              <Ionicons name="receipt-outline" size={60} color={colors.icon} />
                              <CustomText style={{ color: colors.icon, marginTop: 10 }}>Chưa có giao dịch cho sự kiện này</CustomText>
                         </View>
-                    ) : null
-                }
-                ListFooterComponent={
-                    loadingMore ? (
-                        <ActivityIndicator style={{ paddingVertical: 20 }} color={colors.tint} />
-                    ) : <View style={{ height: 40 }} />
-                }
-            />
+                    }
+                    ListFooterComponent={
+                        loadingMore ? (
+                            <ActivityIndicator style={{ paddingVertical: 20 }} color={colors.tint} />
+                        ) : <View style={{ height: 40 }} />
+                    }
+                />
+            )}
         </SafeAreaView>
     );
 };
