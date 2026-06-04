@@ -73,7 +73,7 @@ const HomeBanners: React.FC<HomeBannersProps> = ({ storageKey = StorageKey.HomeB
 
     const activeBanner = homeBanners[currentBannerIndex];
     const defaultHeight = normalize(165);
-    const containerHeight = activeBanner ? (imageHeights[activeBanner.id] || defaultHeight) : defaultHeight;
+    const containerHeight = activeBanner ? ((imageHeights[activeBanner.id] ? imageHeights[activeBanner.id] + normalize(20) : defaultHeight)) : defaultHeight;
 
     useEffect(() => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
