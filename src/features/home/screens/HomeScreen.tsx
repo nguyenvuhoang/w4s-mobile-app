@@ -1,6 +1,7 @@
 import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
 import FeatureSearchModal from "@/components/modals/FeatureSearchModal";
+import HomeBanners from "@/components/banner/banner";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
@@ -554,6 +555,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
         */}
+
+        <HomeBanners />
 
         {/* Spending Categories */}
         <View style={styles.section}>

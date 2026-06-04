@@ -4,6 +4,7 @@ import CustomText from "@/components/base/CustomText";
 import SectionHeader from "@/components/base/SectionHeader";
 import LineChartCard from "@/components/chart/LineChartCard";
 import STORAGE_KEY from "@/constants/StorageKey";
+import HomeBanners from "@/components/banner/banner";
 import { PERIOD_TYPE } from "@/constants/PeriodType";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { useFinanceSummary, useMonthlyChartData, useWalletOpeningClosingBalance } from "@/features/home/hooks/Usefinancesummary";
@@ -401,6 +402,8 @@ const StatisticsScreen = () => {
             })
           )}
         </View>
+
+        <HomeBanners storageKey={STORAGE_KEY.StatisticBanners} />
 
         {/* ===== CHARTS ===== */}
         <SectionHeader
