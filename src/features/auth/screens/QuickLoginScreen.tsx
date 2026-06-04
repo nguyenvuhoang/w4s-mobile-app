@@ -7,11 +7,13 @@ import { useLoginService } from "@/features/auth/hooks/useLoginService";
 import StorageService from "@/services/StorageService";
 import { AppInfo } from "@/types/UserCommand";
 import { Images } from "@/utils/images";
-import { normalize } from "@/utils/layout";
+import { hasNotch, normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import Constants from "expo-constants";
+import * as Updates from "expo-updates";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -35,6 +37,9 @@ const QuickLoginScreen = () => {
   const { showNotification } = useNotification();
   const { t } = useTranslation();
   const hasCheckedLoginStatus = useRef(false);
+
+  const appVersion = Constants.expoConfig?.version ?? "?";
+  const updateId = Updates.updateId ? Updates.updateId.slice(0, 8) : "dev";
 
   const {
     setUsername,
@@ -337,6 +342,12 @@ const QuickLoginScreen = () => {
                     </ThemedText>
                   </TouchableOpacity>
                 </View>
+
+                <View style={styles.footer}>
+                  <ThemedText style={styles.versionText}>
+                    {appVersion} ({updateId})
+                  </ThemedText>
+                </View>
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
@@ -601,6 +612,18 @@ const createStyles = (colors: any) => StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.5)",
     zIndex: 999,
+  },
+
+  footer: {
+    paddingBottom: hasNotch() ? normalize(10) : normalize(30),
+    alignItems: "center",
+    marginTop: normalize(20),
+  },
+
+  versionText: {
+    fontSize: normalize(12),
+    color: colors.icon,
+    opacity: 0.6,
   },
 });
 

@@ -8,6 +8,8 @@ import { useLoginService } from '@/features/auth/hooks/useLoginService';
 import { Images } from '@/utils/images';
 import { hasNotch, normalize } from '@/utils/layout';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -33,6 +35,9 @@ const LoginScreen = () => {
   const { colors, isDark } = useAppTheme();
   const { t, i18n } = useTranslation();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+
+  const appVersion = Constants.expoConfig?.version ?? '?';
+  const updateId = Updates.updateId ? Updates.updateId.slice(0, 8) : 'dev';
 
   const {
     username,
@@ -281,6 +286,12 @@ const LoginScreen = () => {
                       {t('auth.create_account')}
                     </ThemedText>
                   </TouchableOpacity>
+                </View>
+
+                <View style={styles.footer}>
+                  <ThemedText style={styles.versionText}>
+                    {appVersion} ({updateId})
+                  </ThemedText>
                 </View>
               </View>
             </View>
@@ -543,6 +554,13 @@ const createStyles = (colors: any) => StyleSheet.create({
   footer: {
     paddingBottom: hasNotch() ? normalize(10) : normalize(30),
     alignItems: 'center',
+    marginTop: normalize(20),
+  },
+
+  versionText: {
+    fontSize: normalize(12),
+    color: colors.icon,
+    opacity: 0.6,
   },
 });
 
