@@ -1,6 +1,5 @@
 import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
-import { apiClient } from "@/core/api/ApiClient";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
 import { hp, normalize, wp } from "@/utils/layout";
@@ -10,6 +9,8 @@ import {
     ExpoSpeechRecognitionModule,
     useSpeechRecognitionEvent,
 } from "expo-speech-recognition";
+import { useNotification } from "@/contexts/NotificationContext";
+import { useTranslation } from "react-i18next";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
     Alert,
@@ -127,6 +128,8 @@ const PulseRing = ({ active, color }: { active: boolean; color: string }) => {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const VoiceTransactionScreen = () => {
     const { colors } = useAppTheme();
+    const { t } = useTranslation();
+    const { showNotification } = useNotification();
     const styles = React.useMemo(() => createStyles(colors), [colors]);
 
     const [screenState, setScreenState] = useState<ScreenState>("idle");
@@ -212,6 +215,15 @@ const VoiceTransactionScreen = () => {
     const handleSendToServer = useCallback(async (text: string) => {
         if (!text.trim()) return;
         setScreenState("processing");
+
+        // Simulating processing state for a short moment, then showing the development notice
+        setTimeout(() => {
+            setScreenState("idle");
+            showNotification(t("common.feature_developing"), "warning");
+            router.back();
+        }, 1000);
+
+        /*
         try {
             const result = await apiClient.voiceTranscribe(text);
             console.log("[Voice] Server result:", result);
@@ -238,6 +250,7 @@ const VoiceTransactionScreen = () => {
                 { text: "Đóng", style: "cancel", onPress: () => router.back() },
             ]);
         }
+        */
     }, []);
 
     // ── Retry ──────────────────────────────────────────────────────────────────
