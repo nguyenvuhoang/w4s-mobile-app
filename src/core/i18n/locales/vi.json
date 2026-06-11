@@ -793,6 +793,8 @@
     "participant_name_required": "Tên người tham gia *",
     "enter_participant_name": "Nhập tên người tham gia",
     "phone_optional": "Số điện thoại (Không bắt buộc)",
+    "phone_required": "Số điện thoại *",
+    "phone_required_alert": "Vui lòng nhập số điện thoại",
     "enter_phone": "Nhập số điện thoại",
     "add_btn": "Thêm",
     "contacts_permission_error": "Cần quyền truy cập danh bạ để chọn người tham gia!",

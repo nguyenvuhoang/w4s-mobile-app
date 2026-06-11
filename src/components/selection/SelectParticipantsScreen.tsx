@@ -88,7 +88,13 @@ const SelectParticipantsScreen = () => {
       if (storedParticipants) {
         const data = JSON.parse(storedParticipants);
         if (data.sessionId === sessionId) {
-          const loaded = data.participants || [];
+          const loaded = (data.participants || []).filter(
+            (p: Participant) =>
+              p.name &&
+              p.name.trim().length > 0 &&
+              p.phoneNumber &&
+              p.phoneNumber.trim().length > 0
+          );
           setSelectedParticipants(loaded);
           const customs = loaded.filter((p: Participant) => p.id && String(p.id).startsWith("custom-"));
           setCustomParticipants(customs);
@@ -201,11 +207,21 @@ const SelectParticipantsScreen = () => {
 
       if (data.length > 0) {
         const formattedContacts: Participant[] = data
-          .filter((contact) => contact.name)
-          .map((contact, index) => ({
+          .map((contact) => {
+            const validPhoneObj = contact.phoneNumbers?.find(p => p.number && p.number.trim().length > 0);
+            return {
+              contact,
+              validPhoneNumber: validPhoneObj?.number?.trim()
+            };
+          })
+          .filter(({ contact, validPhoneNumber }) => {
+            const hasName = !!contact.name && contact.name.trim().length > 0;
+            return hasName && !!validPhoneNumber;
+          })
+          .map(({ contact, validPhoneNumber }, index) => ({
             id: contact.id || `contact-${index}`,
-            name: contact.name || t("selection.no_name", { defaultValue: "Không tên" }),
-            phoneNumber: contact.phoneNumbers?.[0]?.number,
+            name: contact.name!.trim(),
+            phoneNumber: validPhoneNumber!,
             avatarColor: avatarColors[index % avatarColors.length],
             isFromServer: false,
           }))
@@ -213,6 +229,9 @@ const SelectParticipantsScreen = () => {
 
         setContacts(formattedContacts);
         setFilteredContacts(formattedContacts);
+      } else {
+        setContacts([]);
+        setFilteredContacts([]);
       }
     } catch (error) {
       console.error("Error loading contacts:", error);
@@ -242,11 +261,16 @@ const SelectParticipantsScreen = () => {
       return;
     }
 
+    if (!newParticipantPhone.trim()) {
+      alert(t("selection.phone_required_alert", { defaultValue: "Vui lòng nhập số điện thoại" }));
+      return;
+    }
+
     const newId = `custom-${Date.now()}`;
     const newP: Participant = {
       id: newId,
       name: newParticipantName.trim(),
-      phoneNumber: newParticipantPhone.trim() || undefined,
+      phoneNumber: newParticipantPhone.trim(),
       avatarColor: avatarColors[Math.floor(Math.random() * avatarColors.length)],
       isFromServer: false,
     };
@@ -673,7 +697,7 @@ const SelectParticipantsScreen = () => {
 
               <View style={styles.inputGroup}>
                 <CustomText style={[styles.inputLabel, { color: colors.text }]}>
-                  {t("selection.phone_optional", { defaultValue: "Số điện thoại (Không bắt buộc)" })}
+                  {t("selection.phone_required", { defaultValue: "Số điện thoại *" })}
                 </CustomText>
                 <TextInput
                   style={[
@@ -707,11 +731,11 @@ const SelectParticipantsScreen = () => {
                 style={[
                   styles.modalConfirmBtn,
                   {
-                    backgroundColor: newParticipantName.trim() ? colors.tint : colors.border,
+                    backgroundColor: (newParticipantName.trim() && newParticipantPhone.trim()) ? colors.tint : colors.border,
                   },
                 ]}
                 onPress={handleSaveCustomParticipant}
-                disabled={!newParticipantName.trim()}
+                disabled={!newParticipantName.trim() || !newParticipantPhone.trim()}
               >
                 <CustomText style={styles.modalConfirmText}>
                   {t("selection.add_btn", { defaultValue: "Thêm" })}
