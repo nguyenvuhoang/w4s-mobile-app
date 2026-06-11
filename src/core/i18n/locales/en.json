@@ -787,6 +787,8 @@
     "participant_name_required": "Participant Name *",
     "enter_participant_name": "Enter participant name",
     "phone_optional": "Phone Number (Optional)",
+    "phone_required": "Phone Number *",
+    "phone_required_alert": "Please enter the phone number",
     "enter_phone": "Enter phone number",
     "add_btn": "Add",
     "contacts_permission_error": "Contacts access is required to select participants!",
