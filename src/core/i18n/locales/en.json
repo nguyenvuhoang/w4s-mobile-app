@@ -295,7 +295,8 @@
     "grant_permission": "Grant Permission",
     "starting_camera": "Starting camera...",
     "scan_error": "Scan Error",
-    "scan_failed_desc": "Could not scan invoice. Please try again."
+    "scan_failed_desc": "Could not scan invoice. Please try again.",
+    "total": "Total"
   },
   "event": {
     "title": "Events",
@@ -369,6 +370,7 @@
     "fullname": "Full Name",
     "fullname_placeholder": "Your full name",
     "phone": "Phone Number",
+    "phone_register": "Phone number with Zalo account",
     "phone_placeholder": "Your phone number",
     "address": "Address",
     "address_placeholder": "Your address",

@@ -295,7 +295,8 @@
     "grant_permission": "Cấp quyền ngay",
     "starting_camera": "Đang khởi động máy ảnh...",
     "scan_error": "Lỗi quét hóa đơn",
-    "scan_failed_desc": "Không thể nhận diện hóa đơn, vui lòng thử lại hoặc chụp rõ hơn."
+    "scan_failed_desc": "Không thể nhận diện hóa đơn, vui lòng thử lại hoặc chụp rõ hơn.",
+    "total": "Tổng cộng"
   },
   "event": {
     "title": "Sự kiện",
@@ -369,6 +370,7 @@
     "fullname": "Họ và tên",
     "fullname_placeholder": "Họ và tên của bạn",
     "phone": "Số điện thoại",
+    "phone_register": "SĐT có tài khoản Zalo",
     "phone_placeholder": "Số điện thoại của bạn",
     "address": "Địa chỉ",
     "address_placeholder": "Địa chỉ của bạn",

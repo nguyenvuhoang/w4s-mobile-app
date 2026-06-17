@@ -210,26 +210,25 @@ const InvoiceTransactionHistoryScreen: React.FC = () => {
     };
 
     const renderSummaryCard = () => {
-        const total = totalIncome - totalExpense;
+        let total = 0;
+        transactions.forEach((t) => {
+            const itemCurrency = t.currency || "VND";
+            let amount = Math.abs(t.amount);
+            if (itemCurrency !== defaultCurrency.currencyId) {
+                const converted = convertBetween(amount, itemCurrency, defaultCurrency.currencyId);
+                if (converted !== null) {
+                    amount = converted;
+                }
+            }
+            total += amount;
+        });
+
         return (
             <View style={[localStyles.summaryCard, { backgroundColor: colors.card }]}>
                 <View style={localStyles.summaryRow}>
-                    <CustomText style={[localStyles.summaryLabel, { color: colors.text }]}>Tổng thu</CustomText>
-                    <CustomText style={[localStyles.summaryValue, { color: "#4CAF50" }]} type="semiBold">
-                        +{formatCurrency(totalIncome)}
-                    </CustomText>
-                </View>
-                <View style={localStyles.summaryRow}>
-                    <CustomText style={[localStyles.summaryLabel, { color: colors.text }]}>Tổng chi</CustomText>
-                    <CustomText style={[localStyles.summaryValue, { color: "#FF3B30" }]} type="semiBold">
-                        -{formatCurrency(totalExpense)}
-                    </CustomText>
-                </View>
-                <View style={localStyles.summaryDivider} />
-                <View style={localStyles.summaryRow}>
-                    <CustomText style={[localStyles.summaryLabel, { color: colors.text }]} type="bold">Số dư hóa đơn</CustomText>
-                    <CustomText style={[localStyles.summaryValue, { color: total >= 0 ? "#4CAF50" : "#FF3B30" }]} type="bold">
-                        {total >= 0 ? "+" : ""}{formatCurrency(total)}
+                    <CustomText style={[localStyles.summaryLabel, { color: colors.text }]} type="bold">{t("invoice.total")}</CustomText>
+                    <CustomText style={[localStyles.summaryValue, { color: colors.tint }]} type="bold">
+                        {formatAmount(total)}
                     </CustomText>
                 </View>
             </View>

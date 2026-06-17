@@ -24,7 +24,7 @@ import {
 import StorageService from "@/services/StorageService";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DatePicker from "react-native-date-picker";
 import { router, useFocusEffect } from "expo-router";
 import React, {
   useCallback,
@@ -245,7 +245,7 @@ const CollapsibleSection = ({
 
 
 const CreatePaybookScreen = () => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { t, i18n } = useTranslation();
   const { showNotification } = useNotification();
   const { wallets, defaultWallet, refresh } = useWallet();
@@ -1174,36 +1174,41 @@ const CreatePaybookScreen = () => {
         </ScrollView>
 
         {/* Date Pickers */}
-        {showStartPicker && (
-          <DateTimePicker
-            value={startDate}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={(_, d) => {
-              if (Platform.OS === "android") setShowStartPicker(false);
-              if (d) setStartDate(d);
-            }}
-          />
-        )}
-        {showMaturityPicker && (
-          <DateTimePicker
-            value={maturityDate || new Date()}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={(_, d) => {
-              if (Platform.OS === "android") setShowMaturityPicker(false);
-              if (d) setMaturityDate(d);
-            }}
-            minimumDate={startDate}
-          />
-        )}
-        {Platform.OS === "ios" && (showStartPicker || showMaturityPicker) && (
-          <View style={[styles.pickerToolbar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-            <TouchableOpacity onPress={() => { setShowStartPicker(false); setShowMaturityPicker(false); }} style={styles.pickerButton}>
-              <CustomText style={[styles.pickerButtonText, { color: colors.tint }]}>{t("common.close")}</CustomText>
-            </TouchableOpacity>
-          </View>
-        )}
+        <DatePicker
+          modal
+          open={showStartPicker}
+          date={startDate}
+          mode="date"
+          theme={isDark ? "dark" : "light"}
+          buttonColor={colors.tint}
+          dividerColor={colors.tint}
+          confirmText={t("common.confirm")}
+          cancelText={t("common.cancel")}
+          title={t("paybook.start_date_label")}
+          onConfirm={(d) => {
+            setShowStartPicker(false);
+            if (d) setStartDate(d);
+          }}
+          onCancel={() => setShowStartPicker(false)}
+        />
+        <DatePicker
+          modal
+          open={showMaturityPicker}
+          date={maturityDate || new Date()}
+          mode="date"
+          theme={isDark ? "dark" : "light"}
+          buttonColor={colors.tint}
+          dividerColor={colors.tint}
+          confirmText={t("common.confirm")}
+          cancelText={t("common.cancel")}
+          title={t("paybook.maturity_date_label")}
+          minimumDate={startDate}
+          onConfirm={(d) => {
+            setShowMaturityPicker(false);
+            if (d) setMaturityDate(d);
+          }}
+          onCancel={() => setShowMaturityPicker(false)}
+        />
 
         {/* Bottom Bar */}
         <View style={[styles.bottomBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
