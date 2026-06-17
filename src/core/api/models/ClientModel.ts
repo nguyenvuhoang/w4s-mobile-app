@@ -165,7 +165,7 @@ export class BaseResponseModel implements BaseResponse {
   getError(): string {
     if (this.errors.length === 0) return this.message || "";
     const rawMessage = this.errors[0]?.info ?? "";
-    return rawMessage.replace(/^\[WF_[A-Z_]+\]\s*\[ERROR\]\s*/, "");
+    return rawMessage.replace(/^\[(?:WF_STEP_)?(?:CTH|DTS|SMS|CBG)_[A-Z_]+\]\s*\[ERROR\]\s*/, "");
   }
 
   getNextAction(): string {

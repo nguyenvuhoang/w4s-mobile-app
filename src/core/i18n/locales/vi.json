@@ -295,7 +295,8 @@
     "grant_permission": "Cấp quyền ngay",
     "starting_camera": "Đang khởi động máy ảnh...",
     "scan_error": "Lỗi quét hóa đơn",
-    "scan_failed_desc": "Không thể nhận diện hóa đơn, vui lòng thử lại hoặc chụp rõ hơn."
+    "scan_failed_desc": "Không thể nhận diện hóa đơn, vui lòng thử lại hoặc chụp rõ hơn.",
+    "total": "Tổng cộng"
   },
   "event": {
     "title": "Sự kiện",
@@ -369,6 +370,7 @@
     "fullname": "Họ và tên",
     "fullname_placeholder": "Họ và tên của bạn",
     "phone": "Số điện thoại",
+    "phone_register": "SĐT có tài khoản Zalo",
     "phone_placeholder": "Số điện thoại của bạn",
     "address": "Địa chỉ",
     "address_placeholder": "Địa chỉ của bạn",
@@ -469,7 +471,9 @@
     "avatar_updated": "Cập nhật ảnh đại diện thành công!",
     "avatar_update_failed": "Cập nhật ảnh đại diện thất bại!",
     "photo_permission_denied": "Cần quyền truy cập thư viện ảnh",
+    "notification_permission_denied": "Vui lòng cấp quyền thông báo để sử dụng tính năng này",
     "reminder_off": "Không nhận thông báo",
+    "reminder_custom": "Tùy chỉnh...",
     "reminder_time": "{{hour}}H hằng ngày",
     "reminder_title": "Nhắc nhở nhập giao dịch",
     "reminder_subtitle": "Chọn khung giờ nhận thông báo nhắc nhở",

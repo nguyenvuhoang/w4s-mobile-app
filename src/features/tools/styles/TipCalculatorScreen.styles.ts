@@ -194,4 +194,21 @@ export const styles = StyleSheet.create({
     marginTop: normalize(8),
     opacity: 0.6,
   },
+  suggestionScroll: {
+    marginTop: normalize(10),
+  },
+  suggestionContent: {
+    paddingHorizontal: normalize(4),
+    gap: normalize(8),
+  },
+  suggestionChip: {
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(6),
+    borderRadius: normalize(16),
+    borderWidth: 1,
+  },
+  suggestionText: {
+    fontSize: normalize(12),
+    fontFamily: Fonts.medium,
+  },
 });

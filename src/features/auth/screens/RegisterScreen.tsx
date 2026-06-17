@@ -386,7 +386,7 @@ const RegisterScreen = () => {
 
                     <View style={styles.inputContainer}>
                       <ThemedText style={[styles.label, { color: colors.brandTextPrimary }]}>
-                        {t('auth.phone')}
+                        {t('auth.phone_register')}
                       </ThemedText>
                       <TextInput
                         style={[

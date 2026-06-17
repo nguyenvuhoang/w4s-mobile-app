@@ -30,6 +30,7 @@ import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
+import DatePicker from "react-native-date-picker";
 import {
   Image,
   Platform,
@@ -69,6 +70,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [reminderHour, setReminderHour] = useState<string | null>(null);
   const [showTransactionReminderModal, setShowTransactionReminderModal] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [timePickerDate, setTimePickerDate] = useState(new Date());
   useFocusEffect(
     useCallback(() => {
       const loadSelectedCurrency = async () => {
@@ -224,10 +227,19 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       if (hourStr) {
         const { status } = await Notifications.requestPermissionsAsync();
         if (status !== 'granted') {
-          showNotification(t("settings.photo_permission_denied") || "Vui lòng cấp quyền thông báo để sử dụng tính năng này", "warning");
+          showNotification(t("settings.notification_permission_denied") || "Vui lòng cấp quyền thông báo để sử dụng tính năng này", "warning");
         }
 
-        const hourNum = parseInt(hourStr, 10);
+        let hourNum = 17;
+        let minuteNum = 0;
+        if (hourStr.includes(":")) {
+          const parts = hourStr.split(":");
+          hourNum = parseInt(parts[0], 10);
+          minuteNum = parseInt(parts[1], 10);
+        } else {
+          hourNum = parseInt(hourStr, 10);
+        }
+
         const identifier = await Notifications.scheduleNotificationAsync({
           content: {
             title: t("settings.reminder_noti_title") || "⏳ Quên nhập giao dịch hôm nay?",
@@ -238,13 +250,14 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DAILY,
             hour: hourNum,
-            minute: 0,
+            minute: minuteNum,
             repeats: true,
           } as Notifications.NotificationTriggerInput,
         });
 
         await StorageService.setItem("transaction_reminder_noti_id", identifier);
-        showNotification(t("settings.reminder_setup_success", { hour: hourStr }) || `Đã thiết lập nhắc nhở vào ${hourStr}:00 hằng ngày`, "success");
+        const displayTime = hourStr.includes(":") ? hourStr : `${hourStr}:00`;
+        showNotification(t("settings.reminder_setup_success", { hour: displayTime }) || `Đã thiết lập nhắc nhở vào ${displayTime} hằng ngày`, "success");
       } else {
         showNotification(t("settings.reminder_cancel_success") || "Đã tắt nhắc nhở nhập giao dịch", "success");
       }
@@ -254,6 +267,30 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     } finally {
       setShowTransactionReminderModal(false);
     }
+  };
+
+  const handleOpenTimePicker = () => {
+    let initialDate = new Date();
+    if (reminderHour) {
+      if (reminderHour.includes(":")) {
+        const parts = reminderHour.split(":");
+        initialDate.setHours(parseInt(parts[0], 10));
+        initialDate.setMinutes(parseInt(parts[1], 10));
+      } else {
+        initialDate.setHours(parseInt(reminderHour, 10));
+        initialDate.setMinutes(0);
+      }
+    }
+    setTimePickerDate(initialDate);
+    setShowTimePicker(true);
+  };
+
+  const handleTimePickerConfirm = (date: Date) => {
+    setShowTimePicker(false);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const timeStr = `${hours}:${minutes}`;
+    handleSetupReminder(timeStr);
   };
 
   const handleTransactionReminder = () => {
@@ -286,6 +323,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         color: isSelected ? colors.tint : colors.text,
       };
     }),
+    {
+      id: "CUSTOM",
+      icon: (reminderHour && (reminderHour.includes(":") || ![17, 18, 19, 20, 21, 22, 23].includes(parseInt(reminderHour, 10))) ? "checkmark-circle" : "create-outline") as keyof typeof Ionicons.glyphMap,
+      label: t("settings.reminder_custom") || "Tùy chỉnh...",
+      onPress: () => {
+        setShowTransactionReminderModal(false);
+        setTimeout(() => {
+          handleOpenTimePicker();
+        }, 400);
+      },
+      color: (reminderHour && (reminderHour.includes(":") || ![17, 18, 19, 20, 21, 22, 23].includes(parseInt(reminderHour, 10)))) ? colors.tint : colors.text,
+    }
   ];
 
   // Format currency display text
@@ -434,10 +483,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               onValueChange={setNotificationsEnabled}
               colors={colors}
             />
-            <SettingItem
+             <SettingItem
               icon="setting_screen_transaction_reminder"
               title={t("settings.transaction_reminder")}
-              value={reminderHour ? `${reminderHour}:00` : t("settings.reminder_off") || "OFF"}
+              value={reminderHour ? (reminderHour.includes(":") ? reminderHour : `${reminderHour}:00`) : t("settings.reminder_off") || "OFF"}
               onPress={handleTransactionReminder}
               colors={colors}
             />
@@ -580,7 +629,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         hasBottomNav={true}
       />
 
-      <BottomActionModal
+       <BottomActionModal
         visible={showTransactionReminderModal}
         onClose={() => setShowTransactionReminderModal(false)}
         title={t("settings.reminder_title") || "Nhắc nhở nhập giao dịch"}
@@ -590,6 +639,20 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         cancelText={t("common.cancel")}
         hasBottomNav={true}
         snapPoints={["90%"]}
+      />
+
+      <DatePicker
+        modal
+        open={showTimePicker}
+        date={timePickerDate}
+        mode="time"
+        theme={isDark ? "dark" : "light"}
+        buttonColor={colors.brandBlue || colors.tint}
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
+        title={t("settings.reminder_title") || "Nhắc nhở nhập giao dịch"}
+        onConfirm={handleTimePickerConfirm}
+        onCancel={() => setShowTimePicker(false)}
       />
     </SafeAreaView>
   );

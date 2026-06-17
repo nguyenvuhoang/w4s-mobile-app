@@ -83,6 +83,20 @@ const TipCalculatorScreen = () => {
 
   const tipPresets = [0, 5, 10, 15, 20];
 
+  const suggestions = React.useMemo(() => {
+    const cleaned = billAmount.replace(/[^\d]/g, "");
+    const num = parseFloat(cleaned);
+    if (isNaN(num) || num <= 0 || cleaned.length > 5) return [];
+
+    const multipliers = [1000, 10000, 100000, 1000000];
+    return multipliers
+      .map((m) => {
+        const val = num * m;
+        return val.toString();
+      })
+      .filter((s) => s !== cleaned);
+  }, [billAmount]);
+
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
@@ -116,6 +130,30 @@ const TipCalculatorScreen = () => {
                 {t("tip_calculator.currency_symbol")}
               </ThemedText>
             </View>
+            {suggestions.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.suggestionScroll}
+                contentContainerStyle={styles.suggestionContent}
+                keyboardShouldPersistTaps="handled"
+              >
+                {suggestions.map((s, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[
+                      styles.suggestionChip,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                    ]}
+                    onPress={() => handleBillAmountChange(s)}
+                  >
+                    <ThemedText style={[styles.suggestionText, { color: colors.tint }]}>
+                      {formatCurrency(parseFloat(s))}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
