@@ -419,9 +419,9 @@ class ApiClient {
 }
 
 // ✅ Named export constants
-// export const BASE_URL = "https://emicms.jits.com.vn:2611";
-export const BASE_URL =
-  "https://openapi.jits.com.vn:5555";
+export const BASE_URL = "https://cmsw4s.vknight.io.vn";
+// export const BASE_URL =
+//   "https://openapi.jits.com.vn:5555";
 // export const BASE_URL = "https://41d9f501b89c.ngrok-free.app";
 
 // ✅ Named export instance
