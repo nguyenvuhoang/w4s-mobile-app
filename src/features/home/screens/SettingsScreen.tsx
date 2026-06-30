@@ -30,7 +30,6 @@ import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
-import DatePicker from "react-native-date-picker";
 import {
   Image,
   Platform,
@@ -39,6 +38,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import DatePicker from "react-native-date-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "../styles/SettingsScreen.styles";
 
@@ -483,13 +483,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               onValueChange={setNotificationsEnabled}
               colors={colors}
             />
-             <SettingItem
+            {/* <SettingItem
               icon="setting_screen_transaction_reminder"
               title={t("settings.transaction_reminder")}
               value={reminderHour ? (reminderHour.includes(":") ? reminderHour : `${reminderHour}:00`) : t("settings.reminder_off") || "OFF"}
               onPress={handleTransactionReminder}
               colors={colors}
-            />
+            /> */}
             <SettingItem
               icon="setting_screen_notification"
               title={t("settings.spending_warning")}
@@ -629,7 +629,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         hasBottomNav={true}
       />
 
-       <BottomActionModal
+      <BottomActionModal
         visible={showTransactionReminderModal}
         onClose={() => setShowTransactionReminderModal(false)}
         title={t("settings.reminder_title") || "Nhắc nhở nhập giao dịch"}

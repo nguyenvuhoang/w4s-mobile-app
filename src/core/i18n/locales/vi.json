@@ -296,6 +296,8 @@
     "starting_camera": "Đang khởi động máy ảnh...",
     "scan_error": "Lỗi quét hóa đơn",
     "scan_failed_desc": "Không thể nhận diện hóa đơn, vui lòng thử lại hoặc chụp rõ hơn.",
+    "photo_permission_title": "Quyền truy cập ảnh",
+    "photo_permission_desc": "Vui lòng cấp quyền truy cập thư viện ảnh để chọn hóa đơn.",
     "total": "Tổng cộng"
   },
   "event": {

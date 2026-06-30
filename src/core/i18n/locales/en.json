@@ -296,6 +296,8 @@
     "starting_camera": "Starting camera...",
     "scan_error": "Scan Error",
     "scan_failed_desc": "Could not scan invoice. Please try again.",
+    "photo_permission_title": "Photo Permission Required",
+    "photo_permission_desc": "Please grant photo library access to choose an invoice.",
     "total": "Total"
   },
   "event": {
