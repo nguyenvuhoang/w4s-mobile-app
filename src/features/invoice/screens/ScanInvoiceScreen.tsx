@@ -11,10 +11,12 @@ import { useTranslation } from "react-i18next";
 import {
     Alert,
     Image,
+    Platform,
     StyleSheet,
     TouchableOpacity,
     View,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import Animated, {
     Easing,
     cancelAnimation,
@@ -99,31 +101,16 @@ const ScanInvoiceScreen = () => {
         }
     }, [hasPermission]);
 
-    // Capture photo
-    const handleCapture = useCallback(async () => {
-        if (!camera.current || scanState !== "idle") return;
-
+    // Process captured or picked invoice image
+    const processInvoiceImage = useCallback(async (uri: string) => {
         try {
-            // 1. Take photo
-            const photo = await camera.current.takePhoto({
-                flash: flashOn ? "on" : "off",
-                enableShutterSound: false,
-            });
-            const uri = `file://${photo.path}`;
-            console.log("[ScanInvoice] Photo Captured Details:", {
-                uri,
-                width: photo.width,
-                height: photo.height,
-                path: photo.path
-            });
-
-            // 2. Show preview + scan animation
+            // Show preview + scan animation
             setCapturedUri(uri);
             setScanState("scanning");
             setIsCameraActive(false);
 
-            // 3. Call API & process result
-            console.log("[ScanInvoice] Starting API call to scanInvoice...");
+            // Call API & process result
+            console.log("[ScanInvoice] Starting API call to scanInvoice...", uri);
             const result = await apiClient.scanInvoice(uri);
             console.log("[ScanInvoice] API Result:", result);
 
@@ -181,7 +168,64 @@ const ScanInvoiceScreen = () => {
                 ]
             );
         }
-    }, [scanState, flashOn, t, categories]);
+    }, [t, categories]);
+
+    // Capture photo
+    const handleCapture = useCallback(async () => {
+        if (!camera.current || scanState !== "idle") return;
+
+        try {
+            // 1. Take photo
+            const photo = await camera.current.takePhoto({
+                flash: flashOn ? "on" : "off",
+                enableShutterSound: false,
+            });
+            const uri = `file://${photo.path}`;
+            console.log("[ScanInvoice] Photo Captured Details:", {
+                uri,
+                width: photo.width,
+                height: photo.height,
+                path: photo.path
+            });
+
+            await processInvoiceImage(uri);
+        } catch (err: any) {
+            console.error("[ScanInvoice] Capture Error:", err);
+        }
+    }, [scanState, flashOn, processInvoiceImage]);
+
+    // Pick image from library
+    const handlePickImage = useCallback(async () => {
+        if (scanState !== "idle") return;
+
+        try {
+            // Permission check for iOS/Android
+            if (Platform.OS !== "android") {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== "granted") {
+                    Alert.alert(
+                        t("invoice.photo_permission_title"),
+                        t("invoice.photo_permission_desc"),
+                        [{ text: t("common.close"), style: "cancel" }]
+                    );
+                    return;
+                }
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: false,
+                quality: 0.8,
+            });
+
+            if (result.canceled || !result.assets?.length) return;
+
+            const uri = result.assets[0].uri;
+            await processInvoiceImage(uri);
+        } catch (err: any) {
+            console.error("[ScanInvoice] Pick Image Error:", err);
+        }
+    }, [scanState, t, processInvoiceImage]);
 
     // Retry
     const handleRetry = useCallback(() => {
@@ -314,13 +358,25 @@ const ScanInvoiceScreen = () => {
                 {/* Bottom controls */}
                 <View style={styles.bottomControls}>
                     {scanState === "idle" && (
-                        <TouchableOpacity
-                            style={styles.captureBtn}
-                            onPress={handleCapture}
-                            activeOpacity={0.8}
-                        >
-                            <View style={styles.captureBtnInner} />
-                        </TouchableOpacity>
+                        <View style={styles.bottomControlsRow}>
+                            <TouchableOpacity
+                                style={styles.galleryBtn}
+                                onPress={handlePickImage}
+                                activeOpacity={0.7}
+                            >
+                                <FontAwesome6 name="image" size={normalize(22)} color="#fff" />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.captureBtn}
+                                onPress={handleCapture}
+                                activeOpacity={0.8}
+                            >
+                                <View style={styles.captureBtnInner} />
+                            </TouchableOpacity>
+
+                            <View style={styles.spacerBtn} />
+                        </View>
                     )}
                     {scanState === "scanning" && (
                         <View style={styles.scanningBadge}>

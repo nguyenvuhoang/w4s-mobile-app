@@ -163,6 +163,27 @@ export const createStyles = (colors: any) =>
             paddingBottom: hp(5),
             minHeight: hp(16),
         },
+        bottomControlsRow: {
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+            paddingHorizontal: wp(12),
+        },
+        galleryBtn: {
+            width: normalize(52),
+            height: normalize(52),
+            borderRadius: normalize(26),
+            backgroundColor: "rgba(255,255,255,0.18)",
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 1,
+            borderColor: "rgba(255,255,255,0.15)",
+        },
+        spacerBtn: {
+            width: normalize(52),
+            height: normalize(52),
+        },
         captureBtn: {
             width: normalize(72),
             height: normalize(72),
