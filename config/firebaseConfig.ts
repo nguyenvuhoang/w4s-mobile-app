@@ -1,11 +1,10 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyCH0YTjwo2EZzjMaU3jL3Mn4iMn6Avzryo",
-  authDomain: "w4s-mb.firebaseapp.com",
-  projectId: "w4s-mb",
-  storageBucket: "w4s-mb.firebasestorage.app",
-  messagingSenderId: "533869103673",
-  appId: "1:533869103673:web:263e415b0800a8e3e79be8",
-  measurementId: "G-ML9RQ56LPW"
+  apiKey: "AIzaSyDPgb_fGdY5MCd80e6tUbft_5ARymOzjwY",
+  authDomain: "w4s-production.firebaseapp.com",
+  projectId: "w4s-production",
+  storageBucket: "w4s-production.firebasestorage.app",
+  messagingSenderId: "806169169442",
+  appId: "1:806169169442:web:d506964a032df5b45ac47b",
+  measurementId: "G-3W1XNKK8SS",
 };
-
 export default firebaseConfig;

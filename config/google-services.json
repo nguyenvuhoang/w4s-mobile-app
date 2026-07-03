@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "533869103673",
-    "project_id": "w4s-mb",
-    "storage_bucket": "w4s-mb.firebasestorage.app"
+    "project_number": "806169169442",
+    "project_id": "w4s-production",
+    "storage_bucket": "w4s-production.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:533869103673:android:be1fabbb15685868e79be8",
+        "mobilesdk_app_id": "1:806169169442:android:e50bf2c922be52d55ac47b",
         "android_client_info": {
-          "package_name": "com.o24.mbanking.w4s.development"
+          "package_name": "com.w4s.wealth4s.production"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDqkif1ov6ccXBOemCFiNkJuxW0oSILcf0"
+          "current_key": "AIzaSyD4VvD98SD2lz4wlU7dJaMnI0bMX61KPkk"
         }
       ],
       "services": {
