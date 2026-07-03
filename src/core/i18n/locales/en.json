@@ -801,7 +801,14 @@
     "no_name": "No Name",
     "contacts_load_error": "Unable to load contacts!",
     "name_required_alert": "Please enter the participant name",
-    "save_error": "Error saving participants!"
+    "save_error": "Error saving participants!",
+    "permission_needed_title": "Contacts Permission",
+    "permission_needed_desc": "Please grant contacts access to search and select transaction participants quickly.",
+    "grant_permission_btn": "Grant Access",
+    "disclosure_title": "Contacts Access",
+    "disclosure_desc": "W4S Mobile needs access to your contacts to allow you to easily find and select transaction participants (e.g., for splitting bills or sending money). We process your contacts locally on your device and commit to not storing or uploading them to any servers.",
+    "disclosure_agree": "Agree and Continue",
+    "disclosure_cancel": "Not Now"
   },
   "profile": {
     "title": "Profile",

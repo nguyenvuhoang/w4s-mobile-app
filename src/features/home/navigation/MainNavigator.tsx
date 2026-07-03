@@ -91,7 +91,7 @@ const CustomTabBarButton = ({ children }: any) => {
       </Animated.View>
 
       {/* Nút Mic */}
-      <Animated.View style={[styles.arcOption, micStyle]} pointerEvents={isMenuOpen ? "auto" : "none"}>
+      {/* <Animated.View style={[styles.arcOption, micStyle]} pointerEvents={isMenuOpen ? "auto" : "none"}>
         <TouchableOpacity
           style={[styles.arcOptionInner, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => {
@@ -102,7 +102,7 @@ const CustomTabBarButton = ({ children }: any) => {
         >
           <FontAwesome6 name="microphone" size={normalize(20)} color={colors.tint} solid />
         </TouchableOpacity>
-      </Animated.View>
+      </Animated.View> */}
 
       {/* Nút Chính */}
       <TouchableOpacity

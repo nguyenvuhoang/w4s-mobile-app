@@ -59,6 +59,8 @@ const SelectParticipantsScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingRecents, setLoadingRecents] = useState(true);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [showDisclosureModal, setShowDisclosureModal] = useState(false);
 
   const [customParticipants, setCustomParticipants] = useState<Participant[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -111,57 +113,21 @@ const SelectParticipantsScreen = () => {
     }
   };
 
-  // Load danh sách gần đây từ server
+  // Load danh sách gần đây từ Storage
   const loadRecentParticipants = async () => {
     try {
       setLoadingRecents(true);
-      // TODO: Call API để lấy danh sách gần đây
-      // const response = await ApiService.getRecentParticipants();
-
-      // Mock data tạm thời
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const mockRecentData: Participant[] = [
-        {
-          id: "1",
-          display_name: "Anh Nam",
-          phone: "0909123456",
-          avatar_url: "",
-          counterparty_type: 1,
-          is_favorite: true,
-          isFromServer: true,
-          name: "Anh Nam",
-          phoneNumber: "0909123456",
-          avatarColor: avatarColors[0],
-        },
-        {
-          id: "2",
-          display_name: "Chị Hương",
-          phone: "0912345678",
-          avatar_url: "",
-          counterparty_type: 1,
-          is_favorite: false,
-          isFromServer: true,
-          name: "Chị Hương",
-          phoneNumber: "0912345678",
-          avatarColor: avatarColors[1],
-        },
-        {
-          id: "3",
-          display_name: "Anh Tuấn",
-          phone: "0987654321",
-          avatar_url: "",
-          counterparty_type: 1,
-          is_favorite: true,
-          isFromServer: true,
-          name: "Anh Tuấn",
-          phoneNumber: "0987654321",
-          avatarColor: avatarColors[2],
-        },
-      ];
-
-      setRecentParticipants(mockRecentData);
-      setFilteredRecents(mockRecentData);
+      const storedRecent = await StorageService.getItem(
+        STORAGE_KEY.RECENT_PARTICIPANTS_STORAGE,
+      );
+      if (storedRecent) {
+        const parsed = JSON.parse(storedRecent) as Participant[];
+        setRecentParticipants(parsed);
+        setFilteredRecents(parsed);
+      } else {
+        setRecentParticipants([]);
+        setFilteredRecents([]);
+      }
     } catch (error) {
       console.error("Error loading recent participants:", error);
     } finally {
@@ -193,14 +159,24 @@ const SelectParticipantsScreen = () => {
 
   const loadContacts = async () => {
     try {
-      const { status } = await Contacts.requestPermissionsAsync();
+      const { status } = await Contacts.getPermissionsAsync();
+      const granted = status === "granted";
+      setHasPermission(granted);
 
-      if (status !== "granted") {
-        alert(t("selection.contacts_permission_error", { defaultValue: "Cần quyền truy cập danh bạ để chọn người tham gia!" }));
+      if (granted) {
+        await fetchContactsData();
+      } else {
         setLoading(false);
-        return;
       }
+    } catch (error) {
+      console.error("Error checking permissions on mount:", error);
+      setLoading(false);
+    }
+  };
 
+  const fetchContactsData = async () => {
+    try {
+      setLoading(true);
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
       });
@@ -234,10 +210,26 @@ const SelectParticipantsScreen = () => {
         setFilteredContacts([]);
       }
     } catch (error) {
-      console.error("Error loading contacts:", error);
+      console.error("Error fetching contacts:", error);
       alert(t("selection.contacts_load_error", { defaultValue: "Không thể tải danh bạ!" }));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRequestPermission = async () => {
+    setShowDisclosureModal(false);
+    try {
+      const { status } = await Contacts.requestPermissionsAsync();
+      const granted = status === "granted";
+      setHasPermission(granted);
+      if (granted) {
+        await fetchContactsData();
+      } else {
+        alert(t("selection.contacts_permission_error", { defaultValue: "Cần quyền truy cập danh bạ để chọn người tham gia!" }));
+      }
+    } catch (error) {
+      console.error("Error requesting contacts permission:", error);
     }
   };
 
@@ -313,6 +305,38 @@ const SelectParticipantsScreen = () => {
 
       // TODO: Gọi API để lưu
       // await ApiService.saveParticipants(dataToSend);
+
+      // Lưu vào danh sách gần đây (recent_participants) trong Storage
+      const storedRecent = await StorageService.getItem(
+        STORAGE_KEY.RECENT_PARTICIPANTS_STORAGE,
+      );
+      let recentList: Participant[] = [];
+      if (storedRecent) {
+        try {
+          recentList = JSON.parse(storedRecent) as Participant[];
+        } catch (e) {
+          recentList = [];
+        }
+      }
+
+      selectedParticipants.forEach((p) => {
+        // Loại bỏ trùng lặp số điện thoại hoặc ID
+        recentList = recentList.filter(
+          (item) => item.phoneNumber !== p.phoneNumber && item.id !== p.id,
+        );
+        recentList.unshift({
+          ...p,
+          isFromServer: true, // Đặt là true để các lần hiển thị sau được map đúng trường
+        });
+      });
+
+      // Giới hạn tối đa 20 liên hệ gần đây
+      recentList = recentList.slice(0, 20);
+
+      await StorageService.setItem(
+        STORAGE_KEY.RECENT_PARTICIPANTS_STORAGE,
+        JSON.stringify(recentList),
+      );
 
       // Lưu vào storage với session ID
       await StorageService.setItem(
@@ -584,22 +608,47 @@ const SelectParticipantsScreen = () => {
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <FontAwesome6
-              name={
-                activeTab === "recent" ? "clock-rotate-left" : "address-book"
-              }
-              size={normalize(48)}
-              color={colors.icon}
-            />
-            <CustomText style={[styles.emptyText, { color: colors.icon }]}>
-              {searchQuery
-                ? t("selection.no_results", { defaultValue: "Không tìm thấy kết quả" })
-                : activeTab === "recent"
-                  ? t("selection.empty_recent", { defaultValue: "Chưa có người tham gia gần đây" })
-                  : t("selection.empty_contacts", { defaultValue: "Danh bạ trống" })}
-            </CustomText>
-          </View>
+          activeTab === "contacts" && hasPermission === false ? (
+            <View style={styles.emptyContainer}>
+              <FontAwesome6 name="address-book" size={normalize(48)} color={colors.icon} style={{ marginBottom: hp(1) }} />
+              <CustomText style={[styles.emptyText, { color: colors.text, fontFamily: Fonts.medium, marginBottom: hp(0.5) }]}>
+                {t("selection.permission_needed_title", { defaultValue: "Quyền truy cập Danh bạ" })}
+              </CustomText>
+              <CustomText style={[styles.emptyText, { color: colors.icon, textAlign: 'center', paddingHorizontal: wp(10), fontSize: normalize(13), marginBottom: hp(2.5) }]}>
+                {t("selection.permission_needed_desc", { defaultValue: "Vui lòng cấp quyền truy cập danh bạ để tìm kiếm và chọn nhanh người tham gia giao dịch." })}
+              </CustomText>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: colors.tint,
+                  paddingHorizontal: normalize(20),
+                  paddingVertical: normalize(10),
+                  borderRadius: normalize(8),
+                }}
+                onPress={() => setShowDisclosureModal(true)}
+              >
+                <CustomText style={{ color: '#fff', fontFamily: Fonts.semiBold, fontSize: normalize(14) }}>
+                  {t("selection.grant_permission_btn", { defaultValue: "Cấp quyền truy cập" })}
+                </CustomText>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <FontAwesome6
+                name={
+                  activeTab === "recent" ? "clock-rotate-left" : "address-book"
+                }
+                size={normalize(48)}
+                color={colors.icon}
+              />
+              <CustomText style={[styles.emptyText, { color: colors.icon }]}>
+                {searchQuery
+                  ? t("selection.no_results", { defaultValue: "Không tìm thấy kết quả" })
+                  : activeTab === "recent"
+                    ? t("selection.empty_recent", { defaultValue: "Chưa có người tham gia gần đây" })
+                    : t("selection.empty_contacts", { defaultValue: "Danh bạ trống" })}
+              </CustomText>
+            </View>
+          )
         }
       />
 
@@ -744,6 +793,46 @@ const SelectParticipantsScreen = () => {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Prominent Disclosure Modal */}
+      <Modal
+        visible={showDisclosureModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDisclosureModal(false)}
+      >
+        <View style={styles.disclosureOverlay}>
+          <View style={[styles.disclosureContent, { backgroundColor: colors.card }]}>
+            <View style={[styles.disclosureIconContainer, { backgroundColor: colors.tint + "20" }]}>
+              <FontAwesome6 name="address-book" size={normalize(28)} color={colors.tint} />
+            </View>
+            <CustomText style={[styles.disclosureTitle, { color: colors.text }]}>
+              {t("selection.disclosure_title", { defaultValue: "Quyền truy cập Danh bạ" })}
+            </CustomText>
+            <CustomText style={[styles.disclosureText, { color: colors.icon }]}>
+              {t("selection.disclosure_desc", { defaultValue: "W4S Mobile cần quyền truy cập danh bạ để bạn dễ dàng tìm kiếm và chọn người tham gia giao dịch (như chia hóa đơn, chuyển tiền). Chúng tôi chỉ xử lý danh bạ trên thiết bị của bạn và cam kết không lưu trữ hoặc tải danh bạ của bạn lên bất kỳ máy chủ nào." })}
+            </CustomText>
+            <View style={styles.disclosureFooter}>
+              <TouchableOpacity
+                style={[styles.disclosureBtn, { backgroundColor: colors.tint }]}
+                onPress={handleRequestPermission}
+              >
+                <CustomText style={[styles.disclosureBtnText, { color: '#fff' }]}>
+                  {t("selection.disclosure_agree", { defaultValue: "Đồng ý và Tiếp tục" })}
+                </CustomText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.disclosureCancelBtn, { borderColor: colors.border }]}
+                onPress={() => setShowDisclosureModal(false)}
+              >
+                <CustomText style={[styles.disclosureBtnText, { color: colors.text }]}>
+                  {t("selection.disclosure_cancel", { defaultValue: "Để sau" })}
+                </CustomText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -1049,6 +1138,62 @@ const styles = StyleSheet.create({
     fontSize: normalize(16),
     fontFamily: Fonts.semiBold,
     color: "#fff",
+  },
+  disclosureOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: wp(5),
+  },
+  disclosureContent: {
+    width: "100%",
+    borderRadius: normalize(16),
+    paddingHorizontal: wp(5),
+    paddingVertical: hp(3),
+    alignItems: "center",
+  },
+  disclosureIconContainer: {
+    width: normalize(60),
+    height: normalize(60),
+    borderRadius: normalize(30),
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: hp(2),
+  },
+  disclosureTitle: {
+    fontSize: normalize(18),
+    fontFamily: Fonts.semiBold,
+    textAlign: "center",
+    marginBottom: hp(1.5),
+  },
+  disclosureText: {
+    fontSize: normalize(14),
+    fontFamily: Fonts.regular,
+    textAlign: "center",
+    lineHeight: normalize(20),
+    marginBottom: hp(3),
+  },
+  disclosureFooter: {
+    width: "100%",
+    gap: normalize(12),
+  },
+  disclosureBtn: {
+    width: "100%",
+    paddingVertical: normalize(14),
+    borderRadius: normalize(12),
+    alignItems: "center",
+  },
+  disclosureBtnText: {
+    fontSize: normalize(16),
+    fontFamily: Fonts.semiBold,
+  },
+  disclosureCancelBtn: {
+    width: "100%",
+    paddingVertical: normalize(14),
+    borderRadius: normalize(12),
+    alignItems: "center",
+    borderWidth: 1,
   },
 });
 
