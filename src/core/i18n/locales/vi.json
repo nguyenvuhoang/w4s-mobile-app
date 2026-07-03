@@ -807,7 +807,14 @@
     "no_name": "Không tên",
     "contacts_load_error": "Không thể tải danh bạ!",
     "name_required_alert": "Vui lòng nhập tên người tham gia",
-    "save_error": "Lỗi khi lưu người tham gia!"
+    "save_error": "Lỗi khi lưu người tham gia!",
+    "permission_needed_title": "Quyền truy cập Danh bạ",
+    "permission_needed_desc": "Vui lòng cấp quyền truy cập danh bạ để tìm kiếm và chọn nhanh người tham gia giao dịch.",
+    "grant_permission_btn": "Cấp quyền truy cập",
+    "disclosure_title": "Quyền truy cập Danh bạ",
+    "disclosure_desc": "W4S Mobile cần quyền truy cập danh bạ để bạn dễ dàng tìm kiếm và chọn người tham gia giao dịch (như chia hóa đơn, chuyển tiền). Chúng tôi chỉ xử lý danh bạ trên thiết bị của bạn và cam kết không lưu trữ hoặc tải danh bạ của bạn lên bất kỳ máy chủ nào.",
+    "disclosure_agree": "Đồng ý và Tiếp tục",
+    "disclosure_cancel": "Để sau"
   },
   "profile": {
     "title": "Thông tin cá nhân",
