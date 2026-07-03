@@ -1,17 +1,13 @@
 import AppIcon from "@/components/base/AppIcon";
 import CustomText from "@/components/base/CustomText";
+import { useNotification } from "@/contexts/NotificationContext";
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
 import { hp, normalize, wp } from "@/utils/layout";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
-import {
-    ExpoSpeechRecognitionModule,
-    useSpeechRecognitionEvent,
-} from "expo-speech-recognition";
-import { useNotification } from "@/contexts/NotificationContext";
-import { useTranslation } from "react-i18next";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     Alert,
     ScrollView,
@@ -29,6 +25,17 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+// import {
+//     ExpoSpeechRecognitionModule,
+//     useSpeechRecognitionEvent,
+// } from "expo-speech-recognition";
+// Mock speech recognition module to avoid importing expo-speech-recognition which is removed
+const ExpoSpeechRecognitionModule = {
+    requestPermissionsAsync: async () => ({ granted: false }),
+    start: (options?: any) => { },
+    stop: () => { },
+};
+const useSpeechRecognitionEvent = (event: string, callback: (...args: any[]) => void) => { };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ScreenState = "idle" | "listening" | "processing" | "done" | "error";

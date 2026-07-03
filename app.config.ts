@@ -210,14 +210,6 @@ export default () => {
           },
         ],
         "expo-contacts",
-        [
-          "expo-speech-recognition",
-          {
-            microphonePermission: "W4S Mobile cần quyền microphone để nhận lệnh tạo giao dịch bằng giọng nói.",
-            speechRecognitionPermission: "W4S Mobile cần quyền nhận dạng giọng nói để tạo giao dịch nhanh.",
-            androidSpeechServicePackages: ["com.google.android.googlequicksearchbox"],
-          },
-        ],
         "expo-web-browser",
       ],
       extra: {
