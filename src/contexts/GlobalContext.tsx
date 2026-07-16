@@ -1,5 +1,5 @@
 import StorageKey from "@/constants/StorageKey";
-import { useOTA } from "@/hooks/useOTA";
+import { useOTA, OTAPriority } from "@/hooks/useOTA";
 import { useImageService } from "@/services/ImageService";
 import { logError, logMessage } from "@/services/LoggerService";
 import { walletRepository } from "@/services/repositories/wallet.repository"; // 🔹 ADD
@@ -40,6 +40,7 @@ interface GlobalContextType {
   startOtaUpdate: () => Promise<void>;
   reloadOtaApp: () => Promise<void>;
   otaError: Error | null;
+  otaPriority: OTAPriority;
 
   unreadTotalCount: number;
   setUnreadTotalCount: (count: number) => void;
@@ -86,6 +87,7 @@ const GlobalContext = createContext<GlobalContextType>({
   startOtaUpdate: async () => { },
   reloadOtaApp: async () => { },
   otaError: null,
+  otaPriority: "normal",
 
   unreadTotalCount: 0,
   setUnreadTotalCount: () => { },
@@ -346,6 +348,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
     reloadApp: reloadOtaApp,
     otaError,
     checkForUpdates: checkForOtaUpdates,
+    priority: otaPriority,
   } = useOTA();
 
   useEffect(() => {
@@ -419,6 +422,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
         startOtaUpdate,
         reloadOtaApp,
         otaError,
+        otaPriority,
 
         globalPhone,
         setGlobalPhone,

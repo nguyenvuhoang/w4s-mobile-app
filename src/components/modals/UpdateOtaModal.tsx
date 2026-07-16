@@ -1,8 +1,7 @@
-import { AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlobalContext } from '../../contexts/GlobalContext';
 import { useAppTheme } from '../../core/theme/ThemeContext';
@@ -10,16 +9,13 @@ import { normalize } from '../../utils/layout';
 import CustomButton from '../base/CustomButton';
 import CustomText from '../base/CustomText';
 
-const HIDE_DURATION = 3 * 60 * 1000; // 3 minutes
-const HIDE_TIMESTAMP_KEY = 'updateBannerHideTimestampv2';
-
 const UpdateOtaModal = () => {
     const {
         isOtaUpdateAvailable,
         isOtaDownloading,
         isOtaUpdateReady,
-        startOtaUpdate,
-        reloadOtaApp
+        reloadOtaApp,
+        otaPriority
     } = useContext(GlobalContext);
 
     const [isVisible, setIsVisible] = useState(false);
@@ -28,34 +24,12 @@ const UpdateOtaModal = () => {
     const insets = useSafeAreaInsets();
 
     useEffect(() => {
-        const checkVisibility = async () => {
-            if (isOtaUpdateAvailable) {
-                const hideTimestamp = await AsyncStorage.getItem(HIDE_TIMESTAMP_KEY);
-                if (hideTimestamp) {
-                    const hiddenUntil = parseInt(hideTimestamp, 10);
-                    if (Date.now() < hiddenUntil) {
-                        const timeout = hiddenUntil - Date.now();
-                        setTimeout(() => setIsVisible(true), timeout);
-                    } else {
-                        setIsVisible(true);
-                    }
-                } else {
-                    setIsVisible(true);
-                }
-            } else {
-                setIsVisible(false);
-            }
-        };
-
-        checkVisibility();
-    }, [isOtaUpdateAvailable]);
-
-    const handleHideBanner = async () => {
-        const hiddenUntil = Date.now() + HIDE_DURATION;
-        await AsyncStorage.setItem(HIDE_TIMESTAMP_KEY, hiddenUntil.toString());
-        setIsVisible(false);
-        setTimeout(() => setIsVisible(true), HIDE_DURATION);
-    };
+        if (isOtaUpdateAvailable && otaPriority === 'force') {
+            setIsVisible(true);
+        } else {
+            setIsVisible(false);
+        }
+    }, [isOtaUpdateAvailable, otaPriority]);
 
     const renderContent = () => {
         if (isOtaUpdateReady) {
@@ -97,37 +71,16 @@ const UpdateOtaModal = () => {
             );
         }
 
-        return (
-            <>
-                <View style={[styles.iconContainer, { backgroundColor: colors.tint + '1A' }]}>
-                    <MaterialCommunityIcons name="rocket-launch-outline" size={normalize(44)} color={colors.tint} />
-                </View>
-                <CustomText style={styles.titleText}>
-                    {t("updateBanner.newUpdateAvailable")}
-                </CustomText>
-                <CustomText style={[styles.subtitleText, { color: colors.icon }]}>
-                    {t("updateBanner.updateSubtitle")}
-                </CustomText>
-                <CustomButton
-                    title={t("updateBanner.updateNow")}
-                    onPress={startOtaUpdate}
-                    style={[styles.updateButton, { backgroundColor: colors.tint }]}
-                    textStyle={[styles.buttonText, { color: '#fff' }]}
-                />
-            </>
-        );
+        return null;
     };
 
     if (!isVisible) {
         return null;
     }
-    // return null;
+
     return (
         <View style={styles.overlay}>
             <View style={[styles.bannerContainer, { backgroundColor: colors.card }]}>
-                <TouchableOpacity onPress={handleHideBanner} style={[styles.closeButton, { backgroundColor: colors.background }]}>
-                    <AntDesign name="close" size={normalize(20)} color={colors.icon} />
-                </TouchableOpacity>
                 <View style={styles.contentWrapper}>
                     {renderContent()}
                 </View>
@@ -186,16 +139,10 @@ const styles = StyleSheet.create({
         lineHeight: normalize(20),
         paddingHorizontal: normalize(10),
     },
-    bannerText: {
-        fontSize: normalize(16),
-        textAlign: 'center',
-        fontWeight: 'bold',
-        marginBottom: normalize(20),
-    },
     updateButton: {
         paddingHorizontal: normalize(20),
         paddingVertical: normalize(12),
-        height: 'auto', // Override CustomButton's fixed height
+        height: 'auto',
         backgroundColor: '#56605c',
         borderRadius: normalize(30),
         width: '100%',
@@ -209,14 +156,6 @@ const styles = StyleSheet.create({
     buttonText: {
         fontSize: normalize(15),
         fontWeight: 'bold',
-    },
-    closeButton: {
-        position: 'absolute',
-        top: normalize(14),
-        right: normalize(14),
-        padding: normalize(8),
-        zIndex: 1,
-        borderRadius: normalize(20),
     }
 });
 
