@@ -350,6 +350,7 @@ class ApiClient {
       console.log("Axios Network Error -> fallback sang fetch:", error);
     }
 
+    /*
     // Fallback sang fetch
     try {
       const controller = new AbortController();
@@ -413,6 +414,7 @@ class ApiClient {
       console.log("Fetch fallback cũng fail:", fetchErr.message);
       lastError = fetchErr;
     }
+    */
 
     this.handleApiError(lastError);
   }
