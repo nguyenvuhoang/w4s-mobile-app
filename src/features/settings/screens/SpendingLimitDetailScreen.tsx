@@ -38,6 +38,13 @@ const SpendingLimitDetailScreen = () => {
   const { showNotification } = useNotification();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
+  const scrollViewRef = React.useRef<ScrollView>(null);
+
+  const handleInputFocus = () => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 150);
+  };
 
   const { defaultCurrency } = useDefaultCurrency();
   const { currencies } = useCurrency({ autoFetch: true });
@@ -286,6 +293,7 @@ const SpendingLimitDetailScreen = () => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView
+          ref={scrollViewRef}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + normalize(20) }]}
           keyboardShouldPersistTaps="handled"
         >
@@ -425,6 +433,8 @@ const SpendingLimitDetailScreen = () => {
               onChange={setAmount}
               currency={selectedCurrency.symbol}
               containerStyle={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
+              showSuggestions={true}
+              onFocus={handleInputFocus}
             />
             {needsConversion && convertedAmount !== null && exchangeRate !== null && defaultCurrency && (
               <View style={styles.conversionContainer}>
@@ -449,23 +459,23 @@ const SpendingLimitDetailScreen = () => {
               </View>
             )}
           </View>
-        </ScrollView>
 
-        <View style={[styles.footer, { paddingBottom: insets.bottom + normalize(16), backgroundColor: colors.background }]}>
-          <TouchableOpacity
-            style={[styles.submitButton, { backgroundColor: colors.tint, opacity: loading ? 0.7 : 1 }]}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <CustomText style={styles.submitButtonText}>
-                {editingLimit ? t('common.update', 'Cập nhật') : t('common.create')}
-              </CustomText>
-            )}
-          </TouchableOpacity>
-        </View>
+          <View style={[styles.footer, { marginTop: normalize(32), borderTopWidth: 0, padding: 0 }]}>
+            <TouchableOpacity
+              style={[styles.submitButton, { backgroundColor: colors.tint, opacity: loading ? 0.7 : 1 }]}
+              onPress={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <CustomText style={styles.submitButtonText}>
+                  {editingLimit ? t('common.update', 'Cập nhật') : t('common.create')}
+                </CustomText>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
 
       <BottomActionModal
