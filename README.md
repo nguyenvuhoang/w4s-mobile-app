@@ -22,6 +22,13 @@ npx ts-node -r tsconfig-paths/register --project tsconfig.scripts.json ./scripts
 
 ```sh
 eas update --branch production --message "Mess"
+
+# Froce OTA
+//Window
+$env:OTA_PRIORITY="force"; eas update --branch production --message "Froce Update"
+//LINUX
+OTA_PRIORITY=force eas update --branch production --message "Froce Update"
+
 ```
 
 # Start app expo
