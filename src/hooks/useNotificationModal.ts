@@ -11,6 +11,7 @@ const useNotificationModal = () => {
   const [modalType, setModalType] = useState<ModalType>("warning");
   const [errorCode, setErrorCode] = useState("");
   const [errorDetails, setErrorDetails] = useState("");
+  const [executionId, setExecutionId] = useState("");
   const [nextAction, setNextAction] = useState<string>("");
 
   const [callback, setCallback] = useState<(() => void) | undefined>(undefined);
@@ -28,7 +29,8 @@ const useNotificationModal = () => {
     cb?: () => void,
     onReloadCb?: () => void,
     reject?: () => void,
-    details?: string
+    details?: string,
+    execId?: string
   ) => {
     if (hasShown.current) return;
 
@@ -36,6 +38,8 @@ const useNotificationModal = () => {
     setModalType(type);
     setErrorCode(code || "");
     setErrorDetails(details || "");
+    const finalExecId = execId || (type === "error" || type === "warning" ? (global as any).latestExecutionId : "");
+    setExecutionId(finalExecId || "");
     setNextAction(action || "");
     setOnAgree(() => agree || undefined);
     setOnReject(() => reject || undefined);
@@ -57,6 +61,8 @@ const useNotificationModal = () => {
     setModalType(data.isSuccess() ? "success" : "error");
     setErrorCode(data.getErrorCode() || "");
     setErrorDetails("");
+    const execId = data.getExecutionId() || (global as any).latestExecutionId || "";
+    setExecutionId(execId);
     setNextAction(data.getNextAction() || "");
     setCallback(() => cb || undefined);
     setOnAgree(undefined);
@@ -70,6 +76,8 @@ const useNotificationModal = () => {
     setModalVisible(false);
     hasShown.current = false;
     setErrorDetails("");
+    setExecutionId("");
+    (global as any).latestExecutionId = "";
 
     if (onReject) {
       const tempReject = onReject;
@@ -100,6 +108,7 @@ const useNotificationModal = () => {
     modalType,
     errorCode,
     errorDetails,
+    executionId,
     nextAction,
     onReload,
     isReload,

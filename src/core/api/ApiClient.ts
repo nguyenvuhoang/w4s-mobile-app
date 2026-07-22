@@ -89,6 +89,14 @@ class ApiClient {
   }
 
   private handleApiError(error: any): never {
+    const resData = error?.response?.data;
+    if (resData) {
+      const executeId = resData.fo?.[0]?.execute_id || resData.execution_id || "";
+      if (executeId) {
+        (global as any).latestExecutionId = executeId;
+      }
+    }
+
     let sentryData: any = {
       fullError: JSON.stringify(error),
       baseURL: this.axiosInstance.defaults.baseURL,
@@ -139,6 +147,13 @@ class ApiClient {
     try {
       console.log(apiUrl, data);
       const response = await this.axiosInstance.post<T>(apiUrl, data, config);
+      const resData = response.data as any;
+      if (resData) {
+        const executeId = resData.fo?.[0]?.execute_id || resData.execution_id || "";
+        if (executeId) {
+          (global as any).latestExecutionId = executeId;
+        }
+      }
       return response.data;
     } catch (error) {
       this.handleApiError(error);
@@ -325,6 +340,13 @@ class ApiClient {
     try {
       const fullUrl = `${this.axiosInstance.defaults.baseURL}${apiUrl}`;
       const response = await this.axiosInstance.post(fullUrl, data, config);
+      const resData = response.data as any;
+      if (resData) {
+        const executeId = resData.fo?.[0]?.execute_id || resData.execution_id || "";
+        if (executeId) {
+          (global as any).latestExecutionId = executeId;
+        }
+      }
       const baseResponse = new BaseResponseModel(response.data);
       if (baseResponse.hasErrors()) {
         const errorInfo = baseResponse.errors.find((e: any) =>

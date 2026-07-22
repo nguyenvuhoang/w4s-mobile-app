@@ -14,6 +14,7 @@ import {
 
 import { useAppTheme } from "@/core/theme/ThemeContext";
 import { Fonts } from "@/core/theme/font";
+import { copyToClipboard } from "@/utils/Utils";
 import { isTablet, normalize } from "@/utils/layout";
 
 const { width } = Dimensions.get("window");
@@ -26,6 +27,7 @@ type NotificationModalProps = {
   type: "warning" | "error" | "success";
   errorCode?: string;
   errorDetails?: string;
+  executionId?: string;
   nextAction?: string;
   onAgree?: () => void;
   onReload?: () => void;
@@ -39,6 +41,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
   type,
   errorCode,
   errorDetails,
+  executionId,
   nextAction,
   onAgree,
   onReload,
@@ -118,9 +121,17 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
             </Text>
           )}
 
-          <Text style={[styles.version, { color: colors.text }]}>
-            {appVersion} ({updateId})
-          </Text>
+          {executionId ? (
+            <TouchableOpacity onPress={() => copyToClipboard(executionId)} activeOpacity={0.6}>
+              <Text style={[styles.version, { color: colors.text }]}>
+                {`${appVersion} (${updateId}) - ${executionId.slice(-12)}`}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={[styles.version, { color: colors.text }]}>
+              {`${appVersion} (${updateId})`}
+            </Text>
+          )}
 
           {/* ACTIONS */}
           {showTwoButtons ? (

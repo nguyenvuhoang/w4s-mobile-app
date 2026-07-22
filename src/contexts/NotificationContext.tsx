@@ -21,6 +21,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     modalType,
     errorCode,
     errorDetails,
+    executionId,
     nextAction,
     onReload,
     isReload,
@@ -38,6 +39,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         type={modalType}
         errorCode={errorCode}
         errorDetails={errorDetails}
+        executionId={executionId}
         nextAction={nextAction}
         onReload={onReload}
         isReload={isReload}
