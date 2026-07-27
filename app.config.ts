@@ -144,6 +144,7 @@ export default () => {
             ios: {
               useFrameworks: "static",
               deploymentTarget: "16.0",
+              forceStaticLinking: ["RNFBApp", "RNFBMessaging"],
               extraPods: [
                 {
                   name: "GoogleDataTransport",
