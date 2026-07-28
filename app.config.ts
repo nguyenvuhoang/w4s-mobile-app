@@ -21,7 +21,7 @@ export default () => {
       description:
         "W4S Mobile is a personal finance management application that helps you track, control, and optimize your cash flow comprehensively, from fiat currency to digital assets and DeFi - all in a single platform.",
       orientation: "portrait",
-      icon: "./assets/app-icon.png",
+      icon: "./assets/logo/W4S_Icon.png",
       userInterfaceStyle: "automatic",
       updates: {
         enabled: true,
@@ -29,18 +29,19 @@ export default () => {
         url: "https://u.expo.dev/da4b2865-9a79-4658-8321-1cf84cef3b33",
       },
       splash: {
-        image: "./assets/splash-screen.png",
+        image: "./assets/logo/W4S_Light.png",
         resizeMode: "cover",
         backgroundColor: "#0059df",
         androidStatusBar: {
           translucent: true,
+          barStyle: "light-content",
           backgroundColor: "#00000000",
         },
       },
       ios: {
         supportsTablet: true,
         googleServicesFile: "./config/GoogleService-Info.plist",
-        icon: "./assets/app-icon.png",
+        icon: "./assets/logo/W4S_Icon.png",
         deploymentTarget: "16.0",
         infoPlist: {
           FirebaseAppDelegateProxyEnabled: true,
@@ -77,7 +78,7 @@ export default () => {
         },
       },
       android: {
-        icon: "./assets/app-icon.png",
+        icon: "./assets/logo/W4S_Icon.png",
         adaptiveIcon: {
           foregroundImage: "./assets/logo/app-icon-adaptive-android.png",
           backgroundColor: "#FFFFFF",
@@ -118,7 +119,7 @@ export default () => {
         [
           "expo-notifications",
           {
-            icon: "./assets/app-icon.png",
+            icon: "./assets/logo/W4S_Icon.png",
             // "sounds": ["./assets/sounds/emi.wav"],
             enableBackgroundRemoteNotifications: true,
           },
@@ -159,8 +160,8 @@ export default () => {
               ],
             },
             android: {
-              targetSdkVersion: 35,
-              compileSdkVersion: 35,
+              targetSdkVersion: 36,
+              compileSdkVersion: 36,
               ndkVersion: "26.1.10909125",
               packagingOptions: {
                 jniLibs: {
