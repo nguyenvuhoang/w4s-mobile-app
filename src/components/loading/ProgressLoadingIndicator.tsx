@@ -141,7 +141,7 @@ const ProgressLoadingIndicator: React.FC<ProgressLoadingIndicatorProps> = ({
           ]}
         >
           <Image
-            source={require("@assets/images/W4S_Light.png")}
+            source={require("@assets/logo/W4S_Light.png")}
             style={styles.logo}
             resizeMode="contain"
           />
