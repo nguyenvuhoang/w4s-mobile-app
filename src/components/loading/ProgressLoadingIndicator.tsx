@@ -97,9 +97,9 @@ const ProgressLoadingIndicator: React.FC<ProgressLoadingIndicatorProps> = ({
         }),
       ]).start();
     } else {
-       translateY.setValue(50);
-       opacity.setValue(0);
-       clipHeight.setValue(0);
+      translateY.setValue(50);
+      opacity.setValue(0);
+      clipHeight.setValue(0);
     }
   }, [visible]);
 
@@ -141,7 +141,7 @@ const ProgressLoadingIndicator: React.FC<ProgressLoadingIndicatorProps> = ({
           ]}
         >
           <Image
-            source={require("@assets/images/emilogo.gif")}
+            source={require("@assets/images/W4S_Light.png")}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -161,7 +161,7 @@ const ProgressLoadingIndicator: React.FC<ProgressLoadingIndicatorProps> = ({
             style={[
               styles.bar,
               {
-                backgroundColor: colors.tint, 
+                backgroundColor: colors.tint,
                 width: widthInterpolate,
               },
             ]}
