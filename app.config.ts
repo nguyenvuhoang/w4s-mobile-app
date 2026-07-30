@@ -41,13 +41,13 @@ export default () => {
       ios: {
         supportsTablet: true,
         googleServicesFile: "./config/GoogleService-Info.plist",
-        icon: "./assets/logo/W4S_Icon.png",
+        icon: "./assets/logo/W4S_Dark.png",
         deploymentTarget: "16.0",
         infoPlist: {
           FirebaseAppDelegateProxyEnabled: true,
           UIBackgroundModes: ["remote-notification"],
           ITSAppUsesNonExemptEncryption: false,
-          CFBundleDisplayName: "W4S Mobile ",
+          CFBundleDisplayName: "W4S Mobile",
           CFBundleShortVersionString: versionName,
           CFBundleVersion: `${versionCode}`,
           CFBundleKeywords: ["ngân hàng", "tài chính", "banking", "finance"],
