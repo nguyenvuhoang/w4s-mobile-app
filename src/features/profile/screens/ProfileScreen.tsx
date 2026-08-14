@@ -51,7 +51,7 @@ const ProfileScreen = () => {
       avatar: null,
     };
 
-    const fullName = [profile.last_name, profile.middle_name, profile.first_name].filter(Boolean).join(' ');
+    const fullName = [profile.first_name, profile.middle_name, profile.last_name].filter(Boolean).join(' ');
 
     let genderStr = 'N/A';
     if (profile.gender === 1 || profile.gender === '1' || profile.gender === 'M') genderStr = t('profile.male', 'Nam');
