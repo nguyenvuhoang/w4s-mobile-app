@@ -377,7 +377,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           {/* Giữ nguyên 2 dòng text bên dưới */}
           <CustomText style={[styles.profileName, { color: colors.text }]}>
             {profile
-              ? `${profile.last_name || ""} ${profile.middle_name || ""} ${profile.first_name || ""}`.trim()
+              ? `${profile.first_name || ""} ${profile.middle_name || ""} ${profile.last_name || ""}`.trim()
               : t("common.loading")}
           </CustomText>
           <CustomText style={[styles.profileEmail, { color: colors.icon }]}>

@@ -178,15 +178,15 @@ const EditProfileScreen: React.FC = () => {
             <>
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t('profile.last_name', 'Họ')} <CustomText style={{ color: 'red' }}>*</CustomText>
+                  {t('profile.first_name', 'Họ')} <CustomText style={{ color: 'red' }}>*</CustomText>
                 </CustomText>
-                <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: errors.last_name ? 'red' : colors.border }]}>
+                <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: errors.first_name ? 'red' : colors.border }]}>
                   <TextInput
                     style={[styles.input, { color: colors.text }]}
-                    placeholder={t('profile.last_name_placeholder', 'Nhập họ')}
+                    placeholder={t('profile.first_name_placeholder', 'Nhập họ')}
                     placeholderTextColor={colors.icon}
-                    value={formData.last_name}
-                    onChangeText={(val) => handleUpdateField('last_name', val)}
+                    value={formData.first_name}
+                    onChangeText={(val) => handleUpdateField('first_name', val)}
                   />
                 </View>
               </View>
@@ -208,15 +208,15 @@ const EditProfileScreen: React.FC = () => {
 
               <View style={styles.section}>
                 <CustomText style={[styles.label, { color: colors.text }]} type="semiBold">
-                  {t('profile.first_name', 'Tên')} <CustomText style={{ color: 'red' }}>*</CustomText>
+                  {t('profile.last_name', 'Tên')} <CustomText style={{ color: 'red' }}>*</CustomText>
                 </CustomText>
-                <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: errors.first_name ? 'red' : colors.border }]}>
+                <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: errors.last_name ? 'red' : colors.border }]}>
                   <TextInput
                     style={[styles.input, { color: colors.text }]}
-                    placeholder={t('profile.first_name_placeholder', 'Nhập tên')}
+                    placeholder={t('profile.last_name_placeholder', 'Nhập tên')}
                     placeholderTextColor={colors.icon}
-                    value={formData.first_name}
-                    onChangeText={(val) => handleUpdateField('first_name', val)}
+                    value={formData.last_name}
+                    onChangeText={(val) => handleUpdateField('last_name', val)}
                   />
                 </View>
               </View>
