@@ -32,11 +32,6 @@ export default () => {
         image: "./assets/logo/W4S_Light.png",
         resizeMode: "cover",
         backgroundColor: "#0059df",
-        androidStatusBar: {
-          translucent: true,
-          barStyle: "light-content",
-          backgroundColor: "#00000000",
-        },
       },
       ios: {
         supportsTablet: true,
@@ -163,6 +158,8 @@ export default () => {
               targetSdkVersion: 36,
               compileSdkVersion: 36,
               ndkVersion: "26.1.10909125",
+              enableMinifyInReleaseBuilds: true,
+              enableShrinkResourcesInReleaseBuilds: true,
               packagingOptions: {
                 jniLibs: {
                   useLegacyPackaging: false,
