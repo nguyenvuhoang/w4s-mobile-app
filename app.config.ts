@@ -32,8 +32,6 @@ export default () => {
         image: "./assets/logo/W4S_Light.png",
         resizeMode: "cover",
         backgroundColor: "#0059df",
-        androidStatusBar: {
-          translucent: true,
       },
       ios: {
         supportsTablet: true,
