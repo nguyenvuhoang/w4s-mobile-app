@@ -254,7 +254,7 @@ export const useLoginService = () => {
       otpCode: string,
       phoneVerifyOTP: string,
       verifyOTPCode: string,
-      type: string = OTPChannel.ZALO,
+      type: string = OTPChannel.MAIL,
     ): Promise<AppInfo | null> => {
       if (!otpCode) return null;
       const userCode = await StorageService.getItem(StorageKey.userCode);
@@ -311,7 +311,7 @@ export const useLoginService = () => {
       dateOfBirth: string,
       licenseID: string,
       licenseType: string,
-      type: string = OTPChannel.SMS,
+      type: string = OTPChannel.MAIL,
     ): Promise<boolean> => {
       if (!otpCode) return false;
 
@@ -423,7 +423,7 @@ export const useLoginService = () => {
       const transaction_id = await handleGenerateOTP(
         finalPhoneNumber,
         OTPTYPE.VERIFYLOGIN,
-        OTPChannel.ZALO,
+        OTPChannel.MAIL,
       );
       if (transaction_id) {
         setVerifyOTPCode(transaction_id);
@@ -434,7 +434,7 @@ export const useLoginService = () => {
             finalPhoneNumber,
             transaction_id,
             currentAppInfo,
-            OTPChannel.ZALO,
+            OTPChannel.MAIL,
             password,
           );
         }

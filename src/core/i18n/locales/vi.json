@@ -372,7 +372,7 @@
     "fullname": "Họ và tên",
     "fullname_placeholder": "Họ và tên của bạn",
     "phone": "Số điện thoại",
-    "phone_register": "SĐT có tài khoản Zalo",
+    "phone_register": "Số điện thoại",
     "phone_placeholder": "Số điện thoại của bạn",
     "address": "Địa chỉ",
     "address_placeholder": "Địa chỉ của bạn",
@@ -865,20 +865,20 @@
     "other": "Khác"
   },
   "otpModal": {
-    "title": "Xác thực Zalo OTP",
-    "description": "Nhập mã Zalo OTP được gửi đến số điện thoại của bạn",
-    "loginDescription": "Nhập mã Zalo OTP được gửi đến số điện thoại {{phone}}",
-    "enterValidOTP": "Vui lòng nhập mã Zalo OTP hợp lệ",
+    "title": "Xác thực OTP",
+    "description": "Nhập mã OTP được gửi đến email của bạn",
+    "loginDescription": "Nhập mã OTP được gửi đến email liên kết với {{phone}}",
+    "enterValidOTP": "Vui lòng nhập mã OTP hợp lệ",
     "continueButton": "Tiếp tục",
-    "resetPasswordDescription": "Nhập mã Zalo OTP được gửi đến số điện thoại {{phone}} để xác thực cấp lại mật khẩu"
+    "resetPasswordDescription": "Nhập mã OTP được gửi đến email liên kết với {{phone}} để xác thực cấp lại mật khẩu"
   },
   "otpNote": {
     "notreceiveotp": "Bạn không nhận được mã?",
     "resend": "Gửi lại",
-    "resentSuccess": "Đã gửi lại mã Zalo OTP thành công",
-    "resentFailed": "Gửi lại mã Zalo OTP thất bại",
+    "resentSuccess": "Đã gửi lại mã OTP thành công",
+    "resentFailed": "Gửi lại mã OTP thất bại",
     "notransactionid": "Không tìm thấy mã giao dịch",
-    "invalidOTP": "Mã Zalo OTP không hợp lệ"
+    "invalidOTP": "Mã OTP không hợp lệ"
   },
   "interest_calculator": {
     "title": "Tính lãi suất",

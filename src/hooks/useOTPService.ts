@@ -30,7 +30,7 @@ export const useOTPService = (): UseOTPServiceReturn => {
    * Generates an OTP for a given phone number and purpose.
    */
   const handleGenerateOTP = useCallback(
-    async (phoneNumber: string, purpose: string = OTPTYPE.VERIFYLOGIN, type: string = OTPChannel.SMS): Promise<string | null> => {
+    async (phoneNumber: string, purpose: string = OTPTYPE.VERIFYLOGIN, type: string = OTPChannel.MAIL): Promise<string | null> => {
       try {
         const response = await otpRepository.generateOTP({
           phonenumber: phoneNumber,
@@ -98,7 +98,7 @@ export const useOTPService = (): UseOTPServiceReturn => {
    * Resends an OTP.
    */
   const handleResendOTP = useCallback(
-    async (phoneNumber: string, purpose: string = OTPTYPE.VERIFYLOGIN, type: string = OTPChannel.SMS): Promise<{ success: boolean; error?: string }> => {
+    async (phoneNumber: string, purpose: string = OTPTYPE.VERIFYLOGIN, type: string = OTPChannel.MAIL): Promise<{ success: boolean; error?: string }> => {
       try {
         const transaction_id = await handleGenerateOTP(phoneNumber, purpose, type);
         if (transaction_id) {
@@ -177,7 +177,7 @@ export const useOTPService = (): UseOTPServiceReturn => {
    * Shows the OTP Modal for Login.
    */
   const showLoginOTPModal = useCallback(
-    async (phoneNumber: string, transactionId: string, currentAppInfo: AppInfo, type: string = OTPChannel.SMS, password?: string) => {
+    async (phoneNumber: string, transactionId: string, currentAppInfo: AppInfo, type: string = OTPChannel.MAIL, password?: string) => {
       let verifiedAppInfo: AppInfo | null = null;
 
       showOTP({

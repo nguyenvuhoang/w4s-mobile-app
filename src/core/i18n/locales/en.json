@@ -372,7 +372,7 @@
     "fullname": "Full Name",
     "fullname_placeholder": "Your full name",
     "phone": "Phone Number",
-    "phone_register": "Phone number with Zalo account",
+    "phone_register": "Phone Number",
     "phone_placeholder": "Your phone number",
     "address": "Address",
     "address_placeholder": "Your address",
@@ -859,20 +859,20 @@
     "other": "Other"
   },
   "otpModal": {
-    "title": "Zalo OTP Verification",
-    "description": "Enter the Zalo OTP sent to your phone number",
-    "loginDescription": "Enter the Zalo OTP sent to phone number {{phone}}",
-    "enterValidOTP": "Please enter a valid Zalo OTP",
+    "title": "OTP Verification",
+    "description": "Enter the OTP sent to your email",
+    "loginDescription": "Enter the OTP sent to the email associated with {{phone}}",
+    "enterValidOTP": "Please enter a valid OTP",
     "continueButton": "Continue",
-    "resetPasswordDescription": "Enter the Zalo OTP sent to phone number {{phone}} to verify password reset"
+    "resetPasswordDescription": "Enter the OTP sent to the email associated with {{phone}} to verify password reset"
   },
   "otpNote": {
     "notreceiveotp": "Did not receive the code?",
     "resend": "Resend",
-    "resentSuccess": "Zalo OTP resent successfully",
-    "resentFailed": "Failed to resend Zalo OTP",
+    "resentSuccess": "OTP resent successfully",
+    "resentFailed": "Failed to resend OTP",
     "notransactionid": "Transaction ID not found",
-    "invalidOTP": "Invalid Zalo OTP code"
+    "invalidOTP": "Invalid OTP code"
   },
   "interest_calculator": {
     "title": "Interest Calculator",

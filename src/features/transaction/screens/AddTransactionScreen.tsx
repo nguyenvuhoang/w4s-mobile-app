@@ -166,6 +166,7 @@ const AddTransactionScreen = () => {
     name: "Việt Nam Đồng",
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionIdRef = useRef<string>(Date.now().toString());
   const hasManuallySelectedCurrencyRef = useRef(false);
@@ -596,7 +597,7 @@ const AddTransactionScreen = () => {
   };
 
   const handleCreate = async () => {
-    if (!isValid) return;
+    if (!isValid || isSubmitting || creatingTransaction) return;
 
     // Ngăn lưu nếu đang upload dở
     if (isUploadingImage) {
@@ -604,6 +605,7 @@ const AddTransactionScreen = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const finalAmount = walletConversionNeeded
         ? walletConvertedAmount
@@ -652,6 +654,8 @@ const AddTransactionScreen = () => {
         error instanceof Error ? error.message : t("transaction.create_error"),
         "error",
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -776,6 +780,8 @@ const AddTransactionScreen = () => {
       </View>
     );
   };
+
+  const isBtnDisabled = !isValid || creatingTransaction || isSubmitting;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -1430,7 +1436,7 @@ const AddTransactionScreen = () => {
           <TouchableOpacity
             style={[styles.cancelBtn, { borderColor: colors.tint }]}
             onPress={handleCancel}
-            disabled={creatingTransaction}
+            disabled={creatingTransaction || isSubmitting}
           >
             <CustomText style={[styles.cancelText, { color: colors.tint }]}>
               {t("common.cancel")}
@@ -1441,14 +1447,13 @@ const AddTransactionScreen = () => {
             style={[
               styles.createBtn,
               {
-                backgroundColor:
-                  isValid && !creatingTransaction ? colors.tint : colors.border,
+                backgroundColor: !isBtnDisabled ? colors.tint : colors.border,
               },
             ]}
             onPress={handleCreate}
-            disabled={!isValid || creatingTransaction}
+            disabled={isBtnDisabled}
           >
-            {creatingTransaction ? (
+            {creatingTransaction || isSubmitting ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <CustomText style={styles.createText}>{t("transaction.save")}</CustomText>
