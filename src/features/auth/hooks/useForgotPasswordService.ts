@@ -68,8 +68,8 @@ export const useForgotPasswordService = () => {
         const userCode = results && results.length > 0 ? results[0].usercode : null;
 
         if (userCode) {
-          // 2. Generate OTP via ZALO
-          const transactionId = await handleGenerateOTP(phone, OTPTYPE.RESETPASSWORD, OTPChannel.ZALO);
+          // 2. Generate OTP via MAIL
+          const transactionId = await handleGenerateOTP(phone, OTPTYPE.RESETPASSWORD, OTPChannel.MAIL);
           
           if (transactionId) {
             // 3. Show OTP Modal
@@ -78,7 +78,7 @@ export const useForgotPasswordService = () => {
               description: t('otpModal.resetPasswordDescription', { phone }),
               isresend: true,
               handleResent: async () => {
-                return await handleResendOTP(phone, OTPTYPE.RESETPASSWORD, OTPChannel.ZALO);
+                return await handleResendOTP(phone, OTPTYPE.RESETPASSWORD, OTPChannel.MAIL);
               },
               handleVerifyOTP: async (otpCode: string) => {
                 const isValid = await handleVerifySMSOTP(phone, otpCode, transactionId, OTPTYPE.RESETPASSWORD);

@@ -72,7 +72,7 @@ const OtpVerificationScreen = () => {
                     </CustomText>
 
                     <CustomText style={[styles.description, { color: colors.icon }]} size={14}>
-                        Enter the verification code we just sent to your Zalo account
+                        Enter the verification code we just sent to your email
                     </CustomText>
 
                     {/* OTP Input Section */}

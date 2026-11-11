@@ -201,7 +201,7 @@ export const useSettingService = () => {
     }
   };
 
-  const handleGenerateOTPForDelete = async (phoneNumber: string, type: string = OTPChannel.ZALO) => {
+  const handleGenerateOTPForDelete = async (phoneNumber: string, type: string = OTPChannel.MAIL) => {
     try {
       const response = await otpRepository.generateOTP({
         phonenumber: phoneNumber,
@@ -229,7 +229,7 @@ export const useSettingService = () => {
     }
   };
 
-  const handleVerifyOTPForDelete = async (phoneNumber: string, otpCode: string, type: string = OTPChannel.ZALO) => {
+  const handleVerifyOTPForDelete = async (phoneNumber: string, otpCode: string, type: string = OTPChannel.MAIL) => {
     try {
       const userCode = appInfo?.user_code || await StorageService.getItem(StorageKey.userCode);
       const response = await otpRepository.verifySMSOTP({
@@ -298,7 +298,7 @@ export const useSettingService = () => {
   const showDeleteOTPModal = async (phoneNumber: string) => {
     showOTP({
       title: t("otpModal.title") || "Xác thực OTP",
-      description: t("otpModal.loginDescription", { phone: phoneNumber }) || `Nhập mã OTP đã được gửi đến số điện thoại ${phoneNumber}`,
+      description: t("otpModal.loginDescription", { phone: phoneNumber }) || `Nhập mã OTP đã được gửi đến email liên kết với ${phoneNumber}`,
       isresend: true,
       blockSeconds: 120,
       showOtpCode: true,
