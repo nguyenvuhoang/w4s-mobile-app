@@ -34,8 +34,8 @@ export const exchangeRateRepository = {
         WORKFLOWCODE.WF_MB_SIMPLE_SEARCH_EXCHANGE_RATE,
         {
           search_text: params.search_text || "",
-          page_index: params.page_index || 0,
-          page_size: params.page_size || 50,
+          page_index: params.page_index ?? 0,
+          page_size: params.page_size ?? 50,
         },
         false,
         true

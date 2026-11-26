@@ -56,7 +56,7 @@ export const useInfiniteTransactions = (
             if (searchQuery) {
                 response = await transactionRepository.simpleSearchTransactions({
                     search_text: searchQuery,
-                    page_index: pageIndex + 1,
+                    page_index: pageIndex,
                     page_size: pageSize,
                 });
             } else if (walletId || transactionCode || fromDate || toDate) {
@@ -66,7 +66,7 @@ export const useInfiniteTransactions = (
                     transaction_code: transactionCode,
                     from_transaction_date: fromDate,
                     to_transaction_date: toDate,
-                    page_index: pageIndex + 1,
+                    page_index: pageIndex,
                     page_size: pageSize,
                 });
             } else {

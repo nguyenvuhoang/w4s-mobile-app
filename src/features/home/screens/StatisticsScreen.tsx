@@ -86,7 +86,7 @@ const StatisticsScreen = () => {
       const result = await advancedSearchTransactions({
         from_transaction_date: fromDate,
         to_transaction_date: toDate,
-        page_index: 1,
+        page_index: 0,
         page_size: 100,
       });
 

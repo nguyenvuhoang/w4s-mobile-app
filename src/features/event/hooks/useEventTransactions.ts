@@ -34,7 +34,7 @@ export const useEventTransactions = (
     const [totalCount, setTotalCount] = useState(0);
     const [totalIncome, setTotalIncome] = useState(0);
     const [totalExpense, setTotalExpense] = useState(0);
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(0);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -174,7 +174,7 @@ export const useEventTransactions = (
     }, [eventId, pageSize]);
 
     const refresh = useCallback(async () => {
-        await fetchTransactions(1, false);
+        await fetchTransactions(0, false);
     }, [fetchTransactions]);
 
     const loadMore = useCallback(async () => {
@@ -189,7 +189,7 @@ export const useEventTransactions = (
     }, [currentPage, rawTransactions.length, totalCount, loadingMore, loading, fetchTransactions]);
 
     useEffect(() => {
-        fetchTransactions(1, false);
+        fetchTransactions(0, false);
     }, [fetchTransactions]);
 
     // Listen for transaction changes (create/update/delete)

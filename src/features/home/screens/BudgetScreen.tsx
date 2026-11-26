@@ -77,7 +77,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         const res = await advancedSearchBudgets({
           wallet_id: walletId,
           period_type: apiPeriodType,
-          page_index: 1,
+          page_index: 0,
           page_size: 99
         });
         setBudgetList(res || []);
