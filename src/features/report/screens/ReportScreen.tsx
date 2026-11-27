@@ -38,8 +38,10 @@ const generateTimePeriods = (t: any) => {
 
   // Generate last 3 months + current month
   for (let i = 3; i >= 0; i--) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
     const isCurrentMonth = i === 0;
+    const d = isCurrentMonth
+      ? today
+      : new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
 
     let label = '';
     if (isCurrentMonth) {
@@ -90,66 +92,87 @@ const ReportScreen = () => {
   const { analyzeCategory, categoryAnalysis, analyzing } = useCategory({ autoFetch: false });
   const { fetchMonthlyDebitSummary, debitSummary, loading: debitLoading } = useReport();
 
-  useEffect(() => {
-    if (!loading && wallets.length > 0 && !selectedWallet) {
-      const initialWallet = defaultWallet || wallets[0];
-      setSelectedWallet(initialWallet);
-    }
-  }, [loading, wallets, defaultWallet, selectedWallet]);
+  const lastFetchKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (selectedWallet?.walletId && selectedPeriod?.date) {
-      console.log('[ReportScreen] Fetching data for wallet:', selectedWallet.walletId, 'period:', selectedPeriod.date);
+    const walletId = selectedWallet?.walletId;
+    const periodDate = selectedPeriod?.date;
+    if (!walletId || !periodDate) return;
 
-      fetchBalance({
-        period_type: PERIOD_TYPE.MONTH,
-        anchor_date: selectedPeriod.date,
-        type: 'W',
-        wallet_id: selectedWallet.walletId
-      });
+    const fetchKey = `${walletId}|${periodDate}|${defaultCurrency.currencyId}`;
+    if (lastFetchKeyRef.current === fetchKey) return;
+    lastFetchKeyRef.current = fetchKey;
 
-      fetchWalletSummary({
-        wallet_id: selectedWallet.walletId,
-        anchor_date: selectedPeriod.date,
-        period_type: PERIOD_TYPE.MONTH,
-      });
-
-      analyzeCategory({
-        wallet_id: selectedWallet.walletId,
-        anchor_date: selectedPeriod.date,
-        period_type: PERIOD_TYPE.MONTH,
-      });
-
-      fetchMonthlyDebitSummary({
-        wallet_id: selectedWallet.walletId,
-        anchor_date: selectedPeriod.date.slice(0, 7),
-      });
+    if (__DEV__) {
+      console.log('[ReportScreen] Fetching data for wallet:', walletId, 'period:', periodDate);
     }
-  }, [selectedWallet?.walletId, selectedPeriod?.id, defaultCurrency.currencyId, fetchBalance, fetchWalletSummary, analyzeCategory, fetchMonthlyDebitSummary]);
+
+    fetchBalance({
+      period_type: PERIOD_TYPE.MONTH,
+      anchor_date: periodDate,
+      type: 'W',
+      wallet_id: walletId
+    });
+
+    fetchWalletSummary({
+      wallet_id: walletId,
+      anchor_date: periodDate,
+      period_type: PERIOD_TYPE.MONTH,
+    });
+
+    analyzeCategory({
+      wallet_id: walletId,
+      anchor_date: periodDate,
+      period_type: PERIOD_TYPE.MONTH,
+    });
+
+    fetchMonthlyDebitSummary({
+      wallet_id: walletId,
+      anchor_date: periodDate.slice(0, 7),
+    });
+  }, [selectedWallet?.walletId, selectedPeriod?.date, defaultCurrency.currencyId, fetchBalance, fetchWalletSummary, analyzeCategory, fetchMonthlyDebitSummary]);
 
   useFocusEffect(
     useCallback(() => {
-      const loadSelectedWallet = async () => {
+      if (loading && wallets.length === 0) return;
+      if (wallets.length === 0) return;
+
+      let isMounted = true;
+      const resolveSelectedWallet = async () => {
         try {
           const storedWallet = await StorageService.getItem(
             STORAGE_KEY.TEMP_WALLET_STORAGE,
           );
+          if (!isMounted) return;
+
           if (storedWallet) {
+            await StorageService.removeItem(STORAGE_KEY.TEMP_WALLET_STORAGE);
             const { walletId } = JSON.parse(storedWallet);
-            const wallet = wallets.find((w) => w.walletId === walletId);
-            if (wallet) {
-              setSelectedWallet(wallet);
-            }
-            await StorageService.removeItem(
-              STORAGE_KEY.TEMP_WALLET_STORAGE,
+            const target =
+              wallets.find((w) => w.walletId === walletId) ||
+              defaultWallet ||
+              wallets[0] ||
+              null;
+            setSelectedWallet((prev) =>
+              prev?.walletId === target?.walletId ? prev : target
             );
+          } else {
+            const fallback = defaultWallet || wallets[0] || null;
+            setSelectedWallet((prev) => prev ?? fallback);
           }
         } catch (error) {
           console.error('[ReportScreen] Failed to load selected wallet:', error);
+          if (isMounted) {
+            const fallback = defaultWallet || wallets[0] || null;
+            setSelectedWallet((prev) => prev ?? fallback);
+          }
         }
       };
-      loadSelectedWallet();
-    }, [wallets]),
+      resolveSelectedWallet();
+      return () => {
+        isMounted = false;
+      };
+    }, [loading, wallets, defaultWallet]),
   );
 
   const scrollRef = useRef<ScrollView>(null);

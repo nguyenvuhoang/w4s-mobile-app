@@ -1,12 +1,58 @@
 import { BaseResponseModel } from "@/core/api/models/ClientModel";
 import i18n from "@/core/i18n/i18n";
 import StorageService from "@/services/StorageService";
-import { getFullDeviceInfo } from "@/utils/device/getFullDeviceInfo";
+import { FullDeviceInfo, getFullDeviceInfo } from "@/utils/device/getFullDeviceInfo";
 import { getTimeZone } from "@/utils/formatDate";
 import NetInfo from "@react-native-community/netinfo";
 import * as Sentry from "@sentry/react-native";
 import axios, { AxiosHeaders, AxiosInstance, AxiosRequestConfig } from "axios";
 import { t } from "i18next";
+
+let cachedNetInfoState = {
+  type: "unknown",
+  isConnected: true,
+};
+
+NetInfo.fetch()
+  .then((state) => {
+    cachedNetInfoState = {
+      type: state.type || "unknown",
+      isConnected: !!state.isConnected,
+    };
+  })
+  .catch(() => {});
+
+NetInfo.addEventListener((state) => {
+  cachedNetInfoState = {
+    type: state.type || "unknown",
+    isConnected: !!state.isConnected,
+  };
+});
+
+let cachedDeviceInfoBase: FullDeviceInfo | null = null;
+let deviceInfoPromise: Promise<FullDeviceInfo> | null = null;
+let cachedDeviceHeaderKey = "";
+let cachedDeviceHeaderValue = "";
+
+async function getCachedDeviceInfoBase(): Promise<FullDeviceInfo> {
+  if (cachedDeviceInfoBase) {
+    return cachedDeviceInfoBase;
+  }
+  if (!deviceInfoPromise) {
+    deviceInfoPromise = getFullDeviceInfo()
+      .then((deviceInfos) => {
+        if (!deviceInfos?.device_id) {
+          throw new Error("Can not get Device ID!");
+        }
+        cachedDeviceInfoBase = deviceInfos;
+        return deviceInfos;
+      })
+      .finally(() => {
+        deviceInfoPromise = null;
+      });
+  }
+  return deviceInfoPromise;
+}
 
 const apiUrl = "/api/v1/gateway";
 
@@ -35,57 +81,52 @@ class ApiClient {
 
   private async getHeaders() {
     try {
-      const netInfo = await NetInfo.fetch();
-      const userSession = await StorageService.getUserSession();
+      const [userSession, deviceInfos] = await Promise.all([
+        StorageService.getUserSession(),
+        getCachedDeviceInfoBase(),
+      ]);
 
-      let deviceInfo: any = {
-        lang: i18n.language,
-        my_ip: "::1",
-        network_type: netInfo.type,
-        network_status: netInfo.isConnected ? "connected" : "disconnected",
-      };
+      const headerKey = `${i18n.language}|${cachedNetInfoState.type}|${cachedNetInfoState.isConnected}`;
+      if (headerKey !== cachedDeviceHeaderKey || !cachedDeviceHeaderValue) {
+        const deviceInfo = {
+          lang: i18n.language,
+          my_ip: "::1",
+          network_type: cachedNetInfoState.type,
+          network_status: cachedNetInfoState.isConnected ? "connected" : "disconnected",
 
-      const deviceInfos = await getFullDeviceInfo();
+          // ✅ Thông tin cơ bản
+          device_id: deviceInfos.device_id,
+          device_type: deviceInfos.device_type,
+          os_version: deviceInfos.os_version,
+          os_name: deviceInfos.os_name,
+          app_version: deviceInfos.app_version,
+          device_name: deviceInfos.device_name,
 
-      deviceInfo = {
-        ...deviceInfo,
+          // ✅ Thông tin phần cứng
+          model_id: deviceInfos.model_id,
+          model_name: deviceInfos.model_name,
+          brand: deviceInfos.brand,
+          manufacturer: deviceInfos.manufacturer,
+          total_memory: deviceInfos.total_memory,
 
-        // ✅ Thông tin cơ bản
-        device_id: deviceInfos.device_id,
-        device_type: deviceInfos.device_type,
-        os_version: deviceInfos.os_version,
-        os_name: deviceInfos.os_name,
-        app_version: deviceInfos.app_version,
-        device_name: deviceInfos.device_name,
-
-        // ✅ Thông tin phần cứng
-        model_id: deviceInfos.model_id,
-        model_name: deviceInfos.model_name,
-        brand: deviceInfos.brand,
-        manufacturer: deviceInfos.manufacturer,
-        total_memory: deviceInfos.total_memory,
-
-        // ✅ Phân loại thiết bị
-        is_emulator: deviceInfos.is_emulator,
-      };
-
-      if (!deviceInfo.device_id) {
-        throw new Error("Can not get Device ID!");
+          // ✅ Phân loại thiết bị
+          is_emulator: deviceInfos.is_emulator,
+        };
+        cachedDeviceHeaderValue = JSON.stringify(deviceInfo);
+        cachedDeviceHeaderKey = headerKey;
       }
 
       const token = userSession?.token ?? "";
-      console.log(`========Request token==============: ${token}`);
-      // console.log(JSON.stringify(deviceInfo));
       return {
         App: "MB",
         Uid: token,
-        My_device: JSON.stringify(deviceInfo),
+        My_device: cachedDeviceHeaderValue,
         User_id: 0,
         Lang: i18n.language,
         D: "localhost",
         "X-TimeZone": getTimeZone(),
       };
-    } catch (ex) {
+    } catch {
       throw new Error("A error occur while creating headers");
     }
   }
@@ -147,7 +188,9 @@ class ApiClient {
 
   public async post<T>(data?: any, config?: AxiosRequestConfig): Promise<T> {
     try {
-      console.log(apiUrl, data);
+      if (__DEV__) {
+        console.log(apiUrl, data);
+      }
       const response = await this.axiosInstance.post<T>(apiUrl, data, config);
       const resData = response.data as any;
       if (resData) {
@@ -221,9 +264,13 @@ class ApiClient {
     let data: any;
     try {
       data = await res.json();
-      console.log("[uploadImage] Response data:", JSON.stringify(data));
+      if (__DEV__) {
+        console.log("[uploadImage] Response data:", data);
+      }
     } catch (parseError) {
-      console.warn("[uploadImage] Failed to parse response as JSON:", parseError);
+      if (__DEV__) {
+        console.warn("[uploadImage] Failed to parse response as JSON:", parseError);
+      }
       data = null;
     }
 
@@ -277,7 +324,9 @@ class ApiClient {
     let data: any;
     try {
       data = await res.json();
-      console.log("=== Scan Invoice response data:", JSON.stringify(data));
+      if (__DEV__) {
+        console.log("=== Scan Invoice response data:", data);
+      }
     } catch {
       data = null;
     }
@@ -313,7 +362,9 @@ class ApiClient {
     let data: any;
     try {
       data = await res.json();
-      console.log("=== Voice Transcribe response:", data);
+      if (__DEV__) {
+        console.log("=== Voice Transcribe response:", data);
+      }
     } catch {
       data = null;
     }
@@ -332,8 +383,7 @@ class ApiClient {
   ): Promise<BaseResponseModel> {
     config = { ...config, timeout };
 
-    const netState = await NetInfo.fetch();
-    if (!netState.isConnected) {
+    if (!cachedNetInfoState.isConnected) {
       const offlineError = new Error("Device is offline");
       this.handleApiError(offlineError);
     }
@@ -368,11 +418,15 @@ class ApiClient {
         error.isAxiosError && error.message === "Network Error";
 
       if (!isNetworkError) {
-        console.log("Axios failed (not network error):", error.message);
+        if (__DEV__) {
+          console.log("Axios failed (not network error):", error.message);
+        }
         this.handleApiError(error);
       }
 
-      console.log("Axios Network Error -> fallback sang fetch:", error);
+      if (__DEV__) {
+        console.log("Axios Network Error -> fallback sang fetch:", error);
+      }
     }
 
     /*

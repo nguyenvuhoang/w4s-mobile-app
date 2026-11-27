@@ -47,16 +47,12 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
     { key: 'this_year', label: t('budget.this_year') },
   ];
 
-  const { categories, loading: categoryLoading, refetch: fetchCategories } = useCategory({ autoFetch: false });
-  const { fetchBudgetSummary, budgetSummary, summaryLoading, advancedSearchBudgets } = useBudget();
+  const { categories, loading: categoryLoading } = useCategory({ autoFetch: true });
+  const { fetchBudgetSummary, budgetSummary, summaryLoading, advancedSearchBudgets } = useBudget({ autoFetch: false });
   const { convertBetween, formatAmount, isReady: converterReady, loading: converterLoading, defaultCurrency } = useCurrencyConverter();
   const [budgetList, setBudgetList] = useState<any[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [firstLoaded, setFirstLoaded] = useState(false);
-
-  useEffect(() => {
-    fetchCategories();
-  }, [])
 
   useFocusEffect(
     useCallback(() => {
@@ -65,22 +61,21 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 
       const loadData = async () => {
         setListLoading(true);
-        const summary = await fetchBudgetSummary(walletId, apiPeriodType);
+        const [summary, res] = await Promise.all([
+          fetchBudgetSummary(walletId, apiPeriodType),
+          advancedSearchBudgets({
+            wallet_id: walletId,
+            period_type: apiPeriodType,
+            page_index: 0,
+            page_size: 99,
+          }),
+        ]);
 
         if (!summary || summary.total_budget === 0) {
           setBudgetList([]);
-          setListLoading(false);
-          setFirstLoaded(true);
-          return;
+        } else {
+          setBudgetList(res || []);
         }
-
-        const res = await advancedSearchBudgets({
-          wallet_id: walletId,
-          period_type: apiPeriodType,
-          page_index: 0,
-          page_size: 99
-        });
-        setBudgetList(res || []);
         setListLoading(false);
         setFirstLoaded(true);
       };

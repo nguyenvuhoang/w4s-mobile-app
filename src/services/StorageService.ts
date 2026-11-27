@@ -7,9 +7,29 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from "react-native";
 
 class StorageService {
+  private static cachedUserSession: UserSession | null = null;
+  private static isUserSessionLoaded = false;
+  private static itemMemoryCache = new Map<string, string>();
+  private static readonly HOT_ASYNC_KEYS = new Set<string>([
+    StorageKey.userCode,
+    StorageKey.appInfo,
+    StorageKey.defaultWalletId,
+    "language",
+  ]);
+
+  static clearMemoryCache(): void {
+    StorageService.cachedUserSession = null;
+    StorageService.isUserSessionLoaded = false;
+    StorageService.itemMemoryCache.clear();
+  }
+
+  static getUserSessionSync(): UserSession | null {
+    return StorageService.cachedUserSession;
+  }
+
   static async getSession(): Promise<Session | null> {
     try {
-      const session = await this.getSecureItem("session");
+      const session = await StorageService.getSecureItem("session");
 
       if (session) {
         const parsedSession = JSON.parse(session);
@@ -25,7 +45,13 @@ class StorageService {
 
   static async setUserSession(session: any): Promise<void> {
     try {
-      await this.setSecureItem(StorageKey.userSession, JSON.stringify({ token: session }));
+      const sessionObj = { token: session } as UserSession;
+      StorageService.cachedUserSession = sessionObj;
+      StorageService.isUserSessionLoaded = true;
+      await StorageService.setSecureItem(
+        StorageKey.userSession,
+        JSON.stringify(sessionObj)
+      );
     } catch (error) {
       console.error("Error setting user session:", error);
     }
@@ -38,7 +64,21 @@ class StorageService {
   // --- Secure Storage (SecureStore on Mobile, AsyncStorage on Web) ---
 
   static async setSecureItem(key: string, value: any): Promise<void> {
-    if (this.isWeb()) {
+    if (key === StorageKey.userSession) {
+      if (typeof value === "string") {
+        try {
+          StorageService.cachedUserSession = value ? JSON.parse(value) : null;
+          StorageService.isUserSessionLoaded = true;
+        } catch {
+          StorageService.isUserSessionLoaded = false;
+        }
+      } else {
+        StorageService.cachedUserSession = value ?? null;
+        StorageService.isUserSessionLoaded = true;
+      }
+    }
+
+    if (StorageService.isWeb()) {
       await AsyncStorage.setItem(key, value);
     } else {
       await SecureStore.setItemAsync(key, value);
@@ -46,7 +86,7 @@ class StorageService {
   }
 
   static async getSecureItem(key: string): Promise<string> {
-    if (this.isWeb()) {
+    if (StorageService.isWeb()) {
       const item = await AsyncStorage.getItem(key);
       return item ?? "";
     } else {
@@ -56,7 +96,12 @@ class StorageService {
   }
 
   static async removeSecureItem(key: string): Promise<void> {
-    if (this.isWeb()) {
+    if (key === StorageKey.userSession) {
+      StorageService.cachedUserSession = null;
+      StorageService.isUserSessionLoaded = true;
+    }
+
+    if (StorageService.isWeb()) {
       await AsyncStorage.removeItem(key);
     } else {
       await SecureStore.deleteItemAsync(key);
@@ -66,28 +111,49 @@ class StorageService {
   // --- Regular Storage (AsyncStorage) ---
 
   static async setItem(key: string, value: string): Promise<void> {
+    if (StorageService.HOT_ASYNC_KEYS.has(key)) {
+      StorageService.itemMemoryCache.set(key, value);
+    }
     await AsyncStorage.setItem(key, value);
   }
 
   static async getItem(key: string): Promise<string> {
+    if (
+      StorageService.HOT_ASYNC_KEYS.has(key) &&
+      StorageService.itemMemoryCache.has(key)
+    ) {
+      return StorageService.itemMemoryCache.get(key) ?? "";
+    }
     const item = await AsyncStorage.getItem(key);
-    return item ?? "";
+    const resolved = item ?? "";
+    if (StorageService.HOT_ASYNC_KEYS.has(key)) {
+      StorageService.itemMemoryCache.set(key, resolved);
+    }
+    return resolved;
   }
 
   static async removeItem(key: string): Promise<void> {
+    if (StorageService.HOT_ASYNC_KEYS.has(key)) {
+      StorageService.itemMemoryCache.delete(key);
+    }
     await AsyncStorage.removeItem(key);
   }
 
   // Alias for backward compatibility
-  static setAsyncItem = this.setItem;
-  static getAsyncItem = this.getItem;
-  static removeAsyncItem = this.removeItem;
+  static setAsyncItem = StorageService.setItem;
+  static getAsyncItem = StorageService.getItem;
+  static removeAsyncItem = StorageService.removeItem;
 
   // --- Specialized Methods ---
 
   static async getUserSession(): Promise<UserSession | null> {
-    const userSession = await this.getSecureItem(StorageKey.userSession);
-    return userSession ? JSON.parse(userSession) : null;
+    if (StorageService.isUserSessionLoaded) {
+      return StorageService.cachedUserSession;
+    }
+    const userSession = await StorageService.getSecureItem(StorageKey.userSession);
+    StorageService.cachedUserSession = userSession ? JSON.parse(userSession) : null;
+    StorageService.isUserSessionLoaded = true;
+    return StorageService.cachedUserSession;
   }
 
   static async clearSession(): Promise<void> {

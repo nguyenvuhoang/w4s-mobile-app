@@ -55,12 +55,29 @@ const parseCategoryName = (nameJson: string, lang = 'vi'): string => {
   }
 };
 
+const formatLocalYMD = (d: Date): string => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const parseLocalYMD = (dateStr: string): Date => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
+  if (match) {
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  }
+  return new Date(dateStr);
+};
+
 const generateTimePeriods = (t: any): TimePeriod[] => {
   const periods: TimePeriod[] = [];
   const today = new Date();
   for (let i = 6; i >= 0; i--) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
     const isCurrentMonth = i === 0;
+    const d = isCurrentMonth
+      ? today
+      : new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
     let label = '';
     if (isCurrentMonth) {
       label = t('report.this_month');
@@ -69,9 +86,7 @@ const generateTimePeriods = (t: any): TimePeriod[] => {
       const year = d.getFullYear().toString().slice(-2);
       label = `${t('report.month_short')} ${month.toString().padStart(2, '0')}/${year}`;
     }
-    const year = d.getFullYear();
-    const month = (d.getMonth() + 1).toString().padStart(2, '0');
-    periods.push({ id: i.toString(), label, date: `${year}-${month}-01` });
+    periods.push({ id: i.toString(), label, date: formatLocalYMD(d) });
   }
   return periods;
 };
@@ -85,17 +100,19 @@ const buildChartMonths = (
   t: any,
 ): { date: string; label: string }[] => {
   const today = new Date();
-  const anchor = new Date(anchorDate);
+  const anchor = parseLocalYMD(anchorDate);
   const result: { date: string; label: string }[] = [];
 
   for (let i = 2; i >= 0; i--) {
     const d = new Date(anchor.getFullYear(), anchor.getMonth() - i, 1);
     const year = d.getFullYear();
     const month = (d.getMonth() + 1).toString().padStart(2, '0');
-    const date = `${year}-${month}-01`;
 
     const isCurrentMonth =
       d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+    const date = isCurrentMonth
+      ? formatLocalYMD(today)
+      : formatLocalYMD(new Date(year, d.getMonth() + 1, 0));
     const label = isCurrentMonth
       ? t('report.this_month')
       : `${t('report.month_short')} ${month}/${year.toString().slice(-2)}`;
@@ -128,8 +145,11 @@ const GroupDetailScreen = () => {
   const timePeriods = useMemo(() => generateTimePeriods(t), [t]);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>(() => {
     if (params.anchor_date) {
-      const found = timePeriods.find(p => p.date === params.anchor_date);
-      if (found) return found;
+      const exact = timePeriods.find(p => p.date === params.anchor_date);
+      if (exact) return exact;
+      const targetYm = params.anchor_date.slice(0, 7);
+      const monthMatch = timePeriods.find(p => p.date.startsWith(targetYm));
+      if (monthMatch) return monthMatch;
     }
     return timePeriods[timePeriods.length - 1];
   });
@@ -148,7 +168,7 @@ const GroupDetailScreen = () => {
 
   const fromToDate = useMemo(() => {
     if (!selectedPeriod) return { fromDate: '', toDate: '' };
-    const anchorDt = new Date(selectedPeriod.date);
+    const anchorDt = parseLocalYMD(selectedPeriod.date);
     const year = anchorDt.getFullYear();
     const month = anchorDt.getMonth();
     const fromDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;

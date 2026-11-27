@@ -1,6 +1,7 @@
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { WalletSummary } from "@/types/wallet";
-import { useContext } from "react";
+import { NavigationContext } from "@react-navigation/native";
+import { useCallback, useContext, useEffect } from "react";
 
 interface UseWalletResult {
   wallets: WalletSummary[];
@@ -40,13 +41,26 @@ export const useWallet = (): UseWalletResult => {
     getPrimaryWallet,
   } = useContext(GlobalContext);
 
-  const refresh = () => fetchWallets(true);
+  const navigation = useContext(NavigationContext);
 
-  const getWalletById = (walletId: number) =>
-    wallets.find((w) => w.walletId === walletId);
+  useEffect(() => {
+    if (!navigation) return;
+    return navigation.addListener("focus", () => {
+      fetchWallets(false);
+    });
+  }, [navigation, fetchWallets]);
 
-  const getWalletsByType = (type: WalletSummary["type"]) =>
-    wallets.filter((w) => w.type === type);
+  const refresh = useCallback(() => fetchWallets(true), [fetchWallets]);
+
+  const getWalletById = useCallback(
+    (walletId: number) => wallets.find((w) => w.walletId === walletId),
+    [wallets]
+  );
+
+  const getWalletsByType = useCallback(
+    (type: WalletSummary["type"]) => wallets.filter((w) => w.type === type),
+    [wallets]
+  );
 
   return {
     wallets,

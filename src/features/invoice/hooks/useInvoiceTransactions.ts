@@ -1,10 +1,9 @@
 import StorageKey from "@/constants/StorageKey";
 import { RecentTransaction } from "@/features/home/hooks/useRecentTransactions";
 import { useCategory } from "@/hooks/useCategory";
-import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
+import { useLazyRefreshOnEvents } from "@/hooks/useLazyRefreshOnEvents";
 import { transactionRepository } from "@/services/repositories/transaction.repository";
 import StorageService from "@/services/StorageService";
-import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface UseInvoiceTransactionsReturn {
@@ -186,23 +185,7 @@ export const useInvoiceTransactions = (
         fetchTransactions(0, false);
     }, [fetchTransactions]);
 
-    useEffect(() => {
-        const handleTransactionChanged = () => {
-            refresh();
-        };
-
-        const handleCurrencyChanged = () => {
-            refresh();
-        };
-
-        TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
-        CurrencyEventEmitter.onCurrencyChanged(handleCurrencyChanged);
-
-        return () => {
-            TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
-            CurrencyEventEmitter.offCurrencyChanged(handleCurrencyChanged);
-        };
-    }, [refresh]);
+    useLazyRefreshOnEvents(refresh);
 
     const hasMore = !noMoreData && rawTransactions.length < totalCount;
 

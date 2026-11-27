@@ -1,18 +1,17 @@
 // src/hooks/useCurrencyConverter.ts
 
-import { useCurrency } from "@/hooks/useCurrency";
+import { fetchCurrenciesFromApi, useCurrency } from "@/hooks/useCurrency";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
-import {
-  Currency,
-  currencyRepository,
-} from "@/services/repositories/currency.repository";
+import { Currency } from "@/services/repositories/currency.repository";
 import {
   detectLocale,
   detectSymbolPosition,
   getDecimalPlaces,
 } from "@/utils/currencyLocaleDetector";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+const numberFormatterCache = new Map<string, Intl.NumberFormat>();
 
 const normalizeCurrencyCode = (code: string): string => {
   if (!code) return '';
@@ -108,16 +107,20 @@ export const useCurrencyConverter = () => {
         try {
           setLoadingAdditional(true);
 
-          const response = await currencyRepository.getCurrencies({
-            search_text: defaultCurrency.currencyId,
-            page_index: 0,
-            page_size: 1,
-          });
+          const result = await fetchCurrenciesFromApi(
+            defaultCurrency.currencyId,
+            0,
+            10,
+          );
 
-          if (response.isSuccess() && response.data?.items?.length > 0) {
-            const currency = response.data.items[0];
+          const currency =
+            result.currencies.find(
+              (c) => c.currency_id === defaultCurrency.currencyId,
+            ) || result.currencies[0];
+
+          if (currency) {
             setAdditionalCurrency(currency);
-          } else {
+          } else if (__DEV__) {
             console.warn(
               "[useCurrencyConverter] ❌ Could not fetch:",
               defaultCurrency.currencyId,
@@ -288,12 +291,21 @@ export const useCurrencyConverter = () => {
       const cleanCurrencyId = normalizeCurrencyCode(activeCurrencyId);
 
       try {
-        const formatter = new Intl.NumberFormat(locale, {
-          style: "currency",
-          currency: cleanCurrencyId,
-          minimumFractionDigits: decimalPlaces,
-          maximumFractionDigits: Math.max(decimalPlaces, amount > 0 && amount < 1 ? 4 : decimalPlaces),
-        });
+        const maxFractionDigits = Math.max(
+          decimalPlaces,
+          amount > 0 && amount < 1 ? 4 : decimalPlaces,
+        );
+        const cacheKey = `${locale}|${cleanCurrencyId}|${decimalPlaces}|${maxFractionDigits}`;
+        let formatter = numberFormatterCache.get(cacheKey);
+        if (!formatter) {
+          formatter = new Intl.NumberFormat(locale, {
+            style: "currency",
+            currency: cleanCurrencyId,
+            minimumFractionDigits: decimalPlaces,
+            maximumFractionDigits: maxFractionDigits,
+          });
+          numberFormatterCache.set(cacheKey, formatter);
+        }
 
         const result = formatter.format(amount);
         return result;

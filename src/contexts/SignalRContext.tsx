@@ -1,11 +1,16 @@
 import signalRService from "@/services/SignalRService";
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import { InteractionManager } from "react-native";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { AppState, AppStateStatus, InteractionManager } from "react-native";
 import DeviceInfo from "react-native-device-info";
 import StorageKey from "../constants/StorageKey";
-// import { useHomeService } from "../services/HomeService";
 import StorageService from "../services/StorageService";
-import { GlobalContext } from "./GlobalContext";
 
 interface SignalRContextType {
   isConnected: boolean;
@@ -33,8 +38,8 @@ const getSignalRDelay = async (): Promise<number> => {
     }
 
     return 1000;
-  } catch (error) {
-    return 2000; 
+  } catch {
+    return 2000;
   }
 };
 
@@ -43,189 +48,163 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isConnected, setIsConnected] = useState(false);
   const { getItem, setItem } = StorageService;
-  const { setBalance, setWalletBalance } = useContext(GlobalContext);
-  // const { getPrimaryAccount, getBalance, getPrimaryWallet } = useHomeService();
-  const globalContext = useContext(GlobalContext);
-  const hasInitialized = useRef(false);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   const handleUpdateThemeBanners = async (data: any) => {
-    const raw = await getItem(StorageKey.ThemeBanners);
-    const list = raw ? JSON.parse(raw) : [];
+    try {
+      const raw = await getItem(StorageKey.ThemeBanners);
+      const list = raw ? JSON.parse(raw) : [];
 
-    const newBanner = {
-      id: data.id,
-      imgid: data.imgId,
-      imgsource: data.imgSource,
-      type: data.type,
-      typeusing: data.typeUsing,
-      position: data.position,
-      order: data.order,
-    };
+      const newBanner = {
+        id: data.id,
+        imgid: data.imgId,
+        imgsource: data.imgSource,
+        type: data.type,
+        typeusing: data.typeUsing,
+        position: data.position,
+        order: data.order,
+      };
 
-    const existingIndex = list.findIndex(
-      (b: { imgid: any }) => b.imgid === newBanner.imgid
-    );
+      const existingIndex = list.findIndex(
+        (b: { imgid: any }) => b.imgid === newBanner.imgid
+      );
 
-    if (existingIndex >= 0) {
-      list[existingIndex] = newBanner;
-    } else {
-      list.push(newBanner);
+      if (existingIndex >= 0) {
+        list[existingIndex] = newBanner;
+      } else {
+        list.push(newBanner);
+      }
+      await setItem(StorageKey.ThemeBanners, JSON.stringify(list));
+      if (__DEV__) console.log("✅ ThemeBanners updated in storage");
+    } catch (err) {
+      if (__DEV__) console.warn("Failed to update ThemeBanners in storage:", err);
     }
-    await setItem(StorageKey.ThemeBanners, JSON.stringify(list));
-    console.log("✅ ThemeBanners updated in storage");
   };
 
   const handleUpdatePopupBanners = async (data: any) => {
-    const raw = await getItem(StorageKey.PopupBanners);
-    const list = raw ? JSON.parse(raw) : [];
+    try {
+      const raw = await getItem(StorageKey.PopupBanners);
+      const list = raw ? JSON.parse(raw) : [];
 
-    const newBanner = {
-      id: data.id,
-      title: data.title,
-      imgid: data.imgId,
-      imgsource: data.imgSource,
-      level: data.level,
-      status: data.status,
-      dateCreated: data.dateCreated,
-      userCreated: data.userCreated,
-      dateApproved: data.dateApproved,
-      userApproved: data.userApproved,
-      dateModified: data.dateModified,
-      userModified: data.userModified,
-      service: data.service,
-      type: data.type,
-      channel: data.channel,
-      position: data.position,
-      typeusing: data.typeUsing,
-      order: data.order,
-      creationDate: data.creationDate,
-    };
+      const newBanner = {
+        id: data.id,
+        title: data.title,
+        imgid: data.imgId,
+        imgsource: data.imgSource,
+        level: data.level,
+        status: data.status,
+        dateCreated: data.dateCreated,
+        userCreated: data.userCreated,
+        dateApproved: data.dateApproved,
+        userApproved: data.userApproved,
+        dateModified: data.dateModified,
+        userModified: data.userModified,
+        service: data.service,
+        type: data.type,
+        channel: data.channel,
+        position: data.position,
+        typeusing: data.typeUsing,
+        order: data.order,
+        creationDate: data.creationDate,
+      };
 
-    const existingIndex = list.findIndex(
-      (b: { imgid: any }) => b.imgid === newBanner.imgid
-    );
+      const existingIndex = list.findIndex(
+        (b: { imgid: any }) => b.imgid === newBanner.imgid
+      );
 
-    if (existingIndex >= 0) {
-      list[existingIndex] = newBanner;
-    } else {
-      list.push(newBanner);
+      if (existingIndex >= 0) {
+        list[existingIndex] = newBanner;
+      } else {
+        list.push(newBanner);
+      }
+
+      await setItem(StorageKey.PopupBanners, JSON.stringify(list));
+      if (__DEV__) console.log("✅ PopupBanners updated in storage");
+    } catch (err) {
+      if (__DEV__) console.warn("Failed to update PopupBanners in storage:", err);
     }
-
-    await setItem(StorageKey.PopupBanners, JSON.stringify(list));
-    console.log("✅ PopupBanners updated in storage");
   };
 
-  // const handleBalanceUpdate = async (data: any) => {
-  //   if (!globalContext) {
-  //     return;
-  //   }
-  //   const primaryAccount = getPrimaryAccount();
-  //   if (
-  //     data.account &&
-  //     primaryAccount &&
-  //     data.account === primaryAccount.accountnumber
-  //   ) {
-  //     const balanceData = await getBalance(primaryAccount.accountnumber);
-  //     const formattedBalance = Number(balanceData).toLocaleString("en-US", {
-  //       minimumFractionDigits: 2,
-  //       maximumFractionDigits: 2,
-  //     });
-  //     setBalance(formattedBalance);
-  //   }
-  //   const primaryWallet = getPrimaryWallet();
-  //   if (
-  //     data.wallet &&
-  //     primaryWallet &&
-  //     data.wallet === primaryWallet.walletnumber
-  //   ) {
-  //     const balanceData = primaryWallet?.balance || "0";
-  //     const formattedBalance = Number(balanceData).toLocaleString("en-US", {
-  //       minimumFractionDigits: 2,
-  //       maximumFractionDigits: 2,
-  //     });
-  //     setWalletBalance(formattedBalance);
-  //   }
-  // };
-
   useEffect(() => {
-    if (hasInitialized.current) {
-      return;
-    }
-    hasInitialized.current = true;
     let isMounted = true;
+    let initTimer: ReturnType<typeof setTimeout> | null = null;
+    let interactionPromise: { cancel: () => void } | null = null;
 
-    const start = async () => {
+    const handleBannerUpdated = async (data: any) => {
+      if (!data) return;
+      switch (data.typeUsing) {
+        case "Theme":
+          await handleUpdateThemeBanners(data);
+          break;
+        case "Popup":
+          await handleUpdatePopupBanners(data);
+          break;
+      }
+    };
+
+    const initSignalR = async () => {
       const delay = await getSignalRDelay();
 
-      const task = InteractionManager.runAfterInteractions(() => {
-        const timer = setTimeout(async () => {
-          if (!isMounted) {
-            return;
-          }
+      interactionPromise = InteractionManager.runAfterInteractions(() => {
+        initTimer = setTimeout(async () => {
+          if (!isMounted) return;
           try {
             await signalRService.initConnection(true);
             if (isMounted) {
               setIsConnected(signalRService.isConnected());
+              signalRService.on("BannerUpdated", handleBannerUpdated);
             }
-
-            const originalOn = signalRService.on.bind(signalRService);
-
-            signalRService.on = (eventName, callback) => {
-              originalOn(eventName, (...args) => {
-                console.log(
-                  `📩 [ALL EVENTS] Event: ${eventName}`,
-                  JSON.stringify(args)
-                );
-                callback(...args);
-              });
-            };
-
-            signalRService.on("BannerUpdated", async (data) => {
-              switch (data.typeUsing) {
-                case "Theme":
-                  await handleUpdateThemeBanners(data);
-                  break;
-                case "Popup":
-                  await handleUpdatePopupBanners(data);
-                  break;
-              }
-            });
-
-            // signalRService.on("BalanceUpdated", (data) => {
-            //   switch (data.typeUsing) {
-            //     case "balance":
-            //       handleBalanceUpdate(data);
-            //       break;
-            //   }
-            // });
-
           } catch (error) {
-            console.error("❌ SignalR: Failed to initialize", error);
+            if (__DEV__) console.error("❌ SignalR: Failed to initialize", error);
           }
-        }, delay); 
-
-        return () => clearTimeout(timer);
+        }, delay);
       });
-
-      return task;
     };
 
-    let cleanupTask: any = null;
-    start().then((task) => {
-      cleanupTask = task;
-    });
+    initSignalR();
+
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (
+        appStateRef.current.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
+        if (__DEV__) console.log("📱 App foregrounded: reconnecting SignalR...");
+        await signalRService.initConnection(true);
+        if (isMounted) {
+          setIsConnected(signalRService.isConnected());
+        }
+      } else if (
+        appStateRef.current === "active" &&
+        nextAppState.match(/inactive|background/)
+      ) {
+        if (__DEV__) console.log("📱 App backgrounded: stopping SignalR connection...");
+        await signalRService.stop();
+        if (isMounted) {
+          setIsConnected(false);
+        }
+      }
+      appStateRef.current = nextAppState;
+    };
+
+    const appStateSub = AppState.addEventListener("change", handleAppStateChange);
 
     return () => {
       isMounted = false;
-      if (cleanupTask) {
-        cleanupTask.cancel();
-      }
+      appStateSub.remove();
+      if (initTimer) clearTimeout(initTimer);
+      if (interactionPromise) interactionPromise.cancel();
+      signalRService.off("BannerUpdated", handleBannerUpdated);
       signalRService.stop();
     };
-  }, [globalContext]);
+  }, []);
+
+  const contextValue = useMemo<SignalRContextType>(
+    () => ({ isConnected }),
+    [isConnected]
+  );
 
   return (
-    <SignalRContext.Provider value={{ isConnected }}>
+    <SignalRContext.Provider value={contextValue}>
       {children}
     </SignalRContext.Provider>
   );

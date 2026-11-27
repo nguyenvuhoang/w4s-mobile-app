@@ -1,8 +1,7 @@
 import StorageKey from "@/constants/StorageKey";
-import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
+import { useLazyRefreshOnEvents } from "@/hooks/useLazyRefreshOnEvents";
 import { transactionRepository } from "@/services/repositories/transaction.repository";
 import StorageService from "@/services/StorageService";
-import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { useCallback, useEffect, useState } from "react";
 import { RecentTransaction } from "./useRecentTransactions";
 import { categoryCache } from "@/features/category/hooks/useCategorycache";
@@ -180,24 +179,8 @@ export const useInfiniteTransactions = (
         fetchTransactions(0, false);
     }, [fetchTransactions]);
 
-    // Listen for transaction changes (create/update/delete)
-    useEffect(() => {
-        const handleTransactionChanged = () => {
-            refresh();
-        };
-
-        const handleCurrencyChanged = () => {
-            refresh();
-        };
-
-        TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
-        CurrencyEventEmitter.onCurrencyChanged(handleCurrencyChanged);
-
-        return () => {
-            TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
-            CurrencyEventEmitter.offCurrencyChanged(handleCurrencyChanged);
-        };
-    }, [refresh]);
+    // Lazy refresh when transaction or currency changes
+    useLazyRefreshOnEvents(refresh);
 
     const hasMore = transactions.length < totalCount;
 

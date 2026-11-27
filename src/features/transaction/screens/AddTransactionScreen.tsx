@@ -417,19 +417,31 @@ const AddTransactionScreen = () => {
     useCallback(() => {
       const loadData = async () => {
         try {
-          const storedWallet = await StorageService.getItem(
-            STORAGE_KEY.TEMP_WALLET_STORAGE,
-          );
+          const [
+            storedWallet,
+            storedCategory,
+            storedCurrency,
+            storedParticipants,
+            storedLocation,
+            storedEvent,
+          ] = await Promise.all([
+            StorageService.getItem(STORAGE_KEY.TEMP_WALLET_STORAGE),
+            StorageService.getItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE),
+            StorageService.getItem(STORAGE_KEY.TEMP_CURRENCY_STORAGE),
+            StorageService.getItem(STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE),
+            StorageService.getItem(STORAGE_KEY.TEMP_LOCATION_STORAGE),
+            StorageService.getItem(STORAGE_KEY.TEMP_EVENT_STORAGE),
+          ]);
+
+          const keysToRemove: string[] = [];
+
           if (storedWallet) {
             const { walletId } = JSON.parse(storedWallet);
             setSourceWalletId(walletId);
             hasManuallySelectedCurrencyRef.current = false;
-            await StorageService.removeItem(STORAGE_KEY.TEMP_WALLET_STORAGE);
+            keysToRemove.push(STORAGE_KEY.TEMP_WALLET_STORAGE);
           }
 
-          const storedCategory = await StorageService.getItem(
-            STORAGE_KEY.TEMP_CATEGORY_STORAGE,
-          );
           if (storedCategory) {
             const categoryData: SelectedCategoryData = JSON.parse(storedCategory);
             setSelectedCategoryData(categoryData);
@@ -445,51 +457,43 @@ const AddTransactionScreen = () => {
               setSelectedType(typeMap[groupKey as keyof typeof typeMap]);
             }
 
-            await StorageService.removeItem(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
+            keysToRemove.push(STORAGE_KEY.TEMP_CATEGORY_STORAGE);
           }
 
-          const storedCurrency = await StorageService.getItem(
-            STORAGE_KEY.TEMP_CURRENCY_STORAGE,
-          );
           if (storedCurrency) {
             const currency: SelectedCurrency = JSON.parse(storedCurrency);
             setInputCurrency(currency);
             hasManuallySelectedCurrencyRef.current = true;
-            await StorageService.removeItem(STORAGE_KEY.TEMP_CURRENCY_STORAGE);
+            keysToRemove.push(STORAGE_KEY.TEMP_CURRENCY_STORAGE);
           }
 
-          const storedParticipants = await StorageService.getItem(
-            STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE,
-          );
           if (storedParticipants) {
             const data = JSON.parse(storedParticipants);
             if (data.sessionId === sessionIdRef.current) {
               setParticipants(data.participants);
             } else {
-              await StorageService.removeItem(STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE);
+              keysToRemove.push(STORAGE_KEY.TEMP_PARTICIPANTS_STORAGE);
             }
           }
 
-          const storedLocation = await StorageService.getItem(
-            STORAGE_KEY.TEMP_LOCATION_STORAGE,
-          );
           if (storedLocation) {
             const data = JSON.parse(storedLocation);
             if (data.sessionId === sessionIdRef.current) {
               setLocation(data.locationData.address || data.locationData.name || "");
             } else {
-              await StorageService.removeItem(STORAGE_KEY.TEMP_LOCATION_STORAGE);
+              keysToRemove.push(STORAGE_KEY.TEMP_LOCATION_STORAGE);
             }
           }
 
-          const storedEvent = await StorageService.getItem(
-            STORAGE_KEY.TEMP_EVENT_STORAGE,
-          );
           if (storedEvent) {
             const eventData: SelectedEvent = JSON.parse(storedEvent);
             setSelectedEvent(eventData);
             setSourceEventId(eventData.eventId);
-            await StorageService.removeItem(STORAGE_KEY.TEMP_EVENT_STORAGE);
+            keysToRemove.push(STORAGE_KEY.TEMP_EVENT_STORAGE);
+          }
+
+          if (keysToRemove.length > 0) {
+            await Promise.all(keysToRemove.map((key) => StorageService.removeItem(key)));
           }
         } catch (error) {
           console.error("[AddTransaction] Load data failed:", error);
