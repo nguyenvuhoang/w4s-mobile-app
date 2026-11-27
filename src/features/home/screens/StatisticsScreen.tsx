@@ -14,8 +14,8 @@ import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { useCategory } from "@/hooks/useCategory";
 import { useCurrencyConverter } from "@/hooks/useCurrencyConverter";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
+import { useLazyRefreshOnEvents } from "@/hooks/useLazyRefreshOnEvents";
 import StorageService from "@/services/StorageService";
-import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { hp, normalize, wp } from "@/utils/layout";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
@@ -86,7 +86,7 @@ const StatisticsScreen = () => {
       const result = await advancedSearchTransactions({
         from_transaction_date: fromDate,
         to_transaction_date: toDate,
-        page_index: 1,
+        page_index: 0,
         page_size: 100,
       });
 
@@ -138,17 +138,8 @@ const StatisticsScreen = () => {
     fetchTopExpenses();
   }, [fetchTopExpenses]);
 
-  // Listen for changes
-  useEffect(() => {
-    const handleTransactionChange = () => {
-      fetchTopExpenses();
-    };
-
-    TransactionEventEmitter.onTransactionChanged(handleTransactionChange);
-    return () => {
-      TransactionEventEmitter.offTransactionChanged(handleTransactionChange);
-    };
-  }, [fetchTopExpenses]);
+  // Lazy refresh when transaction changes
+  useLazyRefreshOnEvents(fetchTopExpenses, { currency: false });
 
   const { fetchBalance, data: openingBalanceData } = useWalletOpeningClosingBalance();
 

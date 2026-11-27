@@ -6,7 +6,7 @@ export const useBudgetTransactions = (budgetId: number, walletId?: number, fromD
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [pageIndex, setPageIndex] = useState(1);
+  const [pageIndex, setPageIndex] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalExpense, setTotalExpense] = useState(0);
@@ -66,8 +66,8 @@ export const useBudgetTransactions = (budgetId: number, walletId?: number, fromD
   );
 
   const refresh = useCallback(() => {
-    setPageIndex(1);
-    return fetchTransactions(1, true);
+    setPageIndex(0);
+    return fetchTransactions(0, true);
   }, [fetchTransactions]);
 
   const loadMore = useCallback(() => {

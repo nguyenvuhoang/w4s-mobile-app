@@ -454,8 +454,11 @@ export const useLoginService = () => {
     const result = await handleGetAppInfo();
     if (result) {
       if (!globalPhone) {
-        const PhoneNumber = await getPhoneNumberByUserName(result.login_name);
-        setGlobalPhone(PhoneNumber);
+        getPhoneNumberByUserName(result.login_name)
+          .then((phoneNumber) => {
+            if (phoneNumber) setGlobalPhone(phoneNumber);
+          })
+          .catch(() => {});
       }
       goToHome();
     }
@@ -493,10 +496,6 @@ export const useLoginService = () => {
             try {
               const userToken = response.getValue(StorageKey.token);
               const refreshToken = response.getValue(StorageKey.refreshToken);
-              await StorageService.setSecureItem(
-                StorageKey.refreshToken,
-                refreshToken,
-              );
               const channelId = await StorageService.getItem(
                 StorageKey.channelId,
               );
@@ -504,15 +503,19 @@ export const useLoginService = () => {
                 ? `${StorageKey.refreshToken}_${channelId}`
                 : StorageKey.refreshToken;
 
-              await StorageService.setSecureItem(refreshTokenKey, refreshToken);
-              await StorageService.setUserSession(userToken);
+              await Promise.all([
+                StorageService.setSecureItem(StorageKey.refreshToken, refreshToken),
+                StorageService.setSecureItem(refreshTokenKey, refreshToken),
+                StorageService.setUserSession(userToken),
+              ]);
               const result = await handleGetAppInfo();
               if (result) {
                 if (!globalPhone) {
-                  const PhoneNumber = await getPhoneNumberByUserName(
-                    result.login_name,
-                  );
-                  setGlobalPhone(PhoneNumber);
+                  getPhoneNumberByUserName(result.login_name)
+                    .then((phoneNumber) => {
+                      if (phoneNumber) setGlobalPhone(phoneNumber);
+                    })
+                    .catch(() => {});
                 }
                 goToHome();
               }
@@ -574,23 +577,22 @@ export const useLoginService = () => {
             const channelId = await StorageService.getItem(
               StorageKey.channelId,
             );
-            await StorageService.setSecureItem(
-              StorageKey.refreshToken,
-              refreshToken,
-            );
             const refreshTokenKey = channelId
               ? `${StorageKey.refreshToken}_${channelId}`
               : StorageKey.refreshToken;
-
-            await StorageService.setSecureItem(refreshTokenKey, refreshToken);
-            await StorageService.setUserSession(userToken);
             const userSessionKey = channelId
               ? `${StorageKey.userSession}_${channelId}`
               : StorageKey.userSession;
-            await StorageService.setSecureItem(
-              userSessionKey,
-              JSON.stringify({ token: userToken }),
-            );
+
+            await Promise.all([
+              StorageService.setSecureItem(StorageKey.refreshToken, refreshToken),
+              StorageService.setSecureItem(refreshTokenKey, refreshToken),
+              StorageService.setUserSession(userToken),
+              StorageService.setSecureItem(
+                userSessionKey,
+                JSON.stringify({ token: userToken }),
+              ),
+            ]);
 
             if (isFirstLogin) {
               await proceedFirstLoginFlow(username);

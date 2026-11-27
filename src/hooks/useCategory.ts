@@ -1,7 +1,7 @@
 import StorageKey from '@/constants/StorageKey';
 import { categoryCache } from '@/features/category/hooks/useCategorycache';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
-import CurrencyEventEmitter from '@/services/CurrencyEventEmitter';
+import { useLazyRefreshOnEvents } from '@/hooks/useLazyRefreshOnEvents';
 import {
   AnalyzeCategoryPayload,
   Category,
@@ -9,7 +9,6 @@ import {
   CreateCategoryPayload,
 } from '@/services/repositories/category.repository';
 import StorageService from '@/services/StorageService';
-import TransactionEventEmitter from '@/services/TransactionEventEmitter';
 import { PERIOD_TYPE } from '@/constants/PeriodType';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -62,8 +61,10 @@ export interface TopSpendingCategoryItem {
 }
 
 // ─────────────────────────────────────────────
-// Helper
+// Helper & In-flight Deduplication
 // ─────────────────────────────────────────────
+
+const inFlightWalletRequests = new Map<number, Promise<Category[]>>();
 
 const flattenCategories = (categories: Category[]): Category[] => {
   const result: Category[] = [];
@@ -74,6 +75,20 @@ const flattenCategories = (categories: Category[]): Category[] => {
     }
   });
   return result;
+};
+
+const getContractNumberFromStorage = async (): Promise<string> => {
+  const appInfoStr = await StorageService.getItem(StorageKey.appInfo);
+  if (!appInfoStr) return '';
+  try {
+    const appInfo = JSON.parse(appInfoStr);
+    return appInfo?.contract_number || '';
+  } catch (e) {
+    if (__DEV__) {
+      console.warn('[useCategory] Failed to parse appInfo', e);
+    }
+    return '';
+  }
 };
 
 // ─────────────────────────────────────────────
@@ -138,19 +153,9 @@ export const useTopSpendingCategories = () => {
     }
   }, []);
 
-  useEffect(() => {
-    const handleRefresh = () => {
-      fetchTopCategories(lastParams.current.period_type, lastParams.current.take);
-    };
-
-    TransactionEventEmitter.onTransactionChanged(handleRefresh);
-    CurrencyEventEmitter.onCurrencyChanged(handleRefresh);
-
-    return () => {
-      TransactionEventEmitter.offTransactionChanged(handleRefresh);
-      CurrencyEventEmitter.offCurrencyChanged(handleRefresh);
-    };
-  }, [fetchTopCategories]);
+  useLazyRefreshOnEvents(() => {
+    fetchTopCategories(lastParams.current.period_type, lastParams.current.take);
+  });
 
   return { data, loading, error, fetchTopCategories };
 };
@@ -172,39 +177,64 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
   const [categoryAnalysis, setCategoryAnalysis] = useState<CategoryAnalyzeItem[]>([]);
 
   // ── Fetch 1 ví ──────────────────────────────
-  const fetchSingleWallet = async (wId: number, skipCache = false): Promise<Category[]> => {
+  const fetchSingleWallet = async (
+    wId: number,
+    skipCache = false,
+    preloadedUserCode?: string,
+    preloadedContractNumber?: string,
+  ): Promise<Category[]> => {
     if (!skipCache) {
       const cached = categoryCache.getByWallet(wId);
       if (cached) {
-        console.log(`[useCategory] Cache hit for wallet ${wId}`);
+        if (__DEV__) {
+          console.log(`[useCategory] Cache hit for wallet ${wId}`);
+        }
         return cached;
       }
-    }
 
-    const userCode = await StorageService.getItem(StorageKey.userCode);
-    
-    // Get contract_number from appInfo
-    const appInfoStr = await StorageService.getItem(StorageKey.appInfo);
-    let contractNumber = '';
-    if (appInfoStr) {
-      try {
-        const appInfo = JSON.parse(appInfoStr);
-        contractNumber = appInfo?.contract_number || '';
-      } catch (e) {
-        console.warn('[useCategory] Failed to parse appInfo', e);
+      const inFlight = inFlightWalletRequests.get(wId);
+      if (inFlight) {
+        return inFlight;
       }
     }
 
-    const response = await categoryRepository.getCategories(userCode.toString(), wId, contractNumber);
+    const requestPromise = (async () => {
+      try {
+        const [userCode, contractNumber] = await Promise.all([
+          preloadedUserCode !== undefined
+            ? Promise.resolve(preloadedUserCode)
+            : StorageService.getItem(StorageKey.userCode),
+          preloadedContractNumber !== undefined
+            ? Promise.resolve(preloadedContractNumber)
+            : getContractNumberFromStorage(),
+        ]);
 
-    if (response.isSuccess() && response.data) {
-      const flat = flattenCategories(response.data.data || []);
-      categoryCache.set(wId, flat);
-      console.log(`[useCategory] Fetched and cached wallet ${wId}`);
-      return flat;
+        const response = await categoryRepository.getCategories(
+          userCode.toString(),
+          wId,
+          contractNumber,
+        );
+
+        if (response.isSuccess() && response.data) {
+          const flat = flattenCategories(response.data.data || []);
+          categoryCache.set(wId, flat);
+          if (__DEV__) {
+            console.log(`[useCategory] Fetched and cached wallet ${wId}`);
+          }
+          return flat;
+        }
+
+        throw new Error(response.message || `Failed to fetch categories for wallet ${wId}`);
+      } finally {
+        inFlightWalletRequests.delete(wId);
+      }
+    })();
+
+    if (!skipCache) {
+      inFlightWalletRequests.set(wId, requestPromise);
     }
 
-    throw new Error(response.message || `Failed to fetch categories for wallet ${wId}`);
+    return requestPromise;
   };
 
   // ── Fetch chính: 1 ví hoặc tất cả ví song song ──
@@ -230,9 +260,15 @@ export const useCategory = (options: UseCategoryOptions = {}) => {
           ? walletIds
           : walletIds.filter(id => !categoryCache.hasWallet(id));
 
-        // Fetch song song các ví chưa có cache
+        // Fetch song song các ví chưa có cache, đọc storage 1 lần dùng chung
         if (uncachedIds.length > 0) {
-          await Promise.all(uncachedIds.map(id => fetchSingleWallet(id, true)));
+          const [userCode, contractNumber] = await Promise.all([
+            StorageService.getItem(StorageKey.userCode),
+            getContractNumberFromStorage(),
+          ]);
+          await Promise.all(
+            uncachedIds.map(id => fetchSingleWallet(id, skipCache, userCode, contractNumber)),
+          );
         }
 
         // Gộp tất cả từ cache

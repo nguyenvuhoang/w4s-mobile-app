@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import { Colors } from './theme';
 
@@ -37,26 +37,29 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     loadTheme();
   }, []);
 
-  const changeMode = async (newMode: ThemeMode) => {
+  const changeMode = useCallback(async (newMode: ThemeMode) => {
     setMode(newMode);
     await AsyncStorage.setItem(STORAGE_THEME_KEY, newMode);
-  };
+  }, []);
 
   const activeScheme = mode === 'system' ? (systemScheme ?? 'light') : mode;
   
   const activeColors = Colors[activeScheme];
 
+  const contextValue = useMemo<ThemeContextType>(
+    () => ({
+      mode,
+      setMode: changeMode,
+      colors: activeColors,
+      isDark: activeScheme === 'dark',
+    }),
+    [mode, changeMode, activeColors, activeScheme]
+  );
+
   if (!isReady) return null; // Hoặc return <SplashScreen />
 
   return (
-    <ThemeContext.Provider 
-      value={{ 
-        mode, 
-        setMode: changeMode, 
-        colors: activeColors,
-        isDark: activeScheme === 'dark' 
-      }}
-    >
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );

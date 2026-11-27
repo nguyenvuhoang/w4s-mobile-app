@@ -8,7 +8,9 @@ import { AppConfig } from "@/config/AppConfig";
 import { AdvertisementProvider } from "@/contexts/AdvertisementContext";
 import { CallbackProvider } from "@/contexts/CallbackRegistryContext";
 import { GlobalProvider } from "@/contexts/GlobalContext";
+import { LoadingProvider } from "@/contexts/LoadingContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { OTAProvider } from "@/contexts/OTAContext";
 import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
 import { SignalRProvider } from "@/contexts/SignalRContext";
 import { ThemeProvider } from "@/core/theme/ThemeContext";
@@ -29,25 +31,29 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
     <AppErrorBoundary>
       <SafeAreaProvider>
         <ThemeProvider>
-          <GlobalProvider>
-            <UpdateOtaModal />
-            <SignalRProvider>
-              <NotificationProvider>
-                <OTPProvider>
-                  <PushNotificationProvider>
-                    <AdvertisementProvider>
-                      <CallbackProvider>
-                        {/* --- CÁC LOGIC CHẠY NGẦM --- */}
-                        {/* <AppUpdateWrapper> */}
-                        <AppContentWrapper>{children}</AppContentWrapper>
-                        {/* </AppUpdateWrapper> */}
-                      </CallbackProvider>
-                    </AdvertisementProvider>
-                  </PushNotificationProvider>
-                </OTPProvider>
-              </NotificationProvider>
-            </SignalRProvider>
-          </GlobalProvider>
+          <LoadingProvider>
+            <GlobalProvider>
+              <OTAProvider>
+                <SignalRProvider>
+                  <NotificationProvider>
+                    <OTPProvider>
+                      <PushNotificationProvider>
+                        <AdvertisementProvider>
+                          <CallbackProvider>
+                            {/* --- CÁC LOGIC CHẠY NGẦM --- */}
+                            {/* <AppUpdateWrapper> */}
+                            <AppContentWrapper>{children}</AppContentWrapper>
+                            {/* </AppUpdateWrapper> */}
+                          </CallbackProvider>
+                        </AdvertisementProvider>
+                      </PushNotificationProvider>
+                    </OTPProvider>
+                  </NotificationProvider>
+                </SignalRProvider>
+                <UpdateOtaModal />
+              </OTAProvider>
+            </GlobalProvider>
+          </LoadingProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </AppErrorBoundary>

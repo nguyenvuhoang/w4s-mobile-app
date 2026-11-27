@@ -1,8 +1,7 @@
 import StorageKey from "@/constants/StorageKey";
-import CurrencyEventEmitter from "@/services/CurrencyEventEmitter";
+import { useLazyRefreshOnEvents } from "@/hooks/useLazyRefreshOnEvents";
 import { financeSummaryRepository } from "@/services/repositories/financeSummary.repository";
 import StorageService from "@/services/StorageService";
-import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { PERIOD_TYPE } from "@/constants/PeriodType";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -36,55 +35,105 @@ interface UseFinanceSummaryReturn {
   refresh: () => Promise<void>;
 }
 
+const FINANCE_SUMMARY_TTL_MS = 30_000;
+let financeSummaryCache: {
+  data: FinanceSummaryData;
+  timestamp: number;
+  userCode: string;
+} | null = null;
+let financeSummaryInFlight: Promise<FinanceSummaryData | null> | null = null;
+
 /**
  * Hook for fetching income and expense summary
  * Automatically refetches when currency or transaction changes
  */
 export const useFinanceSummary = (): UseFinanceSummaryReturn => {
-  const [data, setData] = useState<FinanceSummaryData | null>(null);
+  const [data, setData] = useState<FinanceSummaryData | null>(
+    () => financeSummaryCache?.data ?? null
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSummary = useCallback(async () => {
+  const fetchSummary = useCallback(async (force = false) => {
     try {
-      setLoading(true);
-      setError(null);
-
       const userCode = await StorageService.getItem(StorageKey.userCode);
       if (!userCode) {
         throw new Error("Missing user code");
       }
 
-      const [summaryResponse, balanceResponse] = await Promise.all([
-        financeSummaryRepository.getIncomeExpenseSummary({
-          period_type: PERIOD_TYPE.MONTH,
-          usercode: userCode,
-        }),
-        financeSummaryRepository.getTotalBalance(userCode),
-      ]);
+      if (
+        !force &&
+        financeSummaryCache &&
+        financeSummaryCache.userCode === userCode &&
+        Date.now() - financeSummaryCache.timestamp < FINANCE_SUMMARY_TTL_MS
+      ) {
+        setData(financeSummaryCache.data);
+        setError(null);
+        return;
+      }
 
-      if (summaryResponse.isSuccess() && summaryResponse.data) {
-        let totalBalance = 0;
-        if (balanceResponse.isSuccess() && balanceResponse.data) {
-          const balanceData = balanceResponse.data;
-          if (typeof balanceData === "number") {
-            totalBalance = balanceData;
-          } else if (typeof balanceData === "object") {
-            const tb = balanceData.total_balance;
-            if (typeof tb === "number") {
-              totalBalance = tb;
-            } else if (typeof tb === "object" && tb !== null) {
-              totalBalance = tb.total_balance ?? 0;
-            }
-          }
+      if (!financeSummaryCache) {
+        setLoading(true);
+      }
+      setError(null);
+
+      if (!force && financeSummaryInFlight) {
+        const sharedResult = await financeSummaryInFlight;
+        if (sharedResult) {
+          setData(sharedResult);
         }
+        return;
+      }
 
-        setData({
-          ...summaryResponse.data,
-          total_balance: totalBalance,
-        });
-      } else {
-        setError(summaryResponse.message || "Failed to fetch finance summary");
+      const requestPromise = (async (): Promise<FinanceSummaryData | null> => {
+        try {
+          const [summaryResponse, balanceResponse] = await Promise.all([
+            financeSummaryRepository.getIncomeExpenseSummary({
+              period_type: PERIOD_TYPE.MONTH,
+              usercode: userCode,
+            }),
+            financeSummaryRepository.getTotalBalance(userCode),
+          ]);
+
+          if (summaryResponse.isSuccess() && summaryResponse.data) {
+            let totalBalance = 0;
+            if (balanceResponse.isSuccess() && balanceResponse.data) {
+              const balanceData = balanceResponse.data;
+              if (typeof balanceData === "number") {
+                totalBalance = balanceData;
+              } else if (typeof balanceData === "object") {
+                const tb = balanceData.total_balance;
+                if (typeof tb === "number") {
+                  totalBalance = tb;
+                } else if (typeof tb === "object" && tb !== null) {
+                  totalBalance = tb.total_balance ?? 0;
+                }
+              }
+            }
+
+            const result: FinanceSummaryData = {
+              ...summaryResponse.data,
+              total_balance: totalBalance,
+            };
+            financeSummaryCache = {
+              data: result,
+              timestamp: Date.now(),
+              userCode,
+            };
+            return result;
+          } else {
+            setError(summaryResponse.message || "Failed to fetch finance summary");
+            return null;
+          }
+        } finally {
+          financeSummaryInFlight = null;
+        }
+      })();
+
+      financeSummaryInFlight = requestPromise;
+      const result = await requestPromise;
+      if (result) {
+        setData(result);
       }
     } catch (err: any) {
       setError(
@@ -96,45 +145,28 @@ export const useFinanceSummary = (): UseFinanceSummaryReturn => {
     }
   }, []);
 
-  // Dùng useFocusEffect thay useEffect để fetch lại mỗi khi màn hình được focus
-  // Giải quyết race condition khi app mới khởi động (token chưa sẵn sàng)
+  // Dùng useFocusEffect nhưng có TTL cache để tránh bắn lại API mỗi lần đổi tab
   useFocusEffect(
     useCallback(() => {
-      fetchSummary();
+      fetchSummary(false);
     }, [fetchSummary])
   );
 
-  // Listen for currency changes
-  useEffect(() => {
-    const handleCurrencyChanged = () => {
-      fetchSummary();
-    };
+  // Mark-dirty & lazy refetch on focus when currency or transaction changes
+  useLazyRefreshOnEvents(() => fetchSummary(false), {
+    onInvalidate: () => {
+      financeSummaryCache = null;
+      financeSummaryInFlight = null;
+    },
+  });
 
-    CurrencyEventEmitter.onCurrencyChanged(handleCurrencyChanged);
-
-    return () => {
-      CurrencyEventEmitter.offCurrencyChanged(handleCurrencyChanged);
-    };
-  }, [fetchSummary]);
-
-  // Listen for transaction changes (create/update/delete)
-  useEffect(() => {
-    const handleTransactionChanged = () => {
-      fetchSummary();
-    };
-
-    TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
-
-    return () => {
-      TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
-    };
-  }, [fetchSummary]);
+  const refresh = useCallback(() => fetchSummary(true), [fetchSummary]);
 
   return {
     data,
     loading,
     error,
-    refresh: fetchSummary,
+    refresh,
   };
 };
 
@@ -192,21 +224,11 @@ export const useWalletIncomeExpenseSummary = () => {
     []
   );
 
-  useEffect(() => {
-    const handleTransactionChanged = () => {
-      if (lastParams.current) {
-        fetchWalletSummary(lastParams.current);
-      }
-    };
-
-    TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
-    CurrencyEventEmitter.onCurrencyChanged(handleTransactionChanged);
-
-    return () => {
-      TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
-      CurrencyEventEmitter.offCurrencyChanged(handleTransactionChanged);
-    };
-  }, [fetchWalletSummary]);
+  useLazyRefreshOnEvents(() => {
+    if (lastParams.current) {
+      fetchWalletSummary(lastParams.current);
+    }
+  });
 
   return {
     data,
@@ -290,21 +312,11 @@ export const useWalletOpeningClosingBalance = () => {
     []
   );
 
-  useEffect(() => {
-    const handleTransactionChanged = () => {
-      if (lastParams.current) {
-        fetchBalance(lastParams.current);
-      }
-    };
-
-    TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
-    CurrencyEventEmitter.onCurrencyChanged(handleTransactionChanged);
-
-    return () => {
-      TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
-      CurrencyEventEmitter.offCurrencyChanged(handleTransactionChanged);
-    };
-  }, [fetchBalance]);
+  useLazyRefreshOnEvents(() => {
+    if (lastParams.current) {
+      fetchBalance(lastParams.current);
+    }
+  });
 
   return {
     data,
@@ -401,29 +413,9 @@ export const useMonthlyChartData = (params?: {
     fetchChartData();
   }, [fetchChartData]);
 
-  // Listen for currency changes
-  useEffect(() => {
-    const handleCurrencyChanged = () => {
-      fetchChartData();
-    };
-    CurrencyEventEmitter.onCurrencyChanged(handleCurrencyChanged);
-    return () => {
-      CurrencyEventEmitter.offCurrencyChanged(handleCurrencyChanged);
-    };
-  }, [fetchChartData]);
-
-  // Listen for transaction changes (create/update/delete)
-  useEffect(() => {
-    const handleTransactionChanged = () => {
-      fetchChartData();
-    };
-
-    TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
-
-    return () => {
-      TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
-    };
-  }, [fetchChartData]);
+  useLazyRefreshOnEvents(() => {
+    fetchChartData();
+  });
 
   return {
     expenses,

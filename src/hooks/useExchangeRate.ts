@@ -15,6 +15,12 @@ let sessionCache: {
   rateDate: string;
 } | null = null;
 
+let inFlightExchangeRatePromise: Promise<{
+  rates: ExchangeRate[];
+  rateMap: Map<string, ExchangeRate>;
+  rateDate: string;
+} | null> | null = null;
+
 const normalizeCurrencyCode = (code: string): string => {
   if (!code) return '';
   let clean = code.trim().toUpperCase();
@@ -30,13 +36,13 @@ export const useExchangeRate = (options: UseExchangeRateOptions = {}) => {
     forceRefresh = false,
   } = options;
 
-  const [rates, setRates] = useState<ExchangeRate[]>([]);
+  const [rates, setRates] = useState<ExchangeRate[]>(() => sessionCache?.rates ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [rateDate, setRateDate] = useState<string>('');
+  const [rateDate, setRateDate] = useState<string>(() => sessionCache?.rateDate ?? '');
   
   const isFetchingRef = useRef(false);
-  const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const updateIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Khởi tạo rateMapRef từ sessionCache ngay lập tức (nếu có), tránh việc convert()
   // trả null trong lần render đầu tiên khi đang chờ useEffect async chạy.
   const rateMapRef = useRef<Map<string, ExchangeRate>>(
@@ -180,13 +186,14 @@ export const useExchangeRate = (options: UseExchangeRateOptions = {}) => {
   const fetchExchangeRates = async (skipCache = false) => {
     // Prevent duplicate fetches
     if (isFetchingRef.current) {
-      console.log('[useExchangeRate] Already fetching, skip');
       return;
     }
 
     // Check cache
     if (!skipCache && sessionCache && !shouldUpdateRate()) {
-      console.log('[useExchangeRate] Using cached data:', sessionCache.rates.length, 'rates');
+      if (__DEV__) {
+        console.log('[useExchangeRate] Using cached data:', sessionCache.rates.length, 'rates');
+      }
       setRates(sessionCache.rates);
       setRateDate(sessionCache.rateDate);
       rateMapRef.current = sessionCache.rateMap;
@@ -198,44 +205,56 @@ export const useExchangeRate = (options: UseExchangeRateOptions = {}) => {
     setError(null);
 
     try {
-      console.log('[useExchangeRate] Fetching exchange rates...');
-      
-      const response = await exchangeRateRepository.getExchangeRates({
-        search_text: '',
-        page_index: 0,
-        page_size: 50,
-      });
+      let sharedPromise = !skipCache ? inFlightExchangeRatePromise : null;
+      if (!sharedPromise) {
+        if (__DEV__) {
+          console.log('[useExchangeRate] Fetching exchange rates...');
+        }
+        sharedPromise = (async () => {
+          try {
+            const response = await exchangeRateRepository.getExchangeRates({
+              search_text: '',
+              page_index: 0,
+              page_size: 50,
+            });
 
-      if (response.isSuccess() && response.data) {
-        const fetchedRates: ExchangeRate[] = response.data.items || [];
-        
-        // Lấy rate_date_utc từ item đầu tiên (tất cả đều có cùng ngày)
-        const firstRateDate = fetchedRates.length > 0 
-          ? fetchedRates[0].rate_date_utc 
-          : new Date().toISOString();
+            if (response.isSuccess() && response.data) {
+              const fetchedRates: ExchangeRate[] = response.data.items || [];
+              const firstRateDate = fetchedRates.length > 0
+                ? fetchedRates[0].rate_date_utc
+                : new Date().toISOString();
+              const rateMap = buildRateMap(fetchedRates);
 
-        console.log('[useExchangeRate] Received:', fetchedRates.length, 'rates');
-        console.log('[useExchangeRate] Rate date:', firstRateDate);
+              sessionCache = {
+                rates: fetchedRates,
+                rateMap,
+                timestamp: Date.now(),
+                rateDate: firstRateDate,
+              };
 
-        // Build map để lookup nhanh
-        const rateMap = buildRateMap(fetchedRates);
+              if (__DEV__) {
+                console.log('[useExchangeRate] Received:', fetchedRates.length, 'rates');
+              }
 
-        setRates(fetchedRates);
-        setRateDate(firstRateDate);
-        rateMapRef.current = rateMap;
+              return { rates: fetchedRates, rateMap, rateDate: firstRateDate };
+            } else {
+              throw new Error(response.message || 'Failed to fetch exchange rates');
+            }
+          } finally {
+            inFlightExchangeRatePromise = null;
+          }
+        })();
+        if (!skipCache) {
+          inFlightExchangeRatePromise = sharedPromise;
+        }
+      }
 
-        // Cache data
-        sessionCache = {
-          rates: fetchedRates,
-          rateMap: rateMap,
-          timestamp: Date.now(),
-          rateDate: firstRateDate,
-        };
-
-        // Schedule next auto-update
+      const result = await sharedPromise;
+      if (result) {
+        setRates(result.rates);
+        setRateDate(result.rateDate);
+        rateMapRef.current = result.rateMap;
         scheduleNextUpdate();
-      } else {
-        throw new Error(response.message || 'Failed to fetch exchange rates');
       }
     } catch (err) {
       const errorMessage =

@@ -64,7 +64,7 @@ export const useEvent = (options: UseEventOptions = {}) => {
         from_date: "",
         to_date: "",
         search_text: "",
-        page_index: 1,
+        page_index: 0,
         page_size: PAGE_SIZE,
       };
 

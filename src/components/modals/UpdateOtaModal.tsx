@@ -1,9 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { GlobalContext } from '../../contexts/GlobalContext';
+import { useOTAContext } from '../../contexts/OTAContext';
 import { useAppTheme } from '../../core/theme/ThemeContext';
 import { normalize } from '../../utils/layout';
 import CustomButton from '../base/CustomButton';
@@ -16,7 +16,7 @@ const UpdateOtaModal = () => {
         isOtaUpdateReady,
         reloadOtaApp,
         otaPriority
-    } = useContext(GlobalContext);
+    } = useOTAContext();
 
     const [isVisible, setIsVisible] = useState(false);
     const { colors } = useAppTheme();

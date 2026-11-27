@@ -354,7 +354,7 @@ const BudgetDetailScreen = () => {
           wallet_budget_id: budget.id || budget.budget_id || undefined,
           from_transaction_date: budget.start_date || undefined,
           to_transaction_date: budget.end_date || undefined,
-          page_index: 1,
+          page_index: 0,
           page_size: 200,
         });
         const list: any[] = Array.isArray(result) ? result : (result?.items ?? result?.data ?? []);

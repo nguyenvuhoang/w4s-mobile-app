@@ -422,7 +422,7 @@ export const useSettingService = () => {
         workflowid: WORKFLOWCODE.WF_MB_EXECUTE_SQL_FROM_CTH,
         commandname: COMMAND_NAME.SimpleSearchLoginDeviceInformation,
         searchtext: appInfo.user_code,
-        pageindex: 1,
+        pageindex: 0,
         pagesize: 10,
       });
 

@@ -121,38 +121,49 @@ const CategoryDetailScreen: React.FC = () => {
      * Helper to calculate the date range based on anchor_date and period_type
      */
     const getPeriodRange = (anchorDateStr: string, periodType: string) => {
-        const anchorDate = new Date(anchorDateStr);
+        const formatYMD = (d: Date) =>
+            `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+        const ymdMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(anchorDateStr);
+        const anchorDate = ymdMatch
+            ? new Date(Number(ymdMatch[1]), Number(ymdMatch[2]) - 1, Number(ymdMatch[3]))
+            : new Date(anchorDateStr);
         const year = anchorDate.getFullYear();
         const month = anchorDate.getMonth();
         const day = anchorDate.getDate();
 
-        let fromDate = anchorDateStr;
+        let fromDate = formatYMD(anchorDate);
         let toDate = "";
 
         switch (periodType) {
             case PERIOD_TYPE.WEEK: {
-                const end = new Date(year, month, day + 7);
-                toDate = end.toISOString().split('T')[0];
+                const dayOfWeek = anchorDate.getDay();
+                const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                const start = new Date(year, month, day + diffToMonday);
+                const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+                fromDate = formatYMD(start);
+                toDate = formatYMD(end);
                 break;
             }
             case PERIOD_TYPE.MONTH: {
-                const end = new Date(year, month + 1, 1);
-                toDate = end.toISOString().split('T')[0];
+                fromDate = formatYMD(new Date(year, month, 1));
+                toDate = formatYMD(new Date(year, month + 1, 0));
                 break;
             }
             case PERIOD_TYPE.QUARTER: {
-                const end = new Date(year, month + 3, 1);
-                toDate = end.toISOString().split('T')[0];
+                const qStartMonth = Math.floor(month / 3) * 3;
+                fromDate = formatYMD(new Date(year, qStartMonth, 1));
+                toDate = formatYMD(new Date(year, qStartMonth + 3, 0));
                 break;
             }
             case PERIOD_TYPE.YEAR: {
-                const end = new Date(year + 1, 0, 1);
-                toDate = end.toISOString().split('T')[0];
+                fromDate = `${year}-01-01`;
+                toDate = `${year}-12-31`;
                 break;
             }
             default: {
-                const end = new Date(year, month + 1, 1);
-                toDate = end.toISOString().split('T')[0];
+                fromDate = formatYMD(new Date(year, month, 1));
+                toDate = formatYMD(new Date(year, month + 1, 0));
             }
         }
         return { fromDate, toDate };

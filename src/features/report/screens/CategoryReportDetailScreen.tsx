@@ -36,8 +36,16 @@ const parseCategoryName = (nameJson: string, lang = 'vi'): string => {
   }
 };
 
+const formatLocalYMD = (d: Date): string => {
+  const yy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+};
+
 const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
   const today = new Date();
+  const todayStr = formatLocalYMD(today);
   const options: PeriodOption[] = [];
 
   switch (periodType) {
@@ -60,9 +68,13 @@ const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         const yy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const anchorDate =
+          i === 0
+            ? todayStr
+            : formatLocalYMD(new Date(yy, d.getMonth() + 1, 0));
         options.push({
           label: i === 0 ? t('report.this_month') : `${t('report.month')} ${mm}/${yy}`,
-          anchor_date: `${yy}-${mm}-01`,
+          anchor_date: anchorDate,
         });
       }
       break;
@@ -73,10 +85,13 @@ const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
         let q = currentQ - i;
         let y = today.getFullYear();
         while (q < 0) { q += 4; y--; }
-        const startMonth = String(q * 3 + 1).padStart(2, '0');
+        const anchorDate =
+          i === 0
+            ? todayStr
+            : formatLocalYMD(new Date(y, (q + 1) * 3, 0));
         options.push({
           label: i === 0 ? t('report.this_quarter') : `Q${q + 1}/${y}`,
-          anchor_date: `${y}-${startMonth}-01`,
+          anchor_date: anchorDate,
         });
       }
       break;
@@ -86,7 +101,7 @@ const buildPeriodOptions = (periodType: PeriodType, t: any): PeriodOption[] => {
         const y = today.getFullYear() - i;
         options.push({
           label: i === 0 ? t('report.this_year') : `${t('report.year')} ${y}`,
-          anchor_date: `${y}-01-01`,
+          anchor_date: i === 0 ? todayStr : `${y}-12-31`,
         });
       }
       break;
@@ -135,21 +150,29 @@ const CategoryReportDetailScreen = () => {
   }, [params.wallet_id, wallets, defaultWallet]);
 
   const [selectedWallet, setSelectedWallet] = useState<WalletSummary | null>(initWallet);
-  const [periodType, setPeriodType] = useState<PeriodType>(
-    (params.period_type as PeriodType) || PERIOD_TYPE.MONTH
-  );
+  const initialPeriodType = (params.period_type as PeriodType) || PERIOD_TYPE.MONTH;
+  const [periodType, setPeriodType] = useState<PeriodType>(initialPeriodType);
   const periodOptions = useMemo(() => buildPeriodOptions(periodType, t), [periodType, t]);
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodOption>(periodOptions[0]);
-
-  useEffect(() => {
-    const opts = buildPeriodOptions(periodType, t);
-    setSelectedPeriod(prev => {
-      if (prev && prev.anchor_date === opts[0].anchor_date && prev.label === opts[0].label) {
-        return prev;
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodOption>(() => {
+    const initialOptions = buildPeriodOptions(initialPeriodType, t);
+    if (params.anchor_date) {
+      const exactMatch = initialOptions.find(opt => opt.anchor_date === params.anchor_date);
+      if (exactMatch) return exactMatch;
+      if (initialPeriodType === PERIOD_TYPE.MONTH) {
+        const targetYm = params.anchor_date.slice(0, 7);
+        const monthMatch = initialOptions.find(opt => opt.anchor_date.startsWith(targetYm));
+        if (monthMatch) return monthMatch;
       }
-      return opts[0];
-    });
-  }, [periodType, t]);
+    }
+    return initialOptions[0];
+  });
+
+  const handleChangePeriodType = (nextType: PeriodType) => {
+    if (nextType === periodType) return;
+    const nextOptions = buildPeriodOptions(nextType, t);
+    setPeriodType(nextType);
+    setSelectedPeriod(nextOptions[0]);
+  };
 
   useEffect(() => {
     if (wallets.length > 0 && !selectedWallet) {
@@ -162,15 +185,18 @@ const CategoryReportDetailScreen = () => {
     }
   }, [wallets, params.wallet_id, defaultWallet]);
 
+  const selectedWalletId = selectedWallet?.walletId;
+  const selectedAnchorDate = selectedPeriod?.anchor_date;
+
   useEffect(() => {
-    if (selectedWallet && selectedPeriod) {
+    if (selectedWalletId !== undefined && selectedAnchorDate) {
       analyzeCategory({
-        wallet_id: selectedWallet.walletId,
-        anchor_date: selectedPeriod.anchor_date,
+        wallet_id: selectedWalletId,
+        anchor_date: selectedAnchorDate,
         period_type: periodType,
       });
     }
-  }, [selectedWallet, selectedPeriod, periodType, defaultCurrency.currencyId]);
+  }, [selectedWalletId, selectedAnchorDate, periodType, defaultCurrency.currencyId, analyzeCategory]);
 
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showPeriodModal, setShowPeriodModal] = useState(false);
@@ -224,7 +250,7 @@ const CategoryReportDetailScreen = () => {
               { backgroundColor: colors.card },
               periodType === pt.id && [styles.periodPillActive, { backgroundColor: colors.tint }],
             ]}
-            onPress={() => setPeriodType(pt.id)}
+            onPress={() => handleChangePeriodType(pt.id)}
           >
             <CustomText
               type="medium"

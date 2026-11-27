@@ -1,12 +1,13 @@
 import StorageKey from "@/constants/StorageKey";
-import { useOTA, OTAPriority } from "@/hooks/useOTA";
+import { LoadingConfig, useLoadingActions } from "@/contexts/LoadingContext";
+import { OTAPriority } from "@/hooks/useOTA";
 import { useImageService } from "@/services/ImageService";
 import { logError, logMessage } from "@/services/LoggerService";
-import { walletRepository } from "@/services/repositories/wallet.repository"; // 🔹 ADD
+import { walletRepository } from "@/services/repositories/wallet.repository";
 import StorageService from "@/services/StorageService";
 import TransactionEventEmitter from "@/services/TransactionEventEmitter";
 import { AppInfo } from "@/types/UserCommand";
-import { WalletSummary } from "@/types/wallet"; // 🔹 ADD
+import { WalletSummary } from "@/types/wallet";
 import { t } from "i18next";
 import {
   createContext,
@@ -16,16 +17,6 @@ import {
   useRef,
   useState,
 } from "react";
-import LoadingIndicator from "../components/loading/LoadingIndicator";
-import ProgressLoadingIndicator from "../components/loading/ProgressLoadingIndicator";
-
-interface LoadingConfig {
-  visible: boolean;
-  overlay?: boolean;
-  text?: string;
-  progress?: number;
-  mode?: "default" | "progress";
-}
 
 interface GlobalContextType {
   appInfo: AppInfo | null;
@@ -74,9 +65,17 @@ interface GlobalContextType {
   defaultWallet?: WalletSummary;
 }
 
+const DEFAULT_LOADING: LoadingConfig = {
+  visible: false,
+  overlay: true,
+  text: undefined,
+  progress: 0,
+  mode: "default",
+};
+
 const GlobalContext = createContext<GlobalContextType>({
   appInfo: null,
-  setAppInfo: () => { },
+  setAppInfo: () => {},
   isReady: false,
   isLogoutConfirmedRef: { current: false },
   isIdleLogoutRef: { current: false },
@@ -84,58 +83,88 @@ const GlobalContext = createContext<GlobalContextType>({
   isOtaUpdateAvailable: false,
   isOtaDownloading: false,
   isOtaUpdateReady: false,
-  startOtaUpdate: async () => { },
-  reloadOtaApp: async () => { },
+  startOtaUpdate: async () => {},
+  reloadOtaApp: async () => {},
   otaError: null,
   otaPriority: "normal",
 
   unreadTotalCount: 0,
-  setUnreadTotalCount: () => { },
+  setUnreadTotalCount: () => {},
   globalPhone: null,
-  setGlobalPhone: () => { },
+  setGlobalPhone: () => {},
   balance: "********",
-  setBalance: () => { },
+  setBalance: () => {},
   walletBalance: "********",
-  setWalletBalance: () => { },
+  setWalletBalance: () => {},
 
-  globalLoading: {
-    visible: false,
-    overlay: true,
-    text: undefined,
-    progress: 0,
-    mode: "default",
-  },
-  showGlobalLoading: () => { },
-  hideGlobalLoading: () => { },
-  setLoadingProgress: () => { },
+  globalLoading: DEFAULT_LOADING,
+  showGlobalLoading: () => {},
+  hideGlobalLoading: () => {},
+  setLoadingProgress: () => {},
 
   // 🔹 ADD — Wallet defaults
   wallets: [],
   walletsUpdatedAt: null,
   walletLoading: false,
   walletError: null,
-  fetchWallets: async () => { },
-  updateWalletBalance: () => { },
+  fetchWallets: async () => {},
+  updateWalletBalance: () => {},
 
   // 🔹 ADD — Default wallet defaults
   defaultWalletId: null,
-  setDefaultWalletId: () => { },
-  setPrimaryWallet: async () => { },
-  getPrimaryWallet: async () => { throw new Error("getPrimaryWallet not implemented"); },
+  setDefaultWalletId: () => {},
+  setPrimaryWallet: async () => {},
+  getPrimaryWallet: async () => {
+    throw new Error("getPrimaryWallet not implemented");
+  },
   defaultWallet: undefined,
 });
+
+const BANNER_CACHE_TTL_MS = 5 * 60 * 1000;
+const WALLET_TTL_MS = 30_000;
 
 const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const imageService = useImageService();
+  const imageServiceRef = useRef(imageService);
+  imageServiceRef.current = imageService;
+  const { showGlobalLoading, hideGlobalLoading, setLoadingProgress } =
+    useLoadingActions();
+
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [isReady, setIsReady] = useState(false);
 
-  const loadImages = async () => {
+  const isLogoutConfirmedRef = useRef(false);
+  const isIdleLogoutRef = useRef(false);
+  const [unreadTotalCount, setUnreadTotalCount] = useState<number>(0);
+
+  const [globalPhone, setGlobalPhone] = useState<string | null>(null);
+  const [balance, setBalance] = useState<string>("********");
+  const [walletBalance, setWalletBalance] = useState<string>("********");
+
+  // 🔹 ADD — Wallet snapshot states
+  const [wallets, setWallets] = useState<WalletSummary[]>([]);
+  const [walletsUpdatedAt, setWalletsUpdatedAt] = useState<number | null>(null);
+  const walletsUpdatedAtRef = useRef<number | null>(null);
+  const fetchWalletsInFlightRef = useRef<Promise<void> | null>(null);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
+
+  // 🔹 ADD — Default wallet state
+  const [defaultWalletId, setDefaultWalletId] = useState<number | null>(null);
+
+  const lastBannerLoadRef = useRef<number>(0);
+  const lastInitializedUserCodeRef = useRef<string | null>(null);
+
+  const loadImages = useCallback(async (force = false) => {
+    if (!force && Date.now() - lastBannerLoadRef.current < BANNER_CACHE_TTL_MS) {
+      return true;
+    }
+
     try {
-      type BannerImage = { typeusing: string;[key: string]: any };
-      const res = (await imageService.searchBannerImage(
+      type BannerImage = { typeusing: string; [key: string]: any };
+      const res = (await imageServiceRef.current.searchBannerImage(
         "Popup,Home,Statistic,Report",
         "",
         0,
@@ -143,7 +172,9 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
       )) as BannerImage[];
 
       const popupBanners = res.filter((item) => item.typeusing === "Popup");
-      const homeBanners = res.filter((item) => item.typeusing === "Home" || item.typeusing === "Home Screen");
+      const homeBanners = res.filter(
+        (item) => item.typeusing === "Home" || item.typeusing === "Home Screen"
+      );
       const statisticBanners = res.filter((item) => item.typeusing === "Statistic");
       const reportBanners = res.filter((item) => item.typeusing === "Report");
 
@@ -154,87 +185,76 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
         StorageService.setItem(StorageKey.ReportBanners, JSON.stringify(reportBanners)),
       ]);
 
-      console.log("Banners loaded and cached successfully.");
+      lastBannerLoadRef.current = Date.now();
+      if (__DEV__) {
+        console.log("Banners loaded and cached successfully.");
+      }
       return true;
     } catch (error) {
       console.warn("Banner image loading failed:", error);
       return false;
     }
-  };
-  const isLogoutConfirmedRef = useRef(false);
-  const isIdleLogoutRef = useRef(false);
-  const [unreadTotalCount, setUnreadTotalCount] = useState<number>(0);
-  const lastOtaCheckTimeRef = useRef<number | null>(null);
+  }, []);
 
-  const [globalPhone, setGlobalPhone] = useState<string | null>(null);
-  const [balance, setBalance] = useState<string>("********");
-  const [walletBalance, setWalletBalance] = useState<string>("********");
-
-  const [globalLoading, setGlobalLoading] = useState<LoadingConfig>({
-    visible: false,
-    overlay: false,
-    text: undefined,
-    progress: 0,
-    mode: "default",
-  });
-
-  // 🔹 ADD — Wallet snapshot states
-  const WALLET_TTL = 30_000;
-  const [wallets, setWallets] = useState<WalletSummary[]>([]);
-  const [walletsUpdatedAt, setWalletsUpdatedAt] = useState<number | null>(null);
-  const [walletLoading, setWalletLoading] = useState(false);
-  const [walletError, setWalletError] = useState<string | null>(null);
-
-  // 🔹 ADD — Default wallet state
-  const [defaultWalletId, setDefaultWalletId] = useState<number | null>(null);
-
-  const isWalletExpired = () => {
-    if (!walletsUpdatedAt) return true;
-    return Date.now() - walletsUpdatedAt > WALLET_TTL;
-  };
-
-  // 🔹 ADD — Fetch wallet overview
-  const fetchWallets = async (force = false) => {
-    if (!force && !isWalletExpired()) return;
-
-    try {
-      setWalletLoading(true);
-      setWalletError(null);
-
-      const userCode = appInfo?.user_code;
-      if (!userCode) throw new Error("Missing user_code");
-
-      const data = await walletRepository.getWalletOverview(userCode);
-      setWallets(data);
-      setWalletsUpdatedAt(Date.now());
-      if (data.length === 1) {
-        setDefaultWalletId(data[0].walletId);
-      }
-    } catch (err) {
-      console.error("[GlobalContext][Wallet] fetch error", err);
-      setWalletError(
-        err instanceof Error ? err.message : "Fetch wallet failed",
-      );
-    } finally {
-      setWalletLoading(false);
+  // 🔹 ADD — Fetch wallet overview (với in-flight deduplication)
+  const fetchWallets = useCallback(async (force = false) => {
+    const lastUpdated = walletsUpdatedAtRef.current;
+    if (!force && lastUpdated && Date.now() - lastUpdated <= WALLET_TTL_MS) {
+      return;
     }
-  };
+
+    if (!force && fetchWalletsInFlightRef.current) {
+      return fetchWalletsInFlightRef.current;
+    }
+
+    const run = (async () => {
+      try {
+        setWalletLoading(true);
+        setWalletError(null);
+
+        const userCode = appInfo?.user_code;
+        if (!userCode) return;
+
+        const data = await walletRepository.getWalletOverview(userCode);
+        const now = Date.now();
+        walletsUpdatedAtRef.current = now;
+        setWallets(data);
+        setWalletsUpdatedAt(now);
+        if (data.length === 1) {
+          setDefaultWalletId(data[0].walletId);
+        }
+      } catch (err) {
+        console.error("[GlobalContext][Wallet] fetch error", err);
+        setWalletError(
+          err instanceof Error ? err.message : "Fetch wallet failed"
+        );
+      } finally {
+        setWalletLoading(false);
+        fetchWalletsInFlightRef.current = null;
+      }
+    })();
+
+    fetchWalletsInFlightRef.current = run;
+    return run;
+  }, [appInfo?.user_code]);
 
   // 🔹 ADD — Optimistic update
-  const updateWalletBalance = (walletId: number, diff: number) => {
+  const updateWalletBalance = useCallback((walletId: number, diff: number) => {
     setWallets((prev) =>
       prev.map((w) =>
         w.walletId === walletId
           ? { ...w, balance: w.balance + diff }
-          : w,
-      ),
+          : w
+      )
     );
-  };
+  }, []);
 
   // 🔹 ADD — Set primary wallet (API + local sync)
-  const setPrimaryWallet = async (walletId: number) => {
+  const setPrimaryWallet = useCallback(async (walletId: number) => {
     try {
-      showGlobalLoading({ text: t("wallet.setting_primary_wallet") || "Setting primary wallet..." });
+      showGlobalLoading({
+        text: t("wallet.setting_primary_wallet") || "Setting primary wallet...",
+      });
       await walletRepository.setPrimaryWallet(walletId);
       setDefaultWalletId(walletId);
       // Optional: force refresh wallets to see if primary status flag changed on server
@@ -245,10 +265,10 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       hideGlobalLoading();
     }
-  };
+  }, [fetchWallets, showGlobalLoading, hideGlobalLoading]);
 
   // 🔹 ADD — Get primary wallet
-  const getPrimaryWallet = async (): Promise<WalletSummary> => {
+  const getPrimaryWallet = useCallback(async (): Promise<WalletSummary> => {
     try {
       const primaryWallet = await walletRepository.getPrimaryWallet();
       if (primaryWallet) {
@@ -259,7 +279,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("[GlobalContext] getPrimaryWallet error", err);
       throw err;
     }
-  };
+  }, []);
 
   // 🔹 ADD — Derived default wallet
   const defaultWallet = useMemo(() => {
@@ -271,9 +291,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const loadDefaultWallet = async () => {
       try {
-        const stored = await StorageService.getItem(
-          StorageKey.defaultWalletId,
-        );
+        const stored = await StorageService.getItem(StorageKey.defaultWalletId);
         if (stored) {
           setDefaultWalletId(Number(stored));
         }
@@ -287,10 +305,7 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
   // 🔹 ADD — Persist default wallet
   useEffect(() => {
     if (!defaultWalletId) return;
-    StorageService.setItem(
-      StorageKey.defaultWalletId,
-      String(defaultWalletId),
-    );
+    StorageService.setItem(StorageKey.defaultWalletId, String(defaultWalletId));
   }, [defaultWalletId]);
 
   // 🔹 ADD — Fallback default wallet
@@ -302,61 +317,10 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [wallets, defaultWallet]);
 
-  const showGlobalLoading = useCallback(
-    (config?: Partial<Omit<LoadingConfig, "visible">>) => {
-      const newProgress = config?.progress ?? 0;
-      setGlobalLoading({
-        visible: true,
-        overlay: config?.overlay ?? false,
-        text: config?.text ?? (t("common.loading") || "Loading..."),
-        progress: newProgress,
-        mode: config?.mode ?? "default",
-      });
-
-      if (newProgress === 100) {
-        return new Promise<void>((resolve) => setTimeout(resolve, 800));
-      }
-    },
-    [],
-  );
-
-  const hideGlobalLoading = useCallback(() => {
-    setGlobalLoading({
-      visible: false,
-      overlay: false,
-      text: undefined,
-      progress: 0,
-      mode: "default",
-    });
-  }, []);
-
-  const setLoadingProgress = useCallback((progress: number) => {
-    setGlobalLoading((prev) =>
-      prev.visible ? { ...prev, progress, mode: "progress" } : prev,
-    );
-
-    if (progress === 100) {
-      return new Promise<void>((resolve) => setTimeout(resolve, 800));
-    }
-  }, []);
-
-  const {
-    isUpdateAvailable: isOtaUpdateAvailable,
-    isDownloading: isOtaDownloading,
-    isUpdateReady: isOtaUpdateReady,
-    startUpdate: startOtaUpdate,
-    reloadApp: reloadOtaApp,
-    otaError,
-    checkForUpdates: checkForOtaUpdates,
-    priority: otaPriority,
-  } = useOTA();
-
   useEffect(() => {
     const loadAppInfo = async () => {
       try {
-        const storedAppInfo = await StorageService.getItem(
-          StorageKey.appInfo,
-        );
+        const storedAppInfo = await StorageService.getItem(StorageKey.appInfo);
         if (storedAppInfo) {
           const parsedAppInfo: AppInfo = JSON.parse(storedAppInfo);
           setAppInfo(parsedAppInfo);
@@ -371,105 +335,112 @@ const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({
     loadAppInfo();
   }, []);
 
-  // 🔹 TRIGGER OTA CHECK
+  // 🔹 ADD — Fetch wallet when login / app start (run once per user_code)
   useEffect(() => {
-    if (isReady && !__DEV__) {
-      const timer = setTimeout(() => {
-        checkForOtaUpdates();
-      }, 1500);
-      return () => clearTimeout(timer);
+    const userCode = appInfo?.user_code;
+    if (!userCode) {
+      lastInitializedUserCodeRef.current = null;
+      return;
     }
-  }, [isReady]);
+    if (lastInitializedUserCodeRef.current === userCode) {
+      return;
+    }
+    lastInitializedUserCodeRef.current = userCode;
 
-  // 🔹 ADD — Fetch wallet when login / app start
-  useEffect(() => {
-    if (!appInfo?.user_code) return;
     fetchWallets(true);
     getPrimaryWallet().catch((err) => {
       console.warn("[GlobalContext] auto getPrimaryWallet on login/start failed", err);
     });
     loadImages();
-  }, [appInfo?.user_code]);
+  }, [appInfo?.user_code, fetchWallets, getPrimaryWallet, loadImages]);
 
-  // 🔹 ADD — Listen for transaction changes to refresh wallets
+  // 🔹 Mark wallets dirty on transaction changes; lazy refetch happens on screen focus via useWallet
   useEffect(() => {
     const handleTransactionChanged = () => {
-      if (appInfo?.user_code) {
-        fetchWallets(true);
-      }
+      walletsUpdatedAtRef.current = null;
     };
 
     TransactionEventEmitter.onTransactionChanged(handleTransactionChanged);
     return () => {
       TransactionEventEmitter.offTransactionChanged(handleTransactionChanged);
     };
-  }, [appInfo?.user_code]);
+  }, []);
+
+  const contextValue = useMemo<GlobalContextType>(
+    () => ({
+      appInfo,
+      setAppInfo,
+      isReady,
+      isLogoutConfirmedRef,
+      isIdleLogoutRef,
+      unreadTotalCount,
+      setUnreadTotalCount,
+
+      // Backward compatibility defaults (actual OTA state lives in OTAContext)
+      isOtaUpdateAvailable: false,
+      isOtaDownloading: false,
+      isOtaUpdateReady: false,
+      startOtaUpdate: async () => {},
+      reloadOtaApp: async () => {},
+      otaError: null,
+      otaPriority: "normal",
+
+      globalPhone,
+      setGlobalPhone,
+      balance,
+      setBalance,
+      walletBalance,
+      setWalletBalance,
+
+      // Forward loading actions without subscribing GlobalProvider to loading state changes
+      globalLoading: DEFAULT_LOADING,
+      showGlobalLoading,
+      hideGlobalLoading,
+      setLoadingProgress,
+
+      // 🔹 ADD — Wallet
+      wallets,
+      walletsUpdatedAt,
+      walletLoading,
+      walletError,
+      fetchWallets,
+      updateWalletBalance,
+
+      // 🔹 ADD — Default wallet
+      defaultWalletId,
+      setDefaultWalletId,
+      setPrimaryWallet,
+      getPrimaryWallet,
+      defaultWallet,
+    }),
+    [
+      appInfo,
+      isReady,
+      unreadTotalCount,
+      globalPhone,
+      balance,
+      walletBalance,
+      showGlobalLoading,
+      hideGlobalLoading,
+      setLoadingProgress,
+      wallets,
+      walletsUpdatedAt,
+      walletLoading,
+      walletError,
+      fetchWallets,
+      updateWalletBalance,
+      defaultWalletId,
+      setPrimaryWallet,
+      getPrimaryWallet,
+      defaultWallet,
+    ]
+  );
 
   return (
-    <GlobalContext.Provider
-      value={{
-        appInfo,
-        setAppInfo,
-        isReady,
-        isLogoutConfirmedRef,
-        isIdleLogoutRef,
-        unreadTotalCount,
-        setUnreadTotalCount,
-
-        isOtaUpdateAvailable,
-        isOtaDownloading,
-        isOtaUpdateReady,
-        startOtaUpdate,
-        reloadOtaApp,
-        otaError,
-        otaPriority,
-
-        globalPhone,
-        setGlobalPhone,
-        balance,
-        setBalance,
-        walletBalance,
-        setWalletBalance,
-
-        globalLoading,
-        showGlobalLoading,
-        hideGlobalLoading,
-        setLoadingProgress,
-
-        // 🔹 ADD — Wallet
-        wallets,
-        walletsUpdatedAt,
-        walletLoading,
-        walletError,
-        fetchWallets,
-        updateWalletBalance,
-
-        // 🔹 ADD — Default wallet
-        defaultWalletId,
-        setDefaultWalletId,
-        setPrimaryWallet,
-        getPrimaryWallet,
-        defaultWallet,
-      }}
-    >
-      {globalLoading.mode === "progress" ? (
-        <ProgressLoadingIndicator
-          visible={globalLoading.visible}
-          overlay={globalLoading.overlay}
-          text={globalLoading.text}
-          progress={globalLoading.progress || 0}
-        />
-      ) : (
-        <LoadingIndicator
-          visible={globalLoading.visible}
-          overlay={globalLoading.overlay}
-          text={globalLoading.text}
-        />
-      )}
+    <GlobalContext.Provider value={contextValue}>
       {children}
     </GlobalContext.Provider>
   );
 };
 
 export { GlobalContext, GlobalProvider };
-

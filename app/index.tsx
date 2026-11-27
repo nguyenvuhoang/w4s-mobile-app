@@ -14,12 +14,11 @@ export default function Index() {
 
   const checkStatusAndNavigate = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const seenIntro = await StorageService.getAsyncItem(StorageKey.hasSeenIntro);
+      const [seenIntro, isVerifyFirstLogin] = await Promise.all([
+        StorageService.getAsyncItem(StorageKey.hasSeenIntro),
+        StorageService.getAsyncItem(StorageKey.isVerifyFirstLogin),
+      ]);
       const hasSeenIntro = seenIntro == 'true';
-
-      const isVerifyFirstLogin = await StorageService.getAsyncItem(StorageKey.isVerifyFirstLogin);
       const isLogged = isVerifyFirstLogin == 'true';
 
       if (!hasSeenIntro) {
