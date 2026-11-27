@@ -1,7 +1,30 @@
+import * as Localization from "expo-localization";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 
 dayjs.extend(customParseFormat);
+
+export const getTimeZone = (): string => {
+  try {
+    const calendarTimeZone = Localization.getCalendars()?.[0]?.timeZone;
+    if (calendarTimeZone) {
+      return calendarTimeZone;
+    }
+  } catch {
+    // fallback if expo-localization fails
+  }
+
+  try {
+    const intlTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (intlTimeZone) {
+      return intlTimeZone;
+    }
+  } catch {
+    // fallback if Intl fails
+  }
+
+  return "Asia/Ho_Chi_Minh";
+};
 
 export const formatDate = (
   dateString: string,

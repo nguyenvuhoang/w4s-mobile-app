@@ -2,6 +2,7 @@ import { BaseResponseModel } from "@/core/api/models/ClientModel";
 import i18n from "@/core/i18n/i18n";
 import StorageService from "@/services/StorageService";
 import { getFullDeviceInfo } from "@/utils/device/getFullDeviceInfo";
+import { getTimeZone } from "@/utils/formatDate";
 import NetInfo from "@react-native-community/netinfo";
 import * as Sentry from "@sentry/react-native";
 import axios, { AxiosHeaders, AxiosInstance, AxiosRequestConfig } from "axios";
@@ -82,6 +83,7 @@ class ApiClient {
         User_id: 0,
         Lang: i18n.language,
         D: "localhost",
+        "X-TimeZone": getTimeZone(),
       };
     } catch (ex) {
       throw new Error("A error occur while creating headers");
@@ -199,6 +201,7 @@ class ApiClient {
     const headers: HeadersInit = {
       App: "MB",
       Lang: lang,
+      "X-TimeZone": getTimeZone(),
     };
 
 
