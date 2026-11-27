@@ -19,7 +19,7 @@ import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import DefaultCurrencyService from "@/services/DefaultCurrencyService";
 import StorageService from "@/services/StorageService";
-import { Images } from "@/utils/images";
+import { Images, getAvatarSource } from "@/utils/images";
 import { normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
@@ -31,7 +31,9 @@ import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ActivityIndicator,
   Image,
+  Modal,
   Platform,
   ScrollView,
   Switch,
@@ -50,6 +52,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const isFocused = useIsFocused();
   const { t, i18n } = useTranslation();
   const { showNotification } = useNotification();
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const { handleLogout, touchIDClick, isUsingTouchID, handleDeleteAccount } = useSettingService();
   const { appInfo } = useContext(GlobalContext);
   const { mode, setMode, colors, isDark } = useAppTheme();
@@ -114,6 +117,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   );
 
   const handlePickAvatar = async () => {
+    if (isUploadingAvatar) return;
     try {
       // Xin quyền truy cập thư viện ảnh
       if (Platform.OS !== "android") {
@@ -136,25 +140,30 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       const uri = result.assets[0].uri;
       const userCode = appInfo?.user_code || "";
 
-      // Bước 1: Upload ảnh lên server → nhận về URL
-      const uploadResponse = await apiService.uploadImage(
-        uri,
-        "avatars",        // folderName — chỉnh theo backend của bạn
-        userCode,
-        true              // show loading
-      );
+      setIsUploadingAvatar(true);
+      try {
+        // Bước 1: Upload ảnh lên server → nhận về URL
+        const uploadResponse = await apiService.uploadImage(
+          uri,
+          "avatars",        // folderName — chỉnh theo backend của bạn
+          userCode,
+          false
+        );
 
-      const avatarUrl = uploadResponse?.file_url || uploadResponse?.data?.file_url;
-      if (!avatarUrl) throw new Error("Không nhận được URL ảnh sau khi upload");
+        const avatarUrl = uploadResponse?.file_url || uploadResponse?.data?.file_url;
+        if (!avatarUrl) throw new Error("Không nhận được URL ảnh sau khi upload");
 
-      // Bước 2: Gọi API đổi avatar với URL vừa nhận
-      await uploadAvatar(avatarUrl);
+        // Bước 2: Gọi API đổi avatar với URL vừa nhận
+        await uploadAvatar(avatarUrl);
 
-      showNotification(t("settings.avatar_updated") || "Cập nhật ảnh đại diện thành công!", "success");
+        // Bước 3: Refresh profile và AppInfo để UI cập nhật
+        await getUserProfile();
+        await handleGetAppInfo();
 
-      // Bước 3: Refresh profile và AppInfo để UI cập nhật
-      await getUserProfile();
-      await handleGetAppInfo();
+        showNotification(t("settings.avatar_updated") || "Cập nhật ảnh đại diện thành công!", "success");
+      } finally {
+        setIsUploadingAvatar(false);
+      }
     } catch (error: any) {
       console.error("[SettingsScreen] handlePickAvatar failed:", error);
       showNotification(
@@ -360,13 +369,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
 
         {/* Profile Section */}
         <View style={[styles.profileSection, { backgroundColor: colors.card }]}>
-          <TouchableOpacity onPress={handlePickAvatar} style={styles.avatarWrapper}>
+          <TouchableOpacity onPress={handlePickAvatar} disabled={isUploadingAvatar} style={styles.avatarWrapper}>
             <Image
-              source={
-                appInfo?.avatar?.startsWith("http")
-                  ? { uri: appInfo.avatar }
-                  : Images.placeholder.avatar
-              }
+              source={getAvatarSource(profile?.avatar || appInfo?.avatar)}
               style={styles.profileImage}
             />
             <View style={[styles.cameraOverlay, { backgroundColor: colors.tint }]}>
@@ -654,6 +659,38 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         onConfirm={handleTimePickerConfirm}
         onCancel={() => setShowTimePicker(false)}
       />
+
+      <Modal
+        visible={isUploadingAvatar}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0, 0, 0, 0.45)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.card,
+              paddingHorizontal: normalize(24),
+              paddingVertical: normalize(20),
+              borderRadius: normalize(16),
+              alignItems: "center",
+              gap: normalize(12),
+            }}
+          >
+            <ActivityIndicator size="large" color={colors.tint} />
+            <CustomText style={{ color: colors.text, fontSize: normalize(14) }}>
+              {t("settings.updating_avatar") || "Đang cập nhật ảnh đại diện..."}
+            </CustomText>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

@@ -6,7 +6,7 @@ import { Fonts } from "@/core/theme/font";
 import { useLoginService } from "@/features/auth/hooks/useLoginService";
 import StorageService from "@/services/StorageService";
 import { AppInfo } from "@/types/UserCommand";
-import { Images } from "@/utils/images";
+import { Images, getAvatarSource } from "@/utils/images";
 import { hasNotch, normalize } from "@/utils/layout";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -228,11 +228,7 @@ const QuickLoginScreen = () => {
 
                 <View style={styles.userInfoRow}>
                   <Image
-                    source={
-                      appInfo?.avatar?.startsWith("http")
-                        ? { uri: appInfo.avatar }
-                        : Images.placeholder.avatar
-                    }
+                    source={getAvatarSource(appInfo?.avatar)}
                     style={styles.avatar}
                   />
                   <ThemedText style={styles.username}>

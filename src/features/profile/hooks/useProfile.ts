@@ -23,6 +23,7 @@ export interface UserProfile {
   place_of_residence?: string | null;
   issued_date?: string | null;
   issued_place?: string | null;
+  avatar?: string | null;
 }
 
 export const useProfile = () => {

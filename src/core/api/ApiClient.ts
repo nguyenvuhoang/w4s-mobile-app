@@ -241,8 +241,12 @@ class ApiClient {
     if (query) url += `?${query}`;
 
 
+    const userSession = await StorageService.getUserSession();
+    const token = userSession?.token ?? "";
+
     const headers: HeadersInit = {
       App: "MB",
+      Uid: token,
       Lang: lang,
       "X-TimeZone": getTimeZone(),
     };
