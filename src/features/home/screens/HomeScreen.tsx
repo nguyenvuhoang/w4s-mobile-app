@@ -16,7 +16,7 @@ import {
 import { styles } from "@/features/home/styles/HomeScreen.Style";
 import { useDefaultCurrency } from "@/hooks/useDefaultCurrency";
 import { getValidIconName } from "@/utils/iconMapper";
-import { Images } from "@/utils/images";
+import { Images, getAvatarSource } from "@/utils/images";
 import { hp, normalize } from "@/utils/layout";
 import { router } from "expo-router";
 import React, { useCallback, useContext, useMemo } from "react";
@@ -348,11 +348,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Image
-              source={
-                appInfo?.avatar?.startsWith("http")
-                  ? { uri: appInfo.avatar }
-                  : Images.placeholder.avatar
-              }
+              source={getAvatarSource(appInfo?.avatar)}
               style={styles.headerAvatar}
             />
           </View>

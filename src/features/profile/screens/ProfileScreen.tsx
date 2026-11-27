@@ -7,7 +7,7 @@ import { useAppTheme } from '@/core/theme/ThemeContext';
 import { useLoginService } from '@/features/auth/hooks/useLoginService';
 import { useProfile } from '@/features/profile/hooks/useProfile';
 import { styles } from '@/features/profile/styles/ProfileScreen.styles';
-import { Images } from '@/utils/images';
+import { Images, getAvatarSource } from '@/utils/images';
 import { hp, normalize } from '@/utils/layout';
 import { requestMediaLibraryPermission } from '@/utils/permissionHelper';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Image, ScrollView, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, ScrollView, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ProfileScreen = () => {
@@ -27,6 +27,7 @@ const ProfileScreen = () => {
   const { handleGetAppInfo } = useLoginService();
   const { showNotification } = useNotification();
   const [localAvatar, setLocalAvatar] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -86,9 +87,9 @@ const ProfileScreen = () => {
       identity_number: profile.identity_number || 'N/A',
       issued_date: issued,
       issued_place: profile.issued_place || 'N/A',
-      avatar: localAvatar,
+      avatar: localAvatar || profile.avatar || appInfo?.avatar,
     };
-  }, [profile, t, localAvatar]);
+  }, [profile, t, localAvatar, appInfo?.avatar]);
 
   const profileItems = [
     { icon: 'person-outline', label: t('profile.fullname', 'Họ và tên'), value: userData.name },
@@ -106,6 +107,7 @@ const ProfileScreen = () => {
   ];
 
   const handleChangeAvatar = async () => {
+    if (isUploadingAvatar) return;
     try {
       const hasPermission = await requestMediaLibraryPermission(
         t('profile.permission_denied', 'Thất bại'),
@@ -122,22 +124,27 @@ const ProfileScreen = () => {
 
       if (!result.canceled && result.assets?.length) {
         const uri = result.assets[0].uri;
-        setLocalAvatar(uri);
-
         const userCode = appInfo?.user_code || '';
-        const uploadResponse = await apiService.uploadImage(uri, 'avatars', userCode, true);
-        const avatarUrl = uploadResponse?.file_url || uploadResponse?.data?.file_url;
 
-        if (!avatarUrl) {
-          showNotification(t('profile.upload_failed', 'Lỗi khi upload ảnh'), 'error');
-          return;
+        setIsUploadingAvatar(true);
+        try {
+          const uploadResponse = await apiService.uploadImage(uri, 'avatars', userCode, false);
+          const avatarUrl = uploadResponse?.file_url || uploadResponse?.data?.file_url;
+
+          if (!avatarUrl) {
+            showNotification(t('profile.upload_failed', 'Lỗi khi upload ảnh'), 'error');
+            return;
+          }
+
+          await uploadAvatar(avatarUrl);
+          setLocalAvatar(uri);
+          await getUserProfile();
+          await handleGetAppInfo();
+
+          showNotification(t('profile.avatar_updated', 'Cập nhật ảnh đại diện thành công'), 'success');
+        } finally {
+          setIsUploadingAvatar(false);
         }
-
-        await uploadAvatar(avatarUrl);
-        await getUserProfile();
-        await handleGetAppInfo();
-
-        showNotification(t('profile.avatar_updated', 'Cập nhật ảnh đại diện thành công'), 'success');
       }
     } catch (error) {
       console.error('Lỗi khi đổi avatar:', error);
@@ -163,21 +170,14 @@ const ProfileScreen = () => {
           <>
             <View style={[styles.headerCard, { backgroundColor: colors.card }]}>
               <View style={styles.avatarContainer}>
-                {userData.avatar ? (
-                  <Image source={{ uri: userData.avatar }} style={styles.avatar} />
-                ) : (
-                  <Image
-                    source={
-                      appInfo?.avatar?.startsWith('http')
-                        ? { uri: appInfo.avatar }
-                        : Images.placeholder.avatar
-                    }
-                    style={styles.avatar}
-                  />
-                )}
+                <Image
+                  source={getAvatarSource(userData.avatar)}
+                  style={styles.avatar}
+                />
                 <TouchableOpacity
                   style={[styles.cameraButton, { backgroundColor: colors.tint }]}
                   onPress={handleChangeAvatar}
+                  disabled={isUploadingAvatar}
                   activeOpacity={0.7}
                 >
                   <Ionicons name="camera" size={normalize(18)} color="#fff" />
@@ -233,6 +233,38 @@ const ProfileScreen = () => {
           </>
         )}
       </ScrollView>
+
+      <Modal
+        visible={isUploadingAvatar}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.card,
+              paddingHorizontal: normalize(24),
+              paddingVertical: normalize(20),
+              borderRadius: normalize(16),
+              alignItems: 'center',
+              gap: normalize(12),
+            }}
+          >
+            <ActivityIndicator size="large" color={colors.tint} />
+            <ThemedText style={{ color: colors.text, fontSize: normalize(14) }}>
+              {t('profile.updating_avatar', 'Đang cập nhật ảnh đại diện...')}
+            </ThemedText>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
